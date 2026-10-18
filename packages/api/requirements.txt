@@ -41,7 +41,7 @@ Pillow==12.3.0
 # iPhone photos (HEIC/HEIF) in the image viewer — browsers do not render HEIC
 # and Nextcloud generates no preview for it. /files/v2/as-jpeg converts;
 # pillow-heif registers the reader with Pillow.
-pillow-heif==1.8.0
+pillow-heif==1.8.1
 
 # LOCAL image editing ("brighten only here", "make only the sky blue").
 # That needs masks, and masks are arithmetic over whole pixel arrays —
