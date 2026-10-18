@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "paths": {
+      "@claraos/core": ["./packages/core/src"],
+      "@claraos/core/*": ["./packages/core/src/*"],
+      "@claraos/shell": ["./packages/shell/src"],
+      "@claraos/shell/*": ["./packages/shell/src/*"],
+      "@claraos/skins": ["./packages/skins/src"],
+      "@claraos/skins/*": ["./packages/skins/src/*"]
+    }
+  },
+  "references": [
+    { "path": "./packages/core" },
+    { "path": "./packages/shell" },
+    { "path": "./packages/skins" }
+  ]
+}

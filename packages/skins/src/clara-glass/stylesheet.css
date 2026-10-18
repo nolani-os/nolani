@@ -1,0 +1,405 @@
+/* ===========================================================================
+   Clara Glass — skin-specific stylesheet
+   The ClaraOS mobile design language (deep navy glass, ice-blue rims, Clara
+   cyan) translated to the desktop. Loaded via <link> when the user activates
+   `clara-glass`. All rules are scoped to [data-skin-id="clara-glass"].
+
+   Glassmorphism constraints honored here:
+   - ONE backdrop-filter per surface tree: the taskbar is the only glass layer
+     in its subtree; buttons on it are painted fills/gradients only.
+   - Blur budget: taskbar 30px (via --blur-acrylic), flyouts <= 40px.
+   - Blur is never animated — only opacity/transform.
+   =========================================================================== */
+
+[data-skin-id="clara-glass"] {
+  /* Local helpers — tweak the icon tile in one place.
+     Squircle form from aero (22%); the glass is a FLAT desktop tile in the
+     mobile navy palette, deliberately semi-transparent so the taskbar's
+     backdrop blur shines through (no nested backdrop-filter needed). The
+     mobile sphere recipe (radial dome gradients) is mobile-only. */
+  --cg-icon-radius: 22%;
+  --cg-bead-bg:
+    linear-gradient(180deg,
+      rgba(147, 197, 253, 0.14) 0%,
+      rgba(147, 197, 253, 0.03) 34%,
+      rgba(0, 0, 0, 0.00) 60%),
+    linear-gradient(165deg,
+      rgba(28, 42, 72, 0.66) 0%,
+      rgba(11, 20, 40, 0.72) 55%,
+      rgba(4, 8, 20, 0.80) 100%);
+  --cg-bead-stroke: rgba(150, 185, 240, 0.40);
+  --cg-plate-bg: linear-gradient(160deg, #ffffff 0%, #eef2f9 55%, #d9e1ee 100%);
+}
+
+/* ---------------------------------------------------------------------------
+   Wallpaper — full-viewport fixed layer so it runs UNDER the taskbar.
+   The shell layout puts the taskbar as a flex sibling below the desktop
+   area; without this the taskbar's backdrop-filter has only the empty page
+   background behind it and the glass effect is invisible (same lesson as
+   the mobile shell). Scoped to clara-glass; other skins keep
+   the original in-desktop wallpaper.
+   --------------------------------------------------------------------------- */
+[data-skin-id="clara-glass"] [data-shell-part="wallpaper"] {
+  position: fixed;
+  inset: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Taskbar — one glass surface, navy tint, ice-blue hairline
+   --------------------------------------------------------------------------- */
+[data-skin-id="clara-glass"] [data-shell-part="taskbar"] {
+  /* Real see-through glass: light tint (0.42–0.58) over the 30px backdrop
+     blur from Taskbar.module.css — the wallpaper visibly shines through.
+     Text legibility is insured by the text-shadow below (research: never
+     put bare text on <25% tint without a shadow). */
+  background:
+    linear-gradient(180deg,
+      rgba(180, 205, 253, 0.08) 0%,
+      rgba(180, 205, 253, 0.00) 14%),
+    linear-gradient(165deg,
+      rgba(19, 26, 46, 0.42) 0%,
+      rgba(10, 14, 26, 0.50) 55%,
+      rgba(7, 10, 19, 0.58) 100%);
+  border-top: 1px solid rgba(147, 197, 253, 0.18);
+  box-shadow:
+    0 -8px 28px rgba(0, 0, 0, 0.30),
+    inset 0 1px 0 rgba(180, 205, 253, 0.18);
+  position: relative;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+
+/* Subtle noise overlay on the taskbar (kills banding, "material" feel) */
+[data-skin-id="clara-glass"] [data-shell-part="taskbar"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.04 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 160px 160px;
+  mix-blend-mode: overlay;
+  opacity: 0.55;
+}
+
+/* ---------------------------------------------------------------------------
+   App icon bead — the dark glossy navy glass squircle (.aeroAppIcon emitted
+   by AppIcon.tsx). Brand apps carry a light plate, PLATELESS apps a white
+   mono glyph, emoji fallbacks sit directly on the glass.
+   Layers: bead bg → plate ::before (z1) → glyph (z2) → specular ::after (z3).
+   --------------------------------------------------------------------------- */
+[data-skin-id="clara-glass"] .aeroAppIcon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--aero-icon-size, 36px);
+  height: var(--aero-icon-size, 36px);
+  border-radius: var(--cg-icon-radius);
+  background: var(--icon-bg, var(--cg-bead-bg));
+  box-shadow: var(--shadow-icon);
+  border: 1px solid var(--cg-bead-stroke);
+  overflow: hidden;
+  transition: transform var(--transition-fast),
+              box-shadow var(--transition-fast),
+              filter var(--transition-fast);
+  isolation: isolate;
+}
+
+/* Straight glass sheen across the top half — follows the squircle edge
+   (a flat "wet tile" highlight, not the mobile dome arc) */
+[data-skin-id="clara-glass"] .aeroAppIcon::after {
+  content: "";
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  top: 4%;
+  height: 44%;
+  border-radius: 18% 18% 46% 46% / 30% 30% 62% 62%;
+  background: linear-gradient(180deg,
+    rgba(255, 255, 255, 0.34) 0%,
+    rgba(255, 255, 255, 0.08) 70%,
+    transparent 100%);
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Light logo plate — brand apps only (mobile .appLogo recipe) */
+[data-skin-id="clara-glass"] .aeroAppIcon[data-brand="1"]::before {
+  content: "";
+  position: absolute;
+  inset: 19%;
+  border-radius: 30%;
+  background: var(--cg-plate-bg);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.95);
+  pointer-events: none;
+  z-index: 1;
+}
+
+[data-skin-id="clara-glass"] .aeroAppIcon:hover {
+  transform: translateY(-2px) scale(1.06);
+  box-shadow: var(--shadow-icon-hover);
+}
+
+/* The actual glyph — brand SVG on the plate (78% of the 62% plate ≈ 48%) */
+[data-skin-id="clara-glass"] .aeroAppIcon > svg {
+  position: relative;
+  z-index: 2;
+  width: 62%;
+  height: 62%;
+}
+
+[data-skin-id="clara-glass"] .aeroAppIcon[data-brand="1"] > svg {
+  width: 48%;
+  height: 48%;
+}
+
+/* Plateless/mono apps: white glyph straight on the dark glass */
+[data-skin-id="clara-glass"] .aeroAppIcon[data-mono="1"] > svg {
+  width: 56%;
+  height: 56%;
+  color: #f4f7ff;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+/* Emoji fallback sits directly on the bead */
+[data-skin-id="clara-glass"] .aeroAppIcon > .aeroIconGlyph {
+  position: relative;
+  z-index: 2;
+  font-size: calc(var(--aero-icon-size, 36px) * 0.55);
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: auto;
+  width: auto;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
+}
+
+/* Size variants */
+[data-skin-id="clara-glass"] .aeroAppIcon[data-size="taskbar"] { --aero-icon-size: 36px; }
+[data-skin-id="clara-glass"] .aeroAppIcon[data-size="pinned"]  { --aero-icon-size: 40px; }
+[data-skin-id="clara-glass"] .aeroAppIcon[data-size="start"]   { --aero-icon-size: 56px; }
+[data-skin-id="clara-glass"] .aeroAppIcon[data-size="desktop"] { --aero-icon-size: 64px; }
+
+/* At taskbar size (36px) the plate corners get tight against the squircle —
+   pull the plate slightly inward and soften its radius. */
+[data-skin-id="clara-glass"] .aeroAppIcon[data-size="taskbar"][data-brand="1"]::before {
+  inset: 17%;
+  border-radius: 26%;
+}
+
+/* ---------------------------------------------------------------------------
+   Clara button — Orbit-C mark on a cyan conic halo. Static at rest; the spin
+   runs only on hover / while the start menu is open (compositor stays idle).
+   --------------------------------------------------------------------------- */
+[data-skin-id="clara-glass"] [class*="claraBtn"] {
+  position: relative;
+  isolation: isolate;
+}
+
+[data-skin-id="clara-glass"] [class*="claraBtn"]::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #38e0f0, #1f8fe0, #22d3ee, #0c5bc0, #38e0f0);
+  filter: blur(8px);
+  opacity: 0.30;
+  z-index: -1;
+  transition: opacity var(--transition-fast);
+}
+
+[data-skin-id="clara-glass"] [class*="claraBtn"]:hover::before,
+[data-skin-id="clara-glass"] [class*="claraActive"]::before {
+  opacity: 0.60;
+  animation: cgClaraSpin 6s linear infinite;
+}
+
+@keyframes cgClaraSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------------------------------------------------------------------------
+   Running-app indicator — cyan pill (Win11 pattern, mobile has none)
+   --------------------------------------------------------------------------- */
+[data-skin-id="clara-glass"] [class*="dotActive"] {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  bottom: 3px;
+  background: var(--accent);
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.8);
+}
+
+/* ---------------------------------------------------------------------------
+   Start menu — heavier navy glass, ice-blue rim
+   (Window chrome is intentionally untouched: tokens cover radius/border.)
+   --------------------------------------------------------------------------- */
+[data-skin-id="clara-glass"] [data-shell-part="start-menu"] {
+  background:
+    linear-gradient(180deg,
+      rgba(180, 205, 253, 0.06) 0%,
+      rgba(180, 205, 253, 0.00) 10%),
+    linear-gradient(165deg,
+      rgba(19, 26, 46, 0.82) 0%,
+      rgba(10, 14, 26, 0.88) 55%,
+      rgba(7, 10, 19, 0.92) 100%) !important;
+  backdrop-filter: var(--blur-mica) !important;
+  -webkit-backdrop-filter: var(--blur-mica) !important;
+  border: 1px solid rgba(147, 197, 253, 0.18) !important;
+  box-shadow: var(--shadow-menu) !important;
+}
+
+/* ---------------------------------------------------------------------------
+   Start menu launcher zones — universal input card as
+   navy glass with ice rim; cyan appears only as focus ring. Footer gets the
+   ice hairline. Anchored on data-shell-part (prod class names are hashed).
+   --------------------------------------------------------------------------- */
+[data-skin-id="clara-glass"] [data-shell-part="start-input"] {
+  background:
+    linear-gradient(180deg,
+      rgba(147, 197, 253, 0.10) 0%,
+      rgba(147, 197, 253, 0.02) 40%),
+    linear-gradient(165deg,
+      rgba(28, 42, 72, 0.55) 0%,
+      rgba(11, 20, 40, 0.60) 55%,
+      rgba(7, 10, 19, 0.65) 100%);
+  border: 1px solid rgba(147, 197, 253, 0.22);
+}
+
+[data-skin-id="clara-glass"] [data-shell-part="start-input"]:focus-within {
+  border-color: rgba(56, 189, 248, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(56, 189, 248, 0.35),
+    0 0 18px rgba(56, 189, 248, 0.15);
+}
+
+[data-skin-id="clara-glass"] [data-shell-part="start-footer"] {
+  border-top: 1px solid rgba(147, 197, 253, 0.14);
+  background: linear-gradient(180deg, rgba(147, 197, 253, 0.04), rgba(0, 0, 0, 0));
+}
+
+/* ---------------------------------------------------------------------------
+   Desktop widgets + taskbar popups — shared navy glass card
+   (.aeroWidget: QuickSettingsPanel, DesktopWidgets, AltTabSwitcher,
+   TaskbarHoverThumb, SnapLayoutPicker). Tint is intentionally high
+   (0.80–0.90): the TaskbarHoverThumb lives INSIDE the taskbar's backdrop
+   root, so its own blur degrades — the heavy tint hides that.
+   --------------------------------------------------------------------------- */
+[data-skin-id="clara-glass"] .aeroWidget {
+  background:
+    linear-gradient(180deg,
+      rgba(255, 255, 255, 0.10) 0%,
+      rgba(255, 255, 255, 0.00) 42%),
+    linear-gradient(165deg,
+      rgba(19, 26, 46, 0.80) 0%,
+      rgba(10, 14, 26, 0.86) 55%,
+      rgba(7, 10, 19, 0.90) 100%);
+  border-radius: 18px;
+  border: 1px solid rgba(147, 197, 253, 0.16);
+  backdrop-filter: blur(24px) saturate(125%);
+  -webkit-backdrop-filter: blur(24px) saturate(125%);
+  box-shadow:
+    0 10px 32px rgba(0, 0, 0, 0.40),
+    inset 0 1px 0 rgba(180, 205, 253, 0.16);
+  color: var(--text-primary);
+  font-family: var(--font-system);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+[data-skin-id="clara-glass"] .aeroWidget::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 160px 160px;
+  mix-blend-mode: overlay;
+  opacity: 0.6;
+  z-index: 0;
+}
+
+[data-skin-id="clara-glass"] .aeroWidget > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------------------------------------------------------------------------
+   Snap-layout picker — navy glass panel + cyan zone glow
+   --------------------------------------------------------------------------- */
+[data-skin-id="clara-glass"] [data-shell-part="snap-popup"] {
+  background:
+    linear-gradient(180deg, rgba(180, 205, 253, 0.06) 0%, rgba(180, 205, 253, 0) 12%),
+    linear-gradient(165deg, rgba(19, 26, 46, 0.82) 0%, rgba(7, 10, 19, 0.90) 100%) !important;
+  backdrop-filter: blur(36px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(130%) !important;
+  border: 1px solid rgba(147, 197, 253, 0.16) !important;
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(56, 189, 248, 0.18) !important;
+}
+
+[data-skin-id="clara-glass"] [data-shell-part="snap-layout"] {
+  background: rgba(147, 197, 253, 0.06);
+  border: 1px solid rgba(147, 197, 253, 0.12);
+}
+
+[data-skin-id="clara-glass"] [data-shell-part="snap-zone"] {
+  background: rgba(56, 189, 248, 0.16);
+  border: 1px solid rgba(180, 205, 253, 0.24);
+}
+
+[data-skin-id="clara-glass"] [data-shell-part="snap-zone"]:hover {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.55), rgba(34, 211, 238, 0.55));
+  border-color: rgba(220, 240, 255, 0.50);
+  box-shadow: inset 0 0 12px rgba(255, 255, 255, 0.30), 0 0 14px rgba(56, 189, 248, 0.55);
+}
+
+/* Magnetic-snap visual — cyan glow on the moving window edges */
+[data-skin-id="clara-glass"] [data-magnetic-snapped="true"] {
+  outline: 2px solid rgba(56, 189, 248, 0.55);
+  outline-offset: -2px;
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.4), 0 12px 36px rgba(56, 189, 248, 0.30) !important;
+  transition: outline-color 0.12s, box-shadow 0.18s;
+}
+
+/* ---------------------------------------------------------------------------
+   Accessibility — respect user preferences
+   --------------------------------------------------------------------------- */
+@media (prefers-reduced-transparency: reduce) {
+  [data-skin-id="clara-glass"] [data-shell-part="taskbar"],
+  [data-skin-id="clara-glass"] [data-shell-part="start-menu"],
+  [data-skin-id="clara-glass"] [data-shell-part="snap-popup"],
+  [data-skin-id="clara-glass"] .aeroWidget {
+    background: #0D1526 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  [data-skin-id="clara-glass"] [data-shell-part="taskbar"]::before,
+  [data-skin-id="clara-glass"] .aeroWidget::before { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin-id="clara-glass"] .aeroAppIcon,
+  [data-skin-id="clara-glass"] [class*="claraBtn"]::before,
+  [data-skin-id="clara-glass"] [data-shell-part="taskbar"] *,
+  [data-skin-id="clara-glass"] .aeroWidget * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Context menus (WindowContextMenu / PopupMenu / GlobalContextMenu) —
+   same navy glass card as the widgets, ice rim.
+   --------------------------------------------------------------------------- */
+[data-skin-id="clara-glass"] [data-shell-part="context-menu"] {
+  background:
+    linear-gradient(180deg, rgba(180, 205, 253, 0.07) 0%, rgba(180, 205, 253, 0) 14%),
+    linear-gradient(165deg, rgba(19, 26, 46, 0.90) 0%, rgba(7, 10, 19, 0.94) 100%) !important;
+  border: 1px solid rgba(147, 197, 253, 0.18) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(180, 205, 253, 0.14) !important;
+  backdrop-filter: blur(24px) saturate(125%);
+  -webkit-backdrop-filter: blur(24px) saturate(125%);
+}

@@ -1,0 +1,55 @@
+# The cell's LiteLLM when an external brain is connected (CLARAOS_LITELLM_CONFIG=litellm.brain.yaml).
+# Same as litellm.yaml, except: clara/everyday goes to the brain, which runs the agent
+# with tools and calls the cloud models itself. The brain sends tool calls back to
+# this cell's tool API (services/brain_turns.py) — the cell's data stays here.
+#
+# Costs: the brain counts the agent's model costs; this entry is priced at 0 so the
+# cell's budget below only covers what the cell calls directly (titles, markers).
+
+x-haiku: &haiku
+  model: anthropic/claude-haiku-4-5
+  # Warning: chat_v2 sends `meta` (app context for the agent); Anthropic rejects
+  # unknown fields ("meta: Extra inputs are not permitted"). drop_params only
+  # removes KNOWN parameters — unknown ones must be listed here.
+  additional_drop_params: ["meta", "chat_id"]
+  api_key: os.environ/ANTHROPIC_API_KEY
+  input_cost_per_token: 0.000001
+  output_cost_per_token: 0.000005
+
+model_list:
+  - model_name: clara/everyday
+    litellm_params:
+      model: openai/clara-everyday-v1
+      api_base: os.environ/CLARAOS_BRAIN_URL
+      api_key: os.environ/CLARAOS_BRAIN_KEY
+      # An agent turn with several tool calls takes minutes, not seconds.
+      timeout: 600
+      stream_timeout: 600
+      input_cost_per_token: 0
+      output_cost_per_token: 0
+  - model_name: claude-haiku-4-5
+    litellm_params: *haiku
+  - model_name: claude-haiku-4-5-20251001
+    litellm_params: *haiku
+  - model_name: gemini-flash
+    litellm_params: *haiku
+  - model_name: gemini-flash-lite
+    litellm_params: *haiku
+  - model_name: gemini-3-flash
+    litellm_params: *haiku
+  - model_name: gemini-2.5-flash
+    litellm_params: *haiku
+
+litellm_settings:
+  # Covers only the cell's own direct calls (see above); the agent's spend is
+  # limited by the brain's LiteLLM and the provider workspace limit.
+  # The values below are examples — adjust them to your own limits.
+  max_budget: 25
+  budget_duration: 30d
+  drop_params: true
+  telemetry: false
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL
+  store_model_in_db: false

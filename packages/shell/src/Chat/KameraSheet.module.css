@@ -1,0 +1,100 @@
+/* In-chat viewfinder — laid out like any camera app: the image fills everything,
+   below it a bar with the shutter button in the middle. */
+
+.blatt {
+  position: fixed;
+  inset: 0;
+  /* Above the Clara overlay (z-index 1000), but not above the version bar —
+     that one is informational and may stay visible. */
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  background: #05070d;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.buehne {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.video {
+  width: 100%;
+  height: 100%;
+  /* `cover`: the viewfinder should fill the area like in a camera app.
+     The capture comes from `takePhoto()` and is unaffected by the crop. */
+  object-fit: cover;
+  background: #05070d;
+}
+
+.hinweis {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 28px;
+  text-align: center;
+  color: #cbd5e1;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.ausweg {
+  margin-top: 8px;
+  padding: 10px 16px;
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px solid rgba(147, 197, 253, 0.3);
+  background: rgba(147, 197, 253, 0.12);
+  color: #f2f6ff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.leiste {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px 22px;
+  background: #05070d;
+}
+
+/* Important: 44 px, and width = height. The global touch rule in `tokens.css`
+   gives every non-empty button min-height 44 — anything built smaller here
+   ends up as an oval (the same bug that once hit the chat header). */
+.neben {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(147, 197, 253, 0.2);
+  background: rgba(147, 197, 253, 0.1);
+  color: #f2f6ff;
+  font-size: 1.125rem;
+  cursor: pointer;
+}
+.neben:active { background: rgba(147, 197, 253, 0.22); }
+
+/* The shutter is the only large button — everything else steps back
+   (same proportions as in the camera app). */
+.ausloeser {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.9);
+  background: #fff;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.ausloeser:active:not(:disabled) { transform: scale(0.92); }
+.ausloeser:disabled { opacity: 0.45; cursor: default; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ausloeser { transition: none; }
+}

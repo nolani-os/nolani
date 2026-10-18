@@ -1,0 +1,54 @@
+# The cell's Synapse — template WITHOUT secrets. setup.sh renders it into
+# synapse-data/homeserver.yaml (0600, uid 991) and fills the {{…}} values from .env.
+#
+# Important: no federation: a demo cell talks to no other Matrix server
+#    (federation_domain_whitelist: [] blocks all; no federation listener).
+# Important: the Teams app logs in via an admin-minted token (clara.bot) + MSC3882
+#    (login_via_existing_session) for real, E2EE-capable devices.
+server_name: "{{DOM}}"
+public_baseurl: "https://matrix.{{DOM}}/"
+pid_file: /data/homeserver.pid
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    bind_addresses: ["0.0.0.0"]
+    resources:
+      # openid: only the OpenID userinfo endpoint of the federation API — lk-jwt-service
+      # uses it to verify identity for calls. The rest of federation stays closed.
+      - names: [client, openid]
+        compress: false
+database:
+  name: psycopg2
+  args:
+    user: synapse
+    password: "{{SYNAPSE_DB_PASSWORD}}"
+    database: synapse
+    host: synapse-db
+    cp_min: 2
+    cp_max: 10
+log_config: "/data/{{DOM}}.log.config"
+media_store_path: /data/media_store
+signing_key_path: "/data/{{DOM}}.signing.key"
+registration_shared_secret: "{{SYNAPSE_REGISTRATION_SECRET}}"
+macaroon_secret_key: "{{SYNAPSE_MACAROON_SECRET}}"
+form_secret: "{{SYNAPSE_FORM_SECRET}}"
+report_stats: false
+enable_registration: false
+federation_domain_whitelist: []
+trusted_key_servers: []
+suppress_key_server_warning: true
+login_via_existing_session:
+  enabled: true
+  require_ui_auth: false
+  token_timeout: "5m"
+max_upload_size: 50M
+presence:
+  enabled: true
+# Calls (MatrixRTC/Element Call). Without delayed events
+# (MSC4140) Element Call aborts with "Connection lost".
+experimental_features:
+  msc3266_enabled: true
+  msc4222_enabled: true
+max_event_delay_duration: 24h

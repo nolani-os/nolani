@@ -1,0 +1,125 @@
+/* Image viewer — ClaraOS tokens instead of the former fixed blue tones
+   (#1a1a2e/#16213e/#0f3460). Toolbar and buttons follow the Files app
+   (`.toolbar`/`.toolBtn`) so that both feel like ONE system. */
+
+.wurzel {
+  display: flex; flex-direction: column; height: 100%;
+  background: var(--surface-1, #171b24);
+  color: var(--text-1, #e5e7eb);
+}
+
+.leiste {
+  display: flex; align-items: center; gap: 6px;
+  min-height: 46px; padding: 7px 12px;
+  border-bottom: 1px solid var(--border-1, var(--border));
+  flex-shrink: 0; min-width: 0;
+}
+.leisteAus { display: none; }
+
+.knopf {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 32px; min-width: 32px; padding: 0 10px;
+  border: none; border-radius: var(--radius-md, 10px);
+  background: transparent; color: var(--text-2, #9aa3b2);
+  font: inherit; font-size: 0.8125rem; white-space: nowrap; flex-shrink: 0;
+  cursor: pointer;
+}
+.knopf:hover { background: var(--surface-2, #182236); color: var(--text-1, #e5e7eb); }
+.knopf:focus-visible { outline: 2px solid var(--accent, #3b82f6); outline-offset: 1px; }
+
+/* Zoom as one group: − | Fit | + */
+.gruppe {
+  display: inline-flex; align-items: center; flex-shrink: 0;
+  border-radius: var(--radius-md, 10px);
+  background: var(--surface-2, #182236);
+}
+.gruppe .knopf:hover { background: var(--surface-3, #223049); }
+.zoomText {
+  min-width: 72px; text-align: center;
+  font-size: 0.75rem; color: var(--text-2, #9aa3b2);
+  font-variant-numeric: tabular-nums;
+}
+
+.name {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 0.8125rem; color: var(--text-2, #9aa3b2);
+}
+.position {
+  flex-shrink: 0; padding: 2px 8px;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--surface-2, #182236);
+  font-size: 0.75rem; color: var(--text-2, #9aa3b2);
+  font-variant-numeric: tabular-nums;
+}
+.luecke { flex: 1; }
+
+/* Stage: slightly darker than the window — photos look right on a neutral
+   background without the viewer falling out of the UI. */
+.flaeche {
+  flex: 1; min-height: 0; overflow: hidden; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--surface-1, #171b24) 55%, black);
+
+  /* YARL buttons (page arrows, loading indicator) in ClaraOS colours */
+  --yarl__color_button: var(--text-2, #9aa3b2);
+  --yarl__color_button_active: var(--text-1, #e5e7eb);
+  --yarl__color_button_disabled: transparent;
+  --yarl__button_filter: none;
+  --yarl__slide_icon_loading_color: var(--text-2, #9aa3b2);
+}
+.flaeche :global(.yarl__navigation_prev),
+.flaeche :global(.yarl__navigation_next) {
+  margin: 0 8px; padding: 10px;
+  border-radius: var(--radius-pill, 999px);
+  background: color-mix(in srgb, var(--surface-2, #182236) 80%, transparent);
+  opacity: 0; transition: opacity 0.15s;
+}
+/* Arrows only on hover — otherwise they cover the image (like Windows Photos) */
+.flaeche:hover :global(.yarl__navigation_prev),
+.flaeche:hover :global(.yarl__navigation_next),
+.flaeche :global(.yarl__navigation_prev:focus-visible),
+.flaeche :global(.yarl__navigation_next:focus-visible) { opacity: 1; }
+.flaeche :global(.yarl__navigation_prev:disabled),
+.flaeche :global(.yarl__navigation_next:disabled) { display: none; }
+
+/* Notices on the stage: loading, error, empty state */
+.hinweis {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  max-width: 360px; padding: 16px; text-align: center; line-height: 1.4;
+  color: var(--text-2, #9aa3b2);
+}
+.hinweisTitel { font-size: 0.9375rem; color: var(--text-1, #e5e7eb); }
+.hinweisText { font-size: 0.8125rem; }
+.fehlerSymbol { color: var(--status-danger, #e57373); }
+
+.hauptknopf {
+  height: 36px; padding: 0 18px; margin-top: 4px;
+  border: none; border-radius: var(--radius-md, 10px);
+  background: var(--accent, #3b82f6); color: var(--on-accent, #101418);
+  font: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+}
+.hauptknopf:hover { filter: brightness(1.08); }
+
+.kreisel {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 3px solid var(--surface-3, #223049);
+  border-top-color: var(--accent, #3b82f6);
+  animation: kreisel 0.9s linear infinite;
+}
+@keyframes kreisel { to { transform: rotate(360deg); } }
+
+.quelltext {
+  width: 100%; height: 100%; margin: 0; overflow: auto; padding: 12px;
+  background: var(--surface-2, #182236); color: var(--text-1, #e5e7eb);
+  font-family: var(--font-mono, monospace); font-size: 12px; line-height: 1.5;
+  white-space: pre-wrap;
+}
+/* A running page brings its own background; white is the browser default
+   that generated pages assume. */
+.seite { width: 100%; height: 100%; border: none; background: white; }
+
+/* Phone: thumb-sized, no text buttons that wrap */
+@media (pointer: coarse) {
+  .knopf { height: 44px; min-width: 44px; }
+  .leiste { padding: 4px 8px; gap: 4px; }
+}

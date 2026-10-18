@@ -1,0 +1,109 @@
+/* Form variant of the question card — same palette as PlanCard.module.css */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.label {
+  font-size: 0.7188rem;
+  font-weight: 500;
+  color: var(--color-text, #e7e7eb);
+}
+
+.req {
+  margin-left: 3px;
+  color: rgba(96, 205, 255, 0.95);
+  font-weight: 700;
+}
+
+.input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 32px;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  color: var(--color-text, #e7e7eb);
+  font: inherit;
+  font-size: 0.7812rem;
+  color-scheme: dark;
+}
+
+.input::placeholder { color: var(--color-muted, #aab0bd); opacity: 0.8; }
+.input:focus { outline: none; border-color: rgba(96, 205, 255, 0.6); }
+.input:disabled { opacity: 0.6; }
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  min-height: 30px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text, #e7e7eb);
+  font-size: 0.7188rem;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms;
+}
+
+.chip:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); }
+
+.chipOn {
+  background: rgba(96, 205, 255, 0.22);
+  border-color: rgba(96, 205, 255, 0.7);
+}
+
+.chip:disabled { cursor: default; opacity: 0.7; }
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.submit { flex-shrink: 0; }
+.submit:disabled { cursor: default; opacity: 0.55; }
+
+.hint {
+  font-size: 0.6562rem;
+  color: var(--color-muted, #aab0bd);
+  min-width: 0;
+}
+
+.secondary {
+  padding: 2px 0;
+  border: none;
+  background: none;
+  color: var(--color-muted, #aab0bd);
+  font-size: 0.6875rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.secondary:hover:not(:disabled) { color: var(--color-text, #e7e7eb); }
+.secondary:disabled { cursor: default; opacity: 0.6; }
+
+/* Touch: 16px inputs (no zoom-on-focus) and larger tap targets */
+@media (pointer: coarse) {
+  .input { font-size: 16px; min-height: 40px; }
+  .chip { min-height: 36px; padding: 6px 12px; font-size: 0.8125rem; }
+  .secondary { padding: 6px 0; }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "claraos",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @claraos/shell dev",
+    "build": "pnpm --filter @claraos/shell build",
+    "preview": "pnpm --filter @claraos/shell preview",
+    "test": "pnpm --filter @claraos/shell test",
+    "lint": "eslint packages/*/src --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.0.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "prettier": "^3.4.0",
+    "typescript": "^5.7.0"
+  }
+}

@@ -1,0 +1,195 @@
+/* ClaraOS — shared design layer
+ * =========================================================================
+ *
+ * **A token system already exists.** The skins provide surfaces, states,
+ * three text levels, accent, four radii, six font sizes and five spacings —
+ * in light AND dark. The problem was never a missing system but that apps did
+ * not use it: many hard-coded colour values, corner radii and font sizes
+ * across the app stylesheets, plus competing grey families.
+ *
+ * This file therefore does exactly two things:
+ *
+ *   1. **Bridge** — it defines the names individual apps invented for
+ *      themselves (`--surface-1`, `--text-2`, `--border-1` …) and maps them to
+ *      the real skin tokens. Without this, those names are defined NOWHERE and
+ *      the dark fallback in `var(…, #171b24)` always applies — which breaks
+ *      light mode (near-zero contrast, or an app that stays completely dark).
+ *      This file fixes all such usages at once without touching each app's
+ *      stylesheet.
+ *
+ *   2. **Name the scale** — which values apply, so new code does not invent
+ *      its own again. See "The scale" below.
+ *
+ * Important: surface levels are created as a step towards the text colour
+ * (`color-mix`). The same formula works in both modes: on a dark background it
+ * lifts a card, on a light one it lowers it. No mode special case, no second
+ * value table that drifts apart.
+ *
+ * Important: all fallback values here are the former DARK values. If a skin
+ * token is missing, things look as before — this file cannot break anything.
+ */
+
+:root {
+  /* ── Surfaces ────────────────────────────────────────────────────────
+     surface-1 = the base surface of the window.
+     surface-2/3 = raised (cards, rows, hover).
+     Important: for a card, use --surface-2. With --surface-1 the card is
+     exactly as bright as its background — white on white in light mode. */
+  /* Important: window content is OPAQUE.
+     `--bg-window` is an `rgba(…, 0.78)` in the glass skins; pointing the
+     surfaces at it lets the wallpaper show through tables and body text,
+     readable only over calm parts of the image. Glass stays where it
+     decorates (taskbar, start menu, widgets) — not where people read. Every
+     skin provides `bg-window-solid` for this; if it is missing, the fallback
+     applies, so this file cannot break anything. */
+  --surface-1: var(--bg-window-solid, var(--bg-window, #171b24));
+  --surface-2: color-mix(in srgb, var(--text-primary, #e5e7eb) 7%, var(--bg-window-solid, var(--bg-window, #171b24)));
+  --surface-3: color-mix(in srgb, var(--text-primary, #e5e7eb) 13%, var(--bg-window-solid, var(--bg-window, #171b24)));
+
+  /* ── Borders ─────────────────────────────────────────────────────────
+     `--border` comes from the skin itself; the alias names point to it. */
+  --border-1: var(--border, color-mix(in srgb, var(--text-primary, #e5e7eb) 24%, transparent));
+  --border-color: var(--border-1);
+
+  /* ── Text ────────────────────────────────────────────────────────────
+     Three levels. `text-primary`/`text-secondary` come from the skin, the
+     third is mixed: 65 % towards the text colour gives ≥ 4.5:1 in BOTH modes
+     (dark ~6.6 · light ~5.3). The formerly common fixed value #6b7280 was at
+     3.56:1 — just below the accessibility threshold. */
+  --text: var(--text-primary, #e5e7eb);
+  --text-1: var(--text-primary, #e5e7eb);
+  --text-2: color-mix(in srgb, var(--text-primary, #e5e7eb) 65%, var(--bg-window-solid, var(--bg-window, #171b24)));
+  --text-3: var(--text-2);
+  --text-tertiary: var(--text-2);
+
+  /* ── Text on the accent ──────────────────────────────────────────────
+     Fallback in case SkinManager has not run yet. The real value is set by
+     `setzeAkzentSchrift()` from the MEASURED luminance of the accent — a fixed
+     colour cannot be right, because the accent comes from the skin and may be
+     light or dark.
+     Important: when filling a surface with `--accent`, use `--on-accent` for
+     its text and NEVER `white`. On the light default accent, white text only
+     reaches 2.14:1. */
+  --on-accent: #101418;
+
+  /* ── Status colours ──────────────────────────────────────────────────
+     Without a shared name for red/yellow/green, apps invented `--danger`,
+     `--error`, `--status-danger`, `--warning`, `--success`, each with its own
+     hex fallback, and no skin ever provided any of them — so the fallback
+     colour always applied.
+     Important: the values are mixed towards `--text-primary`: on a dark
+     background the red gets lighter, on a light one darker — the same formula
+     as for surfaces, readable in both modes without a second table. For
+     SURFACES (badge, chip background) mix it yourself:
+     `color-mix(in srgb, var(--status-danger) 16%, transparent)`. */
+  --status-danger: color-mix(in srgb, #ef4444 72%, var(--text-primary, #e5e7eb));
+  --status-warn:   color-mix(in srgb, #f59e0b 72%, var(--text-primary, #e5e7eb));
+  --status-ok:     color-mix(in srgb, #22c55e 72%, var(--text-primary, #e5e7eb));
+  /* Aliases for names already used in apps — same values, no second set */
+  --danger:  var(--status-danger);
+  --error:   var(--status-danger);
+  --warning: var(--status-warn);
+  --warn:    var(--status-warn);
+  --success: var(--status-ok);
+}
+
+/* ── Touch targets on touch devices ──────────────────────────────────────
+ *
+ * On a typical phone (~400 px wide) most controls in many apps were below 44 px in
+ * height. That is not a per-app problem but a missing base rule — so it lives
+ * here and not in dozens of stylesheets.
+ *
+ * Important: it is triggered by `pointer: coarse`, NOT by window width. A
+ * narrow window on a desktop is still mouse-driven and needs no 44 px; a
+ * tablet in landscape is wide and still needs it. Window width answers the
+ * wrong question.
+ *
+ * Important: `min-width` only for buttons that contain NOTHING BUT an icon
+ * (`:has(> svg:only-child)`). A text button is wide enough anyway; widening it
+ * further would break tight rows.
+ *
+ * Height instead of padding: padding would override the apps' inner spacing
+ * and shift layouts. `min-height` keeps everything in place and only enlarges
+ * the area that accepts the finger.
+ */
+@media (pointer: coarse) {
+  /* Important: `:not(:empty)` is the crucial part. Without it the rule ALSO
+     stretches deliberately small, purely decorative buttons — e.g. the round
+     accent colour swatches in the settings turned from 20 × 20 into 20 × 44,
+     i.e. ovals. An empty button is a colour swatch, not a text target; enlarge
+     it via a touch area, not via its height. */
+  button:not(:empty),
+  [role="button"]:not(:empty),
+  select,
+  summary {
+    min-height: 44px;
+  }
+
+  /* Warning: NOT for native checkboxes and radio buttons: the browser draws
+     them at a fixed size, and `min-height` only stretches the box around
+     them — 13 px wide, 44 px tall, a distorted strip. For such cases use the
+     touch area below instead of enlarging the element itself. */
+
+  button:has(> svg:only-child),
+  [role="button"]:has(> svg:only-child) {
+    min-width: 44px;
+  }
+
+  /* Enlarge the touch area WITHOUT enlarging what is visible.
+     For small round toggles, boxes and dots: the element keeps its size, an
+     invisible field on top accepts the finger.
+       .myToggle { position: relative; }
+       .myToggle { composes: trefferflaeche from global; }   (or set the class) */
+  .trefferflaeche { position: relative; }
+  .trefferflaeche::after {
+    content: "";
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px; height: 44px;
+  }
+
+  /* Exception: elements that must stay dense on purpose — e.g. cells of a
+     calendar grid, where 44 px would push the week out of view. Whoever sets
+     this must document the reason in their own stylesheet. */
+  [data-dicht="ja"],
+  [data-dicht="ja"] button,
+  [data-dicht="ja"] [role="button"] {
+    min-height: 0;
+    min-width: 0;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * The scale — what new code should use
+ * ─────────────────────────────────────────────────────────────────────────
+ *
+ * Colour     · surface     var(--surface-1|-2|-3)
+ *            · text        var(--text-primary) · var(--text-secondary) · var(--text-2)
+ *            · border      var(--border)
+ *            · accent      var(--accent)
+ *            · state       var(--bg-hover) · var(--bg-active) · var(--bg-subtle)
+ *            · status      var(--status-danger) · var(--status-warn) · var(--status-ok)
+ *              (surfaces via color-mix … 16 %, transparent — never a custom red)
+ *   Important: NO hex values in app stylesheets. A fixed colour does not know
+ *      the mode and is usually unreadable in light mode.
+ *
+ * Radius     · var(--radius-sm)   6px   inputs, small buttons
+ *            · var(--radius-md)  10px   cards, rows
+ *            · var(--radius-lg)  14px   window-like surfaces
+ *            · var(--radius-pill)       chips, filters
+ *   (these four are enough)
+ *
+ * Font       · var(--font-size-xs)   11px  secondary details, timestamps
+ *            · var(--font-size-sm)   12px  secondary text
+ *            · var(--font-size-base) 14px  body text
+ *            · var(--font-size-lg)   16px  heading inside the app
+ *            · var(--font-size-xl)/(--font-size-xxl) titles, large numbers
+ *   (these six are enough)
+ *
+ * Spacing    · var(--gap-xs) 4 · var(--gap-sm) 8 · var(--gap-md) 12
+ *            · var(--gap-lg) 16 · var(--gap-xl)
+ *
+ * Touch area · at least 44 px on touch devices, 32 px with a pointer.
+ * Status colour · never alone — always with an icon AND a word.
+ */

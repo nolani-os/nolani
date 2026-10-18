@@ -1,0 +1,39 @@
+/* Desktop icon: free-standing like Plasma/Windows. No background. Logo at
+   88 %, a fine shadow as outline; dark logos on a light disc; own apps as a
+   colored glyph with 22 % fill. */
+.symbol {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  vertical-align: middle;
+  transition: transform .12s ease;
+}
+.symbol > svg,
+.symbol > img {
+  width: 88%; height: 88%; display: block;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 5px rgba(0, 0, 0, 0.35));
+}
+.symbol > img { object-fit: contain; }
+/* Own apps: glyph in the section color, light fill of the same color */
+.glyphe {
+  color: var(--glyphe, #9fb3d6);
+  fill: color-mix(in srgb, var(--glyphe, #9fb3d6) 22%, transparent);
+  stroke-width: 1.7;
+}
+/* Dark logos: light disc like Plasma's fallback icon */
+.symbol[data-scheibe="1"]::before {
+  content: "";
+  position: absolute; inset: 4%;
+  border-radius: 50%;
+  background: #eef2f8;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+.symbol[data-scheibe="1"] > svg { position: relative; width: 62%; height: 62%; filter: none; }
+.emoji { font-size: calc(var(--kachel-px, 48px) * 0.72); line-height: 1; filter: drop-shadow(0 1px 1.5px rgba(0,0,0,.5)); }
+/* Small slots: bolder glyph, no halo (blurs at 26 px) */
+.symbol[data-slot="taskbar"] > svg, .symbol[data-slot="pinned"] > svg { filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.55)); }
+.symbol[data-slot="taskbar"] .glyphe, .symbol[data-slot="pinned"] .glyphe { stroke-width: 2; }
+/* 3D icon set of own apps: almost full area, soft drop shadow */
+.symbol[data-3d="1"] > svg { width: 94%; height: 94%; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45)); }
+.symbol[data-3d="1"][data-slot="taskbar"] > svg, .symbol[data-3d="1"][data-slot="pinned"] > svg { filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.5)); }

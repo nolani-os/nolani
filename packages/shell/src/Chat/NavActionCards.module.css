@@ -1,0 +1,47 @@
+/* Deep-link cards below completed Clara answers */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.card {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.14));
+  background: var(--surface-2, rgba(255, 255, 255, 0.06));
+  color: inherit;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.card:hover:not(:disabled) {
+  border-color: var(--accent, #7b9fff);
+  background: rgba(123, 159, 255, 0.12);
+}
+
+.card:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.icon {
+  font-size: 0.6875rem;
+}
+
+.label {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.action {
+  opacity: 0.65;
+  font-size: 0.6875rem;
+}

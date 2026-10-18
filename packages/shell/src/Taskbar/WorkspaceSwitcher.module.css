@@ -1,0 +1,79 @@
+.triggerBtn {
+  width: 36px; height: 36px; border: none; background: transparent;
+  color: var(--text-secondary); cursor: pointer; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.1s, color 0.1s;
+}
+.triggerBtn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+.backdrop { position: fixed; inset: 0; z-index: 9200; }
+
+/* ── Visual panel ── */
+.panel {
+  position: fixed; bottom: calc(var(--taskbar-height, 48px) + 8px); left: 80px;
+  width: 480px; background: var(--bg-surface-solid); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-menu);
+  backdrop-filter: var(--blur-menu); z-index: 9300;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+
+.header {
+  padding: 10px 14px; font-size: var(--font-size-sm); font-weight: 600;
+  color: var(--text-primary); border-bottom: 1px solid var(--border);
+}
+
+/* 2-column card grid */
+.grid {
+  padding: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  max-height: 360px; overflow-y: auto;
+}
+
+/* Workspace card */
+.card {
+  border: 2px solid var(--border); border-radius: var(--radius-md);
+  cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;
+  overflow: hidden; background: var(--bg-subtle);
+  display: flex; flex-direction: column;
+}
+.card:hover { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.card:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.cardActive { border-color: var(--accent) !important; }
+
+/* Preview area showing app icons */
+.cardPreview {
+  height: 80px; display: flex; align-items: center; justify-content: center;
+  padding: 8px; background: var(--bg-base);
+}
+.cardEmpty { font-size: var(--font-size-xs); color: var(--text-disabled); }
+.cardIcons { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; }
+.cardIcon { font-size: 1.25rem; line-height: 1; }
+.cardMore { font-size: var(--font-size-xs); color: var(--text-secondary); align-self: center; }
+
+/* Footer with name + active indicator + delete */
+.cardFooter {
+  display: flex; align-items: center; gap: 6px; padding: 6px 8px;
+  border-top: 1px solid var(--border); background: var(--bg-surface-solid);
+}
+.cardName { flex: 1; font-size: var(--font-size-xs); font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cardActiveDot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+.deleteBtn {
+  width: 18px; height: 18px; border: none; background: transparent;
+  color: var(--text-disabled); font-size: 0.5625rem; cursor: pointer;
+  border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.1s, background 0.1s;
+}
+.card:hover .deleteBtn { opacity: 1; }
+.deleteBtn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+/* "+ New Workspace" tile */
+.addCard {
+  border: 2px dashed var(--border); border-radius: var(--radius-md);
+  background: transparent; cursor: pointer; transition: border-color 0.15s;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 16px 8px; min-height: 110px;
+  color: var(--text-secondary);
+}
+.addCard:hover { border-color: var(--accent); color: var(--accent); }
+.addIcon { font-size: 1.375rem; font-weight: 300; line-height: 1; }
+.addLabel { font-size: var(--font-size-xs); }

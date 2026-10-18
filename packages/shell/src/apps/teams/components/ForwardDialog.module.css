@@ -1,0 +1,14 @@
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+.dialog { background: var(--bg-secondary, #181825); border: 1px solid var(--border-color, #313244); border-radius: 12px; width: 380px; max-height: 70vh; display: flex; flex-direction: column; }
+.header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border-color, #313244); }
+.header h3 { margin: 0; font-size: 0.875rem; }
+.closeBtn {
+  width: 28px; height: 28px; padding: 0;
+  border: none; border-radius: 8px;
+  background: transparent; color: var(--text-secondary, #a6adc8);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.search { margin: 8px 12px; padding: 8px 10px; border: 1px solid var(--border-color, #313244); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: 0.8125rem; outline: none; }
+.list { flex: 1; overflow-y: auto; }
+.room { display: block; width: 100%; padding: 10px 16px; border: none; background: transparent; color: var(--text-primary); text-align: left; cursor: pointer; font-size: 0.8125rem; }
+.room:hover { background: var(--bg-hover, #313244); }

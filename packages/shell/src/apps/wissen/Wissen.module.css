@@ -1,0 +1,881 @@
+/* Sidebar of the merged app.
+ *
+ * Why a separate file instead of changing `IdeasApp.module.css`: a dozen
+ * shared components depend on that one. The sidebar is the only thing that is
+ * truly new — it stays here, everything else comes unchanged from the shared
+ * stylesheet.
+ *
+ * Why wider rather than narrower: an 84 px sidebar forces abbreviated names.
+ * With 14 targets plus collections it would be unreadable at 84 px.
+ * Abbreviations in labels are almost always a sign that the structure does
+ * not fit, not the text.
+ *
+ * Colors only via tokens with a fallback value — `tokens.css` defines exactly
+ * the names used here (invented tokens are the most common mistake in this
+ * project).
+ */
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  width: 208px;
+  flex-shrink: 0;
+  padding: 10px 8px;
+  gap: 2px;
+  border-right: 1px solid var(--border-color, #2a3040);
+  /* Warning: if the SIDEBAR itself scrolls and the buttons may shrink,
+     "Clip/Import/Export" overlap the collection list. So the upper block
+     scrolls, the actions at the bottom stay put, and no button shrinks. */
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* The group title says WHAT belongs together here — it is content, not decoration. */
+.railGroupLabel {
+  flex: 0 0 auto;
+  font-size: 0.6563rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-tertiary, #6b7280);
+  padding: 14px 10px 5px;
+}
+.railGroupLabel:first-child { padding-top: 2px; }
+
+.railBtn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  flex: 0 0 auto;
+  color: var(--text-secondary, #9ca3af);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8125rem;   /* rem, so the size slider takes effect */
+  text-align: left;
+  text-decoration: none;
+}
+.railBtn:hover { background: var(--surface-2, #1f2430); }
+.railBtnActive {
+  background: var(--surface-3, #2a3040);
+  color: var(--text-primary, #e5e7eb);
+  font-weight: 600;
+}
+.railBtn:focus-visible {
+  outline: 2px solid var(--accent, #3b82f6);
+  outline-offset: -2px;
+}
+
+.railIcon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+}
+/* A name that does not fit gets truncated — but only here, not in the code. */
+.railLabel {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.railScroll {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+}
+
+/* The scroll area takes the space — the spacer only separates. */
+.railSpacer { flex: 0 0 6px; }
+
+.railCapture {
+  color: var(--accent, #3b82f6);
+  font-weight: 600;
+}
+
+/* Below ~980 px window width the sidebar falls back to icons so the content
+   keeps enough room — the name moves into the tooltip. */
+@media (max-width: 980px) {
+  .rail { width: 56px; padding: 10px 6px; align-items: center; }
+  .railLabel { display: none; }
+  .railGroupLabel {
+    font-size: 0;
+    padding: 10px 0 4px;
+    border-top: 1px solid var(--border-color, #2a3040);
+    width: 100%;
+  }
+  .railGroupLabel:first-child { border-top: none; }
+  .railBtn { justify-content: center; padding: 9px 4px; }
+}
+
+/* ── Template picker ───────────────────────────────────────────────────
+   Cards instead of a form. Each card shows what you get — name, what it is
+   good for, and the columns. That is intentional: whoever knows beforehand
+   what will be created clicks without fear. */
+/* Warning: relying on the shared modal classes leaves the dialog single-column
+   and cut off at the bottom — the visibility picker in the footer becomes
+   unreachable. Cause: `.modalBackdrop` sets `padding-top: 10vh` and
+   `align-items: flex-start`, but the dialog has no height limit; and the
+   inherited width is not enough for a second column. Both are set here
+   explicitly instead of hoping for the shared modal classes. */
+.vorlagenModal {
+  width: min(760px, 94%);
+  max-height: 82%;
+}
+
+.vorlagenGitter {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(228px, 1fr));
+  gap: 10px;
+  margin: 4px 0 4px;
+  /* The footer stays put; only the grid scrolls. */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.vorlagenKarte {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  grid-template-areas:
+    "icon name"
+    "icon wofuer"
+    "felder felder";
+  gap: 2px 10px;
+  align-items: start;
+  text-align: left;
+  padding: 12px 13px;
+  border: 1px solid var(--border-color, #2a3040);
+  border-radius: 10px;
+  background: var(--surface-2, #1f2430);
+  color: var(--text-primary, #e5e7eb);
+  cursor: pointer;
+  font: inherit;
+}
+.vorlagenKarte:hover:not(:disabled) {
+  border-color: var(--accent, #3b82f6);
+  background: var(--surface-3, #2a3040);
+}
+.vorlagenKarte:disabled { opacity: 0.55; cursor: default; }
+.vorlagenKarte:focus-visible {
+  outline: 2px solid var(--accent, #3b82f6);
+  outline-offset: 2px;
+}
+
+.vorlagenIcon { grid-area: icon; font-size: 1.5rem; line-height: 1.2; }
+.vorlagenName { grid-area: name; font-weight: 600; font-size: 0.875rem; }
+.vorlagenWofuer {
+  grid-area: wofuer;
+  font-size: 0.75rem;
+  color: var(--text-secondary, #9ca3af);
+  line-height: 1.4;
+}
+/* The column list is the actual proof that something ready-to-use is created. */
+.vorlagenFelder {
+  grid-area: felder;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color, #2a3040);
+  font-size: 0.6875rem;
+  color: var(--text-tertiary, #6b7280);
+  line-height: 1.4;
+}
+.vorlagenBusy {
+  grid-area: felder;
+  font-size: 0.6875rem;
+  color: var(--accent, #3b82f6);
+}
+.vorlagenLeer { background: transparent; border-style: dashed; }
+
+/* ── Chips: live in `components/Chip` ──────────────────────────────────
+   The six tones and the base shape are there — the Planner uses the same
+   chip. What stays here is what is specific to Knowledge: the row with a
+   counter and the empty marker. */
+
+.plakettenReihe { display: inline-flex; gap: 4px; align-items: center; max-width: 100%; }
+.plakettenRest { font-size: 0.6875rem; color: var(--text-tertiary, #6b7280); }
+.leerZeichen { color: var(--text-tertiary, #6b7280); }
+
+/* ── Column header with type marker ─────────────────────────────────── */
+.kopfKnopf {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.kopfKnopf:hover { background: var(--surface-2, #1f2430); }
+.kopfMarke {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 15px;
+  font-size: 0.6875rem;
+  font-family: ui-monospace, monospace;
+  color: var(--text-tertiary, #6b7280);
+}
+/* Warning: `overflow: hidden` WITHOUT a width limit makes the column name give
+   up any space the table needs, and next to the side panel you would read
+   "Cos…", "St…", "Ex". A minimum width on the table does not help: as long
+   as the header may shrink arbitrarily, it shrinks.
+   So the name determines its column (up to 22 characters) and the table
+   grows wider instead — `.tableWrap` then scrolls horizontally. Only really
+   long names get truncated. */
+.kopfName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 22ch;
+  flex: 0 0 auto;
+}
+.kopfSort { font-size: 0.625rem; color: var(--accent, #3b82f6); }
+
+/* ── Column menu ──────────────────────────────────────────────────────── */
+/* Warning: the column menu can end up BEHIND the table rows — dates and
+   checkboxes of the rows below get drawn across it. `z-index` on the menu
+   alone is not enough: table cells form their own stacking contexts, so an
+   absolutely positioned child in the `<th>` still lands below the body's
+   `<td>`s. Only the stacking value on the HEADER CELL lifts both together. */
+.kopfZelle { position: relative; z-index: 5; }
+.spaltenMenue {
+  /* The table sets the position inline (fixed, at the screen position of the
+     header button) — only the fallback is defined here. */
+  position: fixed;
+  z-index: 4000;
+  /* Warning: the menu has 16 entries. Without a height limit it runs off the
+     bottom of the screen and the last entries become unreachable. */
+  max-height: 78vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-width: 236px;
+  padding: 6px;
+  border: 1px solid var(--border-color, #2a3040);
+  border-radius: 10px;
+  background: var(--surface-1, #171b24);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.spaltenName {
+  width: 100%;
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  border: 1px solid var(--border-color, #2a3040);
+  border-radius: 6px;
+  background: var(--surface-2, #1f2430);
+  color: var(--text-primary, #e5e7eb);
+  font: inherit;
+  font-size: 0.8125rem;
+}
+.menueZeile {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-primary, #e5e7eb);
+  font: inherit;
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+.menueZeile:hover { background: var(--surface-2, #1f2430); }
+.menueSymbol {
+  flex: 0 0 auto;
+  width: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: ui-monospace, monospace;
+  font-size: 0.6875rem;
+  color: var(--text-secondary, #9ca3af);
+}
+.menueWert { margin-left: auto; font-size: 0.6875rem; color: var(--text-tertiary, #6b7280); }
+.menueUnter {
+  margin: 2px 0 2px 12px;
+  padding-left: 6px;
+  border-left: 1px solid var(--border-color, #2a3040);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.menueTrenner { height: 1px; margin: 5px 4px; background: var(--border-color, #2a3040); }
+.menueGefahr { color: #ef8b8b; }
+.menueHinweis {
+  padding: 6px 8px;
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  color: var(--text-tertiary, #6b7280);
+}
+
+/* ── Row actions only on hover ─────────────────────────────────────────── */
+.zeilenAktion { opacity: 0; transition: opacity .12s ease; }
+tr:hover .zeilenAktion, .zeilenAktion:focus-visible { opacity: 1; }
+@media (pointer: coarse) { .zeilenAktion { opacity: 1; } }
+
+/* ── Right panel without boxes ──────────────────────────────────────── */
+/* Why no framed cards: four stacked boxes (surface-2, radius 12) with
+   ALL-CAPS headings on 260 px produce seven vertical edges, and all caps
+   read more slowly — the panel looks like a control panel, not like page
+   properties. Instead: rows with icons, groups separated only by a hairline. */
+.leiste {
+  width: 260px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.leisteBreit { width: 100%; }
+.leisteGruppe { display: flex; flex-direction: column; gap: 2px; padding: 10px 0 6px; }
+.leisteGruppe + .leisteGruppe { border-top: 1px solid var(--border-color, #2a3040); }
+/* Sentence case — no `text-transform`. */
+.leisteTitel {
+  margin: 0 0 4px;
+  padding: 0 6px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-tertiary, #6b7280);
+}
+.leisteZeile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 30px;
+  padding: 5px 6px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-primary, #e5e7eb);
+  font: inherit;
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+.leisteZeile:disabled { cursor: default; }
+.leisteZeile:hover:not(:disabled) { background: var(--surface-2, #1f2430); }
+.leisteSymbol {
+  flex: 0 0 auto;
+  width: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary, #6b7280);
+}
+.leisteName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.leisteWert {
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+  color: var(--text-secondary, #9ca3af);
+}
+.leisteText { padding: 2px 6px 0; font-size: 0.75rem; line-height: 1.5; color: var(--text-secondary, #9ca3af); }
+.leisteFeld { padding: 2px 6px; }
+/* Relation kind as a row of chips instead of `<select>` — a native select
+   has a different height on every system and breaks the panel apart. */
+.leisteChips { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 6px; }
+.leisteChip {
+  padding: 3px 9px;
+  border: 1px solid var(--border-color, #2a3040);
+  border-radius: 999px;
+  background: none;
+  color: var(--text-secondary, #9ca3af);
+  font: inherit;
+  font-size: 0.6875rem;
+  cursor: pointer;
+}
+.leisteChip:hover { color: var(--text-primary, #e5e7eb); }
+.leisteChipAn {
+  border-color: var(--accent, #3b82f6);
+  color: var(--text-primary, #e5e7eb);
+  background: var(--surface-2, #1f2430);
+}
+.leisteWeg {
+  flex: 0 0 auto;
+  border: none; background: none; cursor: pointer;
+  color: var(--text-tertiary, #6b7280);
+  font-size: 0.875rem; line-height: 1; padding: 2px 4px;
+}
+.leisteWeg:hover { color: #ef8b8b; }
+@media (pointer: coarse) {
+  .leisteZeile { min-height: 44px; }
+  .leisteWeg { min-width: 36px; min-height: 36px; }
+}
+
+/* ── Frozen columns + row color ─────────────────────────────────────── */
+/* With a 760 px minimum width the table scrolls horizontally — and while
+   scrolling you lose sight of the title column, exactly the column that says
+   WHAT it is about. Notion calls this "freeze".
+   Important: `position: sticky` in a table needs an OPAQUE background,
+   otherwise the content visibly scrolls through underneath. */
+.fixiert {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--bg-window-solid, var(--bg-window, #171b24));
+}
+thead .fixiert { z-index: 3; }
+/* Edge towards the scrolling part — otherwise you cannot see that something is fixed here. */
+.fixiert::after {
+  content: "";
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: 1px;
+  background: var(--border-color, #2a3040);
+}
+
+/* Color rows by a select column — the same six tones as the chips, just as a
+   subtle stripe on the left. Dipping a whole row in color makes the text
+   harder to read; the stripe is enough. */
+.zeilenTon1 > td:first-child { box-shadow: inset 3px 0 0 #3b82f6; }
+.zeilenTon2 > td:first-child { box-shadow: inset 3px 0 0 #22c55e; }
+.zeilenTon3 > td:first-child { box-shadow: inset 3px 0 0 #eab308; }
+.zeilenTon4 > td:first-child { box-shadow: inset 3px 0 0 #a855f7; }
+.zeilenTon5 > td:first-child { box-shadow: inset 3px 0 0 #f97316; }
+.zeilenTon6 > td:first-child { box-shadow: inset 3px 0 0 #14b8a6; }
+
+/* ── Formula editor ────────────────────────────────────────────────────── */
+/* The editor needs more room than a dialog: expression, preview, clickable
+   columns and the function list are all visible at once. Having to scroll
+   first means typing blind again. */
+.formelModal { width: min(760px, 94%); max-height: 86%; }
+.formelFeld {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color, #2a3040);
+  border-radius: 8px;
+  background: var(--surface-2, #1f2430);
+  color: var(--text-primary, #e5e7eb);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+.formelFeld:focus { outline: none; border-color: var(--accent, #3b82f6); }
+/* Warning: otherwise preview and function list overlap. In the dialog's flex
+   column this block could shrink (`flex-shrink` defaults to 1) while its
+   content grows with every sample row — the rest flowed over it.
+   `flex: 0 0 auto` means: this block gives nothing up. */
+.formelStatus { flex: 0 0 auto; min-height: 54px; padding: 6px 2px; }
+.formelFehler { color: #ef8b8b; font-size: 0.8125rem; }
+.formelProben { display: flex; flex-direction: column; gap: 2px; }
+.formelProbe {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 0.8125rem;
+  padding: 2px 0;
+}
+.formelProbeTitel {
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--text-secondary, #9ca3af);
+}
+.formelProbeWert {
+  flex: 0 0 auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--text-primary, #e5e7eb);
+}
+.formelHilfe {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-color, #2a3040);
+}
+@media (max-width: 700px) { .formelHilfe { grid-template-columns: 1fr; } }
+.formelFunktionen { display: flex; flex-direction: column; gap: 1px; }
+.formelFunktion {
+  display: flex; align-items: baseline; gap: 8px;
+  width: 100%; padding: 5px 6px;
+  border: none; border-radius: 6px; background: none;
+  color: var(--text-primary, #e5e7eb);
+  font: inherit; font-size: 0.75rem; text-align: left; cursor: pointer;
+}
+.formelFunktion:hover { background: var(--surface-2, #1f2430); }
+.formelFunktion code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--accent, #3b82f6);
+  white-space: nowrap;
+}
+.formelFunktion span { color: var(--text-tertiary, #6b7280); }
+
+/* ── Column list ───────────────────────────────────────────────────────── */
+/* The way to the columns that works WITHOUT a column header — on phones there
+   is none, because the table shows cards there. Pattern: Notion's
+   "Edit properties" in the view panel. */
+.spaltenListe {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 52vh;
+  overflow-y: auto;
+  margin: 4px 0;
+}
+.spaltenEintrag { padding: 2px 0; }
+.spaltenKopfZeile { display: flex; align-items: center; gap: 6px; }
+.spaltenNameFeld {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-primary, #e5e7eb);
+  font: inherit;
+  font-size: 0.8125rem;
+}
+.spaltenNameFeld:hover { border-color: var(--border-color, #2a3040); }
+.spaltenNameFeld:focus { outline: none; border-color: var(--accent, #3b82f6); }
+
+/* The lock must not share the trash class, which would make it glow in the
+   danger color. Locking is the OPPOSITE of danger — it protects. Its own,
+   calm color. */
+.schloss {
+  border: none; background: none; cursor: pointer;
+  color: var(--text-tertiary, #6b7280);
+  font-size: 0.9375rem; line-height: 1; padding: 6px 8px; border-radius: 8px;
+}
+.schloss:hover { background: var(--surface-2, #1f2430); color: var(--text-primary, #e5e7eb); }
+@media (pointer: coarse) { .schloss { min-width: 44px; min-height: 44px; } }
+
+/* ── Knowledge start page ──────────────────────────────────────────────── */
+/* Blocks that would be empty are not rendered at all — a start screen with
+   empty boxes is worse than none. */
+.start { display: flex; flex-direction: column; gap: 18px; margin-bottom: 18px; }
+.startKopf { margin: 0 0 -6px; font-size: 1rem; display: flex; align-items: center; gap: 6px; }
+.startBlock { display: flex; flex-direction: column; gap: 1px; }
+.startTitel {
+  margin: 0 0 4px;
+  padding: 0 6px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-tertiary, #6b7280);
+}
+.startZeile {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-primary, #e5e7eb);
+  font: inherit;
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+.startZeile:hover { background: var(--surface-2, #1f2430); }
+.startSymbol { flex: 0 0 auto; width: 18px; text-align: center; }
+.startName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (pointer: coarse) { .startZeile { min-height: 44px; } }
+
+/* The offer to tell Clara — calm, but not hidden. */
+.startClara {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border: 1px dashed var(--border-color, #2a3040);
+  border-radius: 12px;
+}
+.startClaraText {
+  flex: 1 1 260px;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-secondary, #9ca3af);
+}
+.startClaraKnopf {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border: 1px solid var(--accent, #3b82f6);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent, #3b82f6) 16%, transparent);
+  color: var(--text-primary, #e5e7eb);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+.startClaraKnopf:hover { background: color-mix(in srgb, var(--accent, #3b82f6) 28%, transparent); }
+@media (pointer: coarse) { .startClaraKnopf { min-height: 44px; } }
+
+/* ── Header diet on phones ─────────────────────────────────────────────── */
+/* Measured: with six stacked blocks (back link, title, actions, description,
+   view chips, filter/sort) on a typical phone the first entry only started
+   at about 42 % of the screen height — the rest was header.
+   So: back link IN the title row, single-line description, filter and sort
+   in the view menu. */
+.zurueckKnopf {
+  flex: 0 0 auto;
+  min-width: 34px;
+  min-height: 34px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-secondary, #9ca3af);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.zurueckKnopf:hover { background: var(--surface-2, #1f2430); color: var(--text-primary, #e5e7eb); }
+@media (pointer: coarse) { .zurueckKnopf { min-width: 44px; min-height: 44px; } }
+/* Secondary content may cost one line, not three. The full text is in the tooltip. */
+.einzeilig {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+/* ── Breadcrumb ────────────────────────────────────────────────────────── */
+/* "← Back" only says there was a before — not where you ARE. The path
+   answers both in the same space. */
+.pfad {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8125rem;
+  overflow: hidden;
+}
+.pfadTeil {
+  border: none; background: none; cursor: pointer;
+  color: var(--text-secondary, #9ca3af);
+  font: inherit; font-size: 0.8125rem;
+  padding: 3px 6px; border-radius: 6px;
+  max-width: 22ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pfadTeil:hover { background: var(--surface-2, #1f2430); color: var(--text-primary, #e5e7eb); }
+.pfadJetzt {
+  color: var(--text-primary, #e5e7eb);
+  padding: 3px 6px;
+  max-width: 24ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pfadTrenner { color: var(--text-tertiary, #6b7280); flex: 0 0 auto; }
+/* On phones its own row — otherwise "Develop with Clara" eats up the path. */
+.pfadEigeneZeile { flex: 1 0 100%; order: -1; }
+
+/* ── Side panel: open a row without leaving the table ──────────────────── */
+/* If clicking a row replaced the WHOLE view, comparing three entries would
+   lose the table, grouping and scroll position every time. Notion calls this
+   "side peek"; here it is the side panel. */
+.mitSeitenfenster { display: flex; gap: 12px; min-height: 0; flex: 1; height: 100%; }
+.mitSeitenfensterLinks { flex: 1 1 0; min-width: 0; min-height: 0; overflow: auto; }
+/* Pass the height through so `.collViewTabelle` (IdeasApp.module.css) can
+   scroll the table itself instead of the whole content area. */
+.sammlungVoll { height: 100%; min-height: 0; }
+.seitenfenster {
+  flex: 0 0 clamp(420px, 44%, 700px);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border-color, #2a3040);
+  padding-left: 12px;
+  overflow: auto;
+}
+.seitenfensterKopf {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-bottom: 6px;
+}
+.seitenfensterKopf > span { flex: 1; font-size: 0.6875rem; color: var(--text-tertiary, #6b7280); }
+
+/* ── Collapsible groups in the table ───────────────────────────────────── */
+/* Deliberately styled like the Planner: heading, counter as a chip,
+   collapsible. Whoever uses both apps should recognize the same gesture and
+   not have to learn two grouping concepts. */
+.gruppenZeile > td {
+  padding: 0;
+  border-bottom: 1px solid var(--border-color, #2a3040);
+}
+.gruppenKopf {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  /* The background sits on the button, not the cell — on mobile the same
+     button appears in the card list without a table around it. */
+  background: var(--surface-2, #1f2430);
+  color: var(--text-secondary, #9ca3af);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.gruppenKopf:hover { color: var(--text-primary, #e5e7eb); }
+/* For a finger, a 30 px row is not a button. */
+@media (pointer: coarse) {
+  .gruppenKopf { min-height: 44px; border-radius: 8px; margin-top: 4px; }
+}
+.gruppenPfeil {
+  flex: 0 0 auto;
+  width: 12px;
+  font-size: 0.6875rem;
+  color: var(--text-tertiary, #6b7280);
+}
+.gruppenName { color: inherit; }
+/* The counter is a calm chip, not a second eye-catcher — it answers
+   "how many", not "look here". */
+.gruppenZahl {
+  margin-left: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--surface-3, rgba(127, 127, 127, 0.16));
+  color: var(--text-tertiary, #6b7280);
+  font-size: 0.6875rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Footer with calculations ──────────────────────────────────────────── */
+.fussWert { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+/* The cells above have, besides the cell padding (10px), another 6px padding
+   in the field itself. Without these 6px the sum sits exactly 6px further
+   right than the numbers it belongs under — immediately visible. */
+.fussWert > * { padding-right: 6px; }
+.fussLabel { font-size: 0.6875rem; color: var(--text-tertiary, #6b7280); }
+.fussZahl { font-size: 0.8125rem; color: var(--text-primary, #e5e7eb); }
+
+/* ── "+ New entry" as the last table row ─────────────────────────────── */
+.neueZeileFeld {
+  width: 100%;
+  /* Left-aligned with the titles above — the cell padding is enough. */
+  padding: 7px 0;
+  border: none;
+  background: none;
+  color: var(--text-primary, #e5e7eb);
+  font: inherit;
+  font-size: 0.8125rem;
+}
+.neueZeile { display: flex; align-items: center; gap: 4px; width: 100%; }
+/* Notion has the split button "New ⌄" for this — the same action, but
+   prefilled. The arrow only appears if there are templates at all. */
+.neueZeileMehr {
+  flex: 0 0 auto;
+  border: none; background: none; cursor: pointer;
+  color: var(--text-tertiary, #6b7280);
+  font-size: 0.875rem; padding: 4px 8px; border-radius: 6px;
+}
+.neueZeileMehr:hover { background: var(--surface-2, #1f2430); color: var(--text-primary, #e5e7eb); }
+.neueZeileFeld::placeholder { color: var(--text-tertiary, #6b7280); }
+.neueZeileFeld:focus { outline: none; }
+
+/* ── Restore hidden columns ──────────────────────────────────────────── */
+.versteckteSpalten {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 6px 0 0;
+  font-size: 0.6875rem;
+  color: var(--text-tertiary, #6b7280);
+}
+.versteckteSpalte {
+  padding: 2px 8px;
+  border: 1px dashed var(--border-color, #2a3040);
+  border-radius: 999px;
+  background: none;
+  color: var(--text-secondary, #9ca3af);
+  font: inherit;
+  font-size: 0.6875rem;
+  cursor: pointer;
+}
+.versteckteSpalte:hover { border-style: solid; color: var(--text-primary, #e5e7eb); }
+
+/* ── Collection fields in the opened entry ─────────────────────────────── */
+.eintragsFelder {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 10px 0 18px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border-color, #2a3040);
+  border-bottom: 1px solid var(--border-color, #2a3040);
+}
+.eintragsHerkunft {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.eintragsSammlung {
+  font-size: 0.6875rem;
+  color: var(--text-tertiary, #6b7280);
+}
+/* Two columns: name left, value right — like Notion, not a form with a
+   border around every field. */
+.eintragsFeld {
+  display: grid;
+  grid-template-columns: minmax(120px, 190px) 1fr;
+  gap: 10px;
+  align-items: center;
+  min-height: 30px;
+}
+.eintragsName {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8125rem;
+  color: var(--text-secondary, #9ca3af);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.eintragsMarke {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 15px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.6875rem;
+  color: var(--text-tertiary, #6b7280);
+}
+.eintragsWert { min-width: 0; font-size: 0.8125rem; }
+
+@media (max-width: 700px) {
+  .eintragsFeld { grid-template-columns: 1fr; gap: 2px; min-height: 0; padding: 4px 0; }
+}
+
+/* ── Phone: start page in the new design language ──────────────────────── */
+@media (max-width: 700px) {
+  .startKopf { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; margin: 6px 0 4px; }
+  .startClara { border: none; border-radius: 18px; background: var(--surface-2, #1f2430); padding: 14px 16px; }
+  .startClaraText { font-size: 0.875rem; }
+}

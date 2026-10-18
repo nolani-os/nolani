@@ -1,0 +1,24 @@
+/* Service badge on the round image. Only tokens from ../tokens.css. */
+
+.plakette {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  /* The ring separates the badge from the image below, however colourful it is. */
+  border: 2px solid var(--bg-primary);
+  background: var(--bg-tertiary);
+  color: var(--text-primary, #cdd6f4);
+}
+
+/* The colours are deliberately muted: the badge should distinguish, not
+   recreate the third-party logo. */
+.claraos { color: var(--accent-color); }
+.signal  { color: #89b4fa; }
+.whatsapp { color: var(--success); }
+.telegram { color: #74c7ec; }

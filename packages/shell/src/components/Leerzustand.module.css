@@ -1,0 +1,55 @@
+/* Empty state — the shared building block.
+ *
+ * Why it is needed: Knowledge, Strategy and Planner have many empty states,
+ * and a grey sentence in the middle ("Still empty.", "No open tasks.") says
+ * that nothing is there; it does not say what you can do. Exactly here stands
+ * a person using the app for the first time.
+ *
+ * Colors only via tokens with a fallback value — `tokens.css` defines exactly
+ * these names (invented tokens are the most common mistake in this project).
+ */
+.leer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 34px 20px;
+  text-align: center;
+  color: var(--text-secondary, #9ca3af);
+}
+.symbol {
+  font-size: 1.75rem;
+  line-height: 1;
+  opacity: 0.6;
+}
+.titel {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary, #e5e7eb);
+}
+.hinweis {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  max-width: 46ch;
+  color: var(--text-secondary, #9ca3af);
+}
+.knopf {
+  margin-top: 4px;
+  padding: 8px 16px;
+  border: 1px solid var(--accent, #3b82f6);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent, #3b82f6) 16%, transparent);
+  color: var(--text-primary, #e5e7eb);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+.knopf:hover { background: color-mix(in srgb, var(--accent, #3b82f6) 28%, transparent); }
+.zweitKnopf {
+  border-color: var(--border-color, #2a3040);
+  background: none;
+  color: var(--text-secondary, #9ca3af);
+}
+.zweitKnopf:hover { background: var(--surface-2, #1f2430); color: var(--text-primary, #e5e7eb); }
+.knopfReihe { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+@media (pointer: coarse) { .knopf { min-height: 44px; } }

@@ -1,0 +1,47 @@
+# ClaraOS Frontend – Multi-stage build: pnpm → vite → nginx
+
+# Stage 1: Build
+FROM node:26-alpine AS build
+
+RUN npm install -g pnpm@9
+
+WORKDIR /app
+
+# Copy workspace config + all package.json files first (cache layer)
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml tsconfig.json ./
+COPY packages/core/package.json packages/core/tsconfig.json packages/core/
+COPY packages/shell/package.json packages/shell/tsconfig.json packages/shell/vite.config.ts packages/shell/
+COPY packages/skins/package.json packages/skins/tsconfig.json packages/skins/
+
+RUN pnpm install --frozen-lockfile
+
+# Copy source files
+COPY packages/core/src/ packages/core/src/
+COPY packages/skins/src/ packages/skins/src/
+COPY packages/shell/src/ packages/shell/src/
+COPY packages/shell/index.html packages/shell/
+# `public/` content is copied verbatim to dist root by Vite (PWA icons,
+# manifest, sw.js, static media). Without this COPY the
+# folder isn't in the build context and Vite silently produces a dist
+# without those static assets.
+COPY packages/shell/public/ packages/shell/public/
+
+# Gate the build on the mobile logic smoke test: if the embedding-strategy
+# routing or the home-grid/dock transforms regress, `pnpm test` exits non-zero,
+# `docker build` fails, no image is produced and the deploy cannot proceed.
+COPY packages/shell/test/ packages/shell/test/
+RUN pnpm test
+
+# Warning: Node picks its heap limit based on the machine. On a large host the
+# default is enough, but on a 16 GB cell `vite build` aborted with
+# "JavaScript heap out of memory". A fixed limit = the same build everywhere.
+ENV NODE_OPTIONS=--max-old-space-size=6144
+RUN pnpm build
+
+# Stage 2: Serve with nginx
+FROM nginx:alpine
+
+COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/packages/shell/dist /usr/share/nginx/html
+
+EXPOSE 80

@@ -1,0 +1,151 @@
+# CELL ONLY — endpoints are the cell's internal names; never copy into the home tools directory.
+# Mastodon of the shared social cell. Identity: always the CALLER's own token (`per_user`),
+# created by the cell on first use (services/zellen_zugaenge.py -> browser ctl /zugang):
+# read + post only, never account settings or follows.
+# Mastodon answers internally only for its own domain: Host + X-Forwarded-Proto headers
+# (`${SOCIAL_DOMAIN}` is filled by the tool gateway).
+# Reading is free (also in routines, services/routinen.LESEN). Anything public —
+# posting, favouriting — is `freigabe: true`: it waits for the user's button.
+tools:
+  - name: get_timeline
+    description: |
+      The user's Mastodon home timeline (posts of accounts they follow), newest first.
+      Each status: id, created_at, account.acct, content (HTML), url.
+    endpoint: "http://mastodon-web:3000/api/v1/timelines/home"
+    method: GET
+    auth: api_key
+    per_user: true
+    credential_app_id: mastodon
+    credential_key: access_token
+    auth_scheme: bearer
+    headers: { Host: "${SOCIAL_DOMAIN}", X-Forwarded-Proto: https }
+    schema:
+      type: object
+      properties:
+        limit: { type: integer, default: 10, maximum: 40 }
+
+  - name: get_local_timeline
+    description: "Public posts of this Mastodon instance (all users of the social cell), newest first."
+    endpoint: "http://mastodon-web:3000/api/v1/timelines/public"
+    method: GET
+    auth: api_key
+    per_user: true
+    credential_app_id: mastodon
+    credential_key: access_token
+    auth_scheme: bearer
+    headers: { Host: "${SOCIAL_DOMAIN}", X-Forwarded-Proto: https }
+    schema:
+      type: object
+      properties:
+        local: { type: boolean, default: true }
+        limit: { type: integer, default: 10, maximum: 40 }
+
+  - name: get_notifications
+    description: "The user's Mastodon notifications (mentions, favourites, boosts, follows), newest first."
+    endpoint: "http://mastodon-web:3000/api/v1/notifications"
+    method: GET
+    auth: api_key
+    per_user: true
+    credential_app_id: mastodon
+    credential_key: access_token
+    auth_scheme: bearer
+    headers: { Host: "${SOCIAL_DOMAIN}", X-Forwarded-Proto: https }
+    schema:
+      type: object
+      properties:
+        limit: { type: integer, default: 10, maximum: 40 }
+
+  - name: my_account
+    description: "The user's own Mastodon account (id, acct, display_name, followers/following/statuses counts). Use its id for account_statuses."
+    endpoint: "http://mastodon-web:3000/api/v1/accounts/verify_credentials"
+    method: GET
+    auth: api_key
+    per_user: true
+    credential_app_id: mastodon
+    credential_key: access_token
+    auth_scheme: bearer
+    headers: { Host: "${SOCIAL_DOMAIN}", X-Forwarded-Proto: https }
+    schema:
+      type: object
+      properties: {}
+
+  - name: account_statuses
+    description: |
+      Posts of one account (the user's own: id from my_account), newest first. Includes
+      the user's private (followers-only) posts when it is their own account.
+    endpoint: "http://mastodon-web:3000/api/v1/accounts/{id}/statuses"
+    method: GET
+    auth: api_key
+    per_user: true
+    credential_app_id: mastodon
+    credential_key: access_token
+    auth_scheme: bearer
+    headers: { Host: "${SOCIAL_DOMAIN}", X-Forwarded-Proto: https }
+    schema:
+      type: object
+      properties:
+        id: { type: string }
+        limit: { type: integer, default: 10, maximum: 40 }
+        exclude_replies: { type: boolean, default: false }
+      required: [id]
+
+  - name: search
+    description: "Search Mastodon for accounts, hashtags and posts (posts: only those the instance knows)."
+    endpoint: "http://mastodon-web:3000/api/v2/search"
+    method: GET
+    auth: api_key
+    per_user: true
+    credential_app_id: mastodon
+    credential_key: access_token
+    auth_scheme: bearer
+    headers: { Host: "${SOCIAL_DOMAIN}", X-Forwarded-Proto: https }
+    schema:
+      type: object
+      properties:
+        q: { type: string }
+        type: { type: string, enum: [accounts, hashtags, statuses] }
+        limit: { type: integer, default: 10, maximum: 40 }
+      required: [q]
+
+  - name: post_status
+    description: |
+      Post on Mastodon as the user (or reply with in_reply_to_id). NOT executed directly:
+      it waits for the user's approval in the app "Routinen" — tell the user that.
+      visibility: public | unlisted | private (followers only) | direct. Default: private,
+      unless the user asked for public.
+    endpoint: "http://mastodon-web:3000/api/v1/statuses"
+    method: POST
+    freigabe: true
+    auth: api_key
+    per_user: true
+    credential_app_id: mastodon
+    credential_key: access_token
+    auth_scheme: bearer
+    headers: { Host: "${SOCIAL_DOMAIN}", X-Forwarded-Proto: https }
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        status: { type: string, minLength: 1, maxLength: 500 }
+        visibility: { type: string, enum: [public, unlisted, private, direct], default: private }
+        in_reply_to_id: { type: string }
+        spoiler_text: { type: string, description: "content warning" }
+      required: [status]
+
+  - name: favourite_status
+    description: "Favourite (like) a post as the user. Waits for the user's approval in \"Routinen\", like post_status."
+    endpoint: "http://mastodon-web:3000/api/v1/statuses/{id}/favourite"
+    method: POST
+    freigabe: true
+    auth: api_key
+    per_user: true
+    credential_app_id: mastodon
+    credential_key: access_token
+    auth_scheme: bearer
+    headers: { Host: "${SOCIAL_DOMAIN}", X-Forwarded-Proto: https }
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string }
+      required: [id]

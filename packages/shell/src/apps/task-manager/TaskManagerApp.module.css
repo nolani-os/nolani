@@ -1,0 +1,227 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-window-solid, var(--bg-window));
+  color: var(--text-primary);
+  font-family: var(--font-system);
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 8px 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-window-header);
+}
+
+.tab {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  border-radius: 6px 6px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 2px solid transparent;
+}
+
+.tab:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+.tabActive {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent);
+}
+
+.count {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.625rem;
+}
+
+/* The wrapper scrolls — the table itself must NOT be a flex child,
+   otherwise the browser spreads the row heights over the full window height. */
+.tableWrap {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.table thead {
+  position: sticky;
+  top: 0;
+  background: var(--bg-window-header, var(--bg-window));
+  z-index: 1;
+}
+
+.table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.table tbody tr:hover {
+  background: var(--bg-hover);
+}
+
+.iconCell { width: 28px; padding-right: 0; }
+.titleCell { font-weight: 500; }
+.subCell { color: var(--text-secondary); font-size: 0.6875rem; }
+.actionCell { white-space: nowrap; text-align: right; }
+
+.empty {
+  text-align: center;
+  padding: 32px 12px;
+  color: var(--text-disabled);
+}
+
+.actionBtn {
+  margin-left: 6px;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.6875rem;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.actionBtn:hover { background: rgba(255, 255, 255, 0.10); }
+
+.danger {
+  border-color: rgba(196, 43, 28, 0.50);
+}
+
+.danger:hover {
+  background: #c42b1c;
+  color: #fff;
+  border-color: #c42b1c;
+}
+
+/* ── Container/System tabs ── */
+.containersPane {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.hostBar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 8px 10px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+}
+
+.hostChip {
+  padding: 4px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.hostChip:hover:not(:disabled) { border-color: var(--text-primary); color: var(--text-primary); }
+.hostChipActive { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.hostChipDown { opacity: 0.45; cursor: not-allowed; }
+
+.dotUp { color: #16a34a; font-size: 0.625rem; }
+.dotDown { color: #dc2626; font-size: 0.625rem; }
+
+.filterInput {
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  width: 160px;
+}
+
+.hostHint { padding: 6px 12px; margin: 0; font-size: 0.6875rem; color: var(--text-disabled); }
+.errorLine { padding: 6px 12px; margin: 0; font-size: 0.75rem; color: var(--status-danger, #f87171); }
+.okLine { padding: 6px 12px; margin: 0; font-size: 0.75rem; color: #34d399; }
+.footerLine {
+  padding: 6px 12px;
+  margin: 0;
+  font-size: 0.6875rem;
+  color: var(--text-disabled);
+  border-top: 1px solid var(--border);
+}
+
+.protectedBadge {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.5625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  background: rgba(217, 152, 32, 0.18);
+  color: #d99820;
+}
+
+.barRow { display: flex; align-items: center; gap: 8px; min-width: 110px; }
+.barTrack {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.barFill { height: 100%; border-radius: 3px; }
+.barLabel { font-size: 0.625rem; color: var(--text-secondary); min-width: 30px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ── Narrow windows: drop columns instead of scrolling sideways ──────────
+ * At 412 px the table was 432 px wide, so the "Beenden" (quit) button was off
+ * screen. Technically it scrolled — in practice nobody finds a button they
+ * cannot see.
+ *
+ * Dropped are the columns that add nothing on a phone:
+ *   Window table: "App" almost always repeats the name next to it.
+ *   Widget table: the position and size columns are desktop numbers.
+ * The action column stays ALWAYS visible — it is the reason anyone opens
+ * the table at all.
+ */
+@media (max-width: 640px) {
+  .tableFenster th:nth-child(3),
+  .tableFenster td:nth-child(3) { display: none; }
+
+  .tableWidgets th:nth-child(3),
+  .tableWidgets td:nth-child(3),
+  .tableWidgets th:nth-child(4),
+  .tableWidgets td:nth-child(4) { display: none; }
+
+  /* Names may wrap instead of widening the table. */
+  .table td { white-space: normal; word-break: break-word; }
+}

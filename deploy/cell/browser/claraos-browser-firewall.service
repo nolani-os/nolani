@@ -1,0 +1,12 @@
+[Unit]
+Description=ClaraOS cell: egress fence for personal browsers
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/claraos/browser/firewall.sh
+
+[Install]
+WantedBy=multi-user.target

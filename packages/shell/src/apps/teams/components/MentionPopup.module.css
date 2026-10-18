@@ -1,0 +1,40 @@
+.popup {
+  position: absolute;
+  bottom: 100%;
+  left: 16px;
+  right: 16px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--bg-secondary, #181825);
+  border: 1px solid var(--border-color, #313244);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  z-index: 20;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary, #cdd6f4);
+  text-align: left;
+  cursor: pointer;
+}
+
+.item.selected, .item:hover {
+  background: var(--accent-bg, rgba(137, 180, 250, 0.15));
+}
+
+.name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.id {
+  font-size: 0.6875rem;
+  color: var(--text-secondary, #a6adc8);
+}

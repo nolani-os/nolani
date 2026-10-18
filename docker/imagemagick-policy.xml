@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policymap [
+<!ELEMENT policymap (policy)*>
+<!ATTLIST policymap xmlns CDATA #FIXED ''>
+<!ELEMENT policy EMPTY>
+<!ATTLIST policy xmlns CDATA #FIXED '' domain NOT_ATTR pattern CDATA #IMPLIED
+  rights NOT_ATTR name CDATA #IMPLIED stealth NOT_ATTR value CDATA #IMPLIED>
+]>
+<!--
+  ImageMagick policy for claraos-api.
+
+  Warning: why this exists and the default is not enough: ImageMagick processes
+  files that Clara fetches from Nextcloud — and Clara chooses the path. The
+  dangerous parts of ImageMagick are not the image formats but the languages:
+  MVG/MSL describe drawing commands, `label:`/`text:` read files, `url:`/`https:`
+  fetch from the network, `ephemeral:` deletes. That is the family around
+  ImageTragick (CVE-2016-3714), and it gets rediscovered every few years.
+
+  Important: we need NONE of it. `services/grafik.py` takes raster images in
+  and returns PNG; SVG goes through librsvg, not ImageMagick.
+
+  Deliberately NOT built as "deny all, allow some": an allow-list later breaks
+  silently on a format nobody thought of. Listed here are the paths we do not
+  want — visible and justified.
+-->
+<policymap>
+  <!-- Languages and network/file access: none of this is needed here. -->
+  <policy domain="coder" rights="none" pattern="MVG" />
+  <policy domain="coder" rights="none" pattern="MSL" />
+  <policy domain="coder" rights="none" pattern="MSVG" />
+  <policy domain="coder" rights="none" pattern="SVG" />
+  <policy domain="coder" rights="none" pattern="URL" />
+  <policy domain="coder" rights="none" pattern="HTTPS" />
+  <policy domain="coder" rights="none" pattern="HTTP" />
+  <policy domain="coder" rights="none" pattern="FTP" />
+  <policy domain="coder" rights="none" pattern="EPHEMERAL" />
+  <policy domain="coder" rights="none" pattern="SHOW" />
+  <policy domain="coder" rights="none" pattern="WIN" />
+  <policy domain="coder" rights="none" pattern="PLT" />
+  <policy domain="coder" rights="none" pattern="XPS" />
+  <!-- Ghostscript delegates: PDF/PS/EPS go through poppler or a dedicated
+       vector service here, not through ImageMagick. -->
+  <policy domain="coder" rights="none" pattern="PS" />
+  <policy domain="coder" rights="none" pattern="PS2" />
+  <policy domain="coder" rights="none" pattern="PS3" />
+  <policy domain="coder" rights="none" pattern="EPS" />
+  <policy domain="coder" rights="none" pattern="PDF" />
+  <policy domain="delegate" rights="none" pattern="gs" />
+  <!-- `@file` as a text source: reads arbitrary files into an image. -->
+  <policy domain="path" rights="none" pattern="@*" />
+
+  <!-- Limits. A runaway image must not take the API container down with it;
+       nothing this service does needs more. -->
+  <policy domain="resource" name="memory" value="512MiB" />
+  <policy domain="resource" name="map" value="1GiB" />
+  <policy domain="resource" name="area" value="256MP" />
+  <policy domain="resource" name="disk" value="1GiB" />
+  <policy domain="resource" name="width" value="32KP" />
+  <policy domain="resource" name="height" value="32KP" />
+  <policy domain="resource" name="time" value="60" />
+</policymap>

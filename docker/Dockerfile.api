@@ -1,0 +1,70 @@
+# ClaraOS API – FastAPI backend
+# The container runs as the non-root user `claraos` (uid 1001).
+FROM python:3.14-slim
+
+WORKDIR /app
+
+# bw CLI for Vaultwarden Org-Vault operations (used by routers/vault.py)
+#
+# poppler-utils: `pdftoppm` rasterises PDF pages to JPEG.
+# Needed because many IPP printers **do not understand PDF** —
+# their document-format-supported may list only raster formats (PWG-Raster/URF/
+# JPEG/TIFF/PCL), and a PDF sent as octet-stream is then aborted.
+# ~15 MB, no Python dependency.
+#
+# libtiff-tools (`tiffcp`): combines the single pages into ONE multi-page TIFF.
+# Needed for **duplex printing** on printers that accept only one document per
+# job: duplex across separate jobs does not exist — two jobs are two sheets.
+# Graphics (services/grafik.py): three lightweight command-line tools (~68 MB)
+# instead of a full desktop image editor — they cover almost everything Clara
+# needs for editing, converting and tracing images.
+#   imagemagick   — levels, colour, text on images, deskew, background removal
+#   librsvg2-bin  — `rsvg-convert`: SVG → PNG/PDF. The only REAL gap found:
+#                   Clara could write SVG but could not turn it into anything
+#                   printable or sendable.
+#   potrace       — trace bitmap → SVG
+RUN apt-get update \
+#   fonts-dejavu-core — REQUIRED, not a nicety: without a font in the image
+#                   `magick -annotate` fails with "unable to read font `'",
+#                   and only at RUNTIME on the first text-on-image call.
+    && apt-get install -y --no-install-recommends ca-certificates curl unzip openssh-client tmux poppler-utils libtiff-tools imagemagick librsvg2-bin potrace fonts-dejavu-core \
+    && curl -fsSL -o /tmp/bw.zip 'https://github.com/bitwarden/clients/releases/download/cli-v2024.10.0/bw-linux-2024.10.0.zip' \
+    && unzip /tmp/bw.zip -d /usr/local/bin/ \
+    && chmod +x /usr/local/bin/bw \
+    && rm /tmp/bw.zip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Lock ImageMagick down: disable the coders and network paths we do not need
+# and set resource limits. Rationale per line in the file.
+# Important: copy AFTER the apt call — the package ships its own policy.
+COPY docker/imagemagick-policy.xml /etc/ImageMagick-7/policy.xml
+
+# Non-root user
+RUN groupadd -g 1001 claraos \
+    && useradd -u 1001 -g claraos -d /app -s /bin/bash -m claraos
+
+# requirements.heim.txt (optional): extra packages for optional installation-specific modules.
+# Installed in the SAME pip call, so the resolution is the same as with one file.
+COPY packages/api/requirements*.txt ./
+RUN pip install --no-cache-dir -r requirements.txt \
+        $( [ -f requirements.heim.txt ] && echo "-r requirements.heim.txt" )
+
+COPY --chown=claraos:claraos packages/api/ .
+
+# Persistent bw data dir for cached session, owned by claraos
+RUN mkdir -p /app/.bw_data && chown -R claraos:claraos /app && chmod 700 /app/.bw_data
+
+ENV DATABASE_URL="postgresql://clara:clara@clara-users-postgres:5432/clara_users"
+ENV WORKSPACE_ROOT="/workspace"
+
+USER claraos
+
+EXPOSE 8090
+
+# --ws wsproto: the websockets 16.x parser silently aborts the handshake when
+# X-Authentik-Name contains non-ASCII characters (502/EOF for users with umlauts in their name)
+# Shutdown: cut open connections after 3 s — WebSockets and SSE (action bus,
+# ntfy) never end on their own and would hold every restart for the whole grace
+# period. Chat answers keep running server-side and are drained in the lifespan
+# shutdown (CLARAOS_DRAIN_S), then stored in the chat.
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8090", "--ws", "wsproto", "--timeout-graceful-shutdown", "3"]

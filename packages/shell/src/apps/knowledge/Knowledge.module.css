@@ -1,0 +1,21 @@
+/* Knowledge Suite — ONLY search-view specifics. Everything else comes from the
+ * shared module apps/ideas/IdeasApp.module.css (deliberate: one look for both
+ * suites, one shared chunk in the build). */
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.searchBar input {
+  flex: 1;
+  font-size: 0.9375rem;
+}
+
+.searchState {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #9ca3af);
+  white-space: nowrap;
+}

@@ -1,0 +1,1069 @@
+.shell {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  /* wallpaper on the SHELL (not the home container) so it runs behind the transparent
+     status bar and bottom nav — both bars melt into it */
+  background: url("./wallpaper-fluid.jpg") center / cover no-repeat, #0a2f8f;
+  /* clip instead of hidden: prevents Chrome from programmatically scrolling the
+     container when an input is focused (e.g. the xterm helper textarea), which
+     would push the bottom UI permanently out of view */
+  overflow: hidden;
+  overflow: clip;
+}
+
+/* Status Bar */
+/* Animated skin scene under status bar and content */
+.skinSceneBg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.statusBar {
+  position: relative;
+  z-index: 1;
+  height: calc(28px + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) 16px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: transparent;  /* wallpaper (on .shell) shows through; while an
+                               app is open, inline style sets the app's colour */
+  transition: background 0.25s;
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.statusTime {
+  font-size: 0.75rem;
+  color: var(--bar-fg, #fff);  /* follows the open app's bar colour */
+  font-weight: 600;
+}
+
+.statusRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--bar-fg, #fff);
+}
+
+.statusBadge {
+  background: var(--accent);
+  color: #000;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 99px;
+}
+
+/* Content */
+.content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  overflow: clip;
+}
+
+/* Home Screen */
+.home {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* top padding only clears the status bar — more pushed the grid down and
+     the overflow-hidden viewport clipped half of the bottom icon row */
+  padding: 6px 24px calc(16px + env(safe-area-inset-bottom));
+  /* wallpaper lives on .shell (full screen incl. behind the bars) */
+  background: transparent;
+}
+
+.clockBig {
+  font-size: 4.5rem;
+  font-weight: 200;
+  color: #fff;
+  letter-spacing: -2px;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+  line-height: 1;
+}
+
+.clockDate {
+  margin-top: 8px;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: capitalize;
+}
+
+.workspaceLabel {
+  margin-top: 16px;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.9);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.workspaceIcon { font-size: 0.875rem; }
+
+.pageDots {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.pageDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s, transform 0.2s;
+}
+.pageDotActive {
+  background: rgba(255, 255, 255, 0.95);
+  transform: scale(1.2);
+}
+
+.homeSpacer { flex: 1; }
+
+/* Home grid (icons placed via drag & drop) — pages slide horizontally */
+.gridViewport {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  margin-top: 18px;  /* nudge the grid down; the guaranteed 44px gap above the
+                        page dots is height-based and unaffected */
+  overflow: hidden;
+  touch-action: none;
+  container-type: size;  /* grid height is capped in cq units below */
+}
+.gridPage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;  /* grid sits at the TOP; leftover space collects
+                               below it as a gap above the page dots (stretch
+                               made 1fr rows eat freed space instead) */
+  justify-content: center;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  /* Explicit 5 equal rows: icons AND multi-cell widgets are explicitly placed
+     grid items, so the track sizing must not depend on auto-placement.
+     minmax(0, 1fr): rows may shrink below their content's min-height — plain
+     1fr tracks grew past the viewport and the bottom row got clipped. */
+  grid-template-rows: repeat(5, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 4px;
+  width: 100%;
+  max-width: 420px;
+  /* Rows ≈ 1.16x the column width (typical Android launcher: row/col ≈ 1.11) instead of
+     stretching to the full viewport — a 4x3 widget cell gets aspect ~1.12
+     like the reference. The -44px term GUARANTEES a visible gap between the
+     bottom row and the page dots on every device (the width cap alone was
+     taller than some viewports → grid filled everything again). */
+  height: min(calc(100cqh - 44px), 150cqw);
+}
+.gridCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;   /* let minmax(0,1fr) rows actually shrink */
+  min-width: 0;
+  border-radius: 16px;
+  transition: background 0.12s, box-shadow 0.12s;
+}
+.gridCellTarget {
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);
+}
+
+/* Empty cell = long-press target for the homescreen menu (widgets). */
+.emptyCell {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+
+/* --- Home-screen widgets: near-transparent, wallpaper shines through (like
+   the reference design — elements sit on the wallpaper, only a faint glass veil for
+   legibility + a thin rim). --- */
+.mWidget {
+  position: relative;
+  z-index: 2;
+  border-radius: 26px;
+  /* Clara design language: deep navy glass (ClaraOverlay palette #131a2e →
+     #070a13) with a soft ice-blue rim (#93c5fd family) */
+  background: linear-gradient(165deg, rgba(19, 26, 46, 0.6) 0%, rgba(10, 14, 26, 0.68) 55%, rgba(7, 10, 19, 0.76) 100%);
+  backdrop-filter: blur(10px) saturate(1.15);
+  -webkit-backdrop-filter: blur(10px) saturate(1.15);
+  border: 1px solid rgba(147, 197, 253, 0.16);
+  box-shadow:
+    0 8px 26px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(180, 205, 253, 0.16);
+  overflow: hidden;
+  color: #fff;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+/* faint glass sheen across the top edge */
+.mWidget::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 42%;
+  background: linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+  pointer-events: none;
+  z-index: 0;
+}
+/* Bare frame: the flip-clock widget draws its OWN glass panel (inset from the
+   top) so the clock cards can protrude above the panel edge (One-UI look). */
+.mWidgetBare {
+  background: none;
+  border: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  overflow: visible;
+}
+.mWidgetBare::before { display: none; }
+
+/* Content is INTERACTIVE (scroll, buttons, check-off). The frame owns only
+   long-press → drag; a short tap/scroll passes through to the content. */
+.mWidgetContent {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+}
+
+/* Multi-cell drop preview while dragging a widget */
+.widgetDropPreview {
+  z-index: 3;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+}
+.widgetDropInvalid {
+  box-shadow: inset 0 0 0 2px rgba(255, 107, 107, 0.8);
+  background: rgba(255, 80, 80, 0.10);
+}
+
+.homeIcon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 6px 2px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 14px;
+  color: #fff;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+.homeIcon:active { background: rgba(255, 255, 255, 0.1); }
+.homeIconCompact { padding: 4px 2px; }
+
+/* Short displays: the ICON gives way, not the layout.
+   Also borrowed from Android — Launcher3 shrinks icons when space is short
+   ("when used height exceeds available height, scale down icon sizes and set
+   drawable padding to 0") instead of letting content overflow.
+   Here the tile content was a rigid 6+58+4+13+6 = 87px; as soon as the row got
+   shorter than that, the tile pushed out at the bottom. Measured on 360x740:
+   **0px** gap to the widget below, the name stuck to it.
+   Only in the grid cell, not in the dock. */
+.gridCell .homeIcon {
+  height: 100%;
+  min-height: 0;
+  justify-content: center;
+}
+.gridCell .homeIcon .iconSquircle {
+  /* shrinkable from 58px downward; aspect-ratio keeps the circle round */
+  flex: 0 1 58px;
+  height: 58px;
+  width: auto;
+  aspect-ratio: 1;
+  min-height: 0;
+}
+/* Warning: the name must NEVER shrink along — `flex: 0 0 auto` in `.appName`
+   below ensures that. In a squeezed flex column every child gives way
+   otherwise, and the fixed label height + overflow:hidden cuts off the
+   descenders: in visual testing "Einstellungen" and "Task-Manager" were
+   clipped at the bottom. The measurement alone would NOT have shown this —
+   the numbers looked fine. */
+
+.drawerHint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 16px;
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+}
+.drawerHintBar {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.6);
+}
+.drawerHintText {
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Android-style dock: a fixed row of bare icons above the nav bar. */
+.dock {
+  /* plateless favourites row — SAME geometry as the home grid above (4 equal
+     columns, icons float directly on the wallpaper): Clara | 3 app slots */
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: start;
+  gap: 4px;
+  width: 100%;
+  max-width: 420px;
+  padding: 2px 0 4px;
+  background: none;
+  border: none;
+  touch-action: none;
+}
+
+/* Left/right app groups flanking the central Clara button */
+.dockSide {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 6px;
+  min-width: 0;
+}
+.dockEmpty {
+  flex: 1;
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  padding: 8px;
+}
+.dockSlot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 66px;   /* icon only — dock icons carry no captions */
+  border-radius: 16px;
+  transition: background 0.12s, box-shadow 0.12s;
+}
+.dockSlotTarget {
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);
+}
+
+.dockTile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.dockTile:active { background: rgba(255, 255, 255, 0.1); }
+
+/* Drag ghost following the finger */
+.dragGhost {
+  position: fixed;
+  z-index: 950;
+  transform: translate(-50%, -50%) scale(1.15);
+  pointer-events: none;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.5));
+  opacity: 0.92;
+}
+/* Lightweight widget drag ghost (placeholder, not the live component) */
+.widgetGhost {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-radius: 18px;
+  background: rgba(20, 30, 60, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  transform: translate(-50%, -50%) scale(0.95);
+}
+.widgetGhostEmoji { font-size: 1.375rem; }
+.widgetGhostName { font-size: 0.8125rem; font-weight: 600; white-space: nowrap; }
+
+/* Remove drop-zone shown while dragging a placed icon */
+.removeZone {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 32px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 940;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(40, 12, 12, 0.92);
+  border: 1px solid rgba(255, 107, 107, 0.4);
+  color: #ff9b9b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.removeZoneActive {
+  background: rgba(120, 20, 20, 0.95);
+  border-color: #ff6b6b;
+  color: #fff;
+  transform: translateX(-50%) scale(1.06);
+}
+
+.drawerFooterHint {
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.45);
+  padding: 8px 0 2px;
+}
+
+
+/* App Drawer (slide-up overlay) */
+.drawer {
+  /* FIXED full-screen: runs from the very bottom up BEHIND the transparent
+     status bar and bottom nav — both bars pick up the drawer's colour while
+     it is open. Padding keeps the content clear of the bars. */
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: calc(30px + env(safe-area-inset-top)) 16px calc(56px + env(safe-area-inset-bottom));
+  background: rgba(10, 15, 30, 0.92);
+  backdrop-filter: blur(24px);
+  overflow: hidden;
+}
+.drawerHandle {
+  width: 48px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.4);
+  margin: 8px auto 12px;
+}
+.drawerHeaderRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.drawerSearch {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 0.875rem;
+  outline: none;
+}
+.installBtn {
+  flex-shrink: 0;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: none;
+  background: #586cff;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.drawerSearch::placeholder { color: rgba(255, 255, 255, 0.5); }
+/* Warning: `grid-auto-rows: max-content` is required, not a matter of taste.
+   With `auto` this grid shrinks its rows as soon as the content no longer fits
+   the visible height — instead of scrolling. Measured with a full app list: rows of
+   **38 px** for 99 px of content, i.e. overlapping icons and app names that
+   disappear behind the next row.
+   Important: the bug was LATENT. With 13 results the same rule measures 99 px
+   and looks perfectly right. It only appears once enough apps are enabled —
+   hence "it wasn't like this before". Whoever changes something here must test
+   with the FULL app list, not a filtered one.
+   `align-content: start` additionally prevents rows from being spread apart
+   when there are few results. */
+.drawerGrid {
+  display: grid;
+  /* Warning: `minmax(0, 1fr)` is required, not a matter of taste — the same trap
+     documented above for the ROWS, only for the COLUMNS.
+     `1fr` means `minmax(auto, 1fr)`, and that `auto` is the *min-content*
+     width: the longest unbreakable word ("Benutzerverwaltung") forces the track
+     to grow wider than there is room. Measured: content **404px in 380px** =>
+     the fourth column ran off the right edge, icons and names clipped. */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: max-content;
+  align-content: start;
+  gap: 14px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;  /* no pull-to-refresh/scroll chaining — the
+                                    at-top down-swipe belongs to close-drawer */
+  padding-bottom: 16px;
+}
+.drawerTile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  /* only 2px at the sides: every pixel goes straight to the text width and thus
+     to the number of names that fit without an ellipsis. The hit area depends
+     on the cell height, not on this padding. */
+  padding: 10px 2px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  color: #fff;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.drawerTile:active { background: rgba(255, 255, 255, 0.1); }
+.drawerTilePinned { /* marker class */ }
+.pinBadge {
+  position: absolute;
+  top: 2px;
+  right: 6px;
+  font-size: 0.625rem;
+  color: #ffd54a;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+}
+
+.appTile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+}
+
+.appTile:active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Dark glossy 3D glass sphere (matches the reference dock design): a dark navy
+   domed bead — lighter in the upper centre, deep at the rim — with a strong
+   bright specular reflection across the top and a dark inner shade at the
+   bottom for curvature. The colourful brand logo sits centred on the dome. */
+.iconSquircle {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  overflow: hidden;
+  background:
+    radial-gradient(62% 28% at 50% 95%, rgba(130, 170, 235, 0.5), transparent 72%),
+    radial-gradient(125% 95% at 50% 16%, #1c2a48 0%, #0b1428 40%, #05091a 74%, #02040e 100%);
+  border: 1px solid rgba(150, 185, 240, 0.55);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.55),
+    0 9px 20px rgba(0, 0, 0, 0.6),
+    inset 0 2px 4px rgba(180, 210, 255, 0.6),
+    inset 0 -7px 13px rgba(0, 0, 0, 0.7),
+    inset 0 0 0 1px rgba(120, 160, 220, 0.22);
+  flex-shrink: 0;
+}
+/* bright glossy top reflection — the domed-glass specular highlight */
+.iconSquircle::after {
+  content: "";
+  position: absolute;
+  left: 15%;
+  right: 15%;
+  top: 6%;
+  height: 34%;
+  border-radius: 50% 50% 48% 48% / 70% 70% 30% 30%;
+  background: linear-gradient(rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.12) 60%, transparent);
+  pointer-events: none;
+  z-index: 3;
+}
+.homeIconCompact .iconSquircle {
+  width: 50px;
+  height: 50px;
+}
+.homeIconCompact .appIcon { font-size: 1.6875rem; }
+
+/* Every mobile icon (brand logo OR emoji) sits on a bright SQUIRCLE tile
+   (rounded square, ~62% of the bead) centred in the dark glossy sphere — the
+   dock look of the reference design. .appLogo is the AppIcon wrapper (mobile only). */
+.appLogo {
+  position: relative;
+  z-index: 2;
+  width: 62%;
+  height: 62%;
+  border-radius: 30%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, #ffffff 0%, #eef2f9 55%, #d9e1ee 100%);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.95);
+}
+.appLogo :global(svg) {
+  width: 78%;
+  height: 78%;
+  max-width: 78%;
+  max-height: 78%;
+  object-fit: contain;
+  display: block;
+}
+/* Plateless (mono): white glyph drawn directly on the dark bead, no tile. */
+.appLogo:global([data-mono="1"]) {
+  width: 56%;
+  height: 56%;
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+.appLogo:global([data-mono="1"]) :global(svg) {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+/* Emoji fallback: sit it on the same bright tile, scaled to fit. */
+.appLogo :global(.aeroIconGlyph) {
+  font-size: 1.25rem !important;
+}
+.homeIconCompact .appLogo :global(.aeroIconGlyph) {
+  font-size: 1.0625rem !important;
+}
+
+.appIcon {
+  font-size: 2rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* App name — ONE line with an ellipsis, fixed height.
+   That is how Android does it (Launcher3 `BubbleTextView`): `setSingleLine(true);
+   setMaxLines(1)` + `setEllipsize(TruncateAt.END)`. Two lines only exist there
+   in the app drawer, behind a setting and only for English
+   (`shouldUseTwoLine()`) — never on the home screen.
+   Important, and the actual layout bug here: in Android the label space is
+   RESERVED, not content-dependent
+   (`cellHeightPx = iconSizePx + iconDrawablePaddingPx + textHeight`).
+   Hence a fixed `height`, not `min-height`. Without it the tile height depends
+   on the name — measured 97/110/123px in the same grid => ragged rows,
+   offset icons, and the second name line came within **11px** of the widget
+   below (single line: 18px).
+   Important: 10px instead of 11px is MEASURED, not estimated (canvas
+   measureText against a full list of real app names): at 11px only ~85% fit on
+   one line, at 10px ~95%. 10.5px would have fit the longest two-word names with
+   0.3px to spare — too tight, other devices round differently. */
+.appName {
+  font-size: 0.625rem;
+  /* Important: line height and reserved height MUST scale in rem.
+     When font sizes were switched to rem, a fixed 13px box would have become a
+     trap at 150 % interface size: the text grows, the box does not — the name
+     gets cut off at the bottom. */
+  line-height: 0.8125rem;
+  height: 0.8125rem;
+  flex: 0 0 auto;   /* never shrink along — see `.gridCell .homeIcon` above */
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  text-align: center;
+}
+
+/* Fullscreen App */
+.appView {
+  position: absolute;
+  inset: 0;
+  /* Opaque on mobile too — the wallpaper sits behind the text there just the
+     same (applies to all apps). */
+  background: var(--bg-window-solid, var(--bg-window));
+  overflow: auto;
+}
+
+/* Cobrowse split-view: live app on top, chat below (Clara operates, user watches + chats). */
+.cobrowseView {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-window-solid, var(--bg-window, #101624));
+}
+.cobrowseApp {
+  flex: 1 1 55%;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.cobrowseChat {
+  flex: 1 1 45%;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.cobrowseChat > * {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ===== Keep-alive app surfaces + Android-style recents carousel =====
+   The SAME mounted surfaces serve two modes:
+   - data-mode="app":     active surface fullscreen, others display:none
+                          (iframes stay alive → instant app switching)
+   - data-mode="recents": surfaces become One-UI overview cards in a
+                          horizontally panning track (swipe up = close,
+                          tap = focus); handled by pointer JS in the shell */
+.appSurfaces {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+}
+.appSurfaces[data-mode="hidden"] { display: none; }
+
+/* --- app mode: fullscreen active surface --- */
+.appSurfaces[data-mode="app"] .surfTrack { width: 100%; height: 100%; }
+.appSurfaces[data-mode="app"] .surfCard { display: none; }
+.appSurfaces[data-mode="app"] .surfCard[data-active="true"] {
+  display: block;
+  position: absolute;
+  inset: 0;
+}
+.appSurfaces[data-mode="app"] .surfClip,
+.appSurfaces[data-mode="app"] .surfScale {
+  width: 100%;
+  height: 100%;
+  transform: none;
+  border-radius: 0;
+}
+.appSurfaces[data-mode="app"] .surfChrome { display: none; }
+.appSurfaces[data-mode="app"] .surfShield { display: none; }
+
+/* --- recents mode: card carousel over the dimmed wallpaper --- */
+.appSurfaces[data-mode="recents"] {
+  background: rgba(4, 8, 20, 0.55);
+  touch-action: none;   /* gestures are ours — no native scroll claims the pan */
+  overflow: hidden;
+}
+.appSurfaces[data-mode="recents"] .surfTrack {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  gap: 20px;             /* must match RECENT_GAP in MobileShell.tsx */
+  will-change: transform;
+}
+.appSurfaces[data-mode="recents"] .surfCard {
+  position: relative;
+  flex: 0 0 auto;
+  width: 72vw;           /* must match RECENT_CARD_FRAC in MobileShell.tsx */
+  height: 66%;
+  overflow: visible;     /* the icon chip floats above the card */
+}
+.surfClip {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overflow: clip;
+  border-radius: 20px;
+  background: #0c1322;
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(150, 190, 255, 0.12);
+  position: relative;
+}
+/* live iframe rendered at (roughly) full app size, scaled into the card:
+   inner size = card size / 0.72 → inner width ≈ 100vw */
+.appSurfaces[data-mode="recents"] .surfScale {
+  width: calc(100% / 0.72);
+  height: calc(100% / 0.72);
+  transform: scale(0.72);
+  transform-origin: 0 0;
+}
+.surfShield {
+  position: absolute;
+  inset: 0;
+  z-index: 2;            /* blocks iframe interaction; card handles the gestures */
+}
+.surfChrome {
+  position: absolute;
+  top: -44px;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+}
+.surfChrome :global(svg), .surfChrome img { border-radius: 50%; }
+.surfName {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  max-width: 50vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.surfPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+.clearAllPill {
+  position: absolute;
+  bottom: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 22px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(20, 30, 52, 0.85);
+  backdrop-filter: blur(12px);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 3;
+}
+.clearAllPill:active { background: rgba(50, 70, 110, 0.9); }
+
+
+/* Bottom Navigation */
+.bottomNav {
+  min-height: 48px;
+  padding-bottom: env(safe-area-inset-bottom);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  background: transparent;  /* wallpaper (on .shell) shows through; while an
+                               app is open, inline style sets the app's colour */
+  transition: background 0.25s;
+  border-top: none;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;  /* nav buttons stay above the fixed full-screen drawer/shade */
+}
+
+.navBtn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  color: var(--bar-fg, var(--text-secondary));  /* follows app bar colour */
+  font-size: 1.125rem;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navBtn:active {
+  background: var(--bg-hover);
+}
+
+.navBtn.navActive {
+  color: var(--text-primary);
+}
+
+.homeBtn { font-size: 1.5rem; }
+.homePunkt { width: 18px; height: 18px; border-radius: 50%; background: currentColor; display: block; }
+
+/* Compact bar inside apps: gesture pill instead of three buttons. */
+.bottomNav[data-kompakt="ja"] { min-height: 30px; gap: 0; }
+.bottomNav[data-kompakt="ja"] > button:first-child,
+.bottomNav[data-kompakt="ja"] > button:last-child { min-height: 30px; }
+.gestenPille {
+  width: 140px; height: 30px;
+  border: none; background: transparent; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--bar-fg, var(--text-secondary));
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+.gestenLinie { width: 104px; height: 4px; border-radius: 2px; background: currentColor; opacity: .75; display: block; }
+.gestenPille:active .gestenLinie { opacity: 1; }
+
+.emptyMsg {
+  color: var(--text-disabled);
+  text-align: center;
+  padding: 32px;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-disabled);
+}
+
+/* ===== Central Clara button inside the dock (Gemini-style) ===== */
+/* Clara orb in the dock: reuses the .iconSquircle bead (same size as grid
+   icons); this modifier only guards positioning for the spinning halo. */
+.claraDockOrb {
+  position: relative;
+}
+
+.claraDockBtn {
+  position: relative;
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  margin: 0 4px;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Same dark glass bead as the app icons — the Clara mark (cyan sparkle) sits
+     on it; a subtle cyan halo keeps it distinct as the assistant button. */
+  overflow: hidden;
+  background:
+    radial-gradient(62% 28% at 50% 95%, rgba(130, 170, 235, 0.5), transparent 72%),
+    radial-gradient(125% 95% at 50% 16%, #1c2a48 0%, #0b1428 40%, #05091a 74%, #02040e 100%);
+  border: 1px solid rgba(150, 185, 240, 0.55);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.55),
+    0 9px 20px rgba(0, 0, 0, 0.6),
+    inset 0 2px 4px rgba(180, 210, 255, 0.6),
+    inset 0 -7px 13px rgba(0, 0, 0, 0.7);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+/* domed-glass top specular, like the app beads */
+.claraDockBtn::after {
+  content: "";
+  position: absolute;
+  left: 15%;
+  right: 15%;
+  top: 6%;
+  height: 34%;
+  border-radius: 50% 50% 48% 48% / 70% 70% 30% 30%;
+  background: linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.12) 60%, transparent);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.claraDockBtn:active {
+  transform: scale(0.94);
+}
+
+.claraDockGlow {
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #38e0f0, #1f8fe0, #22d3ee, #0c5bc0, #38e0f0);
+  filter: blur(8px);
+  opacity: 0.55;
+  z-index: -1;
+  animation: claraSpin 6s linear infinite;
+}
+
+@keyframes claraSpin {
+  to { transform: rotate(360deg); }
+}
+
+.claraDockIcon {
+  width: 34px;
+  height: 34px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+
+/* ===== Clara FAB in the app view (show chat over the running app) ===== */
+/* Same glass bead look as .claraDockBtn, but fixed above the bottom nav.
+   A z-index below the nav (100) is enough — the FAB disappears as soon as the
+   Clara overlay (claraOpen) or recents leave the app view. */
+.claraFab {
+  position: fixed;
+  right: 14px;
+  /* Warning: the button used to sit at `60px` — directly above the navigation
+     bar and thus EXACTLY on the running app's bottom bar. Measured on a
+     typical Android phone screen: it covered a tab of an app's bottom bar by
+     52x43 px. A floating button may sit over CONTENT, never over controls —
+     whatever it covers is no longer there for the thumb.
+     The offset now additionally keeps an app bar free; `--claraos-app-leiste`
+     can later be set per view (0 for apps without their own bar). */
+  bottom: calc(60px + var(--claraos-app-leiste, 62px) + env(safe-area-inset-bottom, 0px));
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1px solid rgba(150, 185, 240, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background:
+    radial-gradient(62% 28% at 50% 95%, rgba(130, 170, 235, 0.5), transparent 72%),
+    radial-gradient(125% 95% at 50% 16%, #1c2a48 0%, #0b1428 40%, #05091a 74%, #02040e 100%);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.55),
+    0 9px 20px rgba(0, 0, 0, 0.6),
+    inset 0 2px 4px rgba(180, 210, 255, 0.6),
+    inset 0 -7px 13px rgba(0, 0, 0, 0.7);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  z-index: 95;
+}
+
+.claraFab:active {
+  transform: scale(0.94);
+}
+
+.claraFabIcon {
+  width: 30px;
+  height: 30px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+
+
+/* Icon size in the corner grips — follows the bar color like the nav buttons. */
+.eckenIcon {
+  width: 20px;
+  height: 20px;
+}

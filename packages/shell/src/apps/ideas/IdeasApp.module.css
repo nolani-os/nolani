@@ -1,0 +1,1591 @@
+/* Idea suite. Desktop: rail + content. Mobile (<700px): bottom tab bar +
+ * FAB; switched via JS (ResizeObserver → .mobile class), because container
+ * queries cannot style the container itself.
+ * Note: also imported by apps/knowledge/ (knowledge suite), so styling
+ * changes affect BOTH suites. */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+  background: var(--surface-1, #171b24);
+  color: var(--text-primary, #e5e7eb);
+}
+
+.layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── Rail ─────────────────────────────────────────────────────────── */
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 6px;
+  width: 84px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border-color, #2a3040);
+  /* The knowledge suite has enough rail entries (tabs + favorites +
+   * collections + import/export) to overflow on smaller windows; without
+   * scrolling, the lower buttons were unreachable. */
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  scrollbar-width: thin;
+}
+
+.railBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 4px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary, #9ca3af);
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+.railBtn:hover { background: var(--surface-2, #1f2430); }
+.railBtnActive {
+  background: var(--surface-3, #2a3040);
+  color: var(--text-primary, #e5e7eb);
+}
+.railIcon { font-size: 1.25rem; }
+.railLabel { font-size: 0.6875rem; }
+/* grows when there is room, but shrinks when the rail has to scroll */
+.railSpacer { flex: 1 0 8px; }
+.railCapture { color: var(--accent, #3b82f6); font-weight: 600; }
+
+.content {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  padding: 14px;
+  position: relative;
+}
+
+/* ── Board ────────────────────────────────────────────────────────── */
+.board {
+  display: flex;
+  gap: 12px;
+  height: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  align-items: stretch;
+}
+
+.boardCol {
+  flex: 1 1 0;
+  min-width: 210px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-2, #1f2430);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.boardColDrop { outline: 2px dashed var(--accent, #3b82f6); outline-offset: -2px; }
+
+.boardColHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  border-top: 3px solid transparent;
+  background: var(--surface-3, #2a3040);
+}
+.boardCount {
+  background: var(--surface-1, #171b24);
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 0.75rem;
+  color: var(--text-secondary, #9ca3af);
+}
+.boardCards {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.colEmpty { text-align: center; color: var(--text-tertiary, #4b5563); padding: 12px 0; }
+
+.card {
+  background: var(--surface-1, #171b24);
+  border: 1px solid var(--border-color, #2a3040);
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent, #3b82f6); }
+.cardTitle { font-weight: 600; font-size: 0.8438rem; margin-bottom: 4px; }
+.cardPreview {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #9ca3af);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: pre-line;
+}
+.cardMeta { display: flex; gap: 8px; margin-top: 6px; font-size: 0.75rem; }
+.cardOwner { color: var(--text-tertiary, #6b7280); }
+
+/* ── List ─────────────────────────────────────────────────────────── */
+.listView { display: flex; flex-direction: column; gap: 12px; max-width: 900px; }
+.listFilters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.checkLabel { display: flex; gap: 6px; align-items: center; font-size: 0.8125rem; color: var(--text-secondary, #9ca3af); }
+
+.listRows { display: flex; flex-direction: column; gap: 4px; }
+.listRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color, #2a3040);
+  border-radius: 10px;
+  background: var(--surface-2, #1f2430);
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.8438rem;
+}
+.listRow:hover { border-color: var(--accent, #3b82f6); }
+.listTitle { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.listMeta { color: var(--text-tertiary, #6b7280); font-size: 0.75rem; flex-shrink: 0; }
+
+.stageBadge {
+  color: #fff;
+  border-radius: 8px;
+  padding: 2px 8px;
+  font-size: 0.7188rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ── Detail ───────────────────────────────────────────────────────── */
+.detail { display: flex; flex-direction: column; gap: 12px; height: 100%; }
+.detailBar { display: flex; align-items: center; gap: 10px; }
+.saveState { flex: 1; font-size: 0.75rem; color: var(--text-tertiary, #6b7280); }
+
+.detailBody {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.detailMain { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+/* Rearranging must depend on the detail's OWN width, not `.mobile` (the
+   WINDOW width). In the side peek the window is wide but the space narrow:
+   `.detailBody` stayed one row, the "Properties" button did not shrink, and
+   the main area was squeezed to one letter per line. This class rearranges
+   the detail by ITS own width (ResizeObserver in IdeaDetail). */
+.detailSchmal .detailBody { flex-direction: column; overflow: visible; }
+.detailSchmal .detailTitle { font-size: 1.25rem; }
+/* On phones only "📁 …" was left of the path: it shares the row with
+   "Develop with Clara", and at phone width (~400 px) the button wins. So the path gets its
+   own row here; it is a location indicator, not leftover space.
+   Important: the wrapping is set here, the path's width in `Wissen.module.css`
+   (`.pfadEigeneZeile`). Class names are hashed per module, so a
+   `.detailSchmal .pfad` from here matches nothing. */
+.detailSchmal .detailBar { flex-wrap: wrap; }
+
+.detailTitle {
+  font-size: 1.75rem;
+  font-weight: 700;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: inherit;
+  width: 100%;
+  padding: 4px 2px;
+}
+.detailTitle:focus { border-bottom: 2px solid var(--accent, #3b82f6); }
+
+/* ── Meta sidebar: lives in `apps/wissen/Wissen.module.css`
+   (`.leiste*`); boxes and all-caps headings are deliberately gone there. */
+.metaHint { font-size: 0.75rem; color: var(--text-secondary, #9ca3af); margin: 6px 0 0; }
+
+.stageStepper { display: flex; flex-direction: column; gap: 4px; }
+.stageStep {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 10px;
+  border: 1px solid var(--border-color, #2a3040);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary, #9ca3af);
+  cursor: pointer;
+  font-size: 0.7812rem;
+  text-align: left;
+}
+.stageStep:hover:not(:disabled) { border-color: var(--accent, #3b82f6); }
+.stageStep:disabled { cursor: default; opacity: 0.7; }
+.stageStepActive { color: #fff; font-weight: 600; border-color: transparent; }
+.stageStepLabel { flex: 1; }
+
+.segmented { display: flex; gap: 6px; }
+.segmented button {
+  flex: 1;
+  padding: 7px 6px;
+  border: 1px solid var(--border-color, #2a3040);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary, #9ca3af);
+  cursor: pointer;
+  font-size: 0.7812rem;
+}
+.segmented button:disabled { cursor: default; opacity: 0.7; }
+.segActive {
+  background: var(--surface-3, #2a3040) !important;
+  color: var(--text-primary, #e5e7eb) !important;
+  border-color: var(--accent, #3b82f6) !important;
+}
+
+.linkList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.linkList li { display: flex; align-items: center; gap: 4px; }
+.linkChip {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color, #2a3040);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.7812rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.linkChip:hover { border-color: var(--accent, #3b82f6); }
+.linkRel { color: var(--text-tertiary, #6b7280); margin-left: 6px; font-size: 0.6875rem; }
+.linkRemove {
+  border: none; background: transparent; color: var(--text-tertiary, #6b7280);
+  cursor: pointer; font-size: 0.875rem; padding: 2px 6px;
+}
+.linkRemove:hover { color: #ef4444; }
+.linkAdd { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+
+/* ── Clara follow-up questions ────────────────────────────────────── */
+.claraSection {
+  background: color-mix(in srgb, var(--accent, #3b82f6) 8%, var(--surface-2, #1f2430));
+  border: 1px solid color-mix(in srgb, var(--accent, #3b82f6) 35%, transparent);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-top: 6px;
+}
+.claraSection h4 { margin: 0 0 8px; font-size: 0.8125rem; }
+.claraQuestion { margin-bottom: 10px; }
+.claraQuestion p { margin: 0 0 6px; font-size: 0.8438rem; }
+.claraAnswerRow { display: flex; gap: 8px; }
+.claraAnswerRow .input { flex: 1; }
+
+/* ── History ──────────────────────────────────────────────────────── */
+.activity { margin-top: 10px; }
+.activity h4 { font-size: 0.8125rem; margin: 0 0 8px; color: var(--text-secondary, #9ca3af); }
+.activityList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.activityList li {
+  border-left: 3px solid var(--border-color, #2a3040);
+  padding: 4px 10px;
+}
+.activityClara { border-left-color: var(--accent, #3b82f6) !important; }
+.activityHead { font-size: 0.7188rem; color: var(--text-tertiary, #6b7280); display: block; margin-bottom: 2px; }
+.activityContent { font-size: 0.8125rem; white-space: pre-wrap; }
+.commentRow { margin-top: 10px; }
+
+/* ── Visions ──────────────────────────────────────────────────────── */
+.visions { max-width: 1000px; }
+.visionsHead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.visionsHead h3 { margin: 0; font-size: 1rem; }
+.visionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.visionCard {
+  background: var(--surface-2, #1f2430);
+  border: 1px solid var(--border-color, #2a3040);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.visionTitle {
+  background: none; border: none; color: inherit; cursor: pointer;
+  font-size: 0.9375rem; font-weight: 700; text-align: left; padding: 0;
+}
+.visionTitle:hover { color: var(--accent, #3b82f6); }
+.visionBar {
+  display: flex; height: 6px; border-radius: 3px; overflow: hidden;
+  background: var(--surface-3, #2a3040);
+}
+.visionIdeas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+
+/* ── Collections ──────────────────────────────────────────────────── */
+.railDivider {
+  border-top: 1px solid var(--border-color, #2a3040);
+  margin: 6px 8px;
+}
+/* NO own scrolling and no percentage height: `max-height: 45%` has no
+ * effect without a defined parent height and let the block collapse to 0,
+ * pushing the "＋ Neu" button below the window edge. The rail scrolls as a
+ * whole instead. */
+.railScroll {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.collView { display: flex; flex-direction: column; gap: 10px; }
+.collHead { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.collHead h3 { margin: 0; font-size: 1rem; }
+.collHeadRight { display: flex; align-items: center; gap: 10px; }
+.collAdd { max-width: 480px; }
+.collAdd .input { width: 100%; }
+
+.tableWrap { overflow-x: auto; }
+/* With 60 rows the horizontal scrollbar sat BELOW the last row, so seeing
+   columns on the right meant scrolling all the way down first. In the table
+   layout the table itself is therefore the scroll area (both scrollbars in
+   view) and the header row stays sticky. Other layouts are unaffected. */
+.collViewTabelle { height: 100%; min-height: 0; }
+.collViewTabelle .tableWrap { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.collViewTabelle .collTable th {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--surface-1, #151a24);
+}
+/* The title is the row: it must not wrap onto four lines just because
+   twelve columns sit next to it. */
+.collViewTabelle .collTable th:first-child,
+.collViewTabelle .collTable td:first-child { min-width: 18rem; }
+.collTable {
+  border-collapse: collapse;
+  width: 100%;
+  /* Next to the side peek the table only gets half the width, and headers
+     got squeezed to "Kos…", "St…", "Er". A table whose column names you have
+     to guess is no longer a table. From here on it scrolls narrowly instead
+     (`.tableWrap` has `overflow-x`).
+     Not applicable on phones: there the collection shows cards, not a table. */
+  min-width: 620px;
+  font-size: 0.8125rem;
+}
+.collTable th {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 2px solid var(--border-color, #2a3040);
+  color: var(--text-secondary, #9ca3af);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.collTable th:hover { color: var(--text-primary, #e5e7eb); }
+.collTable td {
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--border-color, #2a3040);
+  vertical-align: middle;
+}
+.collTable tbody tr:hover { background: var(--surface-2, #1f2430); }
+.cellTitle {
+  background: none; border: none; color: inherit; cursor: pointer;
+  font-weight: 600; font-size: 0.8125rem; text-align: left; padding: 4px 0;
+}
+.cellTitle:hover { color: var(--accent, #3b82f6); }
+.cellMuted { color: var(--text-tertiary, #6b7280); white-space: nowrap; }
+.cellInput {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: inherit;
+  padding: 4px 6px;
+  font-size: 0.8125rem;
+  width: 100%;
+  min-width: 70px;
+  font-family: inherit;
+}
+.cellInput:hover:not(:read-only) { border-color: var(--border-color, #2a3040); }
+.cellInput:focus { outline: none; border-color: var(--accent, #3b82f6); background: var(--surface-2, #1f2430); }
+
+/* Cell at rest: text only. Looks like content, behaves like a field on
+   hover; only a click reveals the input. */
+.cellText {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: inherit;
+  font: inherit;
+  /* rem, not px: otherwise the user's font-size slider (`uiScale`) would not
+     apply at the most-read spot of the table. */
+  font-size: 0.8125rem;
+  text-align: left;
+  padding: 4px 6px;
+  width: 100%;
+  min-width: 70px;
+  cursor: text;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cellText:hover:not(:disabled) { border-color: var(--border-color, #2a3040); }
+.cellText:disabled { cursor: default; }
+/* Numbers are right-aligned with tabular digits; otherwise amounts cannot
+   be compared vertically. */
+.cellZahl, .cellZahl.cellText { text-align: right; font-variant-numeric: tabular-nums; }
+/* "Wrap content" (as in Notion). The default is truncation with "…",
+   because otherwise the table gets rows of different heights; but for long
+   notes you want to see the whole text, and truncation loses information.
+   So it is toggleable per column, as there. */
+.cellUmbruch, .cellUmbruch.cellText {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.45;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px;
+}
+.galleryProps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+  font-size: 0.7188rem;
+  color: var(--text-secondary, #9ca3af);
+}
+.galleryProps b { color: var(--text-tertiary, #6b7280); font-weight: 600; }
+
+.propList { display: flex; flex-direction: column; gap: 8px; }
+.propRow { display: flex; flex-direction: column; gap: 3px; }
+.propLabel { font-size: 0.7188rem; color: var(--text-tertiary, #6b7280); }
+.propLink { color: var(--accent, #3b82f6); font-size: 0.8125rem; word-break: break-all; }
+/* Link + pencil on one line; the pencil is secondary (half visible, fully on hover). */
+.propLinkZeile { display: inline-flex; align-items: center; gap: 0.25rem; max-width: 100%; }
+.propLinkZeile .propLink { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.propLinkEdit { border: 0; background: transparent; cursor: pointer; opacity: 0.45; font-size: 0.75rem; padding: 0 0.125rem; color: inherit; }
+.propLinkEdit:hover, .propLinkEdit:focus-visible { opacity: 1; }
+
+.graphWrap { height: 100%; min-height: 380px; }
+.graphWrap :global(.react-flow__node) { cursor: pointer; }
+
+.shareBox { margin-top: 10px; }
+.shareBox h4 { margin: 0 0 6px; font-size: 0.7188rem; text-transform: none; letter-spacing: 0; color: var(--text-tertiary, #6b7280); }
+.shareChip {
+  flex: 1;
+  font-size: 0.7812rem;
+  padding: 5px 8px;
+  background: var(--surface-3, #2a3040);
+  border-radius: 8px;
+}
+
+.modalWide { width: min(640px, 94%); }
+.formRow { display: flex; gap: 8px; align-items: center; }
+.typeEditor {
+  border: 1px dashed var(--border-color, #2a3040);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Shared ───────────────────────────────────────────────────────── */
+.input {
+  background: var(--surface-2, #1f2430);
+  border: 1px solid var(--border-color, #2a3040);
+  border-radius: 8px;
+  color: inherit;
+  padding: 8px 10px;
+  font-size: 0.875rem; /* ≥16px would be iOS-safe; the shell zooms windows anyway */
+  font-family: inherit;
+}
+.input:focus { outline: none; border-color: var(--accent, #3b82f6); }
+
+.btnPrimary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 32px; padding: 0 18px;
+  background: var(--accent, #3b82f6);
+  border: none; border-radius: var(--radius-md, 10px);
+  color: var(--on-accent, #101418);
+  font: inherit; font-size: 0.875rem; font-weight: 600;
+  cursor: pointer;
+  transition: border-radius .12s ease, transform .12s ease;
+}
+.btnPrimary:active { border-radius: var(--radius-md, 10px); transform: scale(.98); }
+.btnPrimary:disabled { opacity: 0.5; cursor: default; }
+.btnSecondary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 32px; padding: 0 18px;
+  background: color-mix(in srgb, var(--accent, #3b82f6) 16%, var(--surface-2, #1f2430));
+  border: none; border-radius: var(--radius-md, 10px);
+  color: var(--text-primary, #e5e7eb);
+  font: inherit; font-size: 0.875rem; font-weight: 600;
+  cursor: pointer;
+  transition: border-radius .12s ease, transform .12s ease;
+}
+.btnSecondary:active { border-radius: var(--radius-md, 10px); transform: scale(.98); }
+.btnDanger {
+  background: transparent;
+  border: 1px solid #7f1d1d;
+  color: #ef4444;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 0.7812rem;
+  cursor: pointer;
+  margin-top: 8px;
+  width: 100%;
+}
+.btnDanger:hover { background: color-mix(in srgb, var(--status-danger, #f87171) 10%, transparent); }
+/* Graspable touch target. The buttons were only as large as their glyph,
+   which is fiddly on phones. 44 px is the usual minimum; the button stays
+   visually small, only the hit area grows. */
+.iconBtn {
+  border: none; background: transparent; color: inherit; cursor: pointer;
+  font-size: 0.875rem; min-width: 44px; min-height: 44px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+}
+.iconBtn:hover { background: var(--surface-2, rgba(255, 255, 255, .06)); }
+
+@media (min-width: 720px) {
+  /* With a pointer a more compact target is enough; otherwise the row gets needlessly tall. */
+  .iconBtn { min-width: 32px; min-height: 32px; }
+}
+
+.empty { color: var(--text-tertiary, #6b7280); text-align: center; padding: 40px 0; }
+.error {
+  background: color-mix(in srgb, var(--status-danger, #f87171) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--status-danger, #f87171) 45%, transparent);
+  color: #fca5a5;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.8125rem;
+  margin-bottom: 10px;
+  /* Message on the left, way out on the right: an error without a next step
+     is a dead end for the user. */
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.error > span { flex: 1 1 auto; min-width: 0; }
+
+/* ── Quick-Capture-Modal ──────────────────────────────────────────── */
+.modalBackdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 10vh;
+  z-index: 20;
+}
+.modal {
+  width: min(480px, 92%);
+  background: var(--surface-2, #1f2430);
+  border: none;
+  border-radius: 20px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+}
+.modalHead { display: flex; justify-content: space-between; align-items: center; }
+.modalHead h3 { margin: 0; font-size: 1.125rem; font-weight: 700; letter-spacing: -0.01em; }
+.modalFoot { display: flex; justify-content: flex-end; align-items: center; gap: 12px; }
+
+/* ── Mobile (.mobile via ResizeObserver) ─────────────────────────── */
+
+/* Tab bar: the shared toolbar (components/Werkzeugleiste). "New" is its
+   FAB, the ONE creating button that may stand out. No second quick-capture
+   FAB in the Clara corner: two floating buttons on top of each other are an
+   occlusion problem, not an offer. */
+
+/* Collection overview (mobile tab) */
+.collPage h3 { margin: 4px 0 12px; font-size: 1.0625rem; }
+.collCards { display: flex; flex-direction: column; gap: 10px; }
+.collCard {
+  display: grid;
+  grid-template-columns: 46px 1fr;
+  grid-template-areas: "icon name" "icon meta";
+  column-gap: 12px; row-gap: 2px;
+  align-items: center;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 18px;
+  background: var(--surface-2, #1f2430);
+  color: var(--text-primary, #e5e7eb);
+  text-align: left;
+  min-height: 70px;
+  cursor: pointer;
+  font: inherit;
+}
+.collCard:active { background: var(--surface-3, #2a3040); }
+.collCardIcon {
+  grid-area: icon;
+  width: 46px; height: 46px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 1.375rem; line-height: 1;
+  background: color-mix(in srgb, var(--text-primary, #e5e7eb) 8%, transparent);
+}
+.collCardName { grid-area: name; font-weight: 600; font-size: 0.9062rem; }
+.collCardMeta { grid-area: meta; font-size: 0.75rem; color: var(--text-tertiary, #6b7280); }
+.collCardNew { background: transparent; box-shadow: inset 0 0 0 1px var(--border-color, #2a3040); color: var(--text-secondary, #9ca3af); }
+.collCardNew .collCardIcon { background: color-mix(in srgb, var(--accent, #3b82f6) 16%, transparent); color: var(--accent, #3b82f6); }
+
+/* Mobile layout adjustments */
+.mobile .content { padding: 12px 12px 96px; }
+.mobile .detailBody { flex-direction: column; overflow: visible; }
+.mobile .detailBar {
+  position: sticky;
+  top: -12px; /* compensates content padding */
+  z-index: 10;
+  background: var(--surface-1, #171b24);
+  padding: 8px 0;
+  margin-top: -8px;
+}
+.mobile .detailTitle { font-size: 1.25rem; }
+.mobile .board { scroll-snap-type: x mandatory; padding-bottom: 4px; }
+.mobile .boardCol { min-width: 82%; }
+.mobile .visionGrid { grid-template-columns: 1fr; }
+.mobile .gallery { grid-template-columns: 1fr 1fr; }
+/* Not `flex-direction: column`: that gives EVERY child its own row (back
+   link, title, actions), three rows for one heading, and pushed the first
+   entry down to 42 % of the screen. Instead one row: ‹ · title · action. The
+   title may truncate, the actions may not, or they can no longer be hit. */
+.mobile .collHead { flex-direction: row; align-items: center; gap: 8px; flex-wrap: nowrap; }
+.mobile .collHead h3 {
+  flex: 1 1 auto; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 0.9375rem;
+}
+.mobile .collHeadRight { flex: 0 0 auto; }
+/* The type hint ("📝 Notiz") is the first row that can be sacrificed on
+   phones: it says something about the collection, not about the next action. */
+.mobile .collHeadRight .metaHint { display: none; }
+.mobile .input { font-size: 1rem; } /* prevents iOS auto-zoom */
+.mobile .listRow { padding: 12px; min-height: 52px; flex-wrap: wrap; }
+.mobile .listTitle { white-space: normal; flex-basis: calc(100% - 110px); }
+.mobile .listMeta { flex-basis: 100%; }
+.mobile .stageStep { min-height: 44px; }
+.mobile .graphWrap { min-height: 0; height: 100%; }
+
+/* Modals as bottom sheets (grab handle, 24 px radius, full-width footer
+   buttons) */
+.mobile .modalBackdrop { align-items: flex-end; padding: 0; }
+.mobile .modalFoot { gap: 10px; }
+.mobile .modalFoot .btnPrimary { flex: 1; min-height: 48px; }
+.mobile .modalFoot .btnSecondary { min-height: 48px; }
+.mobile .modal,
+.mobile .modalWide {
+  position: relative;
+  width: 100%;
+  border-radius: 24px 24px 0 0;
+  border-bottom: none;
+  padding-top: 26px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  max-height: 85%;
+  overflow-y: auto;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.35);
+}
+.mobile .modal::before,
+.mobile .modalWide::before {
+  content: "";
+  position: absolute; top: 9px; left: 50%;
+  width: 40px; height: 4px; border-radius: 2px;
+  transform: translateX(-50%);
+  background: var(--text-2, #9aa8c2); opacity: .55;
+}
+
+/* Icon picker, subpages (both suites).
+   The breadcrumb path lives in `apps/wissen/Wissen.module.css` (`.pfad*`)
+   and replaces the former "<- Back" button there. */
+.titleRow { display: flex; align-items: center; gap: 8px; }
+.titleRow .detailTitle { flex: 1; min-width: 0; }
+.iconPickBtn {
+  border: none; background: none; cursor: pointer; font-size: 1.625rem; line-height: 1;
+  padding: 4px; border-radius: 8px;
+}
+.iconPickBtn:hover { background: var(--surface-2, rgba(125,125,125,.15)); }
+.subpages { margin-top: 14px; }
+.subpages h4 { margin: 0 0 6px; font-size: 0.8125rem; color: var(--text-secondary, #9ca3af); }
+.subpageList { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.subpageItem {
+  border: none; background: none; cursor: pointer; text-align: left; width: 100%;
+  padding: 5px 8px; border-radius: 8px; font-size: 0.875rem; color: var(--text-primary, #e5e7eb);
+}
+.subpageItem:hover { background: var(--surface-2, rgba(125,125,125,.15)); }
+.trashRow { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; }
+.trashRow:hover { background: var(--surface-2, rgba(125,125,125,.12)); }
+.trashTitle { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* View toolbar, filter editor, calendar, relation cells */
+.viewBar { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 10px; }
+.viewTabs { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+.viewTab {
+  border: none; background: var(--surface-2, rgba(125,125,125,.12)); cursor: pointer;
+  padding: 4px 10px; border-radius: 8px; font-size: 0.8125rem; color: var(--text-secondary, #9ca3af);
+}
+.viewTabActive { background: var(--accent, #6366f1); color: var(--on-accent); }
+.viewActions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.viewActions select { max-width: 150px; }
+.badgeOn { border-color: var(--accent, #6366f1) !important; color: var(--accent, #818cf8) !important; }
+.viewPanel {
+  display: flex; flex-direction: column; gap: 6px; padding: 10px;
+  border-radius: 10px; background: var(--surface-2, rgba(125,125,125,.1));
+}
+.viewPanelHead { display: flex; gap: 6px; align-items: center; font-size: 0.8125rem; color: var(--text-secondary, #9ca3af); }
+.viewPanelHead select { max-width: 130px; }
+.filterRow { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.filterRow select, .filterRow input { max-width: 190px; }
+.relCell {
+  border: none; background: var(--surface-2, rgba(125,125,125,.15)); cursor: pointer;
+  padding: 2px 8px; border-radius: 8px; font-size: 0.7812rem; color: var(--text-primary, #e5e7eb);
+}
+.chipRow { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.chip {
+  border: none; background: var(--surface-2, rgba(99,102,241,.18)); cursor: pointer;
+  padding: 3px 9px; border-radius: 999px; font-size: 0.7812rem; color: var(--text-primary, #e5e7eb);
+}
+.calWrap { display: flex; flex-direction: column; gap: 8px; }
+.calHead { display: flex; align-items: center; gap: 10px; font-size: 0.9375rem; font-weight: 600; }
+.calGrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.calDow { font-size: 0.7188rem; color: var(--text-secondary, #9ca3af); text-align: center; padding: 2px 0; }
+.calCell {
+  min-height: 78px; border-radius: 8px; padding: 4px;
+  background: var(--surface-2, rgba(125,125,125,.08)); display: flex; flex-direction: column; gap: 2px;
+}
+.calDay { font-size: 0.7188rem; color: var(--text-secondary, #9ca3af); }
+.calEntry {
+  border: none; background: var(--accent, #6366f1); color: var(--on-accent); cursor: pointer;
+  border-radius: 6px; padding: 2px 5px; font-size: 0.7188rem; text-align: left;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mobile .calCell { min-height: 54px; }
+
+/* Comments and notifications */
+.comments { margin-top: 16px; }
+.commentsHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.commentsHead h4 { margin: 0 0 6px; font-size: 0.875rem; }
+.commentAnchorPreview {
+  display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; margin-bottom: 6px;
+  border-radius: 8px; background: var(--surface-2, rgba(99,102,241,.12));
+  border-left: 3px solid var(--accent, #6366f1);
+}
+.commentAnchorPreview blockquote { margin: 0; font-style: italic; font-size: 0.8125rem; flex: 1; }
+.commentDraft { display: flex; flex-direction: column; gap: 6px; }
+.commentDraftFoot { display: flex; justify-content: flex-end; gap: 6px; }
+.commentList { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.commentList > li { padding: 8px 10px; border-radius: 10px; background: var(--surface-2, rgba(125,125,125,.08)); }
+.commentResolved { opacity: .55; }
+.commentAnchor { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+.commentAnchor blockquote {
+  margin: 0; font-style: italic; font-size: 0.7812rem; color: var(--text-secondary, #9ca3af);
+  border-left: 2px solid var(--accent, #6366f1); padding-left: 8px;
+}
+.anchorLost, .anchorFuzzy {
+  font-size: 0.6875rem; padding: 1px 7px; border-radius: 999px; white-space: nowrap;
+}
+.anchorLost { background: color-mix(in srgb, var(--status-danger, #f87171) 18%, transparent); color: #fca5a5; }
+.anchorFuzzy { background: rgba(245,158,11,.18); color: #fcd34d; }
+.commentHead { display: flex; align-items: baseline; gap: 8px; font-size: 0.7812rem; }
+.commentBody { font-size: 0.875rem; margin: 2px 0 4px; white-space: pre-wrap; }
+.commentActions { display: flex; gap: 10px; }
+.linkBtn {
+  border: none; background: none; cursor: pointer; padding: 0; font-size: 0.7812rem;
+  color: var(--text-secondary, #9ca3af); text-decoration: underline;
+}
+.linkBtn:hover { color: var(--accent, #818cf8); }
+.commentReplies {
+  list-style: none; margin: 6px 0 0 14px; padding-left: 10px;
+  border-left: 2px solid var(--surface-2, rgba(125,125,125,.25));
+  display: flex; flex-direction: column; gap: 8px;
+}
+.notifRow { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; }
+.notifRow:hover { background: var(--surface-2, rgba(125,125,125,.12)); }
+.notifUnread { border-left: 3px solid var(--accent, #6366f1); }
+
+/* Version history with diff */
+.historyModal { max-width: 900px; width: 92vw; }
+.historyBody { display: flex; gap: 12px; min-height: 320px; }
+.historyList {
+  list-style: none; margin: 0; padding: 0; width: 260px; flex-shrink: 0;
+  max-height: 420px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;
+}
+.historyList > li { border-radius: 8px; padding: 4px; }
+.historyItemActive { background: var(--surface-2, rgba(99,102,241,.15)); }
+.historyItem {
+  border: none; background: none; cursor: pointer; text-align: left; width: 100%;
+  display: flex; flex-direction: column; gap: 2px; padding: 4px 6px;
+  color: var(--text-primary, #e5e7eb); font-size: 0.8125rem;
+}
+.versionName { font-size: 0.75rem; color: var(--accent, #818cf8); }
+.historyActions { display: flex; gap: 10px; padding: 0 6px 4px; }
+.diffPane {
+  flex: 1; min-width: 0; max-height: 420px; overflow-y: auto;
+  background: var(--surface-2, rgba(125,125,125,.08)); border-radius: 10px; padding: 10px;
+}
+.diffText { margin: 0; white-space: pre-wrap; word-break: break-word; font-size: 0.8125rem; line-height: 1.55; }
+.diffIns { background: rgba(34,197,94,.22); text-decoration: none; }
+.diffDel { background: color-mix(in srgb, var(--status-danger, #f87171) 20%, transparent); text-decoration: line-through; opacity: .8; }
+
+/* Quick switcher and knowledge graph */
+.switcher { max-width: 620px; width: 90vw; }
+.switcherList { max-height: 340px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; margin-top: 8px; }
+.switcherRow {
+  border: none; background: none; cursor: pointer; display: flex; gap: 10px; align-items: center;
+  padding: 7px 9px; border-radius: 8px; text-align: left; width: 100%;
+  color: var(--text-primary, #e5e7eb); font-size: 0.875rem;
+}
+.switcherRowActive { background: var(--accent, #6366f1); color: var(--on-accent); }
+.switcherRowActive .listMeta { color: rgba(255,255,255,.8); }
+.graphWrap { display: flex; flex-direction: column; gap: 6px; height: 100%; min-height: 360px; }
+
+/* Formula cells and timeline */
+.formulaError { color: #fca5a5; font-size: 0.7812rem; cursor: help; }
+.timeline { display: flex; flex-direction: column; gap: 5px; padding: 4px 0; }
+.timelineScale {
+  display: flex; justify-content: space-between; font-size: 0.7188rem;
+  color: var(--text-secondary, #9ca3af); margin-left: 190px; padding: 0 2px 4px;
+  border-bottom: 1px solid var(--border-color, #2a3040);
+}
+.timelineRow { display: flex; align-items: center; gap: 8px; }
+.timelineLabel {
+  width: 182px; flex-shrink: 0; border: none; background: none; cursor: pointer;
+  text-align: left; font-size: 0.8125rem; color: var(--text-primary, #e5e7eb);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 2px 4px;
+}
+.timelineTrack {
+  position: relative; flex: 1; height: 22px; border-radius: 6px;
+  background: var(--surface-2, rgba(125,125,125,.10));
+}
+.timelineBar {
+  position: absolute; top: 3px; height: 16px; border: none; border-radius: 5px;
+  background: var(--accent, #6366f1); cursor: pointer; min-width: 6px;
+}
+.timelineBar:hover { filter: brightness(1.15); }
+
+/* ── Mobile: navigation, cards, editor toolbar, sheets ─────────────── */
+
+/* "More" sheet of the tab bar: holds what the desktop shows in the
+ * sidebar (clip/import/export/favorites/collections). */
+.moreSheet { max-height: 82vh; overflow-y: auto; }
+.moreGrid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 6px;
+}
+.moreItem {
+  display: flex; align-items: center; gap: 12px; padding: 8px 12px 8px 8px; border-radius: 16px;
+  background: var(--surface-3, rgba(125,125,125,.16)); border: none; cursor: pointer;
+  color: var(--text-primary, #e5e7eb); font: inherit; font-size: 0.875rem; font-weight: 500; text-align: left;
+  text-decoration: none; min-height: 56px;   /* touch target */
+  min-width: 0;
+}
+.moreItem > span:nth-child(2) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.moreItem:active { background: color-mix(in srgb, var(--accent, #3b82f6) 16%, var(--surface-3, #2a3040)); }
+.moreIcon {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+  display: grid; place-items: center;
+  background: color-mix(in srgb, var(--accent, #3b82f6) 16%, transparent);
+  color: var(--accent, #3b82f6);
+}
+.moreBadge {
+  margin-left: auto; background: var(--accent, #6366f1); color: var(--on-accent);
+  border-radius: 999px; padding: 1px 7px; font-size: 0.7188rem;
+}
+.moreSectionTitle { margin: 12px 0 6px; font-size: 0.7812rem; color: var(--text-secondary, #9ca3af); }
+/* Collection rows in the "More" sheet: a row instead of a card, count as a pill on the right */
+.moreSheet .listRows { gap: 4px; }
+.moreSheet .listRow {
+  flex-wrap: nowrap; align-items: center; gap: 12px;
+  min-height: 52px; padding: 6px 8px 6px 12px;
+  border: none; border-radius: 14px;
+  background: var(--surface-3, #2a3040);
+}
+.moreSheet .listTitle {
+  flex: 1 1 auto; flex-basis: auto; min-width: 0;
+  display: flex; align-items: center; gap: 10px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 0.9375rem;
+}
+.moreSheet .listMeta {
+  flex: 0 0 auto; flex-basis: auto;
+  min-width: 26px; height: 26px; padding: 0 9px;
+  border-radius: var(--radius-pill, 999px);
+  background: color-mix(in srgb, var(--accent, #3b82f6) 16%, transparent);
+  color: var(--text-primary, #e5e7eb);
+  font-size: 0.75rem; font-weight: 600; line-height: 26px; text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Collection rows as cards (instead of a ~730 px table on a ~400 px phone) */
+.rowCards { display: flex; flex-direction: column; gap: 8px; }
+.rowCard {
+  display: flex; flex-direction: column; gap: 6px; padding: 12px;
+  border-radius: 12px; background: var(--surface-2, #1f2430);
+  border: 1px solid var(--border-color, #2a3040); cursor: pointer; text-align: left;
+  color: inherit; width: 100%;
+}
+.rowCard:active { border-color: var(--accent, #6366f1); }
+.rowCardTitle { font-weight: 600; font-size: 0.9375rem; }
+.rowCardProps { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.7812rem;
+  color: var(--text-secondary, #9ca3af); }
+.rowCardProp b { font-weight: 500; }
+
+/* The view toolbar may wrap on narrow screens instead of overflowing */
+.viewActionsWrap { flex-wrap: wrap; gap: 6px; }
+/* Compact rather than stretched: the toolbar is a tool, not content.
+ * The touch target stays comfortable at 36 px height plus padding. */
+.mobile .viewActionsWrap select,
+.mobile .viewActionsWrap button {
+  flex: 0 1 auto; min-height: 36px; padding: 6px 10px; font-size: 0.7812rem;
+}
+.mobile .viewActionsWrap select { max-width: 132px; }
+.mobile .viewBar { gap: 4px; margin-bottom: 6px; }
+.mobile .viewTab { padding: 5px 10px; font-size: 0.7812rem; }
+
+/* Formatting toolbar above the keyboard */
+.mobileToolbar {
+  position: sticky; bottom: 0; z-index: 5;
+  display: flex; gap: 4px; overflow-x: auto; padding: 6px 4px; margin-top: 6px;
+  background: var(--surface-2, #1f2430); border-radius: 10px;
+  border: 1px solid var(--border-color, #2a3040);
+}
+.mobileToolbar button {
+  flex: 0 0 auto; min-width: 44px; min-height: 40px; border: none; border-radius: 8px;
+  background: transparent; color: var(--text-primary, #e5e7eb); font-size: 0.9375rem; cursor: pointer;
+}
+.mobileToolbar button:active { background: var(--surface-3, #2a3040); }
+
+/* Properties on mobile as a sheet instead of an endless column */
+.metaOpenBtn {
+  width: 100%; padding: 12px; border-radius: 10px; margin-top: 10px;
+  background: var(--surface-2, #1f2430); border: 1px solid var(--border-color, #2a3040);
+  color: var(--text-primary, #e5e7eb); font-size: 0.8438rem; cursor: pointer; min-height: 48px;
+}
+.metaHidden { display: none; }
+.metaSheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  max-height: 78vh; overflow-y: auto; padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
+  background: var(--surface-1, #171b24); border-top: 1px solid var(--border-color, #2a3040);
+  border-radius: 16px 16px 0 0; box-shadow: 0 -8px 30px rgba(0,0,0,.45);
+}
+.metaSheet > div { width: 100% !important; }
+.metaSheetHead { display: flex; align-items: center; justify-content: space-between; padding-bottom: 6px; }
+/* The word "Symbol" permanently next to the heading read like a field label
+   for the title. It is an offer, not content, so show it only when someone
+   hovers the title row. On touch it stays visible, since there is no hover. */
+.iconPickHint {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #9ca3af);
+  opacity: 0;
+  transition: opacity .12s ease;
+}
+.titleRow:hover .iconPickHint,
+.iconPickBtn:focus-visible .iconPickHint { opacity: 1; }
+@media (pointer: coarse) { .iconPickHint { opacity: 1; } }
+
+/* Enlarge touch targets in the detail bar and leave room for the Clara button */
+.mobile .detailBar .iconBtn { min-width: 40px; min-height: 40px; font-size: 1.0625rem; }
+/* The floating Clara button sits bottom right; keep room for it */
+.metaOpenBtn { padding-right: 76px; text-align: left; }
+/* Delete collection: deliberately understated and spaced from the title;
+ * right next to it, it was a mis-tap risk on touch (now with confirmation). */
+.collDelete {
+  border: none; background: none; cursor: pointer; opacity: .45;
+  font-size: 0.9375rem; padding: 8px; margin-left: 10px; border-radius: 8px;
+  min-width: 40px; min-height: 40px;
+}
+.collDelete:hover, .collDelete:active { opacity: 1; background: var(--surface-2, color-mix(in srgb, var(--status-danger, #f87171) 15%, transparent)); }
+
+/* The page title stays the largest text on phones too */
+.mobile .detailTitle { font-size: 1.5625rem; }
+
+/* ── Strategy layer: goal tree and KPIs ────────────────────────────────────
+ * Important: no percentage heights without a defined parent height; in this
+ * file that has already collapsed entire lists to 0 twice. */
+/* Leave room at the bottom. The floating plus button and the Clara bubble
+   sit ABOVE the list and covered the last action on phones ("Projekt im
+   Planner anlegen"); it simply could not be tapped. */
+.goals { padding: 4px 2px 96px; }
+
+@media (min-width: 720px) {
+  .goals { padding-bottom: 24px; }
+}
+.btnGhost {
+  background: transparent; color: var(--text-secondary, #9ca3af);
+  border: 1px solid var(--border, #374151); border-radius: 8px;
+  padding: 7px 12px; cursor: pointer; margin-right: 8px; font-size: 0.8125rem;
+}
+.btnGhost:hover { color: var(--text, #e5e7eb); border-color: var(--accent, #3b82f6); }
+
+.goalTree, .goalChildren { list-style: none; margin: 0; padding: 0; }
+.goalChildren { margin-left: 22px; border-left: 1px dashed var(--border, #374151); padding-left: 10px; }
+.goalNode { margin: 6px 0; }
+/* Goal row as a grid.
+   As a flex row, bar (120 px), percent (44 px), due date and three buttons
+   claimed fixed widths; the title got the rest and was squeezed to ~60 px on
+   phones ("G···"). Instead, on narrow widths the title owns the first row and
+   the metrics sit below.
+   Important: `minmax(0, 1fr)` instead of `1fr`, otherwise the content's
+   minimum width prevents shrinking and the row overflows again. */
+.goalRow {
+  display: grid;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  grid-template-areas:
+    "toggle title  title"
+    "toggle meta   actions";
+}
+.goalRow:hover { background: var(--surface-2, rgba(255, 255, 255, .06)); }
+
+@media (min-width: 720px) {
+  .goalRow {
+    grid-template-columns: 24px minmax(0, 1fr) auto auto;
+    grid-template-areas: "toggle title meta actions";
+  }
+}
+
+.goalToggle {
+  grid-area: toggle;
+  background: none; border: none; cursor: pointer; color: inherit;
+  font-size: 0.75rem; opacity: .8;
+  /* Touch target: 24 px visible, 44 px graspable (WCAG) */
+  width: 24px; min-height: 44px; padding: 0;
+}
+.goalToggle:disabled { opacity: .25; cursor: default; }
+
+.goalTitle {
+  grid-area: title;
+  background: none; border: none; color: inherit; cursor: pointer;
+  font-size: 0.875rem; line-height: 1.35; text-align: left;
+  min-width: 0; padding: 2px 0;
+  /* Wrap instead of clipping: at most two lines, then ellipsis. */
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  overflow: hidden; overflow-wrap: anywhere;
+}
+.goalTitle:hover { text-decoration: underline; }
+
+.goalMeta {
+  grid-area: meta;
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+}
+.goalStatus { font-size: 0.8125rem; flex: 0 0 auto; }
+.goalBar {
+  flex: 1 1 60px; max-width: 120px; height: 6px; border-radius: 3px;
+  overflow: hidden; background: var(--surface-3, rgba(255, 255, 255, .08));
+}
+.goalBar > span { display: block; height: 100%; transition: width .2s ease; }
+.goalPct {
+  flex: 0 0 auto; text-align: right; font-size: 0.75rem;
+  color: var(--text-secondary, #9ca3af); font-variant-numeric: tabular-nums;
+}
+/* Due date on one line; the ISO date used to wrap over three lines. */
+.goalDue {
+  flex: 0 0 auto; font-size: 0.75rem; white-space: nowrap;
+  color: var(--text-tertiary, #6b7280);
+}
+.goalActions { grid-area: actions; display: flex; gap: 2px; justify-self: end; }
+.goalEmptyHint {
+  font-size: 0.75rem; color: var(--text-tertiary, #6b7280);
+  margin: 2px 0 0 32px; line-height: 1.4;
+}
+.goalKpis {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 8px; margin: 6px 0 6px 30px;
+}
+
+.kpiCard {
+  border: 1px solid var(--border, #374151); border-left-width: 3px;
+  border-radius: 10px; padding: 8px 10px;
+  background: var(--surface-2);
+}
+.kpiHead { display: flex; align-items: center; gap: 6px; }
+.kpiTitle {
+  background: none; border: none; color: inherit; cursor: pointer;
+  font-size: 0.8125rem; font-weight: 600; text-align: left; flex: 1 1 auto;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.kpiStatus { font-size: 0.6875rem; flex: 0 0 auto; }
+.kpiFigures { display: flex; align-items: baseline; gap: 8px; margin: 4px 0; }
+.kpiFigures strong { font-size: 1.125rem; }
+.kpiBar {
+  position: relative; height: 6px; border-radius: 3px; overflow: hidden;
+  background: var(--surface-3, rgba(255, 255, 255, .08));
+}
+.kpiBar > span { display: block; height: 100%; }
+/* Expectation marker: where you should be today (the bar's overflow does
+ * not clip it, because it sits on its own layer above). */
+.kpiExpected {
+  position: absolute; top: -2px; width: 2px; height: 10px;
+  background: var(--text, #e5e7eb); opacity: .7;
+}
+/* Milestones as notches: more understated than the expectation marker;
+ * they show the planned path, not today's expected value. */
+.kpiMilestone {
+  position: absolute; top: 0; width: 1px; height: 6px;
+  background: var(--text-secondary, #9ca3af); opacity: .8;
+}
+.kpiBody { margin-top: 8px; }
+.kpiSpark { width: 100%; height: 40px; color: var(--accent, #3b82f6); display: block; }
+
+/* ── Trend row and trend chart ──────────────────────────────────────────
+   Ground rules: ONE axis (actual and plan share the same unit), thin
+   strokes, subdued grid, labels in text colors rather than the data color.
+   The color lives in the stroke, not in the text. */
+.kpiTrend {
+  margin: 4px 0 0; font-size: 0.75rem; line-height: 1.4;
+  color: var(--text-secondary, #9ca3af);
+}
+/* Good/bad is ALWAYS shown with arrow and word, never color alone
+   (red-green color blindness affects roughly one in twelve men). */
+.trendGut { color: #22c55e; }
+.trendSchlecht { color: #ef4444; }
+.trendNeutral { color: var(--text-tertiary, #6b7280); }
+
+.chartWrap { margin: 6px 0; }
+.chartHead {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  font-size: 0.6875rem; color: var(--text-secondary, #9ca3af); margin-bottom: 2px;
+}
+.legend { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { display: inline-block; width: 14px; height: 0; border-top-width: 2px; }
+.legendIst { border-top: 2px solid var(--accent, #3b82f6); }
+.legendPlan { border-top: 2px dashed var(--text-tertiary, #6b7280); }
+
+.chart { width: 100%; height: auto; display: block; touch-action: pan-y; }
+/* Grid hairline-thin and solid: dashed lines read as data. */
+.chartGrid { stroke: var(--border, #374151); stroke-width: 1; opacity: .45; }
+.chartTick {
+  fill: var(--text-tertiary, #6b7280); font-size: 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+.chartIst {
+  stroke: var(--accent, #3b82f6); stroke-width: 2;
+  stroke-linejoin: round; stroke-linecap: round;
+}
+/* The planned path is context, not measurement, hence subdued and dashed.
+   Dashed here means "planned", not "grid".
+   Important: the gray is INTENTIONAL, not an oversight. These are not two
+   equal-ranked series side by side but a measurement in the foreground and
+   its reference in the background. The color checker reports "saturation too
+   low" for it; that rule applies to equal-ranked series, not this case.
+   Everything else passes in light AND dark (ΔE 18.5 separation under
+   red-green color blindness, contrast ≥ 3:1). Making the gray colorful would
+   let the plan compete with the actual value, which it must not. The second
+   distinction besides color is the stroke (solid ↔ dashed) plus the legend. */
+.chartPlan {
+  stroke: var(--text-tertiary, #6b7280); stroke-width: 2;
+  stroke-dasharray: 5 4; opacity: .85;
+}
+.chartTarget {
+  stroke: var(--text-tertiary, #6b7280); stroke-width: 1;
+  stroke-dasharray: 2 3; opacity: .7;
+}
+/* 2 px ring in the surface color so the dot stays readable above the line. */
+.chartEnd {
+  fill: var(--accent, #3b82f6);
+  stroke: var(--surface-1, #111827); stroke-width: 2;
+}
+.chartCross { stroke: var(--text-tertiary, #6b7280); stroke-width: 1; opacity: .6; }
+.chartHint {
+  margin: 2px 0 0; font-size: 0.6875rem; color: var(--text-secondary, #9ca3af);
+  font-variant-numeric: tabular-nums;
+}
+.chartTable {
+  width: 100%; border-collapse: collapse; font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+.chartTable th, .chartTable td {
+  text-align: left; padding: 3px 6px;
+  border-bottom: 1px solid var(--border, #374151);
+}
+.chartTable th { color: var(--text-secondary, #9ca3af); font-weight: 500; }
+
+.srOnly {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+.kpiEntry { display: flex; gap: 6px; align-items: center; margin: 6px 0; flex-wrap: wrap; }
+.kpiEntry .input { flex: 1 1 90px; min-width: 90px; margin: 0; }
+.kpiValues { list-style: none; margin: 6px 0 0; padding: 0; font-size: 0.75rem; }
+.kpiValues li { display: flex; gap: 8px; align-items: center; padding: 2px 0; }
+.kpiValues li strong { flex: 0 0 auto; }
+.kpiForm { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+.kpiForm label, .kpiFormRow {
+  display: flex; flex-direction: column; gap: 4px;
+  font-size: 0.75rem; color: var(--text-secondary, #9ca3af);
+}
+.kpiForm .input, .kpiFormRow .input { margin: 0; }
+
+/* Data sources: picker in the create dialog, state on the card */
+.sourceBox {
+  border: 1px solid var(--border, #374151); border-radius: 10px;
+  padding: 8px 10px; margin-top: 8px;
+}
+.sourceTabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.sourceTab {
+  border: 1px solid var(--border, #374151); background: transparent; color: inherit;
+  border-radius: 999px; padding: 4px 10px; font-size: 0.75rem; cursor: pointer;
+}
+.sourceTabActive { background: var(--accent, #3b82f6); border-color: transparent; color: var(--on-accent); }
+.sourceRow, .kpiSourceRow {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; margin: 6px 0; flex-wrap: wrap;
+}
+/* Source failure: visible, but not styled as a catastrophe. It is shown
+ * even when collapsed, so a silent source does not look like
+ * "not measured yet". */
+.kpiSourceError {
+  margin: 6px 0 0; font-size: 0.75rem; line-height: 1.35;
+  color: var(--warn, #f59e0b);
+  background: var(--surface-2, rgba(245, 158, 11, .10));
+  border-radius: 6px; padding: 4px 6px;
+}
+
+/* Action plan on a goal */
+.goalPlan { margin: 4px 0 8px 30px; }
+.planPanel {
+  border: 1px solid var(--border, #374151); border-radius: 10px;
+  padding: 8px 10px; background: var(--surface-2);
+}
+.planHead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.8125rem; }
+.planBar {
+  height: 5px; border-radius: 3px; margin: 6px 0; overflow: hidden;
+  background: var(--surface-3, rgba(255, 255, 255, .08));
+}
+.planBar > span { display: block; height: 100%; background: var(--accent, #3b82f6); }
+.planTasks { list-style: none; margin: 4px 0 0; padding: 0; font-size: 0.75rem; }
+.planTasks li { display: flex; align-items: center; gap: 6px; padding: 1px 0; }
+.planDone { opacity: .55; text-decoration: line-through; }
+
+/* Effort-impact matrix and suggestion list */
+.matrixWrap { padding: 4px 2px 24px; }
+.matrixBody { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+.matrix { flex: 1 1 420px; max-width: 560px; min-width: 300px; user-select: none; }
+.matrixSide { flex: 1 1 260px; min-width: 240px; }
+.qGood  { fill: rgba(34, 197, 94, .10); }
+.qBig   { fill: rgba(59, 130, 246, .10); }
+.qSmall { fill: rgba(148, 163, 184, .08); }
+.qBad   { fill: color-mix(in srgb, var(--status-danger, #f87171) 8%, transparent); }
+.qLabel { font-size: 0.6875rem; fill: var(--text-tertiary, #6b7280); }
+.axis { stroke: var(--border, #374151); stroke-width: 1; }
+.axisLabel { font-size: 0.6875rem; fill: var(--text-secondary, #9ca3af); }
+.point { cursor: grab; }
+.point circle { fill: var(--accent, #3b82f6); }
+.point:active { cursor: grabbing; }
+.pointLabel { font-size: 0.6875rem; fill: var(--text, #e5e7eb); pointer-events: none; }
+/* Clara's estimate: pale and dashed; "guessed" must be visible. */
+.pointGuess circle { fill: none; stroke: var(--accent, #3b82f6); stroke-dasharray: 3 2; }
+.pointGuess .pointLabel { opacity: .6; }
+.matrixUnplaced, .matrixList { margin-top: 12px; font-size: 0.8125rem; }
+.matrixUnplaced ul, .matrixList ul { list-style: none; margin: 6px 0 0; padding: 0; }
+.matrixUnplaced li, .matrixList li {
+  display: flex; align-items: center; gap: 8px; padding: 3px 0; flex-wrap: wrap;
+}
+.modalWide { max-width: 640px; }
+.proposalList { list-style: none; margin: 8px 0; padding: 0; }
+.proposalList li {
+  display: flex; gap: 12px; align-items: flex-start; justify-content: space-between;
+  padding: 8px 0; border-top: 1px solid var(--border, #374151);
+}
+.proposalTaken { opacity: .5; }
+
+/* Kaizen: root-cause analysis on a stalled goal */
+.kaizenPanel { margin-top: 6px; font-size: 0.8125rem; }
+.kaizenHead {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  flex-wrap: wrap; padding: 6px 10px; border-radius: 8px;
+  background: var(--surface-2, color-mix(in srgb, var(--status-danger, #f87171) 8%, transparent));
+}
+.analysisList { list-style: none; margin: 8px 0 0; padding: 0; }
+.analysisList > li {
+  padding: 6px 0; border-top: 1px solid var(--border, #374151);
+}
+.counterList { list-style: none; margin: 4px 0 0 12px; padding: 0; }
+.counterList li {
+  display: flex; align-items: center; gap: 8px; padding: 2px 0; flex-wrap: wrap;
+}
+.whyProblem { margin: 4px 0 8px; font-size: 0.8125rem; }
+.whyChain { margin: 0 0 10px; padding-left: 20px; font-size: 0.8125rem; }
+.whyChain li { margin-bottom: 6px; }
+.whyStep { margin: 8px 0; }
+.whyCandidates { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+.paretoTools { display: flex; align-items: flex-end; gap: 10px; margin: 8px 0; flex-wrap: wrap; }
+.paretoUnit { display: flex; flex-direction: column; gap: 4px; font-size: 0.75rem; max-width: 130px; }
+.paretoUnit .input { margin: 0; }
+.paretoRows { list-style: none; margin: 8px 0; padding: 0; }
+.paretoRows li { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+.paretoRows .input { margin: 0; }
+.paretoResult { margin-top: 8px; }
+.paretoBarRow { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.paretoLabel { flex: 0 0 140px; font-size: 0.8125rem; }
+.paretoBar {
+  flex: 1 1 120px; height: 12px; border-radius: 3px;
+  background: var(--surface-3, rgba(255, 255, 255, .08)); overflow: hidden;
+}
+.paretoBar > i { display: block; height: 100%; background: var(--text-tertiary, #6b7280); }
+/* The "vital few" in color: they are the actual message. */
+.paretoVital { background: var(--accent, #3b82f6) !important; }
+
+/* On phones, KPI cards and form fields stack vertically */
+.mobile .goalKpis { grid-template-columns: 1fr; margin-left: 12px; }
+.mobile .goalChildren { margin-left: 12px; }
+.mobile .kpiForm { grid-template-columns: 1fr; }
+.mobile .goalBar { flex-basis: 60px; }
+
+/* ── Overview with KPI tiles ─────────────────────────────────────────────
+   One column on mobile, a grid on desktop: the same tile, a different grid.
+   This way the view fills the width that the goal tree leaves unused. */
+.dash { padding: 4px 2px 96px; }
+
+@media (min-width: 720px) {
+  .dash { padding-bottom: 24px; }
+}
+
+.dashHead {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 8px;
+}
+.dashHead h3 { margin: 0; font-size: 0.9375rem; }
+
+/* Filters in ONE row above the tiles, not scattered between them. */
+.dashFilter { display: flex; gap: 6px; }
+.chip {
+  border: 1px solid var(--border, #374151); background: transparent;
+  color: var(--text-secondary, #9ca3af); border-radius: 999px;
+  padding: 6px 12px; font-size: 0.75rem; cursor: pointer; min-height: 36px;
+}
+.chip:hover { color: var(--text, #e5e7eb); border-color: var(--accent, #3b82f6); }
+.chipAktiv {
+  color: var(--text, #e5e7eb); border-color: var(--accent, #3b82f6);
+  background: color-mix(in srgb, var(--accent, #3b82f6) 18%, transparent);
+}
+
+/* Exactly ONE big number per view. It sits top left because that is where
+   the eye starts, and it says the one thing you want to know in three seconds. */
+.hero {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  padding: 10px 12px; margin-bottom: 10px;
+  border-radius: 12px; background: var(--surface-2);
+}
+.heroFigure { font-size: 3rem; line-height: 1; font-weight: 600; }
+.heroOf { font-size: 1.375rem; color: var(--text-tertiary, #6b7280); font-weight: 400; }
+.heroLabel { font-size: 0.8125rem; color: var(--text-secondary, #9ca3af); }
+
+.tiles {
+  display: grid; gap: 8px;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 720px) {
+  .tiles { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+}
+
+.tile {
+  display: flex; flex-direction: column; gap: 3px;
+  text-align: left; width: 100%;
+  padding: 10px 12px; border-radius: 12px; cursor: pointer;
+  border: 1px solid var(--border, #374151);
+  background: var(--surface-2);
+  color: inherit; font: inherit;
+}
+.tile:hover { border-color: var(--accent, #3b82f6); }
+.tile:focus-visible { outline: 2px solid var(--accent, #3b82f6); outline-offset: 2px; }
+
+.tileLabel { font-size: 0.8125rem; line-height: 1.3; }
+.tileGoal { color: var(--text-tertiary, #6b7280); font-style: normal; }
+.tileValueRow { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
+/* Proportional digits: `tabular-nums` gives each digit the width of a 0 and
+   makes large numbers look airy. Columns need it, standalone values do not. */
+.tileValue { font-size: 1.625rem; font-weight: 600; line-height: 1.1; }
+.tileSpark {
+  width: 90px; height: 28px; flex: 0 0 auto;
+  fill: none; stroke: var(--accent, #3b82f6); stroke-width: 1.5;
+  stroke-linejoin: round; stroke-linecap: round;
+}
+.tileSpark circle { fill: var(--accent, #3b82f6); stroke: none; }
+.tileMeta {
+  font-size: 0.75rem; color: var(--text-secondary, #9ca3af); line-height: 1.35;
+}
+.tileStamp { font-size: 0.6875rem; color: var(--text-tertiary, #6b7280); }
+
+/* ── Accessibility ───────────────────────────────────────────────────────
+   Status colors per mode. The dark values fail text contrast on light
+   backgrounds, MEASURED, not estimated (on #ffffff):
+     yellow #eab308 1.92:1 · green #22c55e 2.28:1 · gray #94a3b8 2.56:1
+     red #ef4444 3.76:1 · dark green #16a34a 3.30:1     (4.5:1 required)
+   Important: one color for both modes is mathematically impossible: for
+   4.5:1 on white it must be dark, for 4.5:1 on black light; the ranges do not
+   overlap. Hence two sets.
+   The mode comes from the MEASURED surface luminance (useColorMode.ts), not
+   from a list of skin names, which would be incomplete the next day. */
+/* Warning: under a LIGHT skin the app would otherwise show dark text on a dark
+   surface (contrast **1.01:1**, unreadable). Cause: `--text-primary`,
+   `--text-secondary` and `--accent` are skin tokens and switch with the skin,
+   while `--surface-1/2/3`, `--border` and `--text-tertiary` were defined
+   NOWHERE, so the dark fallback in `var(…, #171b24)` always applied. The text
+   switched, the background did not.
+
+   Fix: derive the palette ONCE here from the skin tokens. Surfaces are
+   created as a step towards the text color; the same formula raises a card
+   on a dark background and lowers it on a light one, without any mode
+   case distinction. */
+.app {
+  /* Important: --surface-1 is the BASE surface. For a raised card use
+     --surface-2. A translucent white fallback such as
+     `var(--surface-1, rgba(255,255,255,.03))` turns into white on white in
+     light mode once --surface-1 is actually defined, and rows disappear. */
+    /* Warning: without the derivation below, the properties sheet on phones
+     is TRANSPARENT: the comments underneath show through the rows.
+     `--surface-1` resolved to `rgba(14,20,38,0.80)` although `tokens.css`
+     derives it from `--bg-window-solid`, because THIS block overrides the
+     palette once more: a second writer to the same property, and the second
+     one wins. It went unnoticed while every section had its own opaque card;
+     without the boxes the transparency is exposed.
+     So use the same derivation as in `tokens.css` everywhere:
+     `--bg-window-solid` first, `--bg-window` only as a fallback. */
+  --surface-1: var(--bg-window-solid, var(--bg-window, #171b24));
+  --surface-2: color-mix(in srgb, var(--text-primary, #e5e7eb) 7%, var(--bg-window-solid, var(--bg-window, #171b24)));
+  --surface-3: color-mix(in srgb, var(--text-primary, #e5e7eb) 13%, var(--bg-window-solid, var(--bg-window, #171b24)));
+  --border: color-mix(in srgb, var(--text-primary, #e5e7eb) 24%, var(--bg-window-solid, var(--bg-window, #171b24)));
+  --border-color: var(--border);
+  --text: var(--text-primary, #e5e7eb);
+  /* 65 % towards the text color: gives >= 4.5:1 in BOTH modes (dark ~6.6 · light ~5.3).
+     The former fixed value #6b7280 was at 3.56:1, just below AA. */
+  --text-tertiary: color-mix(in srgb, var(--text-primary, #e5e7eb) 65%, var(--bg-window-solid, var(--bg-window, #171b24)));
+
+  --kpi-st-done: #16a34a;
+  --kpi-st-on_track: #22c55e;
+  --kpi-st-at_risk: #eab308;
+  --kpi-st-blind: #94a3b8;
+  --kpi-st-behind: #ef4444;
+  --kpi-gut: #22c55e;
+  --kpi-schlecht: #ef4444;
+}
+
+/* Values recalculated on #ffffff / #f3f3f3, all >= 4.5:1.
+   Important: the attribute is `data-color-mode`, NOT `data-mode`: the latter
+   is already used by MobileShell (`data-mode="app"`) and the start menu. A
+   `[data-mode]` selector would then match the wrong element on phones. */
+.app[data-color-mode="light"] {
+  --kpi-st-done: #166534;      /* 7,13 / 6,43 */
+  --kpi-st-on_track: #15803d;  /* 5,02 / 4,52 */
+  --kpi-st-at_risk: #854d0e;   /* 6,85 / 6,17 */
+  --kpi-st-blind: #475569;     /* 7,58 / 6,83 */
+  --kpi-st-behind: #b91c1c;    /* 6,47 / 5,83 */
+  --kpi-gut: #15803d;
+  --kpi-schlecht: #b91c1c;
+}
+
+.trendGut { color: var(--kpi-gut); }
+.trendSchlecht { color: var(--kpi-schlecht); }
+
+/* Make keyboard navigation visible wherever things are clickable.
+   Without a visible focus an app is unusable by keyboard, even if every
+   target is technically reachable. */
+.chip:focus-visible,
+.linkBtn:focus-visible,
+.iconBtn:focus-visible,
+.goalTitle:focus-visible,
+.goalToggle:focus-visible,
+.kpiTitle:focus-visible,
+.railBtn:focus-visible {
+  outline: 2px solid var(--accent, #3b82f6);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Respect "reduced motion": people who set this system preference often
+   have a medical reason (dizziness, migraine). */
+@media (prefers-reduced-motion: reduce) {
+  .goalBar > span,
+  .kpiBar > span,
+  .tile,
+  .chip {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Print and forced colors: color no longer carries meaning there. The
+   curves also differ by stroke (solid ↔ dashed) and the legend, which stays
+   readable without color. */
+@media print {
+  /* Important: font sizes HERE in px, not rem, as the only place in the
+     codebase. Everywhere else rem applies so the user's font-size slider
+     (`appearance.uiScale`) works; but a screen UI size has no business on
+     paper. There is no `font-size` here yet; whoever adds the first one
+     writes px AND this reason next to it.
+     Why a comment and not a note elsewhere: a rule you cannot read where it
+     applies turns into a legend. */
+  .chart { break-inside: avoid; }
+  .chartIst { stroke: #000; }
+  .chartPlan { stroke: #666; }
+  .tile { border-color: #999; }
+}
+
+@media (forced-colors: active) {
+  .chartIst, .chartPlan, .chartTarget, .chartGrid, .tileSpark {
+    forced-color-adjust: none;
+  }
+  .chartIst { stroke: Highlight; }
+  .chartPlan { stroke: GrayText; }
+  .tile, .chip { border: 1px solid ButtonBorder; }
+}
+
+/* ── Icons inline with text ──────────────────────────────────────────────
+   An icon next to text must sit on the text baseline, otherwise the line
+   dances. `vertical-align` alone is not enough for SVG; flexbox with a shared
+   baseline is more reliable. */
+.inlineIcon {
+  vertical-align: -0.18em;
+  margin-right: 6px;
+  flex: 0 0 auto;
+}
+/* "Plus + object" is ONE button: both glyphs sit side by side on one line
+   with tight spacing. An overlaid or superscript plus reads as two loose
+   glyphs. */
+.goalActions .iconBtn { gap: 1px; padding: 0 4px; }
+/* Vertically center icons in buttons and status indicators. */
+.goalStatus, .kpiStatus, .goalToggle, .iconBtn, .railIcon, .tabIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.goalActions .iconBtn { position: relative; }
+
+/* Filter/sort move into the view row rather than a second toolbar below.
+   `margin-left: auto` pushes them right without displacing the pills. */
+.viewBarRechts {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.mobile .btnPrimary, .mobile .btnSecondary { min-height: 48px; border-radius: var(--radius-pill, 999px); }

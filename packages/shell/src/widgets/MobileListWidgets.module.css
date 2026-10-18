@@ -1,0 +1,252 @@
+/* Shared row/typography styles for the MOBILE homescreen list widgets
+   (calendar agenda, tasks). The .mWidget card in MobileShell.module.css
+   provides the chrome (blur, radius, border) — these are the innards.
+   Desktop widgets keep using Widgets.module.css. */
+
+.widget {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px 10px;
+  color: #fff;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 6px;
+  flex-shrink: 0;
+}
+.headerDay {
+  font-size: 1.625rem;
+  font-weight: 300;
+  line-height: 1;
+}
+.headerMeta {
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+.headerTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.badge {
+  font-size: 0.6875rem;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+/* header buttons pushed to the right */
+.headerActions {
+  margin-left: auto;
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+/* Warning: on touch devices the global touch rule would turn these 30 x 30
+   buttons into 30 x 44 (stretched, partly oval) — `tokens.css` gives every
+   non-empty button `min-height: 44px`, while the matching `min-width` rule
+   only applies to a bare `<svg>`.
+   Enlarging to 44 x 44 does not work here: four of them sit in a narrow
+   widget header. So we take the route `tokens.css` provides for exactly this
+   case — visually small, touch area 44 px. Opt-out documented here. */
+@media (pointer: coarse) {
+  .iconBtn {
+    min-height: 0;
+    min-width: 0;
+    position: relative;
+  }
+  .iconBtn::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    height: 44px;
+  }
+}
+
+.iconBtn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #fff;
+  opacity: 0.8;
+  font-size: 1rem;
+  line-height: 1;
+  border-radius: 50%;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.iconBtn:active { background: rgba(255, 255, 255, 0.18); opacity: 1; }
+/* Desktop: mirror mouse hover (no effect on mobile) */
+.iconBtn:hover { background: rgba(255, 255, 255, 0.12); opacity: 1; }
+
+/* inline add-composer */
+.composer {
+  display: flex;
+  gap: 6px;
+  padding: 4px 0 6px;
+  flex-shrink: 0;
+}
+.composerInput {
+  flex: 1;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  color: #fff;
+  font: inherit;
+  font-size: 0.8125rem;
+  padding: 5px 9px;
+  outline: none;
+}
+.composerInput::placeholder { color: rgba(255, 255, 255, 0.5); }
+.composerAdd {
+  flex-shrink: 0;
+  border: none;
+  border-radius: 8px;
+  background: rgba(90, 160, 255, 0.85);
+  color: #fff;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+/* interactive scroll region — pan-y overrides the frame's touch-action:none
+   for touches that start here, so the list scrolls natively; the home
+   swipe-handler ignores gestures that begin inside a widget (data-widget-id). */
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  scrollbar-width: none;
+}
+.scroll::-webkit-scrollbar { display: none; }
+
+/* round check button (tasks) */
+.check {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  background: transparent;
+  color: #04220c;
+  font-size: 0.8125rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s, border-color 0.12s;
+}
+.check.checked {
+  background: rgba(90, 190, 110, 0.95);
+  border-color: rgba(90, 190, 110, 0.95);
+}
+
+.dayHead {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  opacity: 0.65;
+  padding-top: 3px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  border-radius: 7px;
+}
+/* Desktop: highlight clickable rows on mouse hover (no effect on mobile) */
+.row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.check:hover {
+  border-color: rgba(255, 255, 255, 0.9);
+}
+.time {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  min-width: 42px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: rgba(70, 110, 185, 0.42);
+  border-radius: 7px;
+  padding: 0 5px;
+}
+/* all-day badge — muted grey-green square "24H" like common phone agenda widgets */
+.allday {
+  background: rgba(96, 124, 82, 0.92);
+  color: #eef7e6;
+  letter-spacing: 0.3px;
+}
+.bullet {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+.title {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.loc {
+  flex-shrink: 0;
+  max-width: 30%;
+  font-size: 0.6875rem;
+  opacity: 0.6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.due {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  opacity: 0.75;
+}
+.overdue {
+  color: #ff8a80;
+  opacity: 1;
+}
+
+.empty {
+  font-size: 0.75rem;
+  opacity: 0.6;
+  padding-top: 6px;
+}

@@ -1,0 +1,841 @@
+# ClaraOS cell — a standalone instance on a rented server.
+#
+# Lives on the cell under /opt/claraos/ next to .env (0600, created by setup.sh),
+# the Caddyfile and src/ (source code, copied over via tar).
+#
+# Important: ONLY Caddy (80/443) is exposed. Everything else talks over the
+#    internal network `zelle`.
+
+name: claraos
+
+x-restart: &restart
+  restart: unless-stopped
+
+services:
+  # ── Layer 1: proxy ────────────────────────────────────────────────────────
+  caddy:
+    <<: *restart
+    image: caddy:2.10-alpine
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      ZELLE_DOMAIN: ${ZELLE_DOMAIN}
+      SOCIAL_DOMAIN: ${SOCIAL_DOMAIN}
+      VIDEO_DOMAIN: ${VIDEO_DOMAIN}
+      CLARAOS_PROXY_SECRET: ${CLARAOS_PROXY_SECRET}
+    volumes:
+      # Warning: mount the directory, not the single file: tar replaces the file with a
+      # NEW one (new inode) — a single-file bind mount stays attached to the old one, and
+      # `caddy reload` silently loads the old configuration.
+      - ./caddy:/etc/caddy:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      zelle:
+        # The public names point to Caddy INTERNALLY as well. Collabora fetches the
+        # file via the public WOPISrc (https://home.<domain>/…) — without the alias
+        # that would go out through the public IP and back in.
+        aliases:
+          - home.${ZELLE_DOMAIN}
+          - auth.${ZELLE_DOMAIN}
+          - nextcloud.${ZELLE_DOMAIN}
+          - collabora.${ZELLE_DOMAIN}
+          - jmap.${ZELLE_DOMAIN}
+          - matrix.${ZELLE_DOMAIN}
+          - call.${ZELLE_DOMAIN}
+          - immich.${ZELLE_DOMAIN}
+          - paperless.${ZELLE_DOMAIN}
+          - ${SOCIAL_DOMAIN}
+          - ${VIDEO_DOMAIN}
+          # lk-jwt-service queries /.well-known/matrix/server on the apex
+          - ${ZELLE_DOMAIN}
+    mem_limit: 256m
+
+  # ── Layer 1: login (Authentik >= 2025.10 no longer needs Redis) ───────────
+  authentik-postgres:
+    <<: *restart
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: authentik
+      POSTGRES_USER: authentik
+      POSTGRES_PASSWORD: ${AUTHENTIK_DB_PASSWORD}
+    volumes: [authentik-db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U authentik -d authentik"]
+      interval: 10s
+      retries: 10
+    networks: [zelle]
+    mem_limit: 512m
+
+  authentik:
+    <<: *restart
+    image: ghcr.io/goauthentik/server:2026.8.3
+    command: server
+    environment: &authentik-env
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
+      AUTHENTIK_POSTGRESQL__HOST: authentik-postgres
+      AUTHENTIK_POSTGRESQL__NAME: authentik
+      AUTHENTIK_POSTGRESQL__USER: authentik
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_DB_PASSWORD}
+      AUTHENTIK_BOOTSTRAP_EMAIL: ${AUTHENTIK_BOOTSTRAP_EMAIL}
+      AUTHENTIK_BOOTSTRAP_PASSWORD: ${AUTHENTIK_BOOTSTRAP_PASSWORD}
+      AUTHENTIK_BOOTSTRAP_TOKEN: ${AUTHENTIK_BOOTSTRAP_TOKEN}
+      AUTHENTIK_DISABLE_UPDATE_CHECK: "true"
+      AUTHENTIK_ERROR_REPORTING__ENABLED: "false"
+    depends_on:
+      authentik-postgres: {condition: service_healthy}
+    networks: [zelle]
+    mem_limit: 1g
+
+  authentik-worker:
+    <<: *restart
+    image: ghcr.io/goauthentik/server:2026.8.3
+    command: worker
+    environment: *authentik-env
+    depends_on:
+      authentik-postgres: {condition: service_healthy}
+    networks: [zelle]
+    mem_limit: 768m
+
+  # ── Layer 1: ClaraOS ──────────────────────────────────────────────────────
+  clara-users-postgres:
+    <<: *restart
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: clara_users
+      POSTGRES_USER: clara
+      POSTGRES_PASSWORD: ${CLARAOS_DB_PASS}
+    volumes: [claraos-db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clara -d clara_users"]
+      interval: 10s
+      retries: 10
+    networks: [zelle]
+    mem_limit: 512m
+
+  claraos-api:
+    <<: *restart
+    build:
+      context: ./src
+      dockerfile: docker/Dockerfile.api
+    image: claraos-api:zelle
+    environment:
+      # External brain (services/brain_turns.py): token the brain uses to call this
+      # cell's tool API. Empty = no brain; Clara chats without tools.
+      CLARAOS_BRAIN_TOKEN: ${CLARAOS_BRAIN_TOKEN:-}
+      # The cell asks the brain to forget deleted users (services/brain_turns.forget_user).
+      CLARAOS_BRAIN_URL: ${CLARAOS_BRAIN_URL:-}
+      CLARAOS_BRAIN_KEY: ${CLARAOS_BRAIN_KEY:-}
+      # Deployment profile: only approved routers, no silent fallback to home-network defaults.
+      CLARAOS_PROFILE: cell
+      # MCP endpoint for users' own AI agents (setup.sh --mcp). Off unless "on".
+      CLARAOS_MCP: ${CLARAOS_MCP:-off}
+      CLARAOS_BASE_DOMAIN: ${ZELLE_DOMAIN}
+      CLARAOS_MATRIX_SERVER_NAME: ${ZELLE_DOMAIN}
+      CLARAOS_PUBLIC_URL: https://home.${ZELLE_DOMAIN}
+      # The image ships an internal default address — the cell's startup guard
+      # would (rightly) reject it. Hence the override here.
+      AUTHENTIK_LOGOUT_URL: https://auth.${ZELLE_DOMAIN}/if/flow/default-invalidation-flow/
+      AUTHENTIK_URL: http://authentik:9000
+      AUTHENTIK_API_TOKEN: ${AUTHENTIK_API_TOKEN}
+      CLARAOS_DB_HOST: clara-users-postgres
+      CLARAOS_DB_PORT: "5432"
+      CLARAOS_DB_NAME: clara_users
+      CLARAOS_DB_USER: clara
+      CLARAOS_DB_PASS: ${CLARAOS_DB_PASS}
+      DATABASE_URL: postgresql://clara:${CLARAOS_DB_PASS}@clara-users-postgres:5432/clara_users
+      CLARAOS_PROXY_SECRET: ${CLARAOS_PROXY_SECRET}
+      CLARAOS_SERVICE_TOKEN: ${CLARAOS_SERVICE_TOKEN}
+      CLARAOS_CREDENTIAL_KEY: ${CLARAOS_CREDENTIAL_KEY}
+      # Layer 2: files/viewer/office. Per-user access via individual app passwords
+      # (provision_nc.py). Warning: NEVER set NEXTCLOUD_SERVICE_USER/-PASS here:
+      # files.py would then fall back to that single account for every user without
+      # their own credentials — everyone would see the same files.
+      NEXTCLOUD_URL: http://nextcloud
+      NEXTCLOUD_INTERNAL_URL: http://nextcloud
+      COLLABORA_CONVERT_URL: http://collabora:9980
+      # Layer 3: Clara chat via Open WebUI → LiteLLM → Anthropic (no clara-agent).
+      # OPENWEBUI_API_KEY = API key of the OWUI admin (created by setup.sh);
+      # WEBUI_SECRET_KEY = the same as in Open WebUI — the API uses it to sign the
+      # short-lived per-user tokens (chat_v2._get_webui_token).
+      OPENWEBUI_URL: http://open-webui:8080
+      OPENWEBUI_API_KEY: ${OPENWEBUI_API_KEY:-}
+      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY}
+      LITELLM_BASE_URL: http://litellm:4000
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+      # Layer 3: Planner (Vikunja, internal only; per-user token via provision_vikunja.py)
+      VIKUNJA_INTERNAL_URL: http://vikunja:3456
+      # Layer 4: Teams (Synapse internal; admin API only inside the cell network)
+      SYNAPSE_INTERNAL_URL: http://synapse:8008
+      # Layer 6: personal browsers (controller with its own token, see browser-ctl)
+      BROWSER_CTL_URL: http://browser-ctl:8199
+      BROWSER_CTL_TOKEN: ${BROWSER_CTL_TOKEN}
+      # Clara's Paperless tools: the cell creates each user's Paperless token on first
+      # use with the Paperless admin (services/zellen_zugaenge.py).
+      PAPERLESS_INTERNAL_URL: http://paperless:8000
+      PAPERLESS_ADMIN_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD}
+      # Shared social cell: tiles appear only when these are set (betriebsprofil._SOZIAL)
+      SOCIAL_DOMAIN: ${SOCIAL_DOMAIN:-}
+      VIDEO_DOMAIN: ${VIDEO_DOMAIN:-}
+    depends_on:
+      clara-users-postgres: {condition: service_healthy}
+    # Tool definitions (clara-tools.d) the cell offers Clara.
+    volumes:
+      - ./src/clara-tools.d:/opt/claraos/clara-tools.d:ro
+    # Tool API for an external brain — bind it to a PRIVATE address only
+    # (CLARAOS_BRAIN_LISTEN, e.g. the cell's private network IP). Default: loopback.
+    ports:
+      - "${CLARAOS_BRAIN_LISTEN:-127.0.0.1}:8090:8090"
+    networks: [zelle]
+    mem_limit: 768m
+
+  claraos-frontend:
+    <<: *restart
+    build:
+      context: ./src
+      dockerfile: docker/Dockerfile.frontend
+    image: claraos-frontend:zelle
+    networks: [zelle]
+    mem_limit: 128m
+
+  # ── Layer 2: files, viewer, office ────────────────────────────────────────
+  nextcloud-db:
+    <<: *restart
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NEXTCLOUD_DB_PASSWORD}
+    volumes: [nextcloud-db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextcloud -d nextcloud"]
+      interval: 10s
+      retries: 10
+    networks: [zelle]
+    mem_limit: 512m
+
+  nextcloud:
+    <<: *restart
+    image: nextcloud:34-apache          # tested with 34.0.x
+    environment: &nextcloud-env
+      POSTGRES_HOST: nextcloud-db
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NEXTCLOUD_DB_PASSWORD}
+      NEXTCLOUD_ADMIN_USER: ncadmin
+      NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD}
+      # `nextcloud` = internal name the ClaraOS API uses for WebDAV
+      NEXTCLOUD_TRUSTED_DOMAINS: nextcloud.${ZELLE_DOMAIN} nextcloud
+      TRUSTED_PROXIES: 172.16.0.0/12
+      APACHE_DISABLE_REWRITE_IP: "1"
+      PHP_MEMORY_LIMIT: 1G
+      PHP_UPLOAD_LIMIT: 2G
+    volumes:
+      - nextcloud-html:/var/www/html
+      - nextcloud-data:/var/www/html/data
+    depends_on:
+      nextcloud-db: {condition: service_healthy}
+    networks: [zelle]
+    mem_limit: 1g
+
+  nextcloud-cron:
+    <<: *restart
+    image: nextcloud:34-apache
+    entrypoint: /cron.sh
+    environment: *nextcloud-env
+    volumes:
+      - nextcloud-html:/var/www/html
+      - nextcloud-data:/var/www/html/data
+    depends_on: [nextcloud]
+    networks: [zelle]
+    mem_limit: 256m
+
+  collabora:
+    <<: *restart
+    image: collabora/code:latest
+    environment:
+      # Only this WOPI host (the ClaraOS API) may have documents opened.
+      aliasgroup1: https://home.${ZELLE_DOMAIN}:443
+      # Warning: frame_ancestors must be ONE token: coolwsd splits on spaces.
+      # server_name controls the discovery urlsrc = where the browser loads the editor from.
+      extra_params: >-
+        --o:ssl.enable=false --o:ssl.termination=true
+        --o:server_name=collabora.${ZELLE_DOMAIN}
+        --o:net.frame_ancestors=*.${ZELLE_DOMAIN}
+      username: admin
+      password: ${COLLABORA_ADMIN_PASSWORD}
+      dictionaries: de_DE en_US
+    cap_add: [MKNOD]
+    networks: [zelle]
+    mem_limit: 2g
+
+  # ── Layer 3: Clara (cloud models only) ────────────────────────────────────
+  # Both reachable ONLY internally — no Caddy vhost. Users go through the
+  # ClaraOS API, never directly to Open WebUI or LiteLLM.
+  litellm-db:
+    <<: *restart
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: litellm
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: ${LITELLM_DB_PASSWORD}
+    volumes: [litellm-db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U litellm -d litellm"]
+      interval: 10s
+      retries: 10
+    networks: [zelle]
+    mem_limit: 256m
+
+  litellm:
+    <<: *restart
+    image: ghcr.io/berriai/litellm:main-stable
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    environment:
+      # litellm.brain.yaml: clara/everyday goes to an external brain.
+      CLARAOS_BRAIN_URL: ${CLARAOS_BRAIN_URL:-}
+      CLARAOS_BRAIN_KEY: ${CLARAOS_BRAIN_KEY:-}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+      DATABASE_URL: postgresql://litellm:${LITELLM_DB_PASSWORD}@litellm-db:5432/litellm
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      LITELLM_TELEMETRY: "False"
+    volumes: ["./${CLARAOS_LITELLM_CONFIG:-litellm.yaml}:/app/config.yaml:ro"]
+    depends_on:
+      litellm-db: {condition: service_healthy}
+    networks: [zelle]
+    mem_limit: 1g
+
+  open-webui:
+    <<: *restart
+    image: ghcr.io/open-webui/open-webui:v0.11.3
+    environment:
+      # Titles/tags/follow-ups with a small model — not with the chat model (with an
+      # external brain those background calls have no chat turn and would be refused).
+      TASK_MODEL_EXTERNAL: claude-haiku-4-5
+      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY}
+      OPENAI_API_BASE_URL: http://litellm:4000/v1
+      OPENAI_API_KEY: ${LITELLM_MASTER_KEY}
+      ENABLE_OLLAMA_API: "false"
+      DEFAULT_MODELS: clara/everyday
+      ENABLE_API_KEYS: "true"
+      ENABLE_API_KEY: "true"
+      # The first sign-up creates the admin (setup.sh); no self-registration afterwards.
+      ENABLE_SIGNUP: "true"
+      DEFAULT_USER_ROLE: user
+      # Otherwise models from the LiteLLM connection are visible to admins only — regular
+      # users would see "Clara ist für dieses Konto nicht freigeschaltet". The cell only
+      # has its own aliases; LiteLLM caps the costs.
+      BYPASS_MODEL_ACCESS_CONTROL: "true"
+      ANONYMIZED_TELEMETRY: "false"
+      DO_NOT_TRACK: "true"
+      SCARF_NO_ANALYTICS: "true"
+    volumes: [open-webui:/app/backend/data]
+    depends_on: [litellm]
+    networks: [zelle]
+    mem_limit: 1536m
+
+  # ── Layer 3: Planner ──────────────────────────────────────────────────────
+  # Internal only: the ClaraOS Planner app goes through the BFF (routers/planner.py).
+  # That is why registration may stay enabled — it is only reachable inside the cell
+  # network, where provision_vikunja.py creates the accounts.
+  vikunja-db:
+    <<: *restart
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: vikunja
+      POSTGRES_USER: vikunja
+      POSTGRES_PASSWORD: ${VIKUNJA_DB_PASSWORD}
+    volumes: [vikunja-db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vikunja -d vikunja"]
+      interval: 10s
+      retries: 10
+    networks: [zelle]
+    mem_limit: 256m
+
+  # Warning: a new Docker volume is owned by root; Vikunja runs as 1000 and would
+  # restart in a loop ("storage validation failed … permission denied").
+  vikunja-init:
+    image: alpine:3.22
+    command: ["chown", "-R", "1000:1000", "/files"]
+    volumes: [vikunja-files:/files]
+    restart: "no"
+
+  vikunja:
+    <<: *restart
+    image: vikunja/vikunja:2.3.0
+    environment:
+      VIKUNJA_DATABASE_TYPE: postgres
+      VIKUNJA_DATABASE_HOST: vikunja-db
+      VIKUNJA_DATABASE_DATABASE: vikunja
+      VIKUNJA_DATABASE_USER: vikunja
+      VIKUNJA_DATABASE_PASSWORD: ${VIKUNJA_DB_PASSWORD}
+      VIKUNJA_SERVICE_SECRET: ${VIKUNJA_JWT_SECRET}    # 2.x: service.jwtsecret is deprecated
+      VIKUNJA_SERVICE_PUBLICURL: http://vikunja:3456/
+      VIKUNJA_SERVICE_ENABLEREGISTRATION: "true"
+      VIKUNJA_SERVICE_TIMEZONE: Europe/Berlin
+      VIKUNJA_MAILER_ENABLED: "false"
+    volumes: [vikunja-files:/app/vikunja/files]
+    depends_on:
+      vikunja-db: {condition: service_healthy}
+      vikunja-init: {condition: service_completed_successfully}
+    networks: [zelle]
+    mem_limit: 256m
+
+  # ── Layer 3: password vault ───────────────────────────────────────────────
+  # Login ONLY via Authentik (SSO_ONLY, PKCE) — the same account as the shell.
+  # The master password still stays with the user: Vaultwarden is end-to-end
+  # encrypted, SSO only authenticates. No admin page (no ADMIN_TOKEN).
+  vaultwarden:
+    <<: *restart
+    image: vaultwarden/server:latest
+    environment:
+      DOMAIN: https://vault.${ZELLE_DOMAIN}
+      SSO_ENABLED: "true"
+      SSO_ONLY: "true"
+      SSO_PKCE: "true"
+      SSO_SIGNUPS_MATCH_EMAIL: "true"
+      SSO_AUTHORITY: https://auth.${ZELLE_DOMAIN}/application/o/vaultwarden/
+      SSO_CLIENT_ID: vaultwarden
+      SSO_CLIENT_SECRET: ${VW_SSO_CLIENT_SECRET}
+      SSO_SCOPES: email profile offline_access
+      SIGNUPS_ALLOWED: "true"                # only via SSO (SSO_ONLY)
+      INVITATIONS_ALLOWED: "false"
+      # Allow embedding as a tile ONLY in the cell's own shell — instead of removing
+      # the frame-protection headers entirely.
+      ALLOWED_IFRAME_ANCESTORS: https://home.${ZELLE_DOMAIN}
+    volumes: [vaultwarden:/data]
+    networks: [zelle]
+    mem_limit: 256m
+
+  # ── Layer 4: mail ─────────────────────────────────────────────────────────
+  # Stalwart (tested with 0.16.11, RocksDB, internal directory). NO
+  # mail ports exposed: mail between users of the cell stays internal, the Mail app
+  # speaks JMAP via Caddy (jmap.<domain>). No sending to the internet (abuse prevention).
+  # Warning: stalwart-cli: NEVER run `destroy` on an account — in 0.16.11 it deletes ALL
+  #    accounts. Remove accounts only via JMAP x:*/set destroy.
+  stalwart:
+    <<: *restart
+    image: stalwartlabs/stalwart:v0.16.11
+    environment:
+      STALWART_RECOVERY_ADMIN: admin:${STALWART_ADMIN_PASSWORD}
+      STALWART_PUBLIC_URL: https://jmap.${ZELLE_DOMAIN}
+    volumes:
+      - stalwart-etc:/etc/stalwart
+      - stalwart-data:/var/lib/stalwart
+    networks: [zelle]
+    mem_limit: 512m
+
+  # ── Layer 4: Teams ────────────────────────────────────────────────────────
+  synapse-db:
+    <<: *restart
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: synapse
+      POSTGRES_USER: synapse
+      POSTGRES_PASSWORD: ${SYNAPSE_DB_PASSWORD}
+      # Synapse requires C collation
+      POSTGRES_INITDB_ARGS: --encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    volumes: [synapse-db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U synapse -d synapse"]
+      interval: 10s
+      retries: 10
+    networks: [zelle]
+    mem_limit: 256m
+
+  synapse:
+    <<: *restart
+    image: matrixdotorg/synapse:v1.161.0
+    # Host directory instead of a volume: setup.sh renders homeserver.yaml from the
+    # template into it (0600, uid 991) — the signing key and media live there too.
+    volumes: [./synapse-data:/data]
+    depends_on:
+      synapse-db: {condition: service_healthy}
+    networks: [zelle]
+    mem_limit: 768m
+
+  # ── Layer 4: calls (MatrixRTC) ────────────────────────────────────────────
+  # Element Call (UI as a widget in Teams) + lk-jwt-service
+  # (exchanges Matrix OpenID for a LiveKit token) + LiveKit (media server).
+  # Important: proof of a working call is server-side (LiveKit: participant active +
+  #    track published) — the call UI proves nothing about the media path.
+  livekit:
+    <<: *restart
+    image: livekit/livekit-server:v1.9
+    command: ["--config", "/etc/livekit.yaml"]
+    environment:
+      # Keys via environment instead of the config file
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
+    volumes: [./livekit.yaml:/etc/livekit.yaml:ro]
+    ports: ["7881:7881/tcp", "50100-50200:50100-50200/udp"]
+    networks: [zelle]
+    mem_limit: 512m
+
+  lk-jwt:
+    <<: *restart
+    image: ghcr.io/element-hq/lk-jwt-service:latest
+    environment:
+      LIVEKIT_URL: wss://matrix.${ZELLE_DOMAIN}/livekit/ws
+      LIVEKIT_KEY: ${LIVEKIT_API_KEY}
+      LIVEKIT_SECRET: ${LIVEKIT_API_SECRET}
+      LIVEKIT_FULL_ACCESS_HOMESERVERS: ${ZELLE_DOMAIN}
+    networks: [zelle]
+    mem_limit: 64m
+
+  element-call:
+    <<: *restart
+    image: ghcr.io/element-hq/element-call:latest
+    volumes: [./element-call/config.json:/app/config.json:ro]
+    networks: [zelle]
+    mem_limit: 64m
+
+  # ── Layer 5: photos (Immich) ──────────────────────────────────────────────
+  # Login ONLY via Authentik (OIDC, provision_immich.py turns password login off).
+  # Every user sees only their own library; storage quota per user from
+  # IMMICH_DEFAULT_QUOTA_GB. Server and machine learning must have the SAME version.
+  # CPU caps keep thumbnail/transcoding/ML bursts from starving the rest of the cell.
+  immich-db:
+    <<: *restart
+    image: ghcr.io/immich-app/postgres:16-vectorchord0.4.3-pgvector0.8.1
+    environment:
+      POSTGRES_DB: immich
+      POSTGRES_USER: immich
+      POSTGRES_PASSWORD: ${IMMICH_DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: --data-checksums
+    volumes: [immich-db:/var/lib/postgresql/data]
+    shm_size: 128mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U immich -d immich"]
+      interval: 10s
+      retries: 10
+    networks: [zelle]
+    # Measured right after setup: ~400 MB (vector indexes + cache) — 512m was too tight.
+    mem_limit: 768m
+
+  immich-redis:
+    <<: *restart
+    image: redis:7-alpine
+    networks: [zelle]
+    mem_limit: 128m
+
+  immich-ml:
+    <<: *restart
+    image: ghcr.io/immich-app/immich-machine-learning:v3.2.0
+    environment:
+      # Models are unloaded after 5 min idle — at rest this costs ~150 MB, not 2 GB.
+      MACHINE_LEARNING_MODEL_TTL: "300"
+      MACHINE_LEARNING_WORKERS: "1"
+    volumes: [immich-ml-cache:/cache]
+    networks: [zelle]
+    mem_limit: 2560m
+    cpus: 2
+
+  immich-server:
+    <<: *restart
+    image: ghcr.io/immich-app/immich-server:v3.2.0
+    environment:
+      DB_HOSTNAME: immich-db
+      DB_USERNAME: immich
+      DB_PASSWORD: ${IMMICH_DB_PASSWORD}
+      DB_DATABASE_NAME: immich
+      REDIS_HOSTNAME: immich-redis
+      IMMICH_MACHINE_LEARNING_URL: http://immich-ml:3003
+      TZ: Europe/Berlin
+    volumes: [immich-upload:/data]
+    depends_on:
+      immich-db: {condition: service_healthy}
+      immich-redis: {condition: service_started}
+    networks: [zelle]
+    mem_limit: 2g
+    cpus: 4
+
+  # ── Layer 5: documents (Paperless-ngx) ────────────────────────────────────
+  # Login ONLY via Authentik (OIDC through django-allauth). New accounts land in the
+  # group `nutzer` (rights set by setup.sh) — without it Paperless shows an empty,
+  # read-only UI. Documents belong to whoever uploaded them; others only see what is
+  # shared. No consume folder: unowned documents would be visible to everyone.
+  # No Tika/Gotenberg (office conversion) — saves ~1 GB; PDFs and images only.
+  paperless-db:
+    <<: *restart
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: paperless
+      POSTGRES_USER: paperless
+      POSTGRES_PASSWORD: ${PAPERLESS_DB_PASSWORD}
+    volumes: [paperless-db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paperless -d paperless"]
+      interval: 10s
+      retries: 10
+    networks: [zelle]
+    mem_limit: 256m
+
+  paperless-redis:
+    <<: *restart
+    image: redis:7-alpine
+    networks: [zelle]
+    mem_limit: 64m
+
+  paperless:
+    <<: *restart
+    image: ghcr.io/paperless-ngx/paperless-ngx:2.20.15
+    environment:
+      PAPERLESS_URL: https://paperless.${ZELLE_DOMAIN}
+      PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY}
+      PAPERLESS_DBHOST: paperless-db
+      PAPERLESS_DBNAME: paperless
+      PAPERLESS_DBUSER: paperless
+      PAPERLESS_DBPASS: ${PAPERLESS_DB_PASSWORD}
+      PAPERLESS_REDIS: redis://paperless-redis:6379
+      # Warning: Paperless offers "create the first account — it becomes admin" to
+      # ANYONE as long as no real user exists (fresh install, or after the last account
+      # was deleted). This admin closes that door for good; it is created at startup.
+      PAPERLESS_ADMIN_USER: admin
+      PAPERLESS_ADMIN_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD}
+      PAPERLESS_TIME_ZONE: Europe/Berlin
+      PAPERLESS_OCR_LANGUAGE: deu+eng
+      PAPERLESS_TASK_WORKERS: "1"
+      PAPERLESS_THREADS_PER_WORKER: "2"
+      # Single sign-on via Authentik. The login page submits itself to the provider
+      # (REDIRECT_LOGIN_TO_SSO), so the tile opens without a click.
+      PAPERLESS_APPS: allauth.socialaccount.providers.openid_connect
+      PAPERLESS_SOCIALACCOUNT_PROVIDERS: >-
+        {"openid_connect":{"SCOPE":["openid","profile","email"],"OAUTH_PKCE_ENABLED":true,
+        "APPS":[{"provider_id":"authentik","name":"ClaraOS","client_id":"paperless",
+        "secret":"${PAPERLESS_OIDC_SECRET}","settings":{"server_url":
+        "https://auth.${ZELLE_DOMAIN}/application/o/paperless/.well-known/openid-configuration"}}]}}
+      PAPERLESS_SOCIAL_AUTO_SIGNUP: "true"
+      PAPERLESS_SOCIAL_ACCOUNT_DEFAULT_GROUPS: nutzer
+      PAPERLESS_ACCOUNT_ALLOW_SIGNUPS: "false"
+      PAPERLESS_DISABLE_REGULAR_LOGIN: "true"
+      PAPERLESS_REDIRECT_LOGIN_TO_SSO: "true"
+    volumes:
+      - paperless-data:/usr/src/paperless/data
+      - paperless-media:/usr/src/paperless/media
+    depends_on:
+      paperless-db: {condition: service_healthy}
+      paperless-redis: {condition: service_started}
+    networks: [zelle]
+    mem_limit: 1536m
+    cpus: 2
+
+  # ── Layer 6: personal browsers ────────────────────────────────────────────
+  # The controller creates/starts/stops each user's browser (browser/ctl.py). It holds
+  # the Docker socket = root on this server — hence: no published port, own token,
+  # only names it builds itself. The browsers themselves are NOT in this file: they
+  # are created on first use, each in its own network (ubnet-<user>) that only Caddy
+  # and the API join; browser/firewall.sh fences that pool off from everything
+  # private. No service token goes into a browser container — only the user's own
+  # narrow upload key (downloads into that user's Files, nothing else).
+  browser-ctl:
+    <<: *restart
+    build:
+      context: ./browser
+      dockerfile: Dockerfile.ctl
+    image: claraos-browser-ctl:zelle
+    environment:
+      BROWSER_CTL_TOKEN: ${BROWSER_CTL_TOKEN}
+      BROWSER_IMAGE: ${BROWSER_IMAGE}
+      BROWSER_SOCAT_IMAGE: ${BROWSER_SOCAT_IMAGE}
+      BROWSER_FILES: /opt/claraos/browser
+      # How a browser's relay reaches the API for downloads (container name: the API is
+      # attached to every browser network, without the compose alias).
+      BROWSER_API_URL: http://claraos-claraos-api-1:8090
+      BROWSER_JOIN: claraos-caddy-1,claraos-claraos-api-1
+      BROWSER_MAX_RUNNING: ${BROWSER_MAX_RUNNING:-4}
+      # Clara's per-user Mastodon access (ctl.py /zugang) — a one-shot container from
+      # this container's image and configuration; absent = no social cell here.
+      ZUGANG_MASTODON_CTR: claraos-mastodon-web-1
+      # … and Immich (a read-only key row in Immich's own database).
+      ZUGANG_IMMICH_DB_CTR: claraos-immich-db-1
+      TZ: Europe/Berlin
+    volumes: ["/var/run/docker.sock:/var/run/docker.sock"]
+    networks: [zelle]
+    mem_limit: 128m
+
+  # ── Layer 8: shared social cell (Mastodon + PeerTube) ─────────────────────
+  # ONE instance for the users of all cells (social.<base> / video.<base>), for now
+  # hosted on this cell; moving it means copying volumes + changing two DNS records.
+  # Login only via OIDC against this cell's Authentik. Federation: allowlist only —
+  # Mastodon LIMITED_FEDERATION_MODE (admin allows domains one by one), PeerTube
+  # accepts followers only after approval and follows nobody automatically.
+  # No outgoing mail (the cell never sends to the internet).
+  # Compose profile `social`: started only where setup.sh ran with --social.
+  mastodon-db:
+    <<: *restart
+    profiles: [social]           # only on the cell that hosts the social cell
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: mastodon
+      POSTGRES_USER: mastodon
+      POSTGRES_PASSWORD: ${MASTODON_DB_PASSWORD}
+    volumes: [mastodon-db:/var/lib/postgresql/data]
+    shm_size: 128mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mastodon -d mastodon"]
+      interval: 10s
+      retries: 10
+    networks: [zelle]
+    mem_limit: 512m
+
+  mastodon-redis:
+    <<: *restart
+    profiles: [social]           # only on the cell that hosts the social cell
+    image: redis:7-alpine
+    networks: [zelle]
+    mem_limit: 128m
+
+  mastodon-web:
+    <<: *restart
+    profiles: [social]           # only on the cell that hosts the social cell
+    image: ghcr.io/mastodon/mastodon@sha256:dc4312f5e90e487b5061c8fa38d2f76db5c4e4e6c65dd48b4ee76af5f2e2e526  # v4.7.1
+    command: bundle exec puma -C config/puma.rb
+    environment: &mastodon-env
+      RAILS_ENV: production
+      NODE_ENV: production
+      LOCAL_DOMAIN: ${SOCIAL_DOMAIN}
+      WEB_DOMAIN: ${SOCIAL_DOMAIN}
+      STREAMING_API_BASE_URL: wss://${SOCIAL_DOMAIN}
+      RAILS_SERVE_STATIC_FILES: "true"
+      DB_HOST: mastodon-db
+      DB_PORT: "5432"
+      DB_NAME: mastodon
+      DB_USER: mastodon
+      DB_PASS: ${MASTODON_DB_PASSWORD}
+      REDIS_HOST: mastodon-redis
+      REDIS_PORT: "6379"
+      SECRET_KEY_BASE: ${MASTODON_SECRET_KEY_BASE}
+      OTP_SECRET: ${MASTODON_OTP_SECRET}
+      VAPID_PRIVATE_KEY: ${MASTODON_VAPID_PRIVATE_KEY}
+      VAPID_PUBLIC_KEY: ${MASTODON_VAPID_PUBLIC_KEY}
+      ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY: ${MASTODON_AR_DETERMINISTIC_KEY}
+      ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT: ${MASTODON_AR_KEY_DERIVATION_SALT}
+      ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY: ${MASTODON_AR_PRIMARY_KEY}
+      LIMITED_FEDERATION_MODE: "true"
+      SMTP_DELIVERY_METHOD: test          # no outgoing mail from the cell
+      OMNIAUTH_ONLY: "true"
+      ONE_CLICK_SSO_LOGIN: "true"
+      OIDC_ENABLED: "true"
+      OIDC_DISPLAY_NAME: ClaraOS
+      OIDC_DISCOVERY: "true"
+      OIDC_ISSUER: https://auth.${ZELLE_DOMAIN}/application/o/mastodon/
+      OIDC_SCOPE: openid,profile,email
+      OIDC_UID_FIELD: preferred_username
+      OIDC_CLIENT_ID: mastodon
+      OIDC_CLIENT_SECRET: ${MASTODON_OIDC_SECRET}
+      OIDC_REDIRECT_URI: https://${SOCIAL_DOMAIN}/auth/auth/openid_connect/callback
+      OIDC_SECURITY_ASSUME_EMAIL_IS_VERIFIED: "true"
+    volumes: [mastodon-system:/opt/mastodon/public/system]
+    depends_on:
+      mastodon-db: {condition: service_healthy}
+      mastodon-redis: {condition: service_started}
+    networks: [zelle]
+    mem_limit: 1280m
+
+  mastodon-sidekiq:
+    <<: *restart
+    profiles: [social]           # only on the cell that hosts the social cell
+    image: ghcr.io/mastodon/mastodon@sha256:dc4312f5e90e487b5061c8fa38d2f76db5c4e4e6c65dd48b4ee76af5f2e2e526
+    command: bundle exec sidekiq
+    environment: *mastodon-env
+    volumes: [mastodon-system:/opt/mastodon/public/system]
+    depends_on: [mastodon-web]
+    networks: [zelle]
+    mem_limit: 768m
+
+  mastodon-streaming:
+    <<: *restart
+    profiles: [social]           # only on the cell that hosts the social cell
+    image: ghcr.io/mastodon/mastodon-streaming@sha256:4f0732c79c7486ac4657c3b60e955f0a96f0c292ba9ce8be0280acb06858be74
+    command: node ./streaming/index.js
+    environment:
+      <<: *mastodon-env
+      BIND: 0.0.0.0
+    depends_on: [mastodon-web]
+    networks: [zelle]
+    mem_limit: 256m
+
+  peertube-db:
+    <<: *restart
+    profiles: [social]           # only on the cell that hosts the social cell
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: peertube
+      POSTGRES_USER: peertube
+      POSTGRES_PASSWORD: ${PEERTUBE_DB_PASSWORD}
+    volumes: [peertube-db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U peertube -d peertube"]
+      interval: 10s
+      retries: 10
+    networks: [zelle]
+    mem_limit: 384m
+
+  peertube-redis:
+    <<: *restart
+    profiles: [social]           # only on the cell that hosts the social cell
+    image: redis:7-alpine
+    networks: [zelle]
+    mem_limit: 128m
+
+  peertube:
+    <<: *restart
+    profiles: [social]           # only on the cell that hosts the social cell
+    image: chocobozzz/peertube@sha256:a23e3fa8b58a721ad7555da649cbf513d816d150db21cfa5747315bb8e82262d  # v8.2.4
+    environment:
+      PEERTUBE_WEBSERVER_HOSTNAME: ${VIDEO_DOMAIN}
+      PEERTUBE_WEBSERVER_PORT: "443"
+      PEERTUBE_WEBSERVER_HTTPS: "true"
+      PEERTUBE_TRUST_PROXY: '["loopback", "172.16.0.0/12"]'
+      PEERTUBE_DB_HOSTNAME: peertube-db
+      PEERTUBE_DB_PORT: "5432"
+      PEERTUBE_DB_USERNAME: peertube
+      PEERTUBE_DB_PASSWORD: ${PEERTUBE_DB_PASSWORD}
+      PEERTUBE_DB_NAME: peertube
+      PEERTUBE_DB_SUFFIX: ""
+      PEERTUBE_REDIS_HOSTNAME: peertube-redis
+      PEERTUBE_SECRET: ${PEERTUBE_SECRET}
+      PEERTUBE_ADMIN_EMAIL: admin@${ZELLE_DOMAIN}
+      PT_INITIAL_ROOT_PASSWORD: ${PEERTUBE_ROOT_PASSWORD}
+      PEERTUBE_TRANSCODING_THREADS: "1"
+      TZ: Europe/Berlin
+    volumes:
+      - peertube-data:/data
+      - peertube-config:/config
+    depends_on:
+      peertube-db: {condition: service_healthy}
+      peertube-redis: {condition: service_started}
+    networks: [zelle]
+    mem_limit: 1536m
+    cpus: 2
+
+networks:
+  zelle: {}
+
+volumes:
+  caddy-data: {}
+  caddy-config: {}
+  authentik-db: {}
+  claraos-db: {}
+  nextcloud-db: {}
+  nextcloud-html: {}
+  nextcloud-data: {}
+  litellm-db: {}
+  open-webui: {}
+  vikunja-db: {}
+  vikunja-files: {}
+  vaultwarden: {}
+  stalwart-etc: {}
+  stalwart-data: {}
+  synapse-db: {}
+  immich-db: {}
+  immich-ml-cache: {}
+  immich-upload: {}
+  paperless-db: {}
+  paperless-data: {}
+  paperless-media: {}
+  mastodon-db: {}
+  mastodon-system: {}
+  peertube-db: {}
+  peertube-data: {}
+  peertube-config: {}

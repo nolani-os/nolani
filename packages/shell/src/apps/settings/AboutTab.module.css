@@ -1,0 +1,78 @@
+.about {
+  padding: var(--gap-xl, 24px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-xl, 24px);
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-sm);
+  padding: var(--gap-xl, 24px) 0;
+}
+
+.logo {
+  margin-bottom: var(--gap-sm);
+}
+
+.title {
+  font-size: var(--font-size-xxl, 28px);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.version {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.tagline {
+  font-size: var(--font-size-sm);
+  color: var(--text-disabled);
+  margin: 0;
+}
+
+/* Info grid */
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--gap-sm);
+}
+
+.infoCard {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--gap-md);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.infoLabel {
+  font-size: var(--font-size-xs, 11px);
+  color: var(--text-disabled);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.infoValue {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.footer {
+  text-align: center;
+  padding-top: var(--gap-md);
+  border-top: 1px solid var(--border);
+}
+
+.footer p {
+  font-size: var(--font-size-xs, 11px);
+  color: var(--text-disabled);
+  margin: 0;
+}

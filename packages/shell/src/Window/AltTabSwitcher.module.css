@@ -1,0 +1,112 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 12000;
+  pointer-events: auto;
+}
+
+.panel {
+  position: relative;
+  max-width: 92vw;
+  max-height: 80vh;
+  padding: 24px 28px;
+  border-radius: 18px;
+  background: var(--bg-surface, rgba(28, 32, 52, 0.85));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.10));
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+  color: var(--text-primary, #fff);
+  font-family: var(--font-system);
+  backdrop-filter: blur(36px) saturate(160%);
+  -webkit-backdrop-filter: blur(36px) saturate(160%);
+}
+
+.title {
+  font-size: 0.8125rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin-bottom: 14px;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: calc(7 * 220px + 6 * 12px);
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  width: 220px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 2px solid transparent;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, transform 0.12s;
+}
+
+.tile:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+}
+
+.tileActive {
+  border-color: var(--accent, #7B9FFF);
+  background: rgba(123, 159, 255, 0.18);
+  box-shadow: 0 0 0 1px var(--accent, #7B9FFF), 0 8px 22px rgba(123, 159, 255, 0.35);
+}
+
+.preview {
+  width: 100%;
+  height: 130px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  text-align: left;
+  overflow: hidden;
+}
+
+.appIcon {
+  flex-shrink: 0;
+}
+
+.titleText {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .panel {
+    background: #15172A;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}

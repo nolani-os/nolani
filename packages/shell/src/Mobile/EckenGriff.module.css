@@ -1,0 +1,106 @@
+/* Corner grip — lock-screen pattern: a calm arc in the corner that blooms
+   toward the center while dragging.
+
+   Important: restraint is the design here. The grip is present in EVERY view
+   and in every app; anything that makes it conspicuous makes it annoying in
+   the long run. At rest it is a hinted arc — visible enough to be found,
+   quiet enough to disappear. */
+
+.griff {
+  position: absolute;
+  bottom: 0;
+  width: 64px;
+  height: 100%;
+  min-height: 48px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;          /* the gesture belongs to us, not to the scroller */
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.links  { left: 0;  justify-content: flex-start; padding-left: 10px; }
+.rechts { right: 0; justify-content: flex-end;   padding-right: 10px; }
+
+/* The quarter circle. It sits in the corner and grows with the drag — the
+   same language as the camera on the lock screen: the corner "opens". */
+.bogen {
+  position: absolute;
+  bottom: -26px;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at var(--mitte-x, 0%) 100%,
+    rgba(130, 170, 235, calc(0.20 + 0.45 * var(--zug, 0))) 0%,
+    rgba(130, 170, 235, calc(0.06 + 0.20 * var(--zug, 0))) 55%,
+    transparent 72%
+  );
+  transform: scale(calc(1 + 0.22 * var(--zug, 0)));
+  transition: transform 0.16s ease-out;
+  pointer-events: none;
+}
+
+.links  .bogen { left: -26px;  --mitte-x: 100%; }
+.rechts .bogen { right: -26px; --mitte-x: 0%; }
+
+/* The icon moves a little in the drag direction — the motion shows where the
+   finger is heading before the threshold is reached. */
+.symbol {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  color: var(--bar-fg, rgba(190, 215, 250, 0.75));
+  opacity: calc(0.55 + 0.45 * var(--zug, 0));
+  transition: opacity 0.16s ease-out, transform 0.16s ease-out;
+}
+
+.links  .symbol { transform: translateX(calc(10px * var(--zug, 0))); }
+.rechts .symbol { transform: translateX(calc(-10px * var(--zug, 0))); }
+
+.griff:active .symbol { opacity: 1; }
+
+/* Users with reduced motion get the same state without animation. */
+@media (prefers-reduced-motion: reduce) {
+  .bogen, .symbol { transition: none; }
+}
+
+/* State at the grip while the sheet is closed.
+   "working" — Clara is computing: the arc breathes in the accent color (2 s),
+   quiet enough for any app. "done" — an unread answer is waiting: a calm dot
+   on the icon, no pulse. Both end when the sheet is opened. */
+.griff[data-signal="arbeitet"] .bogen {
+  background: radial-gradient(
+    circle at var(--mitte-x, 0%) 100%,
+    color-mix(in srgb, var(--accent, #38bdf8) 55%, transparent) 0%,
+    color-mix(in srgb, var(--accent, #38bdf8) 22%, transparent) 55%,
+    transparent 72%
+  );
+  animation: griffAtmen 2s ease-in-out infinite;
+}
+@keyframes griffAtmen {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.12); }
+}
+.griff[data-signal="arbeitet"] .symbol { opacity: 1; color: var(--accent, #38bdf8); }
+.griff[data-signal="fertig"] .symbol::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  right: -5px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent, #38bdf8);
+  box-shadow: 0 0 0 2px var(--bg-window-solid, #070b15);
+}
+@media (prefers-reduced-motion: reduce) {
+  .griff[data-signal="arbeitet"] .bogen { animation: none; opacity: 0.9; }
+}

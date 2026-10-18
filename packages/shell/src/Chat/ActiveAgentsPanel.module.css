@@ -1,0 +1,158 @@
+.panel {
+  background: var(--surface-2, rgba(28, 30, 38, 0.92));
+  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.08));
+  border-radius: 10px;
+  overflow: hidden;
+  width: 240px;
+  font-size: 0.75rem;
+  color: var(--color-text, #e7e7eb);
+  animation: agentsFadeIn 200ms ease both;
+}
+
+@keyframes agentsFadeIn {
+  0%   { opacity: 0; transform: translateY(-4px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: linear-gradient(
+    90deg,
+    rgba(138, 80, 216, 0.12) 0%,
+    rgba(25, 159, 215, 0.06) 100%
+  );
+  border-bottom: 1px solid var(--border-1, rgba(255, 255, 255, 0.08));
+}
+
+.brandIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: linear-gradient(110deg, #199fd7, #99bd3c, #fc7942, #ee5091, #8a50d8);
+  color: white;
+  flex-shrink: 0;
+}
+
+.title {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-muted, #8c8e98);
+}
+
+.count {
+  background: rgba(70, 110, 200, 0.32);
+  color: white;
+  font-weight: 600;
+  border-radius: 9px;
+  padding: 1px 7px;
+  font-size: 0.625rem;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  max-height: 180px;
+  overflow-y: auto;
+  /* Without a header (tray popover) the .panel frame is missing — the
+     list then has to bring its own font size. */
+  font-size: 0.75rem;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.spinner {
+  width: 8px;
+  height: 8px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: var(--accent, #60cdff);
+  animation: agentsPulse 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes agentsPulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.85); }
+  50%      { opacity: 1;   transform: scale(1.1); }
+}
+
+.itemBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.appId {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemSub {
+  font-size: 0.6562rem;
+  color: var(--color-muted, #8c8e98);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.duration {
+  font-size: 0.625rem;
+  color: var(--color-muted, #8c8e98);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Compact variant for the mobile chat.
+   Important: the bar sits OUTSIDE the message list, so it permanently takes
+   space instead of scrolling away. On phones that was up to 180 px plus
+   header: a quarter of the sheet, all the time. Collapsed it is one line. */
+.headerTippbar {
+  cursor: pointer;
+  user-select: none;
+  min-height: 40px; /* fingertip, not mouse pointer */
+}
+.pfeil {
+  margin-left: 6px;
+  opacity: 0.7;
+  font-size: 0.72rem;
+}
+/* Stale entries: visible, but not counted as running work. */
+.altlast {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-top: 1px solid rgba(147, 197, 253, 0.14);
+  background: transparent;
+  color: var(--color-text-muted, #9fb3d9);
+  font: inherit;
+  font-size: 0.72rem;
+  text-align: left;
+  cursor: pointer;
+}
+.altlast:hover { color: var(--color-text, #e8f0ff); }
+/* When collapsed, the list must no longer push the chat away. */
+.panel[data-kompakt="true"] .list { max-height: 132px; }

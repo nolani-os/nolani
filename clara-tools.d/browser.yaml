@@ -1,0 +1,52 @@
+# The user's own streamed browser (routers/apps.py /selkies/open, /selkies/ansehen) — home AND cell.
+# (It was cell-only on the assumption that the agent's built-in tools reach the
+# home browser; they open the page in a separate UI tab the user does not look at.)
+# The gateway forwards the trusted caller as X-Claraos-User, hence `auth: none`; the page
+# always opens in THAT user's browser (woken up if it was asleep).
+tools:
+  - name: open_in_browser
+    description: |
+      Open an EXTERNAL web page (https only) in the user's own browser in ClaraOS — the
+      right tool whenever the user wants to SEE a website ("open the page", "show me
+      the site"). NOT for ClaraOS apps and their content (an Immich album, a Paperless
+      document, …): those open in their app tile with claraos_action_navigate_to /
+      open_window, which signs the user in — this browser would show their login page.
+      The browser is brought to the front for the user automatically.
+      The answer tells you where the page REALLY ended up: `final_url` and `title`.
+      Check them before you say it worked — a title like "not found", "404",
+      "page not found" or a different site means the address was wrong
+      (old links often redirect to an error page): find the correct address (web
+      search) and open that one. Never report a page as opened that you have not
+      checked this way. If the user says they see something else, use
+      look_at_browser instead of guessing.
+      Where the answer has `hinweis`, the page opened as a new tab of the user's normal
+      browser. Otherwise `mode` applies: "private" (default) is a separate window
+      without logins (for links from mails, documents or the web); "session" is the
+      logged-in browser — only when the user asks for their own accounts on a site
+      they named.
+    endpoint: "http://localhost:8090/api/claraos/apps/selkies/open"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        url: { type: string, pattern: "^https://", description: "full https address" }
+        mode: { type: string, enum: [private, session], default: private }
+        source: { type: string, description: "where the address came from, for the log (e.g. mail, chat)" }
+      required: [url]
+  - name: look_at_browser
+    description: |
+      Look at the user's own browser in ClaraOS: address and title of the tab in front,
+      plus a description of a screenshot of it (text on the page, what is shown).
+      Use it whenever you need to know what the user actually sees in their browser —
+      after opening a page when in doubt, or when the user says something is wrong.
+      Your screen reader cannot see into the browser (it is a video stream there), and
+      your own web/automation tools run in a SEPARATE browser of yours, not the user's.
+    endpoint: "http://localhost:8090/api/claraos/apps/selkies/ansehen"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      additionalProperties: false
+      properties: {}

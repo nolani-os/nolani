@@ -1,0 +1,134 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  z-index: 11000;
+}
+
+.panel {
+  position: fixed;
+  bottom: calc(var(--taskbar-height, 48px) + 16px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 440px;
+  max-height: 60vh;
+  border-radius: 14px;
+  padding: 12px;
+  background: var(--bg-surface, rgba(28, 32, 52, 0.85));
+  border: 1px solid var(--border);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  color: var(--text-primary);
+  font-family: var(--font-system);
+  z-index: 11500;
+  backdrop-filter: blur(36px) saturate(160%);
+  -webkit-backdrop-filter: blur(36px) saturate(160%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 4px;
+}
+
+.title {
+  flex: 1;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.count {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.625rem;
+  opacity: 0.7;
+}
+
+.clearBtn {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.6875rem;
+  cursor: pointer;
+}
+
+.clearBtn:hover { background: rgba(196, 43, 28, 0.20); border-color: #c42b1c; }
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  max-height: calc(60vh - 60px);
+}
+
+.empty {
+  padding: 28px 12px;
+  font-size: 0.75rem;
+  opacity: 0.6;
+  text-align: center;
+}
+
+.entry {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  transition: background 0.12s;
+}
+
+.entry:hover { background: rgba(255, 255, 255, 0.08); }
+
+.entryBody {
+  flex: 1;
+  padding: 8px 10px;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.entryText {
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entryMeta {
+  font-size: 0.625rem;
+  opacity: 0.55;
+}
+
+.entryRemove {
+  width: 26px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.entryRemove:hover {
+  background: rgba(196, 43, 28, 0.20);
+  color: #ff6b6b;
+}

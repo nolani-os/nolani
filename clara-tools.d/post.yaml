@@ -1,0 +1,60 @@
+# Post bridge — Clara tools. An e-mail (uid + mailbox from mail.list_messages)
+# becomes a planner task, a calendar event or a note in the knowledge app.
+# Endpoints: routers/post.py (Clara section); caller from X-Claraos-User.
+tools:
+  - name: mail_to_task
+    description: |
+      Turn ONE e-mail of the current user into a Planner task: title = subject,
+      description = sender/date/text + link back to the mail. Needs the uid
+      (and mailbox) from mail.list_messages. project_id optional — default is
+      the project "Inbox". Use when the user says "mach aus der Mail eine
+      Aufgabe" / "merk dir das als Todo". Returns the task id.
+    endpoint: "http://localhost:8090/api/claraos/post/clara/mail_to_task"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        uid: { type: string, description: "uid from mail.list_messages" }
+        mailbox: { type: string, default: INBOX }
+        project_id: { type: integer, description: "Planner project; default Inbox" }
+        note: { type: string, description: "optional remark, goes on top of the description" }
+      required: [uid]
+
+  - name: mail_to_event
+    description: |
+      Turn ONE e-mail into a calendar event (calendar "Persönlich", busy,
+      reminder 15 min before, duration default 30 min). `when` accepts
+      "morgen 09:00", "heute 15:30", "2026-09-12 14:00" or "12.9. 14:00";
+      empty = next full hour. Ask the user for the time if they did not say it.
+    endpoint: "http://localhost:8090/api/claraos/post/clara/mail_to_event"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        uid: { type: string }
+        mailbox: { type: string, default: INBOX }
+        when: { type: string, description: "e.g. 'morgen 09:00'" }
+        duration_min: { type: integer, default: 30 }
+        note: { type: string }
+      required: [uid]
+
+  - name: mail_to_note
+    description: |
+      Save ONE e-mail as a note in the Wissens-App (title = subject, body =
+      sender/date/text + link). Use for "leg die Mail bei Wissen ab" /
+      "speicher das als Notiz".
+    endpoint: "http://localhost:8090/api/claraos/post/clara/mail_to_note"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        uid: { type: string }
+        mailbox: { type: string, default: INBOX }
+        note: { type: string }
+      required: [uid]

@@ -1,0 +1,131 @@
+<!doctype html>
+<!-- ClaraOS chromeless dashboard, DESKTOP variant (with overlay):
+     loads the UI-less Selkies core + bridge + fixes + a SLIM overlay.
+     On the desktop the streamed Chromium has its own tab/address bar
+     (no kiosk mode), so bars of our own would duplicate it. Overlay = only
+     the Clara button + downloads (hand-over to the Files app).
+     Marker for smoke tests: claraos-chromeless -->
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="claraos" content="claraos-chromeless claraos-desktop-chrome">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="manifest" href="manifest.json" crossorigin="use-credentials">
+  <link rel="icon" type="image/png" href="icon.png">
+  <title>Clara Browser</title>
+  <style>
+    :root {
+      --menu-bg: #ffffff;
+      --bar-fg: #202124;
+      --bar-fg-dim: #5f6368;
+      --pill-bg: #f1f3f4;
+      --menu-shadow: 0 2px 12px rgba(0,0,0,.28);
+      --clara: #22d3ee;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --menu-bg: #292a2d;
+        --bar-fg: #e8eaed;
+        --bar-fg-dim: #9aa0a6;
+        --pill-bg: #3c4043;
+        --menu-shadow: 0 2px 14px rgba(0,0,0,.6);
+      }
+    }
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%;
+                 background: #000; overflow: hidden; }
+    #app { width: 100%; height: 100%; }
+
+    /* ── Floating buttons (Clara + downloads) ── */
+    #claraos-dock {
+      position: fixed; right: 14px; bottom: 14px; z-index: 2147483001;
+      display: flex; align-items: center; gap: 10px;
+      font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+    }
+    .claraos-dockbtn {
+      width: 42px; height: 42px; border: none; padding: 10px; cursor: pointer;
+      border-radius: 21px; background: rgba(32,33,36,.62); color: #e8eaed;
+      backdrop-filter: blur(6px); box-shadow: 0 2px 10px rgba(0,0,0,.35);
+      opacity: .55; transition: opacity .15s, transform .15s;
+    }
+    #claraos-dock:hover .claraos-dockbtn { opacity: 1; }
+    .claraos-dockbtn:hover { transform: translateY(-1px); }
+    .claraos-dockbtn svg { width: 22px; height: 22px; display: block; }
+    .claraos-dockbtn-clara {
+      color: var(--clara);
+      box-shadow: 0 2px 10px rgba(0,0,0,.35), 0 0 0 1px rgba(34,211,238,.35);
+      opacity: .8;
+    }
+
+    /* ── Clara pill (look of the shell title bar, Window.module.css) ── */
+    .claraos-clarapill {
+      display: inline-flex; align-items: center; gap: 6px; height: 34px;
+      padding: 0 14px 0 11px; cursor: pointer;
+      border: 1px solid rgba(147, 197, 253, 0.32); border-radius: 17px;
+      background:
+        linear-gradient(180deg, rgba(180, 205, 253, 0.14) 0%, rgba(180, 205, 253, 0) 45%),
+        linear-gradient(165deg, rgba(28, 42, 72, 0.9) 0%, rgba(9, 15, 30, 0.94) 100%);
+      color: #cfe6ff; font-size: 13px; font-weight: 500;
+      font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+      box-shadow: 0 2px 10px rgba(0,0,0,.35);
+    }
+    .claraos-clarapill:hover {
+      border-color: rgba(56, 189, 248, 0.55); color: #eaf5ff;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.35), inset 0 1px 0 rgba(180, 205, 253, 0.22);
+      transform: translateY(-1px);
+    }
+    .claraos-clarapill svg { width: 15px; height: 15px; display: block; color: #7dd3fc; }
+
+    /* ── Downloads sheet ── */
+    .claraos-backdrop {
+      position: fixed; inset: 0; z-index: 2147483004;
+      background: rgba(0,0,0,.42); display: flex;
+    }
+    .claraos-backdrop-center { align-items: center; justify-content: center; }
+    .claraos-sheet {
+      background: var(--menu-bg); color: var(--bar-fg);
+      box-shadow: var(--menu-shadow); overflow-y: auto;
+      font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+    }
+    .claraos-sheet-desktop {
+      width: 460px; max-width: 90vw; max-height: 70vh;
+      border-radius: 14px; padding: 8px 0 12px;
+    }
+    .claraos-sheet-head { padding: 12px 20px 8px; }
+    .claraos-sheet-title { font-size: 15px; font-weight: 600; }
+    .claraos-sheet-sub { font-size: 12.5px; color: var(--bar-fg-dim);
+      margin-top: 2px; overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; }
+    .claraos-sheet-item {
+      display: flex; align-items: center; gap: 14px; width: 100%;
+      border: none; background: transparent; color: var(--bar-fg);
+      font-size: 13.5px; font-family: inherit; padding: 10px 20px;
+      text-align: left; cursor: pointer;
+    }
+    .claraos-sheet-item:hover { background: var(--pill-bg); }
+    .claraos-sheet-item svg { width: 18px; height: 18px; flex: 0 0 18px;
+      color: var(--bar-fg-dim); }
+    .claraos-sheet-item span { overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; }
+
+    /* ── Toast ── */
+    #claraos-toast {
+      position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%);
+      z-index: 2147483005; padding: 10px 18px; border-radius: 20px;
+      background: rgba(32,33,36,.92); color: #e8eaed; font-size: 13px;
+      font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+      opacity: 0; transition: opacity .3s; pointer-events: none;
+      white-space: nowrap;
+    }
+    #claraos-toast.visible { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>window.CLARAOS_CONFIG = { mode: "desktop-chrome", shellUrl: "https://home." + location.hostname.replace(/^[^.]+\./, "") };</script>
+  <script src="src/claraos-fixes.js"></script>
+  <script type="module" src="src/selkies-core.js"></script>
+  <script src="src/claraos-bridge.js"></script>
+  <script src="src/claraos-desktop-ui.js"></script>
+</body>
+</html>

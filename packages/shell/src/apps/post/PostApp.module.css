@@ -1,0 +1,434 @@
+/* Post (mail app).
+ *
+ * Important: DERIVE the palette from the skin tokens (same pattern as Contacts/Knowledge):
+ * surfaces as color-mix towards the text colour, one formula for light and dark.
+ * Font sizes in rem so uiScale applies. No invented tokens.
+ */
+.app {
+  --surface-1: var(--bg-window-solid, var(--bg-window, #16161d));
+  --surface-2: color-mix(in srgb, var(--text-primary, #e8e8ef) 6%, var(--bg-window-solid, var(--bg-window, #16161d)));
+  --surface-3: color-mix(in srgb, var(--text-primary, #e8e8ef) 12%, var(--bg-window-solid, var(--bg-window, #16161d)));
+  --border-1: color-mix(in srgb, var(--text-primary, #e8e8ef) 18%, var(--bg-window-solid, var(--bg-window, #16161d)));
+  --text-1: var(--text-primary, #e8e8ef);
+  --text-2: var(--text-secondary, color-mix(in srgb, var(--text-primary, #e8e8ef) 65%, transparent));
+  --akzent: var(--accent, #4c8dff);
+
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  position: relative;
+  background: var(--surface-1);
+  color: var(--text-1);
+  font-size: 0.875rem;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.kopf {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  border-bottom: 1px solid var(--border-1);
+  flex-wrap: wrap;
+}
+.titel { font-size: 1rem; font-weight: 600; margin: 0; white-space: nowrap; }
+.sucheForm { display: flex; align-items: center; gap: 0.25rem; flex: 1 1 220px; min-width: 160px; }
+.suche {
+  flex: 1; min-width: 0; padding: 0.35rem 0.6rem; border-radius: 8px;
+  border: 1px solid var(--border-1); background: var(--surface-2); color: var(--text-1); font: inherit;
+}
+.filterLeiste { display: flex; align-items: center; gap: 0.25rem; }
+.chip {
+  font: inherit; font-size: 0.8125rem; padding: 0.3rem 0.65rem; border-radius: 999px;
+  border: 1px solid var(--border-1); background: var(--surface-2); color: var(--text-1); cursor: pointer;
+  display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap;
+}
+.chip:hover { background: var(--surface-3); }
+.chip:disabled { opacity: 0.5; cursor: wait; }
+.chipAktiv { background: var(--akzent); color: var(--on-accent, #fff); border-color: transparent; }
+.iconKnopf {
+  font: inherit; border: none; background: transparent; color: var(--text-1); cursor: pointer;
+  padding: 0.3rem; border-radius: 8px; display: inline-flex; align-items: center;
+}
+.iconKnopf:hover { background: var(--surface-3); }
+
+/* ── Three columns ─────────────────────────────────────────────────────── */
+.koerper { display: flex; flex: 1; min-height: 0; }
+.ordner {
+  width: 200px; flex: 0 0 auto; border-right: 1px solid var(--border-1); overflow-y: auto;
+  padding: 0.5rem 0.4rem; display: flex; flex-direction: column; gap: 2px;
+}
+.ordnerMobil { position: absolute; top: 0; bottom: 0; left: 0; z-index: 5; background: var(--surface-1); width: 78%; box-shadow: 4px 0 20px #0006; }
+.ordnerZu { display: none; }
+.konto { font-size: 0.75rem; color: var(--text-2); padding: 0.25rem 0.5rem 0.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ordnerEintrag {
+  font: inherit; text-align: left; border: none; background: transparent; color: var(--text-1); cursor: pointer;
+  display: flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0.6rem; border-radius: 8px;
+}
+.ordnerEintrag:hover { background: var(--surface-2); }
+.ordnerAktiv { background: var(--surface-3); font-weight: 600; }
+.ordnerName { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.badge { font-size: 0.7rem; font-weight: 700; color: var(--akzent); }
+
+.liste { width: 360px; flex: 0 0 auto; border-right: 1px solid var(--border-1); overflow-y: auto; min-height: 0; }
+.lesen { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+.versteckt { display: none !important; }
+.mobil .liste { width: 100%; border-right: none; }
+.mobil .lesen { width: 100%; }
+
+.auswahlLeiste {
+  position: sticky; top: 0; z-index: 2; display: flex; gap: 0.3rem; align-items: center; flex-wrap: wrap;
+  padding: 0.4rem 0.6rem; background: var(--surface-3); border-bottom: 1px solid var(--border-1); font-size: 0.8rem;
+}
+.leer { padding: 2rem 1rem; color: var(--text-2); text-align: center; }
+.mehr {
+  font: inherit; width: 100%; padding: 0.7rem; border: none; border-top: 1px solid var(--border-1);
+  background: var(--surface-2); color: var(--text-1); cursor: pointer;
+}
+
+/* ── Row ───────────────────────────────────────────────────────────────── */
+.zeile {
+  display: flex; gap: 0.5rem; padding: 0.55rem 0.6rem 0.55rem 0.4rem; border-bottom: 1px solid var(--border-1);
+  cursor: pointer; position: relative; align-items: flex-start;
+  /* Important: horizontal swiping belongs to the app, vertical scrolling to the
+     browser. Without `pan-y` the list scrolls along while swiping. The row's own
+     background hides the swipe background until the row is swiped. */
+  touch-action: pan-y;
+  background: var(--surface-1);
+  transition: transform 0.16s ease-out;
+}
+.zeile:hover { background: var(--surface-2); }
+.zeileAktiv { background: var(--surface-3); }
+.zeileGewaehlt { box-shadow: inset 3px 0 0 var(--akzent); }
+.ungelesen .absender, .ungelesen .betreff { font-weight: 700; }
+.ungelesen::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--akzent); }
+.checkbox { display: flex; align-items: center; padding-top: 0.6rem; }
+.checkbox input { margin: 0; }
+.avatar {
+  width: 34px; height: 34px; border-radius: 50%; flex: 0 0 auto; display: grid; place-items: center;
+  color: #fff; font-size: 0.75rem; font-weight: 700; margin-top: 2px;
+}
+.avatarGross { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 700; flex: 0 0 auto; }
+.zeileText { flex: 1; min-width: 0; }
+.zeileKopf { display: flex; justify-content: space-between; gap: 0.5rem; align-items: baseline; }
+.absender { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zeileRechts { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--text-2); font-size: 0.75rem; flex: 0 0 auto; }
+.flagge { color: var(--warning, #e0a020); }
+.datum { color: var(--text-2); font-size: 0.75rem; white-space: nowrap; }
+.betreff { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vorschau { color: var(--text-2); font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.labels { display: flex; gap: 0.25rem; margin-top: 0.2rem; flex-wrap: wrap; }
+.label { font-size: 0.7rem; padding: 0 0.4rem; border-radius: 999px; background: var(--surface-3); }
+.schnell {
+  position: absolute; right: 0.4rem; top: 0.35rem; display: none; gap: 0.1rem;
+  background: var(--surface-3); border-radius: 8px; padding: 0.15rem; border: 1px solid var(--border-1);
+}
+.zeile:hover .schnell { display: flex; }
+.schnell button { font: inherit; border: none; background: transparent; color: var(--text-1); cursor: pointer; padding: 0.25rem; border-radius: 6px; display: inline-flex; }
+.schnell button:hover { background: var(--surface-2); }
+.mobil .schnell { display: none !important; }
+
+/* ── Reading pane ──────────────────────────────────────────────────────── */
+.leerLesen { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; color: var(--text-2); }
+.hinweis { color: var(--text-2); font-size: 0.75rem; }
+.aktionen { display: flex; gap: 0.3rem; flex-wrap: wrap; align-items: center; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border-1); }
+.trenner { width: 1px; height: 1.2rem; background: var(--border-1); margin: 0 0.2rem; }
+.claraLeiste { display: flex; gap: 0.3rem; align-items: center; flex-wrap: wrap; padding: 0.4rem 0.75rem; border-bottom: 1px solid var(--border-1); background: var(--surface-2); }
+.claraMarke { font-weight: 700; font-size: 0.75rem; color: var(--text-2); margin-right: 0.2rem; }
+.mailKopf { padding: 0.75rem 1rem 0.5rem; border-bottom: 1px solid var(--border-1); }
+.mailBetreff { font-size: 1.15rem; margin: 0 0 0.6rem; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.mailMeta { display: flex; gap: 0.6rem; align-items: flex-start; }
+.mailMetaText { flex: 1; min-width: 0; }
+.mailVon { overflow-wrap: anywhere; }
+.adresse { color: var(--text-2); }
+.mailAn { color: var(--text-2); font-size: 0.8rem; overflow-wrap: anywhere; }
+.mailDatum { color: var(--text-2); font-size: 0.8rem; text-align: right; flex: 0 0 auto; white-space: nowrap; }
+.anhaenge { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.6rem; }
+.anhang {
+  display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.3rem 0.6rem; border-radius: 8px;
+  background: var(--surface-2); border: 1px solid var(--border-1); color: var(--text-1); text-decoration: none; font-size: 0.8rem;
+}
+.anhang:hover { background: var(--surface-3); }
+.bilderHinweis { margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-2); }
+.link { font: inherit; border: none; background: transparent; color: var(--akzent); cursor: pointer; padding: 0; text-decoration: underline; }
+.mailKoerper { flex: 1; min-height: 0; display: flex; }
+.htmlRahmen { flex: 1; border: none; width: 100%; height: 100%; background: transparent; }
+.textKoerper { flex: 1; margin: 0; padding: 0.75rem 1rem; white-space: pre-wrap; overflow: auto; font: inherit; line-height: 1.5; overflow-wrap: anywhere; }
+.unterhaltung { border-top: 1px solid var(--border-1); max-height: 30%; overflow-y: auto; }
+.unterhaltungTitel { font-size: 0.75rem; font-weight: 700; color: var(--text-2); padding: 0.4rem 0.75rem; }
+.unterhaltungEintrag {
+  font: inherit; width: 100%; text-align: left; border: none; background: transparent; color: var(--text-1); cursor: pointer;
+  display: grid; grid-template-columns: 9rem 1fr auto; gap: 0.5rem; padding: 0.35rem 0.75rem; align-items: baseline;
+}
+.unterhaltungEintrag:hover { background: var(--surface-2); }
+.unterhaltungAktiv { background: var(--surface-3); }
+
+/* ── Dialog + toast ────────────────────────────────────────────────────── */
+.dialogHinter { position: absolute; inset: 0; background: #0007; display: grid; place-items: center; z-index: 20; }
+.dialog { background: var(--surface-1); border: 1px solid var(--border-1); border-radius: 12px; padding: 0.6rem; min-width: 240px; max-height: 70%; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.dialogTitel { font-weight: 600; padding: 0.3rem 0.6rem 0.5rem; }
+.toast {
+  position: absolute; left: 50%; bottom: 1rem; transform: translateX(-50%); z-index: 30;
+  background: var(--surface-3); border: 1px solid var(--border-1); color: var(--text-1);
+  padding: 0.5rem 0.9rem; border-radius: 10px; font-size: 0.85rem; max-width: 90%;
+}
+.toastFehler { border-color: var(--danger, #e05555); }
+
+@media (max-width: 640px) {
+  .kopf { padding: 0.4rem 0.5rem; }
+  .sucheForm { flex-basis: 100%; }
+  .aktionen, .claraLeiste { padding: 0.4rem 0.5rem; }
+  .mailKopf { padding: 0.6rem 0.75rem 0.4rem; }
+}
+
+/* ── Composer ──────────────────────────────────────────────────────────── */
+.composer { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.composerKopf { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border-1); }
+.adressZeile { display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.3rem 0.75rem; border-bottom: 1px solid var(--border-1); position: relative; }
+.adressLabel { width: 3.6rem; flex: 0 0 auto; color: var(--text-2); padding-top: 0.35rem; font-size: 0.8rem; }
+.adressChips { flex: 1; display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; position: relative; min-width: 0; }
+.adressChip { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.15rem 0.5rem; border-radius: 999px; background: var(--surface-3); font-size: 0.8rem; }
+.adressChip button { border: none; background: transparent; color: var(--text-2); cursor: pointer; font: inherit; padding: 0 0.1rem; }
+.adressInput { flex: 1; min-width: 8rem; border: none; background: transparent; color: var(--text-1); font: inherit; padding: 0.3rem 0.2rem; outline: none; }
+.vorschlagListe { position: absolute; top: 100%; left: 0; z-index: 15; background: var(--surface-1); border: 1px solid var(--border-1); border-radius: 8px; min-width: 260px; max-width: 100%; box-shadow: 0 8px 24px #0006; overflow: hidden; }
+.vorschlag { display: flex; gap: 0.6rem; align-items: baseline; width: 100%; text-align: left; font: inherit; border: none; background: transparent; color: var(--text-1); padding: 0.4rem 0.6rem; cursor: pointer; }
+.vorschlag:hover, .vorschlagAktiv { background: var(--surface-3); }
+.vonSelect { flex: 1; min-width: 0; font: inherit; padding: 0.3rem 0.4rem; border-radius: 6px; border: 1px solid var(--border-1); background: var(--surface-2); color: var(--text-1); }
+.betreffInput { flex: 1; border: none; background: transparent; color: var(--text-1); font: inherit; font-weight: 600; padding: 0.3rem 0.2rem; outline: none; }
+.editorLeiste { display: flex; align-items: center; gap: 0.2rem; flex-wrap: wrap; padding: 0.3rem 0.6rem; border-bottom: 1px solid var(--border-1); }
+.editorLeiste button { font: inherit; font-size: 0.8rem; border: 1px solid transparent; background: transparent; color: var(--text-1); cursor: pointer; padding: 0.25rem 0.45rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.25rem; }
+.editorLeiste button:hover { background: var(--surface-3); }
+.mdnLabel { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; color: var(--text-2); margin-left: 0.4rem; }
+.editor { flex: 1; min-height: 8rem; overflow-y: auto; padding: 0.75rem 1rem; outline: none; line-height: 1.5; font-size: 0.95rem; overflow-wrap: anywhere; }
+.editor blockquote { border-left: 2px solid var(--border-1); margin: 0.4em 0 0.4em 0.2em; padding-left: 0.8em; color: var(--text-2); }
+.composerFuss { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; padding: 0.5rem 0.75rem; border-top: 1px solid var(--border-1); }
+.spaeterBox { display: inline-flex; align-items: center; gap: 0.3rem; }
+.spaeterInput { font: inherit; padding: 0.25rem 0.4rem; border-radius: 6px; border: 1px solid var(--border-1); background: var(--surface-2); color: var(--text-1); }
+.ausgang { margin-top: 0.4rem; border-top: 1px solid var(--border-1); padding-top: 0.3rem; }
+.ausgangEintrag { display: flex; align-items: center; gap: 0.3rem; padding: 0.25rem 0.6rem; font-size: 0.8rem; }
+.einstZeile { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.6rem; font-size: 0.85rem; }
+.sigText { margin: 0.2rem 0.6rem 0.4rem; font: inherit; padding: 0.4rem; border-radius: 6px; border: 1px solid var(--border-1); background: var(--surface-2); color: var(--text-1); resize: vertical; }
+.bausteinAnker { position: relative; display: inline-flex; }
+.erwaehnungBox { position: relative; margin: 0 1rem; z-index: 14; }
+.erwaehnungBox .vorschlag { border: 1px solid var(--border-1); }
+.sigBox { margin: 0.2rem 0.6rem 0.4rem; border: 1px solid var(--border-1); border-radius: 6px; background: var(--surface-2); }
+.sigEditor { min-height: 4.5rem; padding: 0.4rem 0.6rem; outline: none; line-height: 1.45; font-size: 0.9rem; }
+
+/* ── Rules ───────────────────────────────────────────────────────────────── */
+.dialogBreit { min-width: min(860px, 94%); max-height: 88%; }
+.warnung { margin: 0.2rem 0.6rem 0.4rem; padding: 0.4rem 0.6rem; border-radius: 8px; background: color-mix(in srgb, var(--warning, #e0a020) 18%, var(--surface-1)); font-size: 0.8rem; }
+.regelnKoerper { display: flex; gap: 0.6rem; min-height: 0; flex: 1; }
+.regelListe { width: 240px; flex: 0 0 auto; border-right: 1px solid var(--border-1); overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding-right: 0.4rem; }
+.regelListe input[type=checkbox] { margin: 0; }
+.regelEditor { flex: 1; min-width: 0; overflow-y: auto; padding: 0.2rem 0.4rem; }
+.regelAbschnitt { margin: 0.8rem 0 0.3rem; font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem; }
+.regelZeile { display: flex; gap: 0.3rem; align-items: center; margin: 0.25rem 0; flex-wrap: wrap; }
+.miniSelect { font: inherit; font-size: 0.85rem; padding: 0.25rem 0.4rem; border-radius: 6px; border: 1px solid var(--border-1); background: var(--surface-2); color: var(--text-1); }
+.miniInput { font: inherit; font-size: 0.85rem; padding: 0.25rem 0.45rem; border-radius: 6px; border: 1px solid var(--border-1); background: var(--surface-2); color: var(--text-1); min-width: 10rem; }
+.scriptBox { margin: 0.4rem 0.6rem; padding: 0.5rem; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--border-1); font: 0.75rem/1.4 ui-monospace, monospace; white-space: pre-wrap; max-height: 12rem; overflow: auto; }
+@media (max-width: 640px) {
+  .regelnKoerper { flex-direction: column; }
+  .regelListe { width: 100%; border-right: none; max-height: 30%; }
+}
+
+
+/* ── Outlook-style handling, mainly on mobile ──────────────────────────── */
+
+/* On mobile the search row expands below the title (search icon in the header). */
+.sucheZeile { display: flex; align-items: center; gap: 0.3rem; padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--border-1); }
+
+/* Day headers in the list — stick to the top while scrolling. */
+.gruppe {
+  position: sticky; top: 0; z-index: 1;
+  padding: 0.45rem 0.75rem 0.3rem; font-size: 0.75rem; font-weight: 700;
+  color: var(--text-2); background: var(--surface-1); border-bottom: 1px solid var(--border-1);
+}
+
+/* Swipe: the background sits UNDER the row and appears as the row slides. */
+.zeileHuelle { position: relative; overflow: hidden; }
+.wischGrund {
+  position: absolute; inset: 0; display: flex; align-items: center; gap: 0.45rem;
+  padding: 0 1.1rem; color: #fff; font-size: 0.85rem; font-weight: 600; opacity: 0.75;
+}
+.wischReif { opacity: 1; }
+.wischLinks { justify-content: flex-end; }
+.wischRechts { justify-content: flex-start; }
+
+/* Selection on mobile: tap the avatar instead of a permanent checkbox (Outlook gesture). */
+.mobil .checkbox { display: none; }
+.avatarGewaehlt { color: var(--on-accent, #fff); }
+
+/* Floating compose button; sits above the mobile shell's system bar. */
+.fab {
+  position: absolute; right: 1rem; bottom: 1.25rem; z-index: 6;
+  width: 56px; height: 56px; border-radius: 18px; border: none; cursor: pointer;
+  background: var(--akzent); color: var(--on-accent, #fff);
+  display: grid; place-items: center; box-shadow: 0 6px 20px #0007;
+}
+.fab:active { transform: scale(0.94); }
+
+/* Bottom sheet (context menu, overflow menu). */
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 21;
+  background: var(--surface-1); border-top: 1px solid var(--border-1);
+  border-radius: 16px 16px 0 0; padding: 0.3rem 0 0.9rem;
+  max-height: 84%; overflow-y: auto; display: flex; flex-direction: column;
+}
+.sheetGriff { width: 36px; height: 4px; border-radius: 2px; background: var(--border-1); margin: 0.25rem auto 0.5rem; flex: 0 0 auto; }
+.sheetKopf { display: flex; gap: 0.6rem; align-items: center; padding: 0.2rem 1rem 0.7rem; border-bottom: 1px solid var(--border-1); }
+.sheetTitel { font-size: 0.75rem; font-weight: 700; color: var(--text-2); padding: 0.6rem 1rem 0.3rem; }
+.sheetChips { display: flex; gap: 0.4rem; flex-wrap: wrap; padding: 0 1rem 0.5rem; }
+.sheetTrenner { height: 1px; background: var(--border-1); margin: 0.35rem 0; flex: 0 0 auto; }
+.sheetEintrag {
+  font: inherit; text-align: left; border: none; background: transparent; color: var(--text-1); cursor: pointer;
+  display: flex; align-items: center; gap: 0.75rem; padding: 0.8rem 1rem; width: 100%;
+}
+.sheetEintrag:hover { background: var(--surface-2); }
+.sheetEintrag:disabled { opacity: 0.45; cursor: default; }
+.sheetPlatz { width: 18px; flex: 0 0 auto; }
+.sheetPfeil { margin-left: auto; display: inline-flex; color: var(--text-2); }
+
+/* On desktop the same menu is a small popup at the pointer. */
+.kontextPopup {
+  position: absolute; z-index: 21; min-width: 240px; max-width: 320px; max-height: 80%; overflow-y: auto;
+  background: var(--surface-1); border: 1px solid var(--border-1); border-radius: 10px;
+  box-shadow: 0 10px 30px #0008; padding: 0.25rem 0; display: flex; flex-direction: column;
+}
+.kontextPopup .sheetEintrag { padding: 0.42rem 0.8rem; font-size: 0.85rem; gap: 0.6rem; }
+.kontextPopup .sheetTitel { padding: 0.4rem 0.8rem 0.25rem; }
+
+/* ── Reading pane on mobile ────────────────────────────────────────────── */
+/* Previously 19 buttons over five rows plus the ClaraOS bar squeezed the mail text
+   to a small fraction of the screen. Now: four icons at the top, three buttons
+   at the bottom, everything else in the "More" sheet. */
+.leseLeisteOben { display: flex; align-items: center; gap: 0.1rem; margin-left: auto; flex: 0 0 auto; }
+.leseLeisteOben .iconKnopf { padding: 0.45rem; }
+
+.leseLeisteUnten {
+  display: flex; align-items: center; gap: 0.4rem; flex: 0 0 auto;
+  padding: 0.5rem 0.6rem; border-top: 1px solid var(--border-1); background: var(--surface-2);
+}
+.leseKnopf {
+  font: inherit; font-size: 0.8125rem; flex: 1; min-width: 0; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+  padding: 0.6rem 0.4rem; border-radius: 10px;
+  border: 1px solid var(--border-1); background: var(--surface-1); color: var(--text-1);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.leseKnopf:active { background: var(--surface-3); }
+
+/* Recipients: one line with an arrow, expands on tap. */
+.mailAnKurz {
+  font: inherit; font-size: 0.8rem; color: var(--text-2); border: none; background: transparent;
+  cursor: pointer; padding: 0.1rem 0; display: inline-flex; align-items: center; gap: 0.25rem;
+}
+
+/* Conversation: collapsed shows only the heading, not a third of the screen. */
+.unterhaltungZu { max-height: none; overflow: visible; }
+.mobil .unterhaltungTitel {
+  font: inherit; font-size: 0.75rem; font-weight: 700; color: var(--text-2);
+  border: none; background: transparent; cursor: pointer; width: 100%; text-align: left;
+  display: flex; align-items: center; gap: 0.35rem; padding: 0.55rem 0.75rem;
+}
+
+/* Composer on mobile: the formatting buttons were 6 targets under 40 px — too
+   small for a thumb. Enlarge the hit area, not the font. */
+.mobil .editorLeiste { gap: 0.15rem; padding: 0.35rem 0.5rem; }
+.mobil .editorLeiste button { min-width: 42px; min-height: 42px; justify-content: center; padding: 0.3rem 0.5rem; }
+.mobil .composerFuss { gap: 0.35rem; padding: 0.5rem; }
+.mobil .composerFuss .chip { min-height: 42px; }
+/* The ✕ on a recipient chip was 11 px wide — a mis-tap removes a recipient
+   from the mail. Make it wider without inflating the chip. */
+.mobil .adressChip button { min-width: 30px; justify-content: center; }
+
+/* ── Multiple mailboxes, shares ────────────────────────────────────────── */
+
+/* The account switcher sits where the own address used to be — and only looks
+   like a control when there is something to choose (one mailbox = plain text
+   as before). */
+.kontoWahl {
+  font: inherit; font-size: 0.78rem; font-weight: 600;
+  width: 100%; padding: 0.4rem 0.5rem; margin-bottom: 0.2rem;
+  border: 1px solid var(--border-1); border-radius: 8px;
+  background: var(--surface-2); color: var(--text-1); cursor: pointer;
+}
+.kontoWahl:hover { background: var(--surface-3); }
+
+/* Notice that another mailbox is open — otherwise one files a mail in the
+   shared mailbox and later looks for it in one's own. */
+.fremdesKonto {
+  display: flex; align-items: center; gap: 0.3rem;
+  padding: 0.25rem 0.5rem 0.45rem; font-size: 0.72rem; color: var(--akzent);
+}
+
+.freigabeOrdner {
+  padding: 0.35rem 0; border-bottom: 1px solid var(--border-1);
+}
+.freigabeOrdner:last-child { border-bottom: none; }
+
+/* Account row: switcher plus "check" — the button is shown even with only one
+   mailbox, because that is exactly when one wants to check whether a share
+   has arrived (the session cache can delay it by up to 5 min). */
+.kontoZeile { display: flex; align-items: center; gap: 0.25rem; padding-right: 0.25rem; }
+.kontoZeile > .kontoWahl, .kontoZeile > .konto { flex: 1; min-width: 0; }
+
+/* ── "My Day" as a right-hand sidebar ─────────────────────────────────── */
+
+/* Narrow enough to keep list and reading pane usable: Outlook uses ~290 px.
+   Below 1100 px window width the sidebar hides — better no sidebar than a
+   reading pane too narrow for a sentence. */
+.meinTag {
+  width: 290px; flex: 0 0 auto; min-height: 0; overflow-y: auto;
+  border-left: 1px solid var(--border-1); background: var(--surface-1);
+  display: flex; flex-direction: column;
+}
+@media (max-width: 1100px) { .meinTag { display: none; } }
+
+.tagKopf {
+  display: flex; align-items: baseline; gap: 0.4rem;
+  padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--border-1);
+}
+
+.tagBlock { padding: 0.5rem 0.75rem 0.7rem; border-bottom: 1px solid var(--border-1); }
+/* The drop target must be VISIBLE while dragging — otherwise one releases over
+   the wrong half and gets an event instead of a task. */
+.tagBlockZiel {
+  background: color-mix(in srgb, var(--akzent) 14%, var(--surface-1));
+  outline: 2px dashed var(--akzent); outline-offset: -4px;
+}
+
+.tagTitel { display: flex; align-items: center; gap: 0.3rem; font-weight: 600; font-size: 0.8rem; margin-bottom: 0.35rem; }
+.tagTrenner { font-size: 0.7rem; color: var(--text-2); margin: 0.45rem 0 0.2rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.tagZeile { display: flex; gap: 0.45rem; align-items: baseline; padding: 0.22rem 0; font-size: 0.8rem; }
+.tagZeit { flex: 0 0 4.6rem; color: var(--text-2); font-size: 0.72rem; }
+.tagText { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tagSpaet .tagText { color: var(--status-danger, #f87171); }
+.tagZiehHinweis {
+  margin-top: 0.5rem; padding: 0.3rem; border: 1px dashed var(--border-1);
+  border-radius: 6px; text-align: center; font-size: 0.7rem; color: var(--text-2);
+}
+
+.iconKnopfAktiv { background: var(--akzent); color: var(--on-accent, #fff); }
+
+/* Search results and profile card */
+.sucheGruppe { margin-bottom: 0.7rem; }
+.sucheTreffer {
+  display: flex; align-items: baseline; gap: 0.5rem; width: 100%;
+  font: inherit; font-size: 0.82rem; text-align: left; cursor: pointer;
+  padding: 0.3rem 0.4rem; border: none; border-radius: 6px;
+  background: transparent; color: var(--text-1);
+}
+.sucheTreffer:hover { background: var(--surface-2); }
+
+/* The sender name becomes a button — but keeps looking like text until
+   hovered. A name that looks like a button distracts from reading. */
+.profilKnopf {
+  font: inherit; color: inherit; background: transparent; border: none;
+  padding: 0; cursor: pointer; border-radius: 4px;
+}
+.profilKnopf:hover { text-decoration: underline; }
+
+/* Cancelled event in "My Day" — still on the calendar, but must not look
+   like a valid one. */
+.tagAbgesagt .tagText { text-decoration: line-through; opacity: 0.6; }

@@ -1,0 +1,26 @@
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--bg-primary, #1e1e2e);
+  font-weight: 700;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.withPresence {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.presenceBadge {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  display: inline-flex;
+  border-radius: 50%;
+  /* A ring in the surface colour separates the badge from the avatar (Fluent pattern) */
+  box-shadow: 0 0 0 2px var(--bg-primary, #1e1e2e);
+}

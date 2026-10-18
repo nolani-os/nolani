@@ -1,0 +1,103 @@
+.menu {
+  min-width: 200px;
+  background: var(--bg-surface-solid, #2c2c2c);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  border-radius: var(--radius-md, 8px);
+  padding: 4px;
+  box-shadow: var(--shadow-menu, 0 8px 32px rgba(0, 0, 0, 0.24));
+  z-index: 9999;
+  font-family: var(--font-system);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm, 4px);
+  font-size: var(--font-size-sm, 12px);
+  color: var(--text-primary);
+  cursor: default;
+  outline: none;
+  transition: background var(--transition-fast, 0.1s);
+  user-select: none;
+}
+
+.item[data-highlighted] {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+.item[data-disabled] {
+  color: var(--text-disabled);
+  cursor: default;
+}
+
+/* PopupMenu renders items as <button> — same look as the Radix divs. */
+button.item {
+  width: 100%;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+button.item:hover:not(:disabled) {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+button.item:disabled {
+  color: var(--text-disabled);
+  cursor: default;
+}
+
+button.item.destructive:hover:not(:disabled) {
+  background: rgba(196, 43, 28, 0.20);
+  color: #ff6b6b;
+}
+
+.item.destructive[data-highlighted] {
+  background: rgba(196, 43, 28, 0.20);
+  color: #ff6b6b;
+}
+
+.label {
+  flex: 1;
+}
+
+.icon {
+  font-size: 0.875rem;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.shortcut {
+  color: var(--text-secondary, #aaa);
+  font-size: 0.6875rem;
+  margin-left: 12px;
+  flex-shrink: 0;
+}
+
+.arrow {
+  margin-left: auto;
+  color: var(--text-secondary, #aaa);
+  font-size: 0.875rem;
+}
+
+.separator {
+  height: 1px;
+  background: var(--border, rgba(255, 255, 255, 0.07));
+  margin: 4px 8px;
+}
+
+/* Aero Glass override — heavier blur for the menu */
+[data-skin-id="aero-glass"] .menu {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 12%),
+    linear-gradient(180deg, rgba(22, 25, 42, 0.78) 0%, rgba(14, 16, 30, 0.85) 100%);
+  backdrop-filter: blur(36px) saturate(160%);
+  -webkit-backdrop-filter: blur(36px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}

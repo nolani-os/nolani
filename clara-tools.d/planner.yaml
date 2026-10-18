@@ -1,0 +1,317 @@
+# Clara planner tools (Vikunja through the API's BFF routes in routers/planner.py).
+# Core tools (no loader module). The tool gateway forwards the trusted caller as
+# X-Claraos-User, hence `auth: none`. The static header `X-Claraos-Actor: clara`
+# marks machine calls: writes use Clara's own Vikunja token (they show up as
+# "clara"); fallback is the user's token when the project is not shared with clara.
+tools:
+  - name: list_projects
+    description: |
+      List the CURRENT USER's planner projects (id + title). Projects group
+      tasks and have a Kanban board + Gantt view. Show one in the ClaraOS
+      planner app via claraos_action_navigate_to(app_id="planner",
+      pattern_key="project"|"gantt", params={"project_id": <id>}).
+    endpoint: "http://localhost:8090/api/claraos/planner/clara/list_projects"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties: {}
+
+  - name: list_tasks
+    description: |
+      Find the user's tasks. Searches ALL open tasks server-side (no window, new
+      tasks included); `query` matches title and description, case-insensitive.
+      include_done=true also finds finished ones. Returns `total`, the tasks
+      (id, title, due_date + readable `due_lokal`, priority) and `more` when
+      capped by `limit`. Use it BEFORE update_task/complete_task to get the id,
+      and before create_task to avoid duplicates. If nothing is found, say so —
+      do not create a new task just because the search was empty. For counts
+      ("wie viele", "überfällig") use count_tasks; for lists by priority
+      ("welche mit hoher Priorität") use prioritaet_min (3 = hoch) — the filter
+      runs server-side over ALL tasks, `total` is the true number.
+      Priorities (Vikunja): 1 niedrig, 2 mittel, 3 hoch, 4 dringend,
+      5 SOFORT/"DO NOW"; "hohe Priorität" means priority >= 3.
+    endpoint: "http://localhost:8090/api/claraos/planner/clara/list_tasks"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        project_id: { type: integer, description: "only this project (from list_projects)" }
+        include_done: { type: boolean, default: false }
+        query: { type: string, description: "search text (title or description)" }
+        limit: { type: integer, default: 30, description: "max tasks returned (<=200)" }
+        prioritaet_min: { type: integer, minimum: 1, maximum: 5, description: "only tasks with priority >= this (3 = hoch, 4 = dringend, 5 = SOFORT)" }
+
+  - name: count_tasks
+    description: |
+      Exact counts of the user's OPEN tasks: `offen`, `ueberfaellig` (with
+      titles), `heute_faellig`, `ohne_faelligkeit`, `nach_prioritaet` and
+      `hoch_oder_hoeher` (priority >= 3). Use for "wie viele Aufgaben habe ich",
+      "was ist überfällig", "wie viele mit hoher Priorität". Optional
+      project_id / query narrow it down. Do not count list_tasks results yourself.
+    endpoint: "http://localhost:8090/api/claraos/planner/clara/count_tasks"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        project_id: { type: integer, description: "only this project" }
+        query: { type: string, description: "only tasks matching this text" }
+
+  - name: uebersicht
+    description: |
+      ONE call: every open task across ALL projects, compact (~150 tokens each):
+      id, projekt, titel, prio, faellig/ueberfaellig, typ (maschine|mensch|
+      entscheidung), kriterium (the "Erledigt wenn" statement), pruefung
+      ({art, ziel} for machine-checkable evidence), blockiert_von, kommentare,
+      letzter_kommentar, mensch_sagt_erledigt (the owner wrote "erledigt" in a
+      recent comment = class-2 evidence), tage_seit_aenderung. Also returns
+      ohne_kriterium = ids lacking the criterion block. Use this FIRST in an
+      organiser run instead of list_tasks + get_task per task.
+    endpoint: "http://localhost:8090/api/claraos/planner/clara/uebersicht"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        include_done: { type: boolean, default: false }
+        max_tasks: { type: integer, default: 80 }
+        with_details: { type: boolean, default: true, description: "false = faster, no blockers/comments" }
+
+  - name: get_task
+    description: |
+      Read one task in full: description (may contain a markdown checklist),
+      blocking dependencies, last comments, estimates, who is working on it.
+    endpoint: "http://localhost:8090/api/claraos/planner/clara/get_task"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        task_id: { type: integer }
+      required: [task_id]
+
+  - name: create_task
+    description: |
+      Create a task in a project. Search with list_tasks first so you do not
+      create a duplicate. `due_date`: LOCAL time Europe/Berlin "YYYY-MM-DDTHH:MM"
+      (no "Z") or a date "YYYY-MM-DD" (= end of that day). `priority`: 0 none,
+      1 niedrig, 2 mittel, 3 hoch, 4 dringend, 5 SOFORT ("DO NOW") — "hoch" = 3.
+      The result is read back: report success only if `ok` and `verified` are
+      true, and quote `due_lokal`. For a whole multi-step plan with
+      dependencies use create_project_from_plan instead.
+    endpoint: "http://localhost:8090/api/claraos/planner/clara/create_task"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        project_id: { type: integer }
+        title: { type: string }
+        description: { type: string, description: "markdown; use - [ ] lines for a checklist" }
+        due_date: { type: string, description: "local time YYYY-MM-DDTHH:MM (Europe/Berlin) or date YYYY-MM-DD" }
+        priority: { type: integer, enum: [0, 1, 2, 3, 4, 5], description: "0 none, 1 low, 2 medium, 3 high, 4 urgent, 5 DO NOW" }
+      required: [project_id, title]
+
+  - name: update_task
+    description: |
+      Update fields of a task (only the fields you pass change; the BFF does
+      the read-modify-write). Get the id with list_tasks first. `due_date`:
+      LOCAL time "YYYY-MM-DDTHH:MM" or a date (= end of day); "" removes it.
+      Set done=true to finish — or use complete_task. The result is read back:
+      report success only if `ok` and `verified` are true.
+    endpoint: "http://localhost:8090/api/claraos/planner/clara/update_task"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        task_id: { type: integer }
+        title: { type: string }
+        description: { type: string }
+        due_date: { type: string, description: "local time YYYY-MM-DDTHH:MM or date YYYY-MM-DD; empty string clears" }
+        priority: { type: integer, enum: [0, 1, 2, 3, 4, 5], description: "0 none, 1 low, 2 medium, 3 high, 4 urgent, 5 DO NOW" }
+        done: { type: boolean }
+      required: [task_id]
+
+  - name: complete_task
+    description: Mark one task as done (by id from list_tasks).
+    endpoint: "http://localhost:8090/api/claraos/planner/clara/complete_task"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        task_id: { type: integer }
+      required: [task_id]
+
+  - name: set_dependency
+    description: |
+      Declare that task_id is BLOCKED BY depends_on_task_id ("X can only start
+      after Y"). Shows as an arrow in the Gantt view and a ⛔ badge while the
+      dependency is unfinished.
+    endpoint: "http://localhost:8090/api/claraos/planner/clara/set_dependency"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        task_id: { type: integer, description: "the dependent (later) task" }
+        depends_on_task_id: { type: integer, description: "must be finished first" }
+      required: [task_id, depends_on_task_id]
+
+  - name: move_card
+    description: |
+      Kanban: move a task card into the bucket (column) with the given title,
+      e.g. "In Arbeit" or "Erledigt". Bucket titles are matched
+      case-insensitively; on a miss the error lists the existing buckets.
+    endpoint: "http://localhost:8090/api/claraos/planner/clara/move_card"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        project_id: { type: integer }
+        task_id: { type: integer }
+        bucket: { type: string, description: "bucket/column title" }
+      required: [project_id, task_id, bucket]
+
+  - name: add_comment
+    description: Add a comment to a task (appears as "clara" in the timeline).
+    endpoint: "http://localhost:8090/api/claraos/planner/clara/add_comment"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        task_id: { type: integer }
+        comment: { type: string }
+      required: [task_id, comment]
+
+  - name: set_estimate
+    description: |
+      Store your estimate for a task (or project with task_id=0): expected
+      cost in EUR, LLM tokens and/or minutes. Shown next to the actuals in
+      the planner's cost view.
+    endpoint: "http://localhost:8090/api/claraos/planner/meta"
+    method: PUT
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        project_id: { type: integer }
+        task_id: { type: integer, default: 0, description: "0 = whole project" }
+        estimate_eur: { type: number }
+        estimate_tokens: { type: integer }
+        estimate_minutes: { type: integer }
+      required: [project_id]
+
+  - name: create_project_from_plan
+    description: |
+      Create a whole project plan in one call: the project, its tasks (in
+      order) and their dependencies. depends_on lists 1-based indexes of
+      earlier tasks in THIS list (e.g. task 3 with depends_on [1,2]).
+      USE THIS whenever the user asks you to plan something multi-step.
+      Afterwards show it: claraos_action_navigate_to(app_id="planner",
+      pattern_key="gantt", params={"project_id": <returned project_id>}).
+    endpoint: "http://localhost:8090/api/claraos/planner/clara/create_project_from_plan"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        title: { type: string, description: "project title" }
+        description: { type: string }
+        tasks:
+          type: array
+          items:
+            type: object
+            properties:
+              title: { type: string }
+              description: { type: string }
+              due_date: { type: string, description: "local time YYYY-MM-DDTHH:MM (Europe/Berlin) or date YYYY-MM-DD" }
+              depends_on:
+                type: array
+                items: { type: integer }
+                description: "1-based indexes of earlier tasks in this list"
+            required: [title]
+      required: [title, tasks]
+
+  - name: start_work
+    description: |
+      Mark that YOU (clara) start working on a task — sets the "Clara
+      arbeitet" badge in the planner and opens a worklog entry. Call this
+      BEFORE working on a task the user gave you; pass your chat session id
+      if you know it. ALWAYS pair with finish_work when done.
+    endpoint: "http://localhost:8090/api/claraos/planner/work/start"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        project_id: { type: integer }
+        task_id: { type: integer }
+        session_id: { type: string }
+        note: { type: string, description: "what you are about to do" }
+      required: [project_id, task_id]
+
+  - name: finish_work
+    description: |
+      Mark your work on a task as finished — clears the "Clara arbeitet"
+      badge and closes the worklog entry (time tracking!). Call when you
+      completed or abandoned the work; note = short result summary.
+      Set complete=true to ALSO tick the task off (always do that for a task
+      you created yourself via start_adhoc_work; for a task the user created,
+      only when the work is really done).
+    endpoint: "http://localhost:8090/api/claraos/planner/work/finish"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        project_id: { type: integer }
+        task_id: { type: integer }
+        note: { type: string, description: "short result summary" }
+        complete: { type: boolean, default: false, description: "also mark the task done" }
+      required: [project_id, task_id]
+
+  - name: start_adhoc_work
+    description: |
+      Show the user what you are working on RIGHT NOW when there is no planner
+      task yet — the normal case for a job given in chat. One call: creates a
+      task in the "Clara" project, marks it "Clara arbeitet" and returns
+      project_id + task_id. The badge is visible in the planner app and in the
+      desktop tasks widget while you work.
+      USE IT for jobs that take several steps or several tool calls (research,
+      building/fixing something, anything you would plan). Do NOT use it for
+      quick answers, small talk or a single lookup — that would just spam the
+      planner. If a matching task ALREADY exists, use start_work instead.
+      ALWAYS close it with finish_work(project_id, task_id, note=<result>,
+      complete=true) — also when the job failed or you gave up.
+    endpoint: "http://localhost:8090/api/claraos/planner/clara/start_adhoc_work"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        title: { type: string, description: "what you are working on, user's words, short" }
+        note: { type: string, description: "one line: what you intend to do" }
+        session_id: { type: string, description: "your chat session id, if you know it" }
+      required: [title]

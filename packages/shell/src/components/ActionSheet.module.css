@@ -1,0 +1,29 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 3rem; /* 48dp Tap-Target */
+  padding: 0 12px;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm, 6px);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  text-align: left;
+  cursor: pointer;
+}
+.row:active { background: var(--bg-active, var(--bg-hover)); }
+.row:disabled { opacity: 0.45; }
+
+.icon { flex-shrink: 0; width: 1.4rem; text-align: center; }
+.label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.arrow { color: var(--text-secondary); }
+
+.destructive { color: var(--close-hover, #f38ba8); }
+
+.separator {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 8px;
+}

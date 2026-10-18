@@ -1,0 +1,161 @@
+.karte {
+  position: relative;
+  width: 320px;
+  flex: 0 0 320px;
+  padding: 20px;
+  overflow-y: auto;
+  background: var(--bg-secondary, #181825);
+  border-left: 1px solid var(--border-color, #313244);
+}
+
+.schliessen {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary, #a6adc8);
+  cursor: pointer;
+  font-size: var(--teams-font-md, 0.875rem);
+}
+
+.schliessen:hover { background: var(--bg-hover, #313244); }
+
+.kopf {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.name {
+  margin: 0;
+  font-size: var(--teams-font-lg, 1rem);
+  color: var(--text-primary, #cdd6f4);
+}
+
+.mail {
+  margin: 2px 0 0;
+  font-size: var(--teams-font-sm, 0.8125rem);
+  color: var(--text-secondary, #a6adc8);
+  word-break: break-all;
+}
+
+.block { margin-bottom: 20px; }
+
+.blockTitel {
+  margin: 0 0 8px;
+  font-size: var(--teams-font-xs, 0.75rem);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary, #a6adc8);
+}
+
+.teams, .wege {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.team {
+  display: inline-block;
+  margin: 0 6px 6px 0;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: var(--bg-tertiary, #313244);
+  color: var(--text-primary, #cdd6f4);
+  font-size: var(--teams-font-sm, 0.8125rem);
+}
+
+.weg {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  border-radius: 6px;
+  background: var(--bg-tertiary, #313244);
+}
+
+/* A usable channel stands out visibly. Making "Signal" and "Matrix" look the
+   same promises the same for both. */
+.wegAktiv { border-left: 3px solid var(--success, #a6e3a1); }
+.wegPassiv { border-left: 3px solid var(--border-color, #45475a); opacity: 0.75; }
+
+.wegName {
+  font-size: var(--teams-font-md, 0.875rem);
+  color: var(--text-primary, #cdd6f4);
+}
+
+.wegHandle {
+  grid-column: 1 / -1;
+  font-size: var(--teams-font-xs, 0.75rem);
+  color: var(--text-secondary, #a6adc8);
+  word-break: break-all;
+}
+
+.marke {
+  justify-self: end;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: var(--teams-font-xs, 0.75rem);
+  white-space: nowrap;
+}
+
+.marke[data-art="aktiv"] {
+  background: color-mix(in srgb, var(--success, #a6e3a1) 22%, transparent);
+  color: var(--success, #a6e3a1);
+}
+
+.marke[data-art="passiv"] {
+  background: var(--bg-hover, #45475a);
+  color: var(--text-secondary, #a6adc8);
+}
+
+.leer, .laedt, .fehler {
+  font-size: var(--teams-font-sm, 0.8125rem);
+  color: var(--text-secondary, #a6adc8);
+}
+
+.fehler { color: var(--danger, #f38ba8); }
+
+@media (max-width: 700px) {
+  .karte { width: 100%; flex-basis: auto; border-left: none; }
+}
+
+/* ── Actions per channel ────────────────────────────────────────────────── */
+.aktionen {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.aktion {
+  padding: 4px 12px;
+  border: 1px solid var(--accent-color, #89b4fa);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--accent-color, #89b4fa);
+  font-size: var(--teams-font-sm, 0.8125rem);
+  cursor: pointer;
+  /* Fingertip size: below 44px taps miss on phones. */
+  min-height: 32px;
+}
+
+.aktion:hover:not(:disabled) {
+  background: var(--accent-color, #89b4fa);
+  color: var(--bg-window, #1e1e2e);
+}
+
+.aktion:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (pointer: coarse) {
+  .aktion { min-height: 44px; padding: 8px 16px; }
+}

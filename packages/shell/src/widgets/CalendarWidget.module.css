@@ -1,0 +1,267 @@
+/* Calendar widget v2 — additions to MobileListWidgets.module.css:
+   mini month grid, composer with time/calendar, event detail area. */
+
+.viewToggle {
+  composes: iconBtn from "./MobileListWidgets.module.css";
+}
+
+/* ── Composer v2 ── */
+.composer2 {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 6px 0 8px;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.composerRow {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.cInput {
+  flex: 1;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  color: #fff;
+  font: inherit;
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  outline: none;
+}
+
+.cInput:focus {
+  border-color: rgba(123, 159, 255, 0.7);
+}
+
+/* make native date/time picker icons light */
+.cInput::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.7;
+}
+
+.cTime {
+  flex: 0 0 74px;
+}
+
+.cDate {
+  flex: 0 0 118px;
+}
+
+.cCheck {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.6875rem;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+.cCheck input {
+  accent-color: #7b9fff;
+}
+
+.cBtn {
+  flex-shrink: 0;
+  border: none;
+  border-radius: 8px;
+  background: rgba(90, 160, 255, 0.85);
+  color: #fff;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+
+.cBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ── Event detail (inline expand) ── */
+.detail {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 7px 9px;
+  margin: 2px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.75rem;
+}
+
+.detailMeta {
+  opacity: 0.7;
+  font-size: 0.6875rem;
+}
+
+.detailActions {
+  display: flex;
+  gap: 6px;
+}
+
+.dBtn {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 0.6875rem;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+
+.dBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.dDanger {
+  border-color: rgba(255, 110, 110, 0.4);
+  color: #ffb4b4;
+}
+
+.dDanger:hover {
+  background: rgba(255, 110, 110, 0.15);
+}
+
+/* ── Mini month ── */
+.month {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.monthNav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 0;
+}
+
+.monthName {
+  flex: 1;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.navBtn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  opacity: 0.7;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.8125rem;
+}
+
+.navBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  opacity: 1;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+}
+
+.wd {
+  text-align: center;
+  font-size: 0.5625rem;
+  text-transform: uppercase;
+  opacity: 0.5;
+  padding: 1px 0;
+}
+
+.day {
+  aspect-ratio: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  font-size: 0.6875rem;
+  cursor: pointer;
+  border: 1px solid transparent;
+  padding: 1px 0;
+}
+
+.day:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dayOther {
+  opacity: 0.3;
+}
+
+.dayToday {
+  border-color: rgba(123, 159, 255, 0.7);
+}
+
+.daySelected {
+  background: rgba(123, 159, 255, 0.22);
+}
+
+.dots {
+  display: flex;
+  gap: 2px;
+  height: 4px;
+  margin-top: 1px;
+}
+
+.dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #7b9fff;
+}
+
+.monthAgenda {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 3px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Calendar colour dot in agenda rows */
+.calDot {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+/* Notice shown when saving or deleting did NOT work.
+   Without it a failure would vanish silently (`if (r.ok)` and nothing else) —
+   the most common case being a 409: the event looks saved but is not.
+   Colours match the error box in the Planner (PlannerApp.module.css), so
+   "something went wrong" looks the same everywhere. */
+.hinweisBox {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  margin: 0.25rem 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--text-1);
+  cursor: pointer;
+  /* On phones the message must not be cut off — an error message that cannot
+     be read to the end explains nothing. */
+  overflow-wrap: anywhere;
+}

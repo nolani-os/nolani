@@ -1,0 +1,338 @@
+/* Mobile layout of the files app: rem units so mobilePrefs.fontScale
+ * (root font-size, MobileShell) scales automatically. */
+
+.root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  /* Warning: a `transparent` fallback would make the whole app invisible
+     when the token is not set. Opaque is correct anyway: window glass is
+     opaque for all native apps. */
+  background: var(--bg-window-solid, var(--bg-window, #101624));
+  color: var(--text-primary);
+}
+
+/* === App-Bar === */
+.appBar {
+  display: flex; align-items: center; gap: 4px;
+  padding: 6px 8px;
+  min-height: 56px;
+}
+
+
+.barTitle {
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 1.125rem; font-weight: 700; letter-spacing: -0.01em;
+  padding: 0 4px;
+}
+
+/* === Path chips === */
+.chips {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.4rem 0.6rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+.chips::-webkit-scrollbar { display: none; }
+
+.chip {
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 14px;
+  border: none;
+  border-radius: var(--radius-pill, 999px);
+  background: color-mix(in srgb, var(--accent, #38bdf8) 14%, var(--surface-2, #182236));
+  color: var(--text-1, #e5e7eb);
+  font: inherit; font-size: 0.8125rem; font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.chip:last-child { background: var(--accent, #38bdf8); color: var(--on-accent, #101418); font-weight: 600; }
+
+.noteBanner {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: var(--bg-hover);
+  border-bottom: 1px solid var(--border);
+}
+
+/* === List / grid === */
+.listArea {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom)); /* FAB clearance */
+}
+
+.list { display: flex; flex-direction: column; }
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3.25rem; /* >48dp */
+  padding: 0.25rem 0.75rem;
+  touch-action: pan-y;
+}
+.row:active { background: var(--bg-hover); }
+.rowSelected { background: var(--accent-bg, rgba(59, 130, 246, 0.15)); }
+
+.rowText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.rowName {
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rowMeta { font-size: 0.72rem; color: var(--text-secondary); }
+.rowCheck {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid var(--text-2, #9aa8c2);
+  display: grid; place-items: center;
+  color: var(--on-accent, #101418);
+}
+.rowCheck[data-an="ja"] { background: var(--accent, #38bdf8); border-color: var(--accent, #38bdf8); }
+
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+  gap: 0.5rem;
+  padding: 0.6rem;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.6rem 0.3rem;
+  border-radius: var(--radius-sm, 8px);
+  touch-action: pan-y;
+}
+.card:active { background: var(--bg-hover); }
+.cardName {
+  font-size: 0.75rem;
+  text-align: center;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cardCheck { position: absolute; top: 0.25rem; right: 0.35rem; font-size: 1rem; }
+
+/* === States === */
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 60%;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.errorPanel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+.errorIcon { font-size: 2.5rem; }
+.errorTitle { font-size: 0.95rem; font-weight: 600; }
+
+/* === FAB === */
+.fab {
+  position: absolute;
+  right: 1rem;
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  z-index: 10;
+}
+.fab:active { filter: brightness(1.1); }
+
+/* === Sources sheet === */
+.sourceRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0 0.75rem;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm, 6px);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  text-align: left;
+  cursor: pointer;
+}
+.sourceRow:active { background: var(--bg-active, var(--bg-hover)); }
+.sourceIcon { width: 1.6rem; text-align: center; }
+.sourceName { flex: 1; }
+.sourceDot { width: 0.6rem; height: 0.6rem; border-radius: 50%; }
+.dotOnline { background: var(--status-ok, #4ade80); }
+.dotOffline { background: var(--text-secondary); opacity: 0.5; }
+
+.row { min-height: 56px; }
+.rowName { font-size: 0.9375rem; font-weight: 500; }
+.listArea { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); }
+
+/* Upload progress above the FAB */
+.uploadToast {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--surface-2, #1e1e27);
+  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.08));
+  z-index: 5;
+}
+.uploadName {
+  font-size: 0.8125rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.uploadBar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-3, rgba(255, 255, 255, 0.1));
+  overflow: hidden;
+}
+.uploadBar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent, #60cdff);
+  transition: width 0.2s;
+}
+
+/* ── Phone design language like planner/knowledge/teams ─────────────────
+   Large title + search pill at the top, shared toolbar at the bottom. Tokens only. */
+.kopf {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px 8px;
+  flex-shrink: 0;
+}
+.titelZeile { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.titel {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.titel > svg { flex-shrink: 0; color: var(--text-secondary); }
+.titelText { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.untertitel { font-size: 0.8125rem; color: var(--text-secondary); padding-left: 2px; }
+.kopfKnopf {
+  flex-shrink: 0;
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  border: none; border-radius: var(--radius-pill, 999px);
+  background: none; color: var(--text-primary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.kopfKnopf:active { background: var(--surface-2, #182236); }
+
+.suchPille {
+  margin-top: 10px;
+  height: 48px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 14px 0 18px;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--surface-2, #182236);
+  color: var(--text-secondary);
+}
+.suchPille input {
+  flex: 1; min-width: 0;
+  border: none; outline: none; background: none;
+  color: var(--text-primary);
+  font: inherit; font-size: 0.9375rem;
+}
+.suchPille input::-webkit-search-cancel-button { display: none; }
+.suchLeeren {
+  width: 32px; height: 32px; display: grid; place-items: center;
+  border: none; border-radius: var(--radius-pill, 999px);
+  background: none; color: var(--text-secondary); cursor: pointer;
+}
+
+.auswahlKopf {
+  display: flex; align-items: center; gap: 8px;
+  min-height: 64px; padding: 8px 12px;
+  flex-shrink: 0;
+}
+.auswahlTitel { flex: 1; font-size: 1.125rem; font-weight: 700; }
+.textKnopf {
+  min-height: 40px; padding: 0 14px;
+  border: none; border-radius: var(--radius-pill, 999px);
+  background: color-mix(in srgb, var(--accent, #38bdf8) 14%, var(--surface-2, #182236));
+  color: var(--text-primary);
+  font: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+}
+
+/* Rows: 40 px icon, "…" without a heavy circle */
+.row { gap: 14px; padding: 6px 8px 6px 16px; }
+.mehrKnopf {
+  flex-shrink: 0;
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  border: none; border-radius: var(--radius-pill, 999px);
+  background: none; color: var(--text-secondary);
+  cursor: pointer;
+}
+.mehrKnopf:active { background: var(--surface-2, #182236); }
+.rowCut { opacity: 0.5; }
+
+/* Clipboard bar above the toolbar */
+.ablage {
+  position: absolute;
+  left: 14px; right: 14px;
+  bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 6px 6px 16px;
+  border-radius: var(--radius-pill, 999px);
+  background: color-mix(in srgb, var(--accent, #38bdf8) 18%, var(--surface-2, #182236));
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  z-index: 6;
+}
+.ablageText { flex: 1; min-width: 0; font-size: 0.875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ablageKnopf {
+  min-height: 36px; padding: 0 14px;
+  border: none; border-radius: var(--radius-pill, 999px);
+  background: var(--accent, #38bdf8); color: var(--on-accent, #101418);
+  font: inherit; font-size: 0.8125rem; font-weight: 700; cursor: pointer;
+}
+
+.korbLeiste { display: flex; justify-content: flex-end; padding: 0 10px 4px; }
+
+/* Room for the toolbar (64 px + margin) and, if shown, the clipboard bar */
+.listArea { padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
+.uploadToast { bottom: calc(140px + env(safe-area-inset-bottom, 0px)); }
+.errorIcon { color: var(--text-secondary); }

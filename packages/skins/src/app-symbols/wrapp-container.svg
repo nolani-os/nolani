@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+<defs>
+<linearGradient id="swrappconta-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a1b0c8"/><stop offset="1" stop-color="#4e5f82"/></linearGradient>
+<radialGradient id="swrappconta-hi" cx="0.28" cy="0.16" r="0.75"><stop offset="0" stop-color="#ffffff" stop-opacity="0.5"/><stop offset="0.55" stop-color="#ffffff" stop-opacity="0.06"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
+<linearGradient id="swrappconta-sh" x1="0" y1="0" x2="0" y2="1"><stop offset="0.55" stop-color="#000000" stop-opacity="0"/><stop offset="1" stop-color="#000000" stop-opacity="0.28"/></linearGradient>
+<linearGradient id="swrappconta-rim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0.7"/><stop offset="0.4" stop-color="#ffffff" stop-opacity="0.08"/><stop offset="1" stop-color="#000000" stop-opacity="0.35"/></linearGradient>
+<linearGradient id="swrappconta-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dfe6f2"/></linearGradient>
+<filter id="swrappconta-ds" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="1.4" stdDeviation="1.1" flood-color="#000000" flood-opacity="0.35"/></filter>
+<clipPath id="swrappconta-c"><path d="M20,0 L44,0 C55,0 64,9 64,20 L64,44 C64,55 55,64 44,64 L20,64 C9,64 0,55 0,44 L0,20 C0,9 9,0 20,0 Z"/></clipPath>
+</defs>
+<path d="M20,0 L44,0 C55,0 64,9 64,20 L64,44 C64,55 55,64 44,64 L20,64 C9,64 0,55 0,44 L0,20 C0,9 9,0 20,0 Z" fill="url(#swrappconta-bg)"/>
+<path d="M20,0 L44,0 C55,0 64,9 64,20 L64,44 C64,55 55,64 44,64 L20,64 C9,64 0,55 0,44 L0,20 C0,9 9,0 20,0 Z" fill="url(#swrappconta-hi)"/>
+<path d="M20,0 L44,0 C55,0 64,9 64,20 L64,44 C64,55 55,64 44,64 L20,64 C9,64 0,55 0,44 L0,20 C0,9 9,0 20,0 Z" fill="url(#swrappconta-sh)"/>
+<ellipse cx="32" cy="4" rx="38" ry="18" fill="#ffffff" opacity="0.13" clip-path="url(#swrappconta-c)"/>
+<path d="M20,0 L44,0 C55,0 64,9 64,20 L64,44 C64,55 55,64 44,64 L20,64 C9,64 0,55 0,44 L0,20 C0,9 9,0 20,0 Z" fill="none" stroke="url(#swrappconta-rim)" stroke-width="2" clip-path="url(#swrappconta-c)"/>
+<g transform="translate(0 1.6)" opacity="0.95"><path d="M32,13 L51,23 L32,33 L13,23 Z" fill="#232b3a" /><path d="M13,23 L32,33 L32,52 L13,42 Z" fill="#232b3a" /><path d="M51,23 L32,33 L32,52 L51,42 Z" fill="#232b3a" /><path d="M22.5,18 L41.5,28 L41.5,35 L22.5,25 Z" fill="#232b3a" opacity=".55"/></g>
+<g filter="url(#swrappconta-ds)"><path d="M32,13 L51,23 L32,33 L13,23 Z" fill="url(#swrappconta-g)" /><path d="M13,23 L32,33 L32,52 L13,42 Z" fill="#2d374b" /><path d="M51,23 L32,33 L32,52 L51,42 Z" fill="#404e6b" /><path d="M22.5,18 L41.5,28 L41.5,35 L22.5,25 Z" fill="#2d374b" opacity=".55"/></g>
+</svg>

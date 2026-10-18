@@ -1,0 +1,289 @@
+.channelView {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Header — taken over from the old ChatTimeline header */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border-color, #313244);
+  background: var(--bg-secondary, #181825);
+  flex-shrink: 0;
+  min-height: 44px;
+}
+
+.roomIcon {
+  display: inline-flex;
+  color: var(--text-secondary, #a6adc8);
+}
+
+.roomNameBtn {
+  border: none;
+  background: transparent;
+  color: var(--text-primary, #cdd6f4);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.roomNameBtn:hover { text-decoration: underline; }
+
+.topic {
+  color: var(--text-secondary, #a6adc8);
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.topic:empty { display: none; }
+
+.encBadge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: var(--success, #a6e3a1);
+  border: 1px solid var(--success, #a6e3a1);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.headerBtn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  height: 32px; min-width: 32px; padding: 0 8px;
+  border: none; border-radius: var(--radius-md, 10px);
+  background: transparent; color: var(--text-secondary, #a6adc8);
+  font: inherit; font-size: 0.8125rem; cursor: pointer;
+}
+
+.headerBtn:hover {
+  background: var(--bg-hover, #313244);
+  color: var(--text-primary, #cdd6f4);
+}
+
+.headerBtnActive {
+  background: var(--accent-bg, rgba(137, 180, 250, 0.16));
+  color: var(--accent-color, #89b4fa);
+}
+
+.memberCount { font-size: 0.75rem; }
+
+/* Top tab bar (MS Teams style: Posts | Files | … | +) */
+.tabBar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border-color, #313244);
+  background: var(--bg-secondary, #181825);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.tabWrap {
+  display: inline-flex;
+  align-items: center;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #a6adc8);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  padding: 9px 12px;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+
+.tab:hover { color: var(--text-primary, #cdd6f4); }
+
+.activeTab {
+  color: var(--accent-color, #89b4fa);
+  border-bottom-color: var(--accent-color, #89b4fa);
+  font-weight: 600;
+}
+
+.tabRemove {
+  width: 28px; height: 28px; padding: 0;
+  border: none; border-radius: 8px;
+  background: transparent; color: var(--text-secondary, #a6adc8);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+
+.tabRemove:hover { color: var(--danger, #f38ba8); }
+
+.addTabBtn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  height: 32px; min-width: 32px; padding: 0 8px;
+  border: none; border-radius: var(--radius-md, 10px);
+  background: transparent; color: var(--text-secondary, #a6adc8);
+  font: inherit; font-size: 0.8125rem; cursor: pointer;
+}
+
+.addTabBtn:hover {
+  background: var(--bg-hover, #313244);
+  color: var(--text-primary, #cdd6f4);
+}
+
+/* Body: content + optional member panel */
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tabIframe {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: #fff;
+}
+
+.sidePanel {
+  width: 300px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--border-color, #313244);
+  background: var(--bg-secondary, #181825);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Add-tab dialog */
+.addTabOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.addTabDialog {
+  background: var(--bg-secondary, #181825);
+  border: 1px solid var(--border-color, #313244);
+  border-radius: var(--radius-md, 10px);
+  padding: 20px;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.addTabDialog h3 {
+  margin: 0 0 4px;
+  font-size: 0.9375rem;
+  color: var(--text-primary, #cdd6f4);
+}
+
+.addTabDialog input {
+  padding: 8px 10px;
+  border: 1px solid var(--border-color, #313244);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--bg-primary, #1e1e2e);
+  color: var(--text-primary, #cdd6f4);
+  font-size: 0.8125rem;
+  outline: none;
+}
+
+.addTabDialog input:focus { border-color: var(--accent-color, #89b4fa); }
+
+/* select styled like input — otherwise the app picker looks out of place. */
+.addTabDialog select {
+  padding: 8px 10px;
+  border: 1px solid var(--border-color, #313244);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--bg-primary, #1e1e2e);
+  color: var(--text-primary, #cdd6f4);
+  font-size: 0.8125rem;
+  outline: none;
+}
+
+.addTabDialog select:focus { border-color: var(--accent-color, #89b4fa); }
+
+/* Toggle: ClaraOS app | web address */
+.artWahl {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.art,
+.artAktiv {
+  flex: 1;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--border-color, #313244);
+  background: transparent;
+  color: var(--text-secondary, #a6adc8);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.art:hover { background: var(--bg-hover, rgba(255, 255, 255, 0.06)); }
+
+.artAktiv {
+  background: var(--accent-bg, rgba(137, 180, 250, 0.16));
+  border-color: var(--accent-color, #89b4fa);
+  color: var(--text-primary, #cdd6f4);
+}
+
+.addTabActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.confirmBtn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 32px; padding: 0 14px;
+  border: none; border-radius: var(--radius-md, 10px);
+  background: var(--accent-color, var(--accent, #89b4fa)); color: var(--on-accent, #101418);
+  font: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+}
+
+.confirmBtn:disabled { opacity: 0.4; cursor: default; }
+
+.cancelBtn {
+  border: 1px solid var(--border-color, #313244);
+  background: transparent;
+  color: var(--text-secondary, #a6adc8);
+  padding: 6px 14px;
+  border-radius: var(--radius-sm, 6px);
+  cursor: pointer;
+}
+
+/* Lock icon next to the name, now that the "#" is gone. */
+.schloss {
+  display: inline-flex;
+  color: var(--text-secondary, #a6adc8);
+}

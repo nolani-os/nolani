@@ -1,0 +1,106 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 900; /* above widgets/icons; below window modals is fine */
+}
+
+.panel {
+  width: min(720px, calc(100vw - 48px));
+  max-height: min(560px, calc(100vh - 96px));
+  display: flex;
+  flex-direction: column;
+  /* Fallback chrome for skins without .aeroWidget styling */
+  background: rgba(20, 22, 38, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  color: var(--text-primary, #fff);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.5);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px 10px;
+  flex-shrink: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.closeBtn {
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  font-size: 1.0625rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.closeBtn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  padding: 8px 20px 20px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.12s ease, border-color 0.12s ease;
+}
+
+.card:hover {
+  background: rgba(123, 159, 255, 0.12);
+  border-color: rgba(123, 159, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.cardIcon {
+  font-size: 1.625rem;
+  line-height: 1.2;
+}
+
+.cardName {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.cardDesc {
+  font-size: 0.6875rem;
+  opacity: 0.65;
+  line-height: 1.35;
+  min-height: 30px;
+}
+
+.cardAdd {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #9db8ff;
+  margin-top: 2px;
+}

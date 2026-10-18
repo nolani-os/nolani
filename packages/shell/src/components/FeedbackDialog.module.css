@@ -1,0 +1,225 @@
+/* Feedback dialog — global (fixed) across desktop AND mobile, token-driven
+   like Chat/Dialogs.module.css, z-index above the NudgeHost (9000). */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 8, 18, 0.45);
+  backdrop-filter: blur(2px);
+  padding: 16px;
+}
+
+.card {
+  width: min(420px, 100%);
+  border-radius: 14px;
+  background: var(--surface-2, rgba(28, 30, 38, 0.96));
+  border: 1px solid var(--border-2, rgba(147, 197, 253, 0.18));
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.5);
+  padding: 16px;
+  color: var(--color-text, #e7e7eb);
+}
+
+.title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.subtitle {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  opacity: 0.75;
+}
+
+.cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.cat,
+.catActive {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-2, rgba(255, 255, 255, 0.12));
+  background: transparent;
+  color: var(--color-text, #e7e7eb);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.cat:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.catActive {
+  background: var(--accent, #38bdf8);
+  border-color: transparent;
+  color: #04101f;
+  font-weight: 600;
+}
+
+.text {
+  margin-top: 10px;
+  width: 100%;
+  resize: vertical;
+  min-height: 84px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-2, rgba(255, 255, 255, 0.12));
+  background: var(--surface-3, rgba(20, 22, 28, 0.6));
+  color: var(--color-text, #e7e7eb);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.text:focus {
+  border-color: var(--accent-1, rgba(56, 189, 248, 0.45));
+}
+
+.tools {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.toolBtn,
+.toolBtnActive {
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-2, rgba(255, 255, 255, 0.12));
+  background: transparent;
+  color: var(--color-text, #e7e7eb);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.toolBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.toolBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.toolBtnActive {
+  border-color: #ef4444;
+  color: #fca5a5;
+  animation: feedbackPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes feedbackPulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-danger, #f87171) 35%, transparent); }
+  50% { box-shadow: 0 0 0 5px rgba(239, 68, 68, 0); }
+}
+
+.attach {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+}
+
+.attachThumb {
+  width: 72px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border-2, rgba(255, 255, 255, 0.12));
+}
+
+.attachLabel {
+  opacity: 0.8;
+}
+
+.ctx {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  opacity: 0.85;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ctxClear {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.6;
+  font-size: 0.6875rem;
+}
+
+.ctxClear:hover {
+  opacity: 1;
+}
+
+.error {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: #fca5a5;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-2, rgba(255, 255, 255, 0.12));
+  background: transparent;
+  color: var(--color-text, #e7e7eb);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.btnPrimary {
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: var(--accent, #38bdf8);
+  color: #04101f;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btnPrimary:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btnPrimary:not(:disabled):hover {
+  filter: brightness(1.12);
+}
+
+.doneBox {
+  text-align: center;
+  padding: 18px 8px;
+}
+
+.doneIcon {
+  font-size: 1.75rem;
+}
+
+.doneText {
+  margin-top: 8px;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}

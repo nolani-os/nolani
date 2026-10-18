@@ -1,0 +1,145 @@
+/* Quick settings, version 2 — tokens only, Android 16 geometry:
+   tiles 68 px tall in a 4-column grid, large = 2 columns as a pill, small =
+   rounded square with icon only. Active = accent + --on-accent. */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0 6px;
+}
+
+/* Header */
+.kopf {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+.konto {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent, #38bdf8), color-mix(in srgb, var(--accent, #38bdf8) 40%, var(--bg-window-solid, #0b1220)));
+}
+.datum { font-size: 0.875rem; font-weight: 600; color: var(--text-1, #e5e7eb); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kopfAktionen { display: flex; gap: 4px; }
+
+/* Slider as a pill */
+.regler {
+  position: relative;
+  height: 48px;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--surface-2, #182236);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  /* Vertical panning does not belong to the slider — otherwise the drag fights
+     with the shade gesture. Horizontally the browser drags the range value. */
+  touch-action: pan-x;
+}
+.reglerFuellung {
+  position: absolute; inset: 0 auto 0 0;
+  width: var(--wert, 50%);
+  background: var(--accent, #38bdf8);
+  border-radius: var(--radius-pill, 999px) 3px 3px var(--radius-pill, 999px);
+  transition: width .05s linear;
+}
+.reglerGriff {
+  position: absolute; top: 8px; bottom: 8px;
+  left: calc(var(--wert, 50%) - 2px);
+  width: 3px; border-radius: 2px;
+  background: var(--text-1, #e5e7eb);
+  opacity: .85;
+}
+.reglerSymbol {
+  position: relative; z-index: 1;
+  margin-left: 14px;
+  display: inline-flex;
+  color: var(--on-accent, #101418);
+}
+/* With an almost empty slider the icon sits on the dark surface */
+.regler[data-dunkel="ja"] .reglerSymbol { color: var(--text-1, #e5e7eb); }
+.reglerWert {
+  position: relative; z-index: 1;
+  margin-left: auto; margin-right: 16px;
+  font-size: 0.8125rem; font-variant-numeric: tabular-nums;
+  color: var(--text-2, #9aa8c2);
+}
+.reglerInput {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  margin: 0; opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+.freigabe {
+  height: 48px; border: none; border-radius: var(--radius-pill, 999px);
+  background: var(--surface-2, #182236); color: var(--text-1, #e5e7eb);
+  font: inherit; font-size: 0.875rem; font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  cursor: pointer;
+}
+
+/* Tiles */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.tile {
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  height: 68px;
+  border: none;
+  border-radius: var(--radius-lg, 14px);
+  background: var(--surface-2, #182236);
+  color: var(--text-1, #e5e7eb);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  font: inherit;
+  transition: background-color .15s, color .15s, transform .1s, border-radius .12s;
+}
+.tile:active { transform: scale(.97); }
+.tile:disabled { opacity: .4; cursor: default; }
+.tile:focus-visible { outline: 2px solid var(--accent, #38bdf8); outline-offset: 2px; }
+.tileGross {
+  grid-column: span 2;
+  justify-content: flex-start;
+  border-radius: var(--radius-pill, 999px);
+  padding: 0 12px 0 8px;
+}
+.tileAn { background: var(--accent, #38bdf8); color: var(--on-accent, #101418); }
+.kreis {
+  width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+  display: grid; place-items: center;
+  background: color-mix(in srgb, var(--text-1, #e5e7eb) 8%, transparent);
+}
+.tile:not(.tileGross) .kreis { background: transparent; width: auto; height: auto; }
+.tileAn .kreis { background: color-mix(in srgb, var(--on-accent, #101418) 12%, transparent); }
+.text { display: flex; flex-direction: column; gap: 2px; min-width: 0; text-align: left; }
+.name { font-size: 0.8125rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zustand { font-size: 0.6875rem; opacity: .72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Font size as a chip */
+.schrift {
+  height: 52px;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--surface-2, #182236);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 6px 0 16px;
+}
+.schriftLabel { display: inline-flex; align-items: center; gap: 10px; font-size: 0.8125rem; color: var(--text-2, #9aa8c2); font-variant-numeric: tabular-nums; }
+.schriftLabel svg { color: var(--text-1, #e5e7eb); }
+.schriftKnoepfe { display: flex; gap: 6px; }
+.schriftKnopf {
+  width: 40px; height: 40px; border: none; border-radius: 50%;
+  background: color-mix(in srgb, var(--text-1, #e5e7eb) 8%, transparent);
+  color: var(--text-1, #e5e7eb);
+  font: inherit; font-size: 0.8125rem; font-weight: 700;
+  cursor: pointer;
+}
+.schriftKnopf:active { background: color-mix(in srgb, var(--text-1, #e5e7eb) 16%, transparent); }

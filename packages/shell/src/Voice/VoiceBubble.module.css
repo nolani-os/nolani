@@ -1,0 +1,104 @@
+.bubble {
+  position: fixed;
+  bottom: calc(var(--taskbar-height, 48px) + 12px);
+  left: 70px;
+  width: 360px;
+  height: 480px;
+  max-height: calc(100vh - var(--taskbar-height, 48px) - 32px);
+  background: var(--bg-surface);
+  backdrop-filter: var(--blur-acrylic);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  z-index: 9400;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* live mic level (0..1) → cyan rim glow, so the user sees the mic hears them */
+  box-shadow:
+    var(--shadow-menu),
+    0 0 calc(var(--mic-level, 0) * 26px) rgba(56, 189, 248, calc(var(--mic-level, 0) * 0.65));
+  transition: box-shadow 120ms linear;
+}
+
+.bubbleContent {
+  min-height: 32px;
+}
+
+.recording {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.recordingDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ff3b30;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.transcript {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.sending {
+  font-size: var(--font-size-xs, 11px);
+  color: var(--accent);
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm);
+}
+
+.micBtn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: var(--bg-hover);
+  font-size: 1.125rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s;
+}
+
+.micBtn:hover { background: var(--bg-active); }
+.micBtn.micActive { background: #ff3b30; }
+
+.muteBtn, .closeBtn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.muteBtn:hover, .closeBtn:hover { background: var(--bg-hover); }
+
+.unsupported {
+  font-size: var(--font-size-xs, 11px);
+  color: var(--text-disabled);
+  text-align: center;
+}

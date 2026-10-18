@@ -1,0 +1,30 @@
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+.dialog { background: var(--bg-secondary, #181825); border: 1px solid var(--border-color, #313244); border-radius: 12px; width: 450px; max-height: 80vh; overflow-y: auto; }
+.header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border-color, #313244); }
+.header h3 { margin: 0; font-size: 0.9375rem; }
+.closeBtn {
+  width: 28px; height: 28px; padding: 0;
+  border: none; border-radius: 8px;
+  background: transparent; color: var(--text-secondary, #a6adc8);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.body { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.label { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary, #a6adc8); }
+.input { padding: 8px 12px; border: 1px solid var(--border-color, #313244); border-radius: 6px; background: var(--bg-primary, #1e1e2e); color: var(--text-primary); font-size: 0.8125rem; resize: vertical; font-family: inherit; }
+.saveBtn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 32px; padding: 0 14px;
+  border: none; border-radius: var(--radius-md, 10px);
+  background: var(--accent-color, var(--accent, #89b4fa)); color: var(--on-accent, #101418);
+  font: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+}
+.info { font-size: 0.75rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px; padding: 12px 0; border-top: 1px solid var(--border-color, #313244); }
+.info code { font-size: 0.625rem; background: var(--bg-primary); padding: 1px 4px; border-radius: 3px; }
+.deleteBtn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 32px; padding: 0 14px;
+  border: none; border-radius: var(--radius-md, 10px);
+  background: color-mix(in srgb, var(--status-danger, #f38ba8) 14%, var(--surface-2, var(--bg-secondary, #181825))); color: var(--status-danger, #f38ba8);
+  font: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+}
+.deleteBtn:hover { background: rgba(243,139,168,0.1); }

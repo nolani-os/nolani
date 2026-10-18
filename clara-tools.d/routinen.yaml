@@ -1,0 +1,86 @@
+# Routines (recurring tasks for Clara) — routers/routinen.py, through the API's own routes.
+# The tool gateway forwards the trusted caller as X-Claraos-User, hence `auth: none`.
+# Approving a routine's proposals is NOT a tool: only the user, by button in the app.
+# Inside a routine run only list_routines is allowed (services/routinen.LESEN) — a routine
+# that wants to create or change routines leaves a proposal.
+tools:
+  - name: list_routines
+    description: |
+      List the user's routines (recurring tasks for Clara): id, titel, auftrag (the
+      instruction), rhythmus, uhrzeit, wochentag, aktiv, letzter_lauf. Use it to find
+      the id before changing, pausing, deleting or running one.
+    endpoint: "http://localhost:8090/api/claraos/routinen"
+    method: GET
+    auth: none
+    schema:
+      type: object
+      properties: {}
+
+  - name: create_routine
+    description: |
+      Create a routine: Clara will carry out `auftrag` regularly on her own and the
+      result arrives as a notification in the bell. A routine only READS by itself;
+      anything it would change becomes a proposal the user approves in the
+      "Routinen" app — say so when you create one. rhythmus: taeglich | werktags
+      (Mon–Fri) | woechentlich (+ wochentag 0=Monday … 6=Sunday) | stuendlich (runs
+      at minute MM of uhrzeit). Write `auftrag` as a complete instruction to yourself.
+      Confirm title, rhythm and time with the user in your answer.
+    endpoint: "http://localhost:8090/api/claraos/routinen"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        titel: { type: string, minLength: 1, maxLength: 120 }
+        auftrag: { type: string, minLength: 3, maxLength: 4000 }
+        rhythmus: { type: string, enum: [taeglich, werktags, woechentlich, stuendlich] }
+        uhrzeit: { type: string, pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$", description: "HH:MM local time" }
+        wochentag: { type: integer, minimum: 0, maximum: 6, description: "only for woechentlich; 0 = Monday" }
+      required: [titel, auftrag, rhythmus, uhrzeit]
+
+  - name: change_routine
+    description: |
+      Change a routine — only the fields given. Pause with aktiv=false, resume with
+      aktiv=true. Get the id via list_routines.
+    endpoint: "http://localhost:8090/api/claraos/routinen/{id}"
+    method: PATCH
+    auth: none
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        titel: { type: string, minLength: 1, maxLength: 120 }
+        auftrag: { type: string, minLength: 3, maxLength: 4000 }
+        rhythmus: { type: string, enum: [taeglich, werktags, woechentlich, stuendlich] }
+        uhrzeit: { type: string, pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+        wochentag: { type: integer, minimum: 0, maximum: 6 }
+        aktiv: { type: boolean }
+      required: [id]
+
+  - name: delete_routine
+    description: "Delete a routine for good (asks nobody — only when the user said so)."
+    endpoint: "http://localhost:8090/api/claraos/routinen/{id}"
+    method: DELETE
+    auth: none
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string }
+      required: [id]
+
+  - name: run_routine_now
+    description: |
+      Run a routine right now in the background. The result arrives as a notification
+      in the bell within a few minutes — tell the user that instead of waiting.
+    endpoint: "http://localhost:8090/api/claraos/routinen/{id}/jetzt"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string }
+      required: [id]

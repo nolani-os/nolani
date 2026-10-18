@@ -1,0 +1,94 @@
+/* In-panel dialog host — small glass card, token-driven so all skins work. */
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 8, 18, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+.card {
+  min-width: 260px;
+  max-width: 380px;
+  border-radius: 14px;
+  background: var(--surface-2, rgba(28, 30, 38, 0.96));
+  border: 1px solid var(--border-2, rgba(147, 197, 253, 0.18));
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.5);
+  padding: 14px;
+}
+
+.message {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--color-text, #e7e7eb);
+  white-space: pre-wrap;
+}
+
+.input {
+  margin-top: 10px;
+  width: 100%;
+  padding: 7px 9px;
+  border-radius: 8px;
+  border: 1px solid var(--border-2, rgba(255, 255, 255, 0.12));
+  background: var(--surface-3, rgba(20, 22, 28, 0.6));
+  color: var(--color-text, #e7e7eb);
+  font-size: 0.8125rem;
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--accent-1, rgba(56, 189, 248, 0.45));
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-2, rgba(255, 255, 255, 0.12));
+  background: transparent;
+  color: var(--color-text, #e7e7eb);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.btnPrimary {
+  background: var(--accent, #38bdf8);
+  border-color: transparent;
+  color: #04101f;
+  font-weight: 600;
+}
+
+.btnPrimary:hover {
+  background: var(--accent, #38bdf8);
+  filter: brightness(1.12);
+}
+
+/* chooseDlg: "apply to all" checkbox */
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #a1a1aa);
+  cursor: pointer;
+}
+
+/* chooseDlg: four buttons in one row instead of wrapping */
+.cardWide {
+  max-width: min(520px, calc(100vw - 32px));
+}

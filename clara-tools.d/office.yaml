@@ -1,0 +1,37 @@
+# Office — Clara creates Word documents. routers/office.py renders
+# Markdown → HTML → docx (Collabora convert-to) and stores the document via WebDAV
+# in the caller's Nextcloud home (per-user credentials, NO service-account
+# fallback). The caller comes tamper-proof from X-Claraos-User (tool gateway).
+# Deploy: copy into CLARA_TOOLS_DIR, then POST /api/claraos/tools/reload.
+tools:
+  - name: create_document
+    description: |
+      Erzeugt ein NEUES Word-Dokument (.docx) aus Markdown im Nextcloud-Home
+      des aktuellen Nutzers und liefert {source, path, file_id} zurück.
+      Markdown unterstützt Überschriften (H1-H6), Listen und Tabellen —
+      KEINE Bilder. Nutze dies für "schreib mir einen Lebenslauf/Brief/
+      Bericht als Dokument". Danach IMMER claraos_action_open_in_viewer(
+      path=<path>, source="nextcloud") aufrufen, damit der Nutzer das
+      Dokument sofort sieht. Ein bereits GEÖFFNETES Dokument kannst du
+      hiermit NICHT bearbeiten — erzeuge stattdessen ein neues Dokument
+      mit dem gewünschten Gesamtinhalt und öffne es.
+    endpoint: "http://localhost:8090/api/claraos/office/create-document"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        filename:
+          type: string
+          description: "Dateiname ohne Pfad, z.B. 'Lebenslauf' — .docx wird ergänzt; bei Namenskonflikt entsteht automatisch Name-2.docx"
+        folder:
+          type: string
+          description: "Zielordner im Nextcloud-Home (default 'Dokumente'); wird angelegt falls er fehlt"
+        content_markdown:
+          type: string
+          description: "Vollständiger Dokumentinhalt als Markdown (Überschriften, Listen, Tabellen; keine Bilder)"
+        title:
+          type: string
+          description: "Optionaler Dokumenttitel — wird als H1 vorangestellt, falls das Markdown nicht schon mit einer beginnt"
+      required: [filename, content_markdown]

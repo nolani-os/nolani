@@ -1,0 +1,7 @@
+#!/usr/bin/with-contenv bash
+# lsio custom service: starts the ClaraOS CDP relay in the container's network namespace.
+# Waits until Chromium has opened its CDP port.
+until curl -fsS http://127.0.0.1:9222/json/version >/dev/null 2>&1; do
+  sleep 2
+done
+exec python3 /claraos/claraos-cdp-relay.py

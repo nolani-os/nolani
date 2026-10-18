@@ -1,0 +1,79 @@
+.app {
+  height: 100%;
+  overflow-y: auto;
+  padding: var(--gap-lg);
+  background: var(--bg-window-solid);
+  color: var(--text-primary);
+  font-size: var(--font-size-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-md);
+}
+.kopf { display: flex; align-items: center; justify-content: space-between; gap: var(--gap-md); }
+.kopf h2 { margin: 0; font-size: var(--font-size-xl); }
+.erklaerung, .leer { margin: 0; color: var(--text-secondary); font-size: var(--font-size-sm); }
+.warnung, .fehler, .hinweis {
+  margin: 0; padding: var(--gap-sm) var(--gap-md); border-radius: var(--radius);
+  font-size: var(--font-size-sm); border: 1px solid var(--border);
+}
+.warnung { border-color: var(--warning); }
+.fehler { border-color: var(--danger); color: var(--danger); }
+.hinweis { border-color: var(--success); cursor: pointer; }
+
+.karte {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: var(--gap-md); display: flex; flex-direction: column; gap: var(--gap-sm);
+}
+.pausiert { opacity: 0.6; }
+.karte label { display: flex; flex-direction: column; gap: 4px; font-size: var(--font-size-sm); color: var(--text-secondary); }
+.karte input, .karte textarea, .karte select {
+  font: inherit; color: var(--text-primary); background: var(--bg-subtle);
+  border: 1px solid var(--border); border-radius: var(--radius); padding: var(--gap-sm);
+}
+.zeile { display: flex; flex-wrap: wrap; gap: var(--gap-md); }
+.beispiele { display: flex; flex-wrap: wrap; gap: var(--gap-sm); }
+
+.app button {
+  font: inherit; font-size: var(--font-size-sm); color: var(--text-primary); background: var(--bg-subtle);
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 6px var(--gap-md); cursor: pointer;
+}
+.app button:hover:not(:disabled) { background: var(--bg-hover); }
+.app button:disabled { opacity: 0.5; cursor: default; }
+.app .primaer { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.app .primaer:hover:not(:disabled) { background: var(--accent); filter: brightness(1.1); }
+.app .gefahr { color: var(--danger); }
+.chip { border-radius: 999px; }
+.knoepfe { display: flex; flex-wrap: wrap; gap: var(--gap-sm); }
+
+.kopfzeile { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--gap-sm); }
+.titel {
+  all: unset; cursor: pointer; display: flex; flex-direction: column; gap: 2px; min-width: 12em; flex: 1;
+}
+.titel span { color: var(--text-secondary); font-size: var(--font-size-sm); }
+
+.laeufe { display: flex; flex-direction: column; gap: var(--gap-sm); border-top: 1px solid var(--border); padding-top: var(--gap-sm); }
+.auftrag { margin: 0; font-size: var(--font-size-sm); color: var(--text-secondary); white-space: pre-wrap; }
+.lauf { background: var(--bg-subtle); border-radius: var(--radius); padding: var(--gap-sm) var(--gap-md); display: flex; flex-direction: column; gap: var(--gap-sm); }
+.laufkopf { display: flex; justify-content: space-between; font-size: var(--font-size-sm); color: var(--text-secondary); }
+.status { font-weight: 600; }
+.s_fertig, .s_erledigt { color: var(--success); }
+.s_wartet { color: var(--warning); }
+.s_fehler { color: var(--danger); }
+.ergebnis { margin: 0; white-space: pre-wrap; font-size: var(--font-size-sm); }
+.vorschlag {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--gap-sm);
+  border: 1px solid var(--warning); border-radius: var(--radius); padding: var(--gap-sm);
+  font-size: var(--font-size-sm);
+}
+.vorschlag pre { margin: 4px 0 0; white-space: pre-wrap; word-break: break-word; color: var(--text-secondary); font-size: 12px; }
+.vstatus { color: var(--text-secondary); }
+
+@media (max-width: 600px) {
+  .app { padding: var(--gap-md); }
+  .app .knoepfe button { flex: 1 1 auto; }
+}
+
+.app .abschnitt {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}

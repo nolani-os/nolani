@@ -1,0 +1,117 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.karte {
+  width: min(560px, 92vw);
+  padding: 24px 26px 18px;
+  border-radius: 16px;
+  border: 1px solid var(--border-1, #2a2a35);
+  background: var(--surface-1, #16161d);
+  color: var(--text-1, #ececf1);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+.titel {
+  margin: 0 0 10px;
+  font-size: 1.1875rem;
+  font-weight: 650;
+}
+
+.frage {
+  margin: 0 0 10px;
+  font-size: 0.9062rem;
+  line-height: 1.5;
+  color: var(--text-1, #ececf1);
+}
+
+/* Full address — this is where phishing becomes visible, so keep it legible and wrapping */
+.url {
+  display: block;
+  padding: 9px 11px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  background: var(--surface-2, #1e1e27);
+  border: 1px solid var(--border-1, #2a2a35);
+  font-size: 0.7812rem;
+  line-height: 1.45;
+  word-break: break-all;
+  color: var(--text-2, #a7a7b4);
+}
+
+.aktionen {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.primaer,
+.sekundaer {
+  flex: 1 1 200px;
+  padding: 11px 16px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.primaer {
+  background: var(--accent, #5b8cff);
+  color: #fff;
+}
+
+.sekundaer {
+  background: transparent;
+  border-color: var(--border-1, #2a2a35);
+  color: var(--text-1, #ececf1);
+  font-weight: 500;
+}
+
+.primaer:disabled,
+.sekundaer:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.merken {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 0.8125rem;
+  color: var(--text-2, #a7a7b4);
+  margin-bottom: 12px;
+}
+
+.merken input {
+  margin-top: 2px;
+}
+
+.hinweis {
+  margin: 0 0 12px;
+  font-size: 0.7812rem;
+  line-height: 1.5;
+  color: var(--text-2, #a7a7b4);
+}
+
+.abbruch {
+  width: 100%;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-2, #a7a7b4);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.abbruch:hover {
+  color: var(--text-1, #ececf1);
+}

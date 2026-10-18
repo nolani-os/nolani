@@ -1,0 +1,5 @@
+# Copy to <cell>.tfvars and adjust. The Hetzner token comes from TF_VAR_hcloud_token, never from a file.
+cell_name      = "demo"
+created_by     = "your-name"
+ssh_public_key = "ssh-ed25519 AAAA... admin@example.com"
+admin_cidrs    = ["203.0.113.10/32"]   # networks allowed to reach SSH

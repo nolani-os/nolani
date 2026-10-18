@@ -1,0 +1,155 @@
+.container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  transition: opacity 0.2s;
+}
+
+.loading,
+.error,
+.placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-md);
+  color: var(--text-disabled);
+  font-size: var(--font-size-sm);
+}
+
+.retryBtn {
+  padding: 6px 16px;
+  border: 1px solid var(--border);
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+}
+
+.retryBtn:hover {
+  background: var(--bg-active);
+}
+
+/* Credential Overlay */
+.credOverlay {
+  position: absolute;
+  top: 8px; right: 8px;
+  z-index: 100;
+  max-width: 320px;
+}
+.credOverlayContent {
+  /* Overlay above the iframe (credential prompt); must be opaque. */
+  background: var(--bg-window-solid, var(--bg-window, #202020));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: var(--shadow-menu, 0 8px 32px rgba(0,0,0,0.24));
+}
+.credOverlayTitle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+.credRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+}
+.credLabel {
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+  min-width: 60px;
+  text-transform: capitalize;
+}
+.credValue {
+  font-size: 0.6875rem;
+  font-family: var(--font-mono);
+  background: var(--bg-subtle);
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.credCopy {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 2px;
+  opacity: 0.6;
+}
+.credCopy:hover { opacity: 1; }
+.credDismiss {
+  margin-top: 8px;
+  width: 100%;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
+  cursor: pointer;
+}
+.credDismiss:hover { background: var(--bg-subtle); }
+
+/* Mobile landing screen (redirect/deeplink strategies) */
+.mobileLanding {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  gap: 16px;
+  text-align: center;
+  /* Full-area landing page instead of an iframe (mobile); otherwise the
+     desktop shows through the whole page. */
+  background: var(--bg-window-solid, var(--bg-window, #101624));
+  color: var(--text-primary);
+}
+.mobileLandingTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+.mobileLandingHint {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  max-width: 300px;
+  line-height: 1.5;
+}
+.mobileLandingBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 12px 28px;
+  border: none;
+  border-radius: 24px;
+  background: #586cff;
+  color: #fff;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(88, 108, 255, 0.3);
+}
+.mobileLandingBtn:active { transform: scale(0.97); }
+.mobileLandingBtnSecondary {
+  background: transparent;
+  border: 1px solid var(--border, #2a3349);
+  color: var(--text-secondary);
+  box-shadow: none;
+}

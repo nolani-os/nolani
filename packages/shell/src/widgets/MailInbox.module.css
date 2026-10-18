@@ -1,0 +1,158 @@
+.widget {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px 8px;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.badge {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #7b9fff 0%, #a78bfa 100%);
+  color: #fff;
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.account {
+  margin-left: auto;
+  font-size: 0.625rem;
+  opacity: 0.55;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 45%;
+}
+
+.iconBtn {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: 0.7;
+  font-size: 0.9375rem;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.iconBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  opacity: 1;
+}
+
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  scrollbar-width: thin;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 100%;
+  font-size: 0.75rem;
+  opacity: 0.7;
+  text-align: center;
+}
+
+.emptySub {
+  font-size: 0.6875rem;
+  opacity: 0.7;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.row:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.unread .dot {
+  background: #7b9fff;
+}
+
+.rowMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.from {
+  font-size: 0.75rem;
+  opacity: 0.85;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subject {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unread .from,
+.unread .subject {
+  font-weight: 600;
+  opacity: 1;
+}
+
+.date {
+  font-size: 0.6875rem;
+  opacity: 0.55;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.body {
+  font-size: 0.75rem;
+  line-height: 1.45;
+  opacity: 0.85;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 4px 8px 8px 19px;
+  max-height: 180px;
+  overflow-y: auto;
+}

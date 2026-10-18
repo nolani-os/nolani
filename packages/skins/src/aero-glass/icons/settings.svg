@@ -1,0 +1,24 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#64748B"/>
+      <stop offset="1" stop-color="#1E293B"/>
+    </linearGradient>
+    <linearGradient id="g" x1="32" y1="14" x2="32" y2="50" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity=".98"/>
+      <stop offset="1" stop-color="#E2E8F0" stop-opacity=".90"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" fill="url(#bg)"/>
+  <path fill="url(#g)" d="M32 20a12 12 0 1 0 0 24 12 12 0 0 0 0-24Zm0 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Z"/>
+  <g fill="url(#g)">
+    <rect x="29" y="9"  width="6" height="8"  rx="1.5"/>
+    <rect x="29" y="47" width="6" height="8"  rx="1.5"/>
+    <rect x="9"  y="29" width="8" height="6"  rx="1.5"/>
+    <rect x="47" y="29" width="8" height="6"  rx="1.5"/>
+    <rect x="14" y="14" width="6" height="8"  rx="1.5" transform="rotate(-45 17 18)"/>
+    <rect x="44" y="14" width="6" height="8"  rx="1.5" transform="rotate(45 47 18)"/>
+    <rect x="14" y="42" width="6" height="8"  rx="1.5" transform="rotate(45 17 46)"/>
+    <rect x="44" y="42" width="6" height="8"  rx="1.5" transform="rotate(-45 47 46)"/>
+  </g>
+</svg>

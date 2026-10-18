@@ -1,0 +1,294 @@
+.tree {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary, #181825);
+  border-right: 1px solid var(--border-color, #313244);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 12px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary, #a6adc8);
+}
+
+.addBtn, .addChannelBtn {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary, #a6adc8);
+  cursor: pointer;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.addBtn:hover, .addChannelBtn:hover {
+  background: var(--bg-hover, #313244);
+  color: var(--text-primary, #cdd6f4);
+}
+
+.spaceGroup {
+  margin-bottom: 4px;
+}
+
+.spaceHeader {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary, #cdd6f4);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.spaceHeader:hover {
+  background: var(--bg-hover, #313244);
+}
+
+.chevron {
+  font-size: 0.625rem;
+  width: 12px;
+  color: var(--text-secondary, #a6adc8);
+}
+
+.spaceName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room {
+  display: flex; align-items: center; gap: 8px; width: calc(100% - 12px); margin: 1px 6px;
+  padding: 6px 10px; border: none; border-radius: 8px;
+  background: transparent; color: var(--text-primary); text-align: left;
+  font: inherit; font-size: 0.8125rem; cursor: pointer;
+}
+
+.room.nested {
+  padding-left: 32px;
+}
+
+.room:hover {
+  background: var(--bg-hover, #313244);
+  color: var(--text-primary, #cdd6f4);
+}
+
+.room.activeRoom { background: var(--accent-color, var(--accent, #89b4fa)); color: var(--on-accent, #101418); font-weight: 600; }
+
+.roomIcon {
+  width: 16px;
+  text-align: center;
+  font-size: 0.75rem;
+}
+
+.roomName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--accent-color, #89b4fa);
+  color: var(--bg-primary, #1e1e2e);
+  font-size: 0.625rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sectionLabel {
+  padding: 8px 12px 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-secondary, #a6adc8);
+  opacity: 0.7;
+}
+
+.createForm {
+  padding: 4px 12px 8px;
+}
+
+.input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color, #313244);
+  border-radius: 4px;
+  background: var(--bg-primary, #1e1e2e);
+  color: var(--text-primary, #cdd6f4);
+  font-size: 0.75rem;
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--accent-color, #89b4fa);
+}
+
+.formActions {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.confirmBtn, .cancelBtn {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  cursor: pointer;
+}
+
+.confirmBtn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 28px; padding: 0 14px;
+  border: none; border-radius: var(--radius-md, 10px);
+  background: var(--accent-color, var(--accent, #89b4fa)); color: var(--on-accent, #101418);
+  font: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+}
+
+.cancelBtn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 28px; padding: 0 10px;
+  border: none; border-radius: var(--radius-md, 10px);
+  background: transparent; color: var(--text-secondary, #a6adc8);
+  font: inherit; font-size: 0.875rem; font-weight: 500; cursor: pointer;
+}
+
+.emptyCta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 12px;
+  padding: 14px 12px;
+  border: 1px dashed var(--border-color, #313244);
+  border-radius: var(--radius-md, 10px);
+  background: transparent;
+  color: var(--text-secondary, #a6adc8);
+  font-size: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.emptyCta span { color: var(--accent-color, #89b4fa); font-weight: 600; }
+.emptyCta:hover { background: var(--bg-hover, rgba(49, 50, 68, 0.3)); }
+
+/* Encryption hint next to the name. The lock used to be THE row icon; since
+   the messenger badge took that spot, it moved here — it must not get lost. */
+.schloss {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  color: var(--text-secondary, #a6adc8);
+  opacity: 0.8;
+}
+
+/* ── Round avatars, service badges, separate Chat/Teams lists ────────────── */
+
+/* Container for avatar + badge (the badge is positioned absolutely). */
+.bild {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+/* Two-line chat row: name on top, preview below — like MS Teams. */
+.zeilenText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.vorschau {
+  font-size: 0.6875rem;
+  color: var(--text-secondary, #a6adc8);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* In the selected state the preview must follow along, otherwise it vanishes
+   on the accent background. */
+.room.activeRoom .vorschau {
+  color: var(--on-accent, #101418);
+  opacity: 0.75;
+}
+
+.schloss {
+  display: inline-flex;
+  flex: none;
+  color: var(--text-secondary, #a6adc8);
+}
+
+.room.activeRoom .schloss { color: var(--on-accent, #101418); }
+
+/* Team header row: arrow | avatar+name | plus — three separate buttons instead
+   of nested ones (a button inside a button is invalid HTML and made the click
+   targets overlap). */
+.spaceHeader {
+  gap: 2px;
+}
+
+.chevronBtn {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #a6adc8);
+  font-size: 0.625rem;
+  width: 16px;
+  padding: 4px 0;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.chevronBtn:hover { background: var(--bg-hover, #313244); }
+
+.spaceNameBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.spaceNameBtn:hover { background: var(--bg-hover, #313244); }
+
+/* Channel row without avatar and without "#": just the name, indented. */
+.kanalName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

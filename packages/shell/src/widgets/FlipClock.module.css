@@ -1,0 +1,316 @@
+/* Glossy flip clock + pure-CSS weather scene. */
+
+.widget {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px 12px 8px;
+  color: #fff;
+  container-type: size; /* cards size off widget HEIGHT (cqh) so the clock stays
+                           ~43% of the widget height at any widget size */
+}
+
+.topRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* === Vertical 4x3 layout (modeled on a reference design): big clock on top, large
+   weather scene below it, date + current temp row, then the 5-day strip === */
+.vertical {
+  /* One shared size driver for clock + weather graphic. Reference: cards have
+     aspect 1.09 (near-square), block 74.6% of panel width; the cloud hangs
+     BELOW the cards (only kissing their bottom edge), rain under it.
+     Height budget: cardH(0.92w) + graphicH(0.59w) + meta/forecast/pads
+     (~124px fixed) ≤ 100cqh  →  w ≤ 66cqh - 83px. */
+  /* The graphic hangs into the EMPTY CENTRE of the meta row (date sits left,
+     temp right — like the reference, where cloud+rain fill that middle zone),
+     so the budget only reserves clock + fluid rows, not the graphic. */
+  --clk-w: clamp(56px, min(40cqw, calc(102cqh - 133px)), 184px);
+  position: relative;
+  justify-content: space-between;
+  gap: 0;
+  padding: 0 10px 12px;  /* reference: temps ~4% of cell height above panel bottom */
+}
+/* The widget's OWN glass panel (frame is bare for this widget): its top edge
+   sits BELOW the card tops — the cards protrude above it like the reference —
+   and it runs down to hug the forecast row. Royal-blue glossy band across the
+   panel top (~7.5% tall, hard lower edge), translucent glass below. */
+.vertical::before {
+  content: "";
+  position: absolute;
+  top: 5cqh;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 26px;
+  /* Clara design language: deep navy glass with an ice-blue (#93c5fd) gloss
+     band — matches the .mWidget plates and the Clara overlay palette */
+  background: linear-gradient(180deg,
+    rgba(147, 197, 253, 0.5) 0%,
+    rgba(80, 116, 190, 0.48) 3.5%,
+    rgba(44, 64, 122, 0.4) 5.2%,
+    rgba(16, 22, 42, 0.3) 6%,
+    rgba(12, 17, 32, 0.5) 30%,
+    rgba(7, 10, 19, 0.68) 100%);
+  border: 1px solid rgba(147, 197, 253, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(196, 219, 253, 0.4),
+    0 10px 30px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px) saturate(1.1);
+  -webkit-backdrop-filter: blur(6px) saturate(1.1);
+  pointer-events: none;
+}
+.vertical > * { position: relative; z-index: 1; }
+.vertical .clock { gap: calc(var(--clk-w) * 0.083); } /* reference: 28px vs 335px card */
+.vertical .clockFrame {
+  align-self: center;
+  /* small — the graphic below the cards overlaps the empty middle of the
+     flex gap and meta row centre (reference: cloud+rain hang through there) */
+  margin-bottom: clamp(8px, 3cqw, 14px);
+  overflow: visible;
+}
+.vertical .card {
+  width: var(--clk-w);
+  height: auto;                          /* via aspect-ratio 1.09 */
+  font-size: calc(var(--clk-w) * 0.97);  /* digits ≈ 76% of card height */
+}
+/* Realistic weather graphic hangs BELOW the clock face, centred on the card
+   seam — its top only kisses the cards' bottom edge (10px), it NEVER covers
+   the digits (reference: the cloud straddles the card bottom, rain below). */
+.wxBig {
+  position: absolute;
+  top: calc(100% - var(--clk-w) * 0.06);  /* kiss the card bottom proportionally
+                                             (6% of card width ≈ 7% of its height)
+                                             so digits stay clear at ANY size */
+  left: 50%;
+  transform: translateX(-50%);
+  /* HEIGHT-driven (reference: cloud ≈ 43% of panel width, hanging below the
+     digits into the empty middle); the image keeps its own aspect so wide
+     clouds render wide instead of shrinking inside a fixed-ratio box. */
+  height: calc(var(--clk-w) * 0.58);
+  z-index: 5;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.28));
+}
+.wxGlyph {
+  height: 100%;
+  width: auto;
+  display: block;
+}
+.metaRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 3px 2px 0;
+}
+.dateBlock { line-height: 1.15; }
+.dateWd { font-size: clamp(12px, 4.6cqw, 17px); font-weight: 600; text-transform: capitalize; }
+.dateMd { font-size: clamp(10px, 3.9cqw, 14px); opacity: 0.78; }
+.vertical .now {
+  position: static;
+  align-items: flex-end;
+  text-align: right;
+  padding-top: 0;
+}
+.vertical .forecast { padding-top: 2px; }
+
+/* --- Clock wrapper: NO plate of its own — the cards sit directly on the
+   widget's glass panel (reference has no extra plate behind the cards) --- */
+.clockFrame {
+  position: relative;
+}
+
+/* --- Flip clock --- */
+.clock {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.card {
+  position: relative;
+  width: clamp(52px, 25cqw, 100px);
+  aspect-ratio: 1.09;   /* the cards are near-square; do not include the drop
+                           shadow below the cards in their height */
+  perspective: 320px;
+  font-size: clamp(58px, 50cqh, 210px);  /* digits nearly fill the card */
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.5));
+}
+
+.half {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.half > span {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 200%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  color: #f4f6fb;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  /* condense the two digits so they fill the card height without overflowing
+     its width (the reference flip clock uses tall, strongly condensed
+     numerals: digit block ≈ 93% of card width, ~76% of card height) */
+  transform: scaleX(0.7);
+}
+.top {
+  top: 0;
+  border-radius: 12px 12px 0 0;
+  /* glossy black: bright sheen along the very top fading to matte black */
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, transparent 30%),
+    linear-gradient(180deg, #2c2c31 0%, #202024 46%, #131417 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.top > span { top: 0; }
+.bottom {
+  bottom: 0;
+  border-radius: 0 0 12px 12px;
+  /* subtle floor reflection near the hinge, darkening downward */
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 30%),
+    linear-gradient(180deg, #171719 0%, #0b0b0d 100%);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.6);
+}
+.bottom > span { bottom: 0; }
+
+/* diagonal specular sweep + soft edge vignette for a glassy 3D face */
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background:
+    linear-gradient(118deg, rgba(255, 255, 255, 0.22) 0%, transparent 34%),
+    radial-gradient(120% 80% at 50% 8%, rgba(255, 255, 255, 0.12), transparent 55%);
+  pointer-events: none;
+}
+
+.flapTop {
+  z-index: 2;
+  transform-origin: bottom center;
+  animation: flipDown 150ms ease-in forwards;
+}
+.flapBottom {
+  z-index: 2;
+  transform-origin: top center;
+  transform: rotateX(90deg);
+  animation: flipUp 150ms ease-out 150ms forwards;
+}
+@keyframes flipDown { from { transform: rotateX(0deg); } to { transform: rotateX(-90deg); } }
+@keyframes flipUp { from { transform: rotateX(90deg); } to { transform: rotateX(0deg); } }
+
+.hinge {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 3;
+}
+
+/* small dark hinge pins at each card's left+right edge (classic flip-clock look) —
+   NOT a bright bar across the face; the reference only shows edge knuckles. */
+.cardAxle {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 0;
+  z-index: 4;
+}
+.cardAxle::before, .cardAxle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 22px;
+  transform: translateY(-50%);
+  border-radius: 4px;
+  /* dark knuckle with a vertical glossy streak (reference look) */
+  background:
+    linear-gradient(90deg, transparent 30%, rgba(255, 255, 255, 0.35) 46%, rgba(255, 255, 255, 0.12) 58%, transparent 72%),
+    linear-gradient(#3a3e46, #17191e 55%, #101216);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.cardAxle::before { left: -3px; }
+.cardAxle::after { right: -3px; }
+
+/* --- Current weather block --- */
+.now {
+  position: relative;
+  text-align: right;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding-top: 2px;
+}
+.staleNow { opacity: 0.55; }
+.nowTemp {
+  font-size: clamp(24px, 11cqw, 42px);
+  font-weight: 300;
+  line-height: 1;
+  white-space: nowrap;
+}
+.hiLo {
+  font-size: clamp(9px, 3.5cqw, 13px);
+  opacity: 0.8;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+.nowDate {
+  font-size: 0.75rem;
+  opacity: 0.72;
+  margin-top: 3px;
+}
+
+/* --- 5-day forecast strip --- */
+.forecast {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  padding-top: 14px;
+  flex-shrink: 0;
+}
+.day { flex: 1; text-align: center; min-width: 0; }
+.dayName { font-size: clamp(9px, 3.2cqw, 12px); opacity: 0.75; text-transform: uppercase; }
+.dayIcon { line-height: 0; margin: 0; }
+.dayIcon img { width: clamp(18px, 9cqw, 32px); height: clamp(18px, 9cqw, 32px); object-fit: contain; display: inline-block; }
+.dayTemp { font-size: clamp(9px, 3.2cqw, 12px); white-space: nowrap; }
+.dayTemp > span { opacity: 0.6; }
+.noData { font-size: 0.75rem; opacity: 0.6; width: 100%; text-align: center; padding: 4px 0; }
+
+/* Very short cells (e.g. a 4x2 widget on a small phone): compact the fixed
+   rows so the clamp-min clock + meta + forecast still fit inside the panel. */
+@container (max-height: 220px) {
+  .vertical { padding-bottom: 8px; }
+  .vertical .clockFrame { margin-bottom: 6px; }
+  .dateWd { font-size: 0.75rem; }
+  .dateMd { font-size: 0.625rem; }
+  .vertical .now .nowTemp { font-size: 1.375rem; }
+  .hiLo { font-size: 0.625rem; }
+  .dayName { font-size: 0.5625rem; }
+  .dayIcon img { width: 20px; height: 20px; }
+  .dayTemp { font-size: 0.5625rem; }
+}

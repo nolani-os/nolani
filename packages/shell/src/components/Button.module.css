@@ -1,0 +1,94 @@
+/* Button building block. Tokens only — fallback values are those of the dark
+   clara-glass skin, so a skin without these names does not break.
+   Radius morph on press instead of opacity (Material 3 Expressive). */
+
+.knopf {
+  appearance: none;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  min-width: 44px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill, 999px);
+  background: transparent;
+  color: var(--text-1, #e5e7eb);
+  font: inherit;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: border-radius .12s ease, transform .12s ease, background-color .15s ease, color .15s ease;
+}
+.knopf:disabled { cursor: default; opacity: .45; }
+.knopf:focus-visible { outline: 2px solid var(--accent, #38bdf8); outline-offset: 2px; }
+.knopf:active:not(:disabled) { border-radius: var(--radius-md, 10px); transform: scale(.98); }
+.eckig { border-radius: var(--radius-lg, 14px); }
+.eckig:active:not(:disabled) { border-radius: var(--radius-sm, 6px); }
+
+/* Sizes: height / padding / font (rem, so uiScale takes effect). */
+.g_s { height: 40px; padding: 0 16px; font-size: 0.875rem; }
+.g_m { height: 48px; padding: 0 20px; font-size: 0.9375rem; }
+.g_l { height: 56px; padding: 0 24px; font-size: 1rem; }
+
+/* Variants */
+.filled   { background: var(--accent, #38bdf8); color: var(--on-accent, #101418); }
+.filled:hover:not(:disabled) { background: var(--accent-hover, var(--accent, #38bdf8)); }
+.tonal    { background: color-mix(in srgb, var(--accent, #38bdf8) 16%, var(--surface-2, #1e2536)); }
+.tonal:hover:not(:disabled) { background: color-mix(in srgb, var(--accent, #38bdf8) 24%, var(--surface-2, #1e2536)); }
+.outlined { border-color: var(--border-1, rgba(229,231,235,.24)); }
+.outlined:hover:not(:disabled) { background: var(--surface-2, #1e2536); }
+.text     { padding-left: 12px; padding-right: 12px; }
+.text:hover:not(:disabled) { background: var(--surface-2, #1e2536); }
+.danger   { background: color-mix(in srgb, var(--status-danger, #f87171) 14%, var(--surface-2, #1e2536)); color: var(--status-danger, #f87171); }
+.danger:hover:not(:disabled) { background: color-mix(in srgb, var(--status-danger, #f87171) 22%, var(--surface-2, #1e2536)); }
+
+.symbol { display: inline-flex; flex-shrink: 0; }
+.beschriftung { overflow: hidden; text-overflow: ellipsis; }
+
+/* Round icon button: square, no padding. */
+.rundknopf { padding: 0; border-radius: 50%; }
+.rundknopf.g_s { width: 40px; }
+.rundknopf.g_m { width: 44px; height: 44px; }
+.rundknopf.g_l { width: 56px; }
+.rundknopf.text { background: color-mix(in srgb, var(--text-1, #e5e7eb) 7%, transparent); }
+.rundknopf:active:not(:disabled) { border-radius: 40%; }
+
+/* FAB: 56 px, slightly squared, floats above the content. */
+.fab {
+  width: 56px; height: 56px; padding: 0;
+  border-radius: var(--radius-lg, 14px);
+  background: var(--accent, #38bdf8); color: var(--on-accent, #101418);
+  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0,0,0,.35));
+}
+.fab:active:not(:disabled) { border-radius: 40%; transform: scale(.96); }
+
+@media (prefers-reduced-motion: reduce) {
+  .knopf { transition: none; }
+  .knopf:active:not(:disabled) { transform: none; }
+}
+
+/* ── Desktop sizing (KnopfUmgebung "desktop") ───────────────────────────────
+   28 / 32 / 36 px, base shape --radius-md, pressed --radius-sm. Icon 16 px.
+   A desktop window does not need 48 px targets — they make rows tall and
+   dialogs coarse. */
+.desk { min-width: 0; }                /* The 44 px minimum target applies to touch devices, not pointers */
+.desk.g_s { height: 28px; padding: 0 12px; font-size: 0.8125rem; }
+.desk.g_m { height: 32px; padding: 0 14px; font-size: 0.875rem; }
+.desk.g_l { height: 36px; padding: 0 16px; font-size: 0.875rem; }
+.desk.eckig { border-radius: var(--radius-md, 10px); }
+.desk.eckig:active:not(:disabled) { border-radius: var(--radius-sm, 6px); }
+.desk .symbol svg { width: 16px; height: 16px; }
+.desk.g_l .symbol svg { width: 18px; height: 18px; }
+.desk.text { padding-left: 10px; padding-right: 10px; }
+.desk.rundknopf.g_s { width: 28px; height: 28px; }
+.desk.rundknopf.g_m { width: 32px; height: 32px; }
+.desk.rundknopf.g_l { width: 36px; height: 36px; }
+.desk.rundknopf { border-radius: var(--radius-md, 10px); }
+.desk.rundknopf:active:not(:disabled) { border-radius: var(--radius-sm, 6px); }
+.desk.fab { width: 48px; height: 48px; border-radius: var(--radius-md, 10px); }
+.desk.fab .symbol svg { width: 22px; height: 22px; }

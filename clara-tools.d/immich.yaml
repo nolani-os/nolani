@@ -1,0 +1,69 @@
+# CELL ONLY — endpoints are the cell's internal names; never copy into the home tools directory.
+# Immich photos through the API's compact reading route (routers/immich_lesen.py).
+# Identity: always the CALLER's own key (`per_user`), created by the cell on first use
+# (services/zellen_zugaenge.py -> browser ctl /zugang) and READ-ONLY: photos, albums,
+# people — no upload, delete, share or edit. All tools are on the routine read list.
+tools:
+  - name: search_photos
+    description: |
+      Find the user's photos and videos in Immich. `beschreibung` = what is in the
+      picture, in plain words ("Strand bei Sonnenuntergang", "Hund im Schnee") — smart
+      search. Filters: von/bis (YYYY-MM-DD, when taken), ort (city), person (a named
+      person). Without beschreibung: newest first. Returns per photo: datei, aufgenommen,
+      ort, personen and a `link` — give the user the link so they can open the photo.
+    endpoint: "http://localhost:8090/api/claraos/immich/suche"
+    method: POST
+    auth: api_key
+    per_user: true
+    credential_app_id: immich
+    credential_key: api_key
+    auth_scheme: "header:x-api-key"
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        beschreibung: { type: string, maxLength: 300 }
+        von: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+        bis: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+        ort: { type: string }
+        person: { type: string }
+        anzahl: { type: integer, default: 10, minimum: 1, maximum: 50 }
+
+  - name: list_albums
+    description: "The user's Immich albums (own and shared with them): name, number of photos, date range."
+    endpoint: "http://localhost:8090/api/claraos/immich/alben"
+    method: GET
+    auth: api_key
+    per_user: true
+    credential_app_id: immich
+    credential_key: api_key
+    auth_scheme: "header:x-api-key"
+    schema:
+      type: object
+      properties: {}
+
+  - name: list_people
+    description: "People the user has named in Immich (face recognition). Use a name as `person` in search_photos."
+    endpoint: "http://localhost:8090/api/claraos/immich/personen"
+    method: GET
+    auth: api_key
+    per_user: true
+    credential_app_id: immich
+    credential_key: api_key
+    auth_scheme: "header:x-api-key"
+    schema:
+      type: object
+      properties: {}
+
+  - name: photo_statistics
+    description: "How many photos and videos the user has in Immich."
+    endpoint: "http://localhost:8090/api/claraos/immich/statistik"
+    method: GET
+    auth: api_key
+    per_user: true
+    credential_app_id: immich
+    credential_key: api_key
+    auth_scheme: "header:x-api-key"
+    schema:
+      type: object
+      properties: {}

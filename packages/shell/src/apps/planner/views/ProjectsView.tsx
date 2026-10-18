@@ -1,0 +1,200 @@
+/** Projects — card overview + create + manage (rename, colour,
+ * description, archive/reactivate, delete). */
+import { useState } from "react";
+import styles from "../PlannerApp.module.css";
+import { plannerApi } from "../api";
+import type { VikProject } from "../types";
+
+/** Small palette in Vikunja style; free-form hex works as well. */
+const COLORS = ["", "e74c3c", "e67e22", "f1c40f", "2ecc71", "1abc9c", "3498db", "9b59b6", "e91e63", "607d8b"];
+
+export function ProjectsView({
+  projects, onOpenProject, onReload,
+}: {
+  projects: VikProject[]; // ALL projects including archived ones
+  onOpenProject: (p: VikProject) => void;
+  onReload: () => void;
+}) {
+  const [creating, setCreating] = useState(false);
+  const [title, setTitle] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
+  const [editing, setEditing] = useState<VikProject | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const active = projects.filter((p) => !p.is_archived);
+  const archived = projects.filter((p) => p.is_archived);
+
+  const create = async () => {
+    const t = title.trim();
+    if (!t || busy) return;
+    setBusy(true);
+    try {
+      const p = await plannerApi.createProject(t);
+      setTitle("");
+      setCreating(false);
+      onReload();
+      onOpenProject(p);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const card = (p: VikProject) => (
+    <div key={p.id} className={`${styles.projectCard} ${p.is_archived ? styles.projectArchived : ""}`}
+         role="button" tabIndex={0}
+         onClick={() => !p.is_archived && onOpenProject(p)}>
+      <span className={styles.projectCardDot}
+            style={p.hex_color ? { background: `#${p.hex_color}` } : undefined} />
+      <span className={styles.projectCardTitle}>{p.title}</span>
+      {p.description && <span className={styles.projectCardDesc}>{p.description.replace(/<[^>]+>/g, "")}</span>}
+      <button className={styles.projectCardMenu} title="Projekt verwalten"
+              onClick={(e) => { e.stopPropagation(); setEditing(p); }}>
+        ⋯
+      </button>
+    </div>
+  );
+
+  return (
+    <div className={styles.view}>
+      <header className={styles.viewHeader}>
+        <h2>📋 Projekte</h2>
+        <div className={styles.viewTools}>
+          {archived.length > 0 && (
+            <button className={`${styles.btn} ${showArchived ? styles.btnActive : ""}`}
+                    onClick={() => setShowArchived((s) => !s)}>
+              🗄 Archiv ({archived.length})
+            </button>
+          )}
+          <button className={styles.btnPrimary} onClick={() => setCreating(true)}>+ Neues Projekt</button>
+        </div>
+      </header>
+      {error && (
+        <div className={styles.errorBox}>
+          {error} <button className={styles.btn} onClick={() => setError(null)}>OK</button>
+        </div>
+      )}
+      <div className={styles.projectGrid}>
+        {active.map(card)}
+        {active.length === 0 && <div className={styles.empty}>Noch keine Projekte.</div>}
+      </div>
+      {showArchived && archived.length > 0 && (
+        <section className={styles.section}>
+          <h3 className={styles.sectionTitle}>Archiviert</h3>
+          <div className={styles.projectGrid}>{archived.map(card)}</div>
+        </section>
+      )}
+
+      {creating && (
+        <div className={styles.dialogOverlay} onClick={() => setCreating(false)}>
+          <div className={styles.dialog} onClick={(e) => e.stopPropagation()}>
+            <h3>Neues Projekt</h3>
+            <input className={styles.input} autoFocus placeholder="Projektname"
+                   value={title} onChange={(e) => setTitle(e.target.value)}
+                   onKeyDown={(e) => e.key === "Enter" && create()} />
+            <div className={styles.dialogActions}>
+              <button className={styles.btn} onClick={() => setCreating(false)}>Abbrechen</button>
+              <button className={styles.btnPrimary} disabled={!title.trim() || busy} onClick={create}>Anlegen</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editing && (
+        <ProjectEditDialog
+          project={editing}
+          onClose={() => setEditing(null)}
+          onDone={() => { setEditing(null); onReload(); }}
+          onError={(m) => { setError(m); setEditing(null); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function ProjectEditDialog({
+  project, onClose, onDone, onError,
+}: {
+  project: VikProject;
+  onClose: () => void;
+  onDone: () => void;
+  onError: (msg: string) => void;
+}) {
+  const [title, setTitle] = useState(project.title);
+  const [description, setDescription] = useState(project.description?.replace(/<[^>]+>/g, "") ?? "");
+  const [color, setColor] = useState(project.hex_color ?? "");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const run = async (fn: () => Promise<unknown>) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await fn();
+      onDone();
+    } catch (e) {
+      onError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const save = () => run(() => plannerApi.updateProjectFields(project.id, {
+    title: title.trim() || project.title,
+    description,
+    hex_color: color.replace(/^#/, ""),
+  }));
+
+  return (
+    <div className={styles.dialogOverlay} onClick={onClose}>
+      <div className={styles.dialog} onClick={(e) => e.stopPropagation()}>
+        <h3>Projekt verwalten</h3>
+        <div className={styles.fieldRow}>
+          <label>Name</label>
+          <input className={styles.input} value={title} onChange={(e) => setTitle(e.target.value)} />
+        </div>
+        <div className={styles.fieldRow}>
+          <label>Beschreibung</label>
+          <textarea className={styles.textarea} rows={2} value={description}
+                    onChange={(e) => setDescription(e.target.value)} />
+        </div>
+        <div className={styles.fieldRow}>
+          <label>Farbe</label>
+          <span className={styles.colorRow}>
+            {COLORS.map((c) => (
+              <button key={c || "none"}
+                      className={`${styles.colorSwatch} ${color.replace(/^#/, "") === c ? styles.colorSwatchActive : ""}`}
+                      style={c ? { background: `#${c}` } : undefined}
+                      title={c ? `#${c}` : "Keine Farbe"}
+                      onClick={() => setColor(c)}>
+                {c ? "" : "∅"}
+              </button>
+            ))}
+            <input className={styles.inputSmall} placeholder="hex…" value={color}
+                   onChange={(e) => setColor(e.target.value)} />
+          </span>
+        </div>
+        <div className={styles.dialogActions}>
+          <button className={styles.btn} disabled={busy}
+                  onClick={() => run(() => plannerApi.updateProjectFields(project.id, { is_archived: !project.is_archived }))}>
+            {project.is_archived ? "♻ Reaktivieren" : "🗄 Archivieren"}
+          </button>
+          {confirmDelete ? (
+            <button className={styles.btnDanger} disabled={busy}
+                    onClick={() => run(() => plannerApi.deleteProject(project.id))}>
+              Wirklich löschen? (alle Aufgaben!)
+            </button>
+          ) : (
+            <button className={styles.btnDanger} disabled={busy} onClick={() => setConfirmDelete(true)}>
+              Löschen
+            </button>
+          )}
+        </div>
+        <div className={styles.dialogActions}>
+          <button className={styles.btn} onClick={onClose}>Abbrechen</button>
+          <button className={styles.btnPrimary} disabled={busy || !title.trim()} onClick={save}>Speichern</button>
+        </div>
+      </div>
+    </div>
+  );
+}

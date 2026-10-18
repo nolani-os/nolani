@@ -1,0 +1,237 @@
+# ClaraOS cell — Caddy.
+#
+# Certificates per host name via Let's Encrypt (HTTP-01): NO DNS API key on the
+# cell. The DNS records (demo + *.demo) are set from the operator's side.
+#
+# Structure:
+#   public exceptions → forward_auth against Authentik → API with proxy secret.
+# Important: only Caddy knows the proxy secret; the API trusts the X-Authentik-*
+#    headers only when it matches. Headers a client sends itself are dropped.
+
+{
+	email admin@{$ZELLE_DOMAIN}
+	servers {
+		trusted_proxies static private_ranges
+	}
+}
+
+# Apex → Shell
+{$ZELLE_DOMAIN} {
+	# Matrix client discovery (server_name = apex). No federation → no /server.
+	handle /.well-known/matrix/client {
+		header Content-Type application/json
+		header Access-Control-Allow-Origin *
+		respond `{"m.homeserver":{"base_url":"https://matrix.{$ZELLE_DOMAIN}"},"org.matrix.msc4143.rtc_foci":[{"type":"livekit","livekit_service_url":"https://matrix.{$ZELLE_DOMAIN}/livekit/jwt"}]}`
+	}
+	# For lk-jwt-service (OpenID check via /_matrix/federation/v1/openid/userinfo).
+	# No real federation: Synapse only exposes the openid resource.
+	handle /.well-known/matrix/server {
+		header Content-Type application/json
+		respond `{"m.server":"matrix.{$ZELLE_DOMAIN}:443"}`
+	}
+	handle {
+		redir https://home.{$ZELLE_DOMAIN}{uri} permanent
+	}
+}
+
+# ── ClaraOS shell ───────────────────────────────────────────────────────
+home.{$ZELLE_DOMAIN} {
+	encode zstd gzip
+
+	# Authentik outpost (login callback) MUST come before forward_auth
+	route /outpost.goauthentik.io/* {
+		reverse_proxy authentik:9000
+	}
+
+	# Public: MCP (own per-user bearer keys), WOPI file paths for Collabora (access_token),
+	# static assets/PWA files (otherwise a 302 HTML page instead of the asset), app downloads.
+	@needs_auth not path /mcp /mcp/* /api/claraos/wopi/files /api/claraos/wopi/files/* /assets/* /sw.js /favicon.ico /favicon.svg /manifest.webmanifest /icon-192.png /icon-512.png /icon-192-maskable.png /icon-512-maskable.png /downloads/*
+	forward_auth @needs_auth authentik:9000 {
+		uri /outpost.goauthentik.io/auth/caddy
+		copy_headers X-Authentik-Username X-Authentik-Groups X-Authentik-Email X-Authentik-Name X-Authentik-Uid
+	}
+
+	# MCP endpoint for users' own AI agents: the API authenticates it itself with a
+	# per-user bearer key — no forward_auth and NO trust headers: no proxy secret,
+	# and every identity header a client sends is dropped. 404 unless CLARAOS_MCP=on.
+	@mcp path /mcp /mcp/*
+	handle @mcp {
+		reverse_proxy claraos-api:8090 {
+			header_up -X-ClaraOS-Proxy-Secret
+			header_up -X-ClaraOS-Service-Token
+			header_up -X-ClaraOS-Brain-Token
+			header_up -X-Claraos-User
+			header_up -X-Claraos-Actor
+			header_up -X-Claraos-Turn
+			header_up -X-Authentik-*
+		}
+	}
+
+	# Server-sent events need immediate flushing
+	@sse path /api/claraos/post/events* /api/claraos/actions/ws*
+	handle @sse {
+		reverse_proxy claraos-api:8090 {
+			header_up X-ClaraOS-Proxy-Secret {env.CLARAOS_PROXY_SECRET}
+			header_up -X-ClaraOS-Service-Token
+			header_up -X-Claraos-User
+			header_up -X-Claraos-Actor
+			flush_interval -1
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+		}
+	}
+	handle /api/claraos/* {
+		reverse_proxy claraos-api:8090 {
+			header_up X-ClaraOS-Proxy-Secret {env.CLARAOS_PROXY_SECRET}
+			header_up -X-ClaraOS-Service-Token
+			header_up -X-Claraos-User
+			header_up -X-Claraos-Actor
+		}
+	}
+	handle {
+		reverse_proxy claraos-frontend:80
+	}
+}
+
+# ── Authentik (login) ───────────────────────────────────────────────────
+auth.{$ZELLE_DOMAIN} {
+	reverse_proxy authentik:9000
+}
+
+# ── Nextcloud (admin UI, public share links) ────────────────────────────
+# Users work through the ClaraOS Files app; only administrators log in here
+# directly. Share links (token) must work without an account.
+nextcloud.{$ZELLE_DOMAIN} {
+	redir /.well-known/carddav /remote.php/dav/ 301
+	redir /.well-known/caldav /remote.php/dav/ 301
+	header Strict-Transport-Security "max-age=31536000"
+	request_body {
+		max_size 2GB
+	}
+	reverse_proxy nextcloud:80
+}
+
+# ── Vaultwarden (password vault, login via Authentik) ───────────────────
+vault.{$ZELLE_DOMAIN} {
+	reverse_proxy vaultwarden:80
+}
+
+# ── Stalwart/JMAP (the Mail app reaches this via the ClaraOS API) ───────
+# Own login (mailbox credentials per user) — no forward_auth.
+jmap.{$ZELLE_DOMAIN} {
+	# Warning: expose ONLY JMAP. Stalwart also serves the web admin (/admin) and the
+	# management API (/api) on the same port — those must never face the internet
+	# (an exposed /admin turns any leaked admin password into full control).
+	@jmap path /jmap /jmap/* /.well-known/jmap
+	handle @jmap {
+		reverse_proxy stalwart:8080
+	}
+	respond 404
+}
+
+# ── Matrix/Synapse (Teams) ──────────────────────────────────────────────
+# Warning: expose only the client API. /_synapse/admin stays inside the cell
+# network — the ClaraOS API talks to Synapse internally (SYNAPSE_INTERNAL_URL).
+matrix.{$ZELLE_DOMAIN} {
+	# Calls: token service and LiveKit signalling (wss — plain ws on an https
+	# page is mixed content and breaks every call).
+	handle_path /livekit/jwt/* {
+		reverse_proxy lk-jwt:8080
+	}
+	handle_path /livekit/ws/* {
+		reverse_proxy livekit:7880
+	}
+	@client path /_matrix/* /_synapse/client/*
+	handle @client {
+		reverse_proxy synapse:8008
+	}
+	respond 404
+}
+
+# ── Element Call (call UI, embedded as a widget in the Teams app) ───────
+call.{$ZELLE_DOMAIN} {
+	reverse_proxy element-call:8080
+}
+
+# ── Immich (photos) and Paperless (documents) ───────────────────────────
+# Own login via OIDC against Authentik — no forward_auth (the mobile Immich app
+# talks to the API directly). Both are shown as tiles: embedding is allowed ONLY
+# in the cell's own shell; X-Frame-Options from the app (Paperless: SAMEORIGIN)
+# would block the tile, the CSP frame-ancestors replaces it.
+immich.{$ZELLE_DOMAIN} {
+	reverse_proxy immich-server:2283 {
+		header_down -X-Frame-Options
+		header_down +Content-Security-Policy "frame-ancestors 'self' https://home.{$ZELLE_DOMAIN}"
+	}
+}
+
+paperless.{$ZELLE_DOMAIN} {
+	request_body {
+		max_size 200MB
+	}
+	reverse_proxy paperless:8000 {
+		header_down -X-Frame-Options
+		header_down +Content-Security-Policy "frame-ancestors 'self' https://home.{$ZELLE_DOMAIN}"
+	}
+}
+
+# ── Optional sites (e.g. the shared social cell) ────────────────────────
+# setup.sh copies them into caddy/aktiv/ only on the cell that hosts them; an empty
+# glob is fine for Caddy.
+import aktiv/*.caddy
+
+# ── Personal browsers (browser/ctl.py) ──────────────────────────────────
+# ONE host name for everyone; the instance follows the Authentik identity. Host
+# names per user fail on certificates and on the outpost (404 for unknown hosts).
+# Important, in this order inside `route`:
+#   1. outpost callback, 2. drop identity headers a client sent itself,
+#   3. forward_auth sets the real ones, 4. route by that name.
+# The upstream name is built from the authenticated user name (ubd-/ubm- prefix),
+# so nobody can address another user's browser. Caddy reaches ubd-<user> because
+# the controller attaches it to every user's network.
+(user_browser) {
+	route {
+		reverse_proxy /outpost.goauthentik.io/* authentik:9000
+		request_header -X-Authentik-Username
+		request_header -X-Authentik-Email
+		request_header -X-Authentik-Groups
+		forward_auth authentik:9000 {
+			uri /outpost.goauthentik.io/auth/caddy
+			copy_headers X-Authentik-Username X-Authentik-Groups X-Authentik-Email
+		}
+		@relay path /claraos-cdp*
+		reverse_proxy @relay {args[0]}-{http.request.header.X-Authentik-Username}:9226 {
+			flush_interval -1
+		}
+		reverse_proxy {args[0]}-{http.request.header.X-Authentik-Username}:3000 {
+			flush_interval -1
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+			header_down -X-Frame-Options
+			header_down -Content-Security-Policy
+			header_down +Content-Security-Policy "frame-ancestors https://home.{$ZELLE_DOMAIN}"
+		}
+	}
+	handle_errors 502 503 {
+		header Content-Type "text/plain; charset=utf-8"
+		respond "Dein Browser schläft gerade. Öffne ihn über die Browser-Kachel in ClaraOS — dann startet er." 503
+	}
+}
+
+browser.{$ZELLE_DOMAIN} {
+	import user_browser ubd
+}
+
+browser-m.{$ZELLE_DOMAIN} {
+	import user_browser ubm
+}
+
+# ── Collabora (editor in the office viewer) ─────────────────────────────
+# Own authentication via WOPI tokens from the ClaraOS API — no forward_auth.
+collabora.{$ZELLE_DOMAIN} {
+	reverse_proxy collabora:9980
+}

@@ -1,0 +1,155 @@
+# Per-user Nextcloud PIM — calendar and contacts.
+#
+# Tasks and boards deliberately live ONLY in the planner (planner.yaml): with
+# several competing task systems Clara picked one at random, and what ended up in
+# Nextcloud was invisible in the planner and the desktop widget. The task/deck
+# routes in routers/nc_pim.py remain (CalDAV sync on phones, Deck web UI); Clara
+# just does not use them.
+#
+# Core tools (no loader module): the tool gateway injects the trusted chat user as
+# X-Claraos-User and forwards it to these loopback routes (routers/nc_pim.py),
+# which run as the caller's own Nextcloud account (creds from
+# claraos_app_credentials). `auth: none` — no upstream token.
+#
+# Deploy: copy into CLARA_TOOLS_DIR, then POST /api/claraos/tools/reload (or restart the API).
+tools:
+  - name: list_events
+    description: |
+      List the user's own calendar events in a time window. Times in the result
+      are LOCAL time (Europe/Berlin): `start`/`end` are ISO with offset,
+      `start_lokal`/`end_lokal` are readable ("Di 06.10.2026 15:00 (+02:00)") —
+      quote those, never convert anything yourself.
+      Window: `from`/`to` (local time "YYYY-MM-DDTHH:MM" or a date "YYYY-MM-DD";
+      a `to` date includes that whole day) — use it for "next week", "on Friday",
+      "in October". Otherwise `days` ahead (default 7) and `days_past` back.
+      `query` filters by title/location, `calendars` by calendar name.
+      Use it to answer "what's on", to find a free slot, and to get the `uid`
+      before update_event/delete_event. Do NOT answer calendar questions from
+      memory: always call this tool, an earlier answer may be outdated.
+    endpoint: "http://localhost:8090/api/claraos/nc/calendar/list"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        from: { type: string, description: "window start, local time YYYY-MM-DDTHH:MM or date YYYY-MM-DD" }
+        to: { type: string, description: "window end, local time or date (date = including that day)" }
+        days: { type: integer, default: 7, description: "look-ahead from now when from/to are not given" }
+        days_past: { type: integer, default: 0, description: "look-back from now (days)" }
+        query: { type: string, description: "filter: title or location contains" }
+        calendars: { type: array, items: { type: string }, description: "only these calendars (names)" }
+
+  - name: add_event
+    description: |
+      Create an event in the user's own calendar. `start`/`end` are LOCAL time
+      Europe/Berlin in the format YYYY-MM-DDTHH:MM (e.g. 2026-10-06T15:00) —
+      never append "Z" and never convert to UTC; a date alone (YYYY-MM-DD) is an
+      all-day event. Without `end` the event has no duration; for meetings pass
+      an end. `erinnerung_minuten` adds a reminder that many minutes before the
+      start ("erinnere mich 30 Minuten vorher" -> 30). `calendar` = the exact
+      calendar name; if the user names a calendar that does not exist the tool
+      returns an error — then ask, do not pick another one.
+      The result is read back: report success only if `ok` and `verified` are
+      true, and quote `start_lokal`. For a reminder WITHOUT an appointment
+      ("erinnere mich morgen um 9 an X") create a short event with
+      erinnerung_minuten=0, or a planner task if the user wants a to-do.
+    endpoint: "http://localhost:8090/api/claraos/nc/calendar/add"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        summary: { type: string, description: "title" }
+        start: { type: string, description: "local time YYYY-MM-DDTHH:MM (Europe/Berlin), or YYYY-MM-DD for all day" }
+        end: { type: string, description: "local time YYYY-MM-DDTHH:MM, optional" }
+        location: { type: string }
+        description: { type: string, description: "notes, optional" }
+        calendar: { type: string, description: "exact calendar name; default = the first writable calendar" }
+        erinnerung_minuten: { type: integer, description: "reminder N minutes before start (0 = at start), optional" }
+      required: [summary, start]
+
+  - name: update_event
+    description: |
+      Change or reschedule one of the user's events. Needs the `uid` from
+      list_events (look it up first; never guess). Only the fields you pass
+      change. `start`/`end`: LOCAL time YYYY-MM-DDTHH:MM (Europe/Berlin, no "Z").
+      When moving an event keep its duration: pass the new `end` as well.
+      end="" removes the end, location="" the location;
+      erinnerung_minuten replaces existing reminders (-1 removes them).
+      The result is read back — report success only if `ok` and `verified`.
+    endpoint: "http://localhost:8090/api/claraos/nc/calendar/update"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        uid: { type: string, description: "event uid from list_events" }
+        summary: { type: string }
+        start: { type: string, description: "local time YYYY-MM-DDTHH:MM (Europe/Berlin)" }
+        end: { type: string, description: "local time YYYY-MM-DDTHH:MM, or empty string to clear" }
+        location: { type: string, description: "or empty string to clear" }
+        erinnerung_minuten: { type: integer, description: "new reminder N minutes before start; -1 removes reminders" }
+      required: [uid]
+
+  - name: delete_event
+    description: |
+      Delete one of the user's calendar events. Reversible — goes to Nextcloud's
+      calendar trash for 30 days. First call list_events to get the correct `uid`.
+    endpoint: "http://localhost:8090/api/claraos/nc/calendar/delete"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        uid: { type: string, description: "event uid from list_events" }
+      required: [uid]
+
+  - name: list_contacts
+    description: |
+      List/search the user's own Nextcloud contacts. Optional `query` filters by
+      name/org/email/phone. Returns contacts[] with name, emails, phones, org.
+    endpoint: "http://localhost:8090/api/claraos/nc/contacts/list"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        query: { type: string, description: "filter substring, optional" }
+
+  - name: add_contact
+    description: |
+      Add a contact to the user's own address book. Check with list_contacts
+      first whether the person already exists (then use update_contact). The
+      result is read back: report success only if `ok` and `verified` are true.
+    endpoint: "http://localhost:8090/api/claraos/nc/contacts/add"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        full_name: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        org: { type: string }
+      required: [full_name]
+
+  - name: update_contact
+    description: |
+      Correct an existing contact (name / email / phone / org). Needs the `uid`
+      from list_contacts. Only fields you pass change; pass "" to clear a field.
+      There is intentionally no delete_contact (Nextcloud has no contacts trash,
+      so it would be irreversible) — tell the user to remove contacts in the app.
+    endpoint: "http://localhost:8090/api/claraos/nc/contacts/update"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        uid: { type: string, description: "contact uid from list_contacts" }
+        full_name: { type: string }
+        email: { type: string, description: "or empty string to clear" }
+        phone: { type: string, description: "or empty string to clear" }
+        org: { type: string, description: "or empty string to clear" }
+      required: [uid]
+
+ui_hooks: []

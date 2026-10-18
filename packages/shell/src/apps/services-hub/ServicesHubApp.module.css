@@ -1,0 +1,280 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--surface-1, #16161d);
+  color: var(--text-1, #ececf1);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-1, #2a2a35);
+  flex-wrap: wrap;
+}
+
+.search {
+  flex: 1 1 220px;
+  min-width: 160px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-1, #2a2a35);
+  background: var(--surface-2, #1e1e27);
+  color: inherit;
+  font-size: 0.875rem;
+}
+
+.tabs { display: flex; gap: 4px; }
+
+.tab,
+.tabActive {
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-2, #a7a7b4);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.tabActive {
+  background: var(--surface-2, #1e1e27);
+  border-color: var(--border-1, #2a2a35);
+  color: var(--text-1, #ececf1);
+}
+
+.errorBar,
+.noticeBar {
+  padding: 8px 16px;
+  font-size: 0.8125rem;
+}
+.errorBar { background: rgba(255, 92, 92, 0.14); color: #ff9f9f; }
+.noticeBar { background: rgba(84, 214, 133, 0.12); color: #7fe3a4; }
+
+/* ── Grid ── */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  padding: 16px;
+  overflow-y: auto;
+  align-content: start;
+  flex: 1;
+}
+
+.compact .grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 10px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border-1, #2a2a35);
+  background: var(--surface-2, #1e1e27);
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.12s ease;
+}
+
+.tile:hover { background: var(--surface-3, #262633); transform: translateY(-1px); }
+
+.tileIcon { width: 44px; height: 44px; }
+
+.tileName {
+  font-size: 0.875rem;
+  font-weight: 600;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tileHost {
+  font-size: 0.7188rem;
+  color: var(--text-2, #a7a7b4);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tileBadge {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 0.8125rem;
+}
+
+.empty {
+  grid-column: 1 / -1;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text-2, #a7a7b4);
+  font-size: 0.875rem;
+}
+
+/* ── Manage ── */
+
+.manage {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+  align-items: flex-start;
+}
+
+.compact .manage { flex-direction: column; }
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border-1, #2a2a35);
+  border-radius: 12px;
+  background: var(--surface-2, #1e1e27);
+  flex: 0 0 300px;
+  max-width: 100%;
+}
+
+.compact .form { flex: 1 1 auto; width: 100%; }
+
+.formTitle { font-size: 0.875rem; font-weight: 600; }
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.7812rem;
+  color: var(--text-2, #a7a7b4);
+}
+
+.field input,
+.field select {
+  padding: 7px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--border-1, #2a2a35);
+  background: var(--surface-1, #16161d);
+  color: var(--text-1, #ececf1);
+  font-size: 0.8438rem;
+}
+
+.fieldRow { display: flex; gap: 10px; }
+.fieldRow .field:first-child { flex: 0 0 64px; }
+.fieldGrow { flex: 1; }
+
+.formActions { display: flex; gap: 8px; margin-top: 4px; }
+
+.primaryBtn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent, #5b8cff);
+  color: var(--on-accent);
+  font-size: 0.8438rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.primaryBtn:disabled { opacity: 0.6; cursor: default; }
+
+.ghostBtn,
+.dangerBtn {
+  padding: 6px 12px;
+  border-radius: 7px;
+  border: 1px solid var(--border-1, #2a2a35);
+  background: transparent;
+  color: var(--text-1, #ececf1);
+  font-size: 0.7812rem;
+  cursor: pointer;
+}
+.dangerBtn { color: #ff9f9f; border-color: rgba(255, 92, 92, 0.4); }
+
+.rowList { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-1, #2a2a35);
+  border-radius: 10px;
+  background: var(--surface-2, #1e1e27);
+}
+
+.rowIcon { font-size: 1.25rem; }
+.rowMain { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.rowName { font-size: 0.8438rem; font-weight: 600; }
+.rowOff { color: var(--text-2, #a7a7b4); font-style: normal; font-weight: 400; }
+.rowMeta {
+  font-size: 0.75rem;
+  color: var(--text-2, #a7a7b4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rowActions { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+
+/* ── Vault reconciliation ── */
+
+.vault {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.vaultTitle { font-size: 0.8125rem; color: var(--text-2, #a7a7b4); margin: 8px 0 2px; }
+
+/* Group selection in the service form (replaces a free-text field). */
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.15rem 0;
+  font-weight: 400;
+  cursor: pointer;
+}
+.checkboxRow input {
+  width: auto;
+  margin: 0;
+}
+
+/* A user's own credentials for a third-party service (e.g. a Notion token).
+   The app center hides hub services — that is why the form lives here. */
+.zugangPanel {
+  margin: 12px 16px 0;
+  padding: 12px;
+  border: 1px solid var(--border-1, #2a2a35);
+  border-radius: 10px;
+  background: var(--surface-2, #1e1e27);
+}
+
+.zugangKopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.zugangTitel {
+  font-size: 0.875rem;
+  color: var(--text-1, #ececf1);
+}
+
+.zugangHinweis {
+  margin: 0 0 10px;
+  font-size: 0.75rem;
+  color: var(--text-2, #a7a7b4);
+}

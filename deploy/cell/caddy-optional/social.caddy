@@ -1,0 +1,30 @@
+# ── Shared social cell: Mastodon + PeerTube (compose layer 8) ───────────
+# Own login via OIDC. Embedding only in the shell: Mastodon's own CSP says
+# frame-ancestors 'none' — replace just that directive instead of dropping the
+# whole policy (which also guards scripts and connections).
+{$SOCIAL_DOMAIN} {
+	request_body {
+		max_size 100MB
+	}
+	@streaming path /api/v1/streaming /api/v1/streaming/*
+	handle @streaming {
+		reverse_proxy mastodon-streaming:4000
+	}
+	handle {
+		reverse_proxy mastodon-web:3000 {
+			header_down -X-Frame-Options
+			header_down Content-Security-Policy "frame-ancestors 'none'" "frame-ancestors https://home.{$ZELLE_DOMAIN}"
+		}
+	}
+}
+
+{$VIDEO_DOMAIN} {
+	request_body {
+		max_size 2GB
+	}
+	reverse_proxy peertube:9000 {
+		flush_interval -1
+		header_down -X-Frame-Options
+		header_down +Content-Security-Policy "frame-ancestors 'self' https://home.{$ZELLE_DOMAIN}"
+	}
+}

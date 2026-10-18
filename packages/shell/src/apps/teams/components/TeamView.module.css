@@ -1,0 +1,211 @@
+/* Team view: header + tab bar + content.
+   Only tokens from ../tokens.css — no custom color values. */
+
+.team {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  background: var(--bg-primary);
+}
+
+.kopf {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.titelblock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.titel {
+  font-size: var(--teams-font-md, 15px);
+  font-weight: 600;
+  color: var(--text-primary, #cdd6f4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unterzeile {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--teams-font-xs, 11px);
+  color: var(--text-secondary, #a6adc8);
+}
+
+.reiterLeiste {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.reiterHuelle {
+  display: inline-flex;
+  align-items: center;
+}
+
+.reiter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 10px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-secondary, #a6adc8);
+  font-size: var(--teams-font-sm, 13px);
+  cursor: pointer;
+}
+
+.reiter:hover { color: var(--text-primary, #cdd6f4); }
+
+.reiterAktiv {
+  color: var(--accent-color);
+  border-bottom-color: var(--accent-color);
+}
+
+.reiterWeg,
+.plus {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #a6adc8);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.reiterWeg:hover,
+.plus:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.06));
+  color: var(--text-primary, #cdd6f4);
+}
+
+.inhalt {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.rahmen {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: var(--bg-primary);
+}
+
+.leer {
+  padding: 20px;
+  font-size: var(--teams-font-sm, 13px);
+  color: var(--text-secondary, #a6adc8);
+}
+
+/* ── Dialog ───────────────────────────────────────────────────────────── */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.dialog {
+  background: var(--bg-secondary, #181825);
+  border: 1px solid var(--border-color, #313244);
+  border-radius: var(--radius-md, 10px);
+  padding: 20px;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dialog h3 {
+  margin: 0 0 4px;
+  font-size: 0.9375rem;
+  color: var(--text-primary, #cdd6f4);
+}
+
+.dialog input,
+.dialog select {
+  padding: 8px 10px;
+  border: 1px solid var(--border-color, #313244);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--bg-primary, #1e1e2e);
+  color: var(--text-primary, #cdd6f4);
+  font-size: 0.8125rem;
+  outline: none;
+}
+
+.dialog input:focus,
+.dialog select:focus { border-color: var(--accent-color, #89b4fa); }
+
+.artWahl { display: flex; gap: 6px; }
+
+.art,
+.artAktiv {
+  flex: 1;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--border-color, #313244);
+  background: transparent;
+  color: var(--text-secondary, #a6adc8);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.art:hover { background: var(--bg-hover, rgba(255, 255, 255, 0.06)); }
+
+.artAktiv {
+  background: var(--accent-bg, rgba(137, 180, 250, 0.16));
+  border-color: var(--accent-color, #89b4fa);
+  color: var(--text-primary, #cdd6f4);
+}
+
+.dialogAktionen {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.ok,
+.abbruch {
+  padding: 6px 12px;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--border-color, #313244);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.ok {
+  background: var(--accent-color, #89b4fa);
+  border-color: var(--accent-color, #89b4fa);
+  color: var(--bg-primary, #1e1e2e);
+  font-weight: 600;
+}
+
+.ok:disabled { opacity: 0.5; cursor: default; }
+
+.abbruch {
+  background: transparent;
+  color: var(--text-secondary, #a6adc8);
+}

@@ -1,0 +1,286 @@
+/* Contacts.
+ *
+ * Important: DERIVE the palette from the skin tokens as in Shopping/Knowledge,
+ * don't invent it: `tokens.css` knows 11 names, and `--surface-2/3` are not
+ * among them. Surfaces are created as a step towards the text colour
+ * (`color-mix`) — one formula for light and dark: on a dark background it
+ * lifts, on a light one it lowers. Writing fixed colours instead builds a
+ * foreign island.
+ *
+ * Important: `--bg-window-solid` FIRST, `--bg-window` only as fallback —
+ * otherwise the surface becomes transparent and the window background shows
+ * right through the rows (only noticeable visually).
+ *
+ * Important: font sizes in `rem` so that `uiScale` applies — that is THE control.
+ */
+.app {
+  --surface-1: var(--bg-window-solid, var(--bg-window, #16161d));
+  --surface-2: color-mix(in srgb, var(--text-primary, #e8e8ef) 7%, var(--bg-window-solid, var(--bg-window, #16161d)));
+  --surface-3: color-mix(in srgb, var(--text-primary, #e8e8ef) 13%, var(--bg-window-solid, var(--bg-window, #16161d)));
+  --border-1: color-mix(in srgb, var(--text-primary, #e8e8ef) 24%, var(--bg-window-solid, var(--bg-window, #16161d)));
+  --text-1: var(--text-primary, #e8e8ef);
+  --text-2: var(--text-secondary, color-mix(in srgb, var(--text-primary, #e8e8ef) 65%, transparent));
+
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  position: relative;                 /* Anchor for the floating toolbar */
+  background: var(--surface-1);
+  color: var(--text-1);
+  font-size: 0.875rem;
+}
+
+/* ── Header bar ─────────────────────────────────────────────────────────── */
+.kopf {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border-1);
+  flex-wrap: wrap;
+}
+
+.suche {
+  flex: 1 1 12rem;
+  min-width: 8rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-1);
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-size: 0.875rem;
+}
+.suche:focus { outline: 2px solid var(--accent, #7b9fff); outline-offset: -1px; }
+
+/* Buttons in the component library's language (pill, tonal/filled, shape morph) */
+.knopf {
+  min-height: 32px;
+  padding: 0 14px;
+  border-radius: var(--radius-md, 10px);
+  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--accent, #7b9fff) 14%, var(--surface-2));
+  color: var(--text-1);
+  cursor: pointer;
+  font: inherit; font-size: 0.8125rem; font-weight: 600;
+  white-space: nowrap;
+  gap: 8px;
+  transition: border-radius .12s ease, transform .12s ease, background-color .15s ease;
+}
+.knopf:active:not(:disabled) { border-radius: var(--radius-md, 10px); transform: scale(.98); }
+/* Warning (found in a visual check): "Export" is an <a> (a download needs a
+   real link), and it came out UNDERLINED while there were only buttons next to
+   it. A control that looks different from its neighbours looks like a bug —
+   no metric shows that, only the picture. */
+.knopf { text-decoration: none; display: inline-flex; align-items: center; }
+.knopf:hover:not(:disabled) { background: var(--surface-3); }
+.knopf:disabled { opacity: 0.5; cursor: default; }
+.knopfHaupt { background: var(--accent, #7b9fff); border-color: transparent; color: var(--on-accent, #101418); }
+.knopfGefahr { background: color-mix(in srgb, var(--status-danger, #f87171) 14%, var(--surface-2)); color: var(--status-danger, #f87171); }
+
+/* ── Two columns on desktop, list↔detail on phones ─────────────────────── */
+.koerper { display: flex; flex: 1; min-height: 0; }
+
+.liste {
+  width: 18rem;
+  flex-shrink: 0;
+  overflow-y: auto;
+  border-right: 1px solid var(--border-1);
+}
+.detail { flex: 1; overflow-y: auto; padding: 0.75rem 1rem; min-width: 0; }
+
+/* Important: on phones don't shrink, show ONE thing. Two columns at 360 px
+   are two unusable columns. */
+.mobilListe .liste { width: 100%; border-right: none; }
+.mobilListe .detail { display: none; }
+.mobilDetail .liste { display: none; }
+.mobilDetail .detail { width: 100%; }
+
+.eintrag {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border-1);
+  cursor: pointer;
+  /* 44 px minimum height — measured by behaviour on a phone, not estimated. */
+  min-height: 2.75rem;
+  justify-content: center;
+}
+.eintrag:hover { background: var(--surface-2); }
+.eintragAktiv { background: var(--surface-3); }
+.eintragName { font-weight: 500; overflow-wrap: anywhere; }
+.eintragUnten { font-size: 0.75rem; color: var(--text-2); overflow-wrap: anywhere; }
+
+.leer { padding: 1.5rem 1rem; color: var(--text-2); text-align: center; line-height: 1.5; }
+
+/* Important: on desktop all tools sit side by side. On phones that's six
+   buttons plus a search field at 390 px — it wraps to three rows and eats a
+   fifth of the height before a single contact is visible. So the less
+   frequent paths move behind "More"; what you need daily (search, new) stays
+   immediately at hand. */
+.zweitReihe { display: contents; }
+.mehrKnopf { display: none; }
+
+@media (max-width: 640px) {
+  .mehrKnopf { display: inline-flex; }
+  .zweitReihe {
+    display: none;
+    flex-basis: 100%;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-top: 0.4rem;
+  }
+  .zweitReiheOffen { display: flex; }
+}
+
+/* ── Detail ─────────────────────────────────────────────────────────────── */
+.detailKopf { display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+
+/* Contact photo. `object-fit: cover` is right here — for a portrait in a
+   fixed circle you want the crop, not bars. (Unlike the camera viewfinder,
+   where `cover` was exactly the mistake: there it cuts away what you are
+   supposed to judge.) */
+.bild {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--surface-2);
+  border: 1px solid var(--border-1);
+}
+.bildKlein {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.eintragReihe { display: flex; align-items: center; gap: 0.5rem; }
+.detailName { font-size: 1.25rem; font-weight: 600; flex: 1; overflow-wrap: anywhere; }
+
+.block { margin-bottom: 1rem; }
+.blockTitel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+  margin-bottom: 0.35rem;
+}
+.zeile { display: flex; gap: 0.5rem; padding: 0.2rem 0; align-items: baseline; flex-wrap: wrap; }
+.zeileLabel { min-width: 5rem; color: var(--text-2); font-size: 0.8125rem; }
+.zeileWert { flex: 1; overflow-wrap: anywhere; min-width: 0; }
+.zeileWert a { color: var(--accent, #7b9fff); }
+
+.feld {
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border-radius: 5px;
+  border: 1px solid var(--border-1);
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-size: 0.875rem;
+  font-family: inherit;
+}
+.feldReihe { display: flex; gap: 0.4rem; margin-bottom: 0.35rem; align-items: center; flex-wrap: wrap; }
+.feldSchmal { flex: 0 1 7rem; min-width: 4rem; }
+
+/* ── Service handles: the class MUST be visible ────────────────────────── */
+.handle { display: flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0; flex-wrap: wrap; }
+.marke {
+  font-size: 0.6875rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-1);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+/* "federated" = we can really do something. Coloured, because it is a
+   promise we can keep. */
+.markeEcht { border-color: var(--accent, #7b9fff); color: var(--accent, #7b9fff); }
+
+.hinweis {
+  background: color-mix(in srgb, var(--accent, #7b9fff) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent, #7b9fff) 40%, transparent);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  margin: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.fehler {
+  background: color-mix(in srgb, var(--status-danger, #f87171) 12%, transparent);
+  border-color: color-mix(in srgb, var(--status-danger, #f87171) 40%, transparent);
+}
+
+/* ── History ────────────────────────────────────────────────────────────── */
+.fassung {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border-1);
+  flex-wrap: wrap;
+}
+.fassungZeit { font-size: 0.75rem; color: var(--text-2); min-width: 9rem; }
+.fassungGrund { font-size: 0.75rem; color: var(--text-2); }
+
+.fussnote { font-size: 0.75rem; color: var(--text-2); line-height: 1.5; margin-top: 0.5rem; }
+
+@media (max-width: 640px) {
+  .kopf { padding: 0.5rem; }
+  .detail {
+    padding: 0.6rem 0.7rem;
+    /* Warning: the floating Clara button used to sit over the last sentence
+       of the footer text — the sentence was cut off, and without looking at it
+       nobody would have noticed. Leave room at the bottom so nothing disappears. */
+    padding-bottom: 5rem;
+  }
+  .zeileLabel { min-width: 4rem; }
+
+  /* Warning (found in a visual check on a phone): "Anna Beispiel" was squeezed
+     onto TWO lines because three buttons next to it fought for the same space.
+     At 390 px the name gets the full width, the buttons move below. */
+  .detailName { flex: 0 0 100%; margin-bottom: 0.4rem; }
+}
+
+/* Warning: "delete permanently" sat directly under the name on phones, with
+   the same weight as "edit" — an irreversible step in the most convenient
+   place. It belongs at the END, set apart, and not in the header. */
+.gefahrZone {
+  margin-top: 1.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-1);
+}
+
+/* ── Phone styling ──────────────────────────────────────────────────────── */
+.avatar {
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+  display: grid; place-items: center; overflow: hidden;
+  background: color-mix(in srgb, var(--accent, #7b9fff) 18%, var(--surface-2));
+  color: var(--text-1);
+  font-size: 0.875rem; font-weight: 600; letter-spacing: 0.02em;
+}
+.avatar .bildKlein { width: 100%; height: 100%; object-fit: cover; margin: 0; border-radius: 0; }
+.eintragText { min-width: 0; flex: 1; }
+.kopfMobil { flex-direction: column; align-items: stretch; gap: 10px; padding: 8px 14px 10px; border-bottom: none; }
+.kopfZeile { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+.kopfTitel { margin: 6px 2px 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text-1); }
+.kopfZeile .kopfTitel { margin: 0; font-size: 1.25rem; }
+.kopfMobil .suche {
+  flex: 1 1 auto; min-width: 0;
+  height: 48px; padding: 0 18px;
+  border-radius: var(--radius-pill, 999px);
+  border-color: transparent;
+  font-size: 1rem;                       /* 16 px: no iOS zoom */
+}
+.mobilListe .liste { padding: 4px 6px 96px; }
+.mobilListe .eintrag { min-height: 64px; border-bottom: none; border-radius: 16px; margin-bottom: 2px; }
+.mobilListe .eintragName { font-size: 0.9375rem; font-weight: 600; }
+.mobilListe .eintragUnten { font-size: 0.8125rem; }
+.mobilDetail .detail { padding-bottom: 6rem; }
+
+/* Phone: buttons as 40 px pills (desktop: 32 px, radius 10) */
+.mobilListe .knopf, .mobilDetail .knopf { min-height: 40px; padding: 0 16px; border-radius: var(--radius-pill, 999px); font-size: 0.875rem; }

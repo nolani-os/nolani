@@ -1,0 +1,277 @@
+<!doctype html>
+<!-- ClaraOS chromeless dashboard, MOBILE-HYBRID variant:
+     Selkies streams only video/audio; touch, keyboard and navigation go
+     through the CDP relay (/claraos-cdp) as REAL touch/IME events.
+     UI = top bar in Chrome-Mobile style (claraos-touch-cdp.js).
+     Markers for smoke tests: claraos-chromeless claraos-mobile-hybrid -->
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="claraos" content="claraos-chromeless claraos-mobile-hybrid">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#202124" media="(prefers-color-scheme: dark)">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="manifest" href="manifest.json" crossorigin="use-credentials">
+  <link rel="icon" type="image/png" href="icon.png">
+  <title>Clara Browser</title>
+  <style>
+    /* touch-action:none: otherwise the PHONE browser consumes pinch/scroll itself
+       instead of passing the fingers through to the stream. */
+    :root {
+      --bar-h: 56px;
+      --bar-bg: #ffffff;
+      --bar-fg: #202124;
+      --bar-fg-dim: #5f6368;
+      --pill-bg: #f1f3f4;
+      --menu-bg: #ffffff;
+      --menu-shadow: 0 2px 12px rgba(0,0,0,.28);
+      --divider: rgba(0,0,0,.08);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bar-bg: #202124;
+        --bar-fg: #e8eaed;
+        --bar-fg-dim: #9aa0a6;
+        --pill-bg: #303134;
+        --menu-bg: #292a2d;
+        --menu-shadow: 0 2px 14px rgba(0,0,0,.6);
+        --divider: rgba(255,255,255,.08);
+      }
+    }
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #000;
+                 overflow: hidden; touch-action: none; overscroll-behavior: none; }
+    /* Stream below the bar; the canvas is fitted via scaleLocally.
+       !important: the Selkies core sets #app to full window height via inline
+       style and centres the canvas in it (leaving a black band); a stylesheet
+       !important wins over inline styles. */
+    #app { position: fixed !important; top: var(--bar-h) !important;
+           left: 0 !important; right: 0 !important; bottom: 0 !important;
+           width: auto !important; height: calc(100% - var(--bar-h)) !important;
+           overflow: hidden; touch-action: none; }
+    #app canvas, #app video { max-width: 100%; max-height: 100%; }
+
+    /* ── Top bar (Chrome-Mobile style) ── */
+    #claraos-bar {
+      position: fixed; top: 0; left: 0; right: 0; height: var(--bar-h);
+      z-index: 2147483001; display: flex; align-items: center; gap: 2px;
+      padding: 0 4px calc(0px + env(safe-area-inset-top, 0px)/8) 4px;
+      padding-top: env(safe-area-inset-top, 0px);
+      box-sizing: content-box;
+      background: var(--bar-bg); color: var(--bar-fg);
+      border-bottom: 1px solid var(--divider);
+      font-family: system-ui, Roboto, "Segoe UI", sans-serif;
+      -webkit-user-select: none; user-select: none;
+    }
+    .claraos-iconbtn {
+      flex: 0 0 44px; width: 44px; height: 44px; border: none; padding: 10px;
+      background: transparent; color: var(--bar-fg-dim); border-radius: 22px;
+      touch-action: manipulation;
+    }
+    .claraos-iconbtn:active { background: var(--pill-bg); }
+    .claraos-iconbtn svg { width: 24px; height: 24px; display: block; }
+    .claraos-pill {
+      flex: 1 1 auto; min-width: 0; height: 40px; display: flex;
+      align-items: center; gap: 8px; padding: 0 14px; border-radius: 20px;
+      background: var(--pill-bg); overflow: hidden; touch-action: manipulation;
+    }
+    .claraos-pill-lock svg { width: 14px; height: 14px; display: block;
+                             color: var(--bar-fg-dim); }
+    .claraos-pill.insecure .claraos-pill-lock { display: none; }
+    .claraos-pill-host {
+      flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; font-size: 16px; color: var(--bar-fg);
+    }
+    .claraos-urlinput {
+      display: none; flex: 1 1 auto; min-width: 0; height: 40px;
+      border: none; outline: none; border-radius: 20px; padding: 0 14px;
+      background: var(--pill-bg); color: var(--bar-fg); font-size: 16px;
+      font-family: inherit;
+    }
+    #claraos-bar.editing .claraos-pill { display: none; }
+    #claraos-bar.editing .claraos-urlinput { display: block; }
+
+    /* ── Menu (⋮) ── */
+    #claraos-menu {
+      position: fixed; top: calc(var(--bar-h) + env(safe-area-inset-top, 0px) - 6px);
+      right: 6px; z-index: 2147483002; display: none; flex-direction: column;
+      min-width: 230px; padding: 6px 0; border-radius: 12px;
+      background: var(--menu-bg); color: var(--bar-fg);
+      box-shadow: var(--menu-shadow);
+      font-family: system-ui, Roboto, "Segoe UI", sans-serif;
+    }
+    #claraos-menu.open { display: flex; }
+    .claraos-menuitem {
+      display: flex; align-items: center; gap: 14px; border: none;
+      background: transparent; color: var(--bar-fg); font-size: 15.5px;
+      font-family: inherit; padding: 12px 18px; text-align: left;
+      touch-action: manipulation;
+    }
+    .claraos-menuitem:active { background: var(--pill-bg); }
+    .claraos-menuitem svg { width: 20px; height: 20px; flex: 0 0 20px;
+                            color: var(--bar-fg-dim); }
+
+    /* ── Tab counter button (Chrome style: box with a number) ── */
+    .claraos-tabbtn {
+      flex: 0 0 44px; width: 44px; height: 44px; border: none; padding: 0;
+      background: transparent; color: var(--bar-fg-dim); border-radius: 22px;
+      display: flex; align-items: center; justify-content: center;
+      touch-action: manipulation;
+    }
+    .claraos-tabbtn:active { background: var(--pill-bg); }
+    .claraos-tabbtn-count {
+      min-width: 22px; height: 22px; line-height: 20px; text-align: center;
+      border: 2px solid var(--bar-fg-dim); border-radius: 6px;
+      font-size: 12.5px; font-weight: 600; color: var(--bar-fg-dim);
+      padding: 0 2px; box-sizing: border-box;
+    }
+
+    /* ── Bottom sheets (context menu, tabs, history, settings) ── */
+    .claraos-backdrop {
+      position: fixed; inset: 0; z-index: 2147483004;
+      background: rgba(0,0,0,.42); display: flex; align-items: flex-end;
+    }
+    .claraos-sheet {
+      width: 100%; max-height: 72vh; overflow-y: auto;
+      background: var(--menu-bg); color: var(--bar-fg);
+      border-radius: 18px 18px 0 0; padding: 8px 0 max(10px, env(safe-area-inset-bottom));
+      box-shadow: var(--menu-shadow);
+      font-family: system-ui, Roboto, "Segoe UI", sans-serif;
+      animation: claraos-sheet-in .18s ease-out;
+    }
+    @keyframes claraos-sheet-in {
+      from { transform: translateY(28px); opacity: .6; }
+      to { transform: none; opacity: 1; }
+    }
+    .claraos-sheet-head { padding: 12px 20px 8px; }
+    .claraos-sheet-title { font-size: 16px; font-weight: 600;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .claraos-sheet-sub { font-size: 13px; color: var(--bar-fg-dim); margin-top: 2px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .claraos-sheet-item {
+      display: flex; align-items: center; gap: 16px; width: 100%;
+      border: none; background: transparent; color: var(--bar-fg);
+      font-size: 15.5px; font-family: inherit; padding: 13px 20px;
+      text-align: left; touch-action: manipulation;
+    }
+    .claraos-sheet-item:active { background: var(--pill-bg); }
+    .claraos-sheet-item svg { width: 21px; height: 21px; flex: 0 0 21px;
+      color: var(--bar-fg-dim); }
+    .claraos-sheet-item span { overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; }
+    .claraos-sheet-item.danger, .claraos-sheet-item.danger svg { color: #d93025; }
+
+    /* ── Tab grid ── */
+    .claraos-tabs-head { display: flex; align-items: center;
+      justify-content: space-between; padding-right: 10px; }
+    .claraos-tabgrid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+      padding: 6px 14px 10px;
+    }
+    .claraos-tabcard {
+      border-radius: 14px; overflow: hidden; background: var(--pill-bg);
+      border: 2px solid transparent;
+    }
+    .claraos-tabcard.active { border-color: #1a73e8; }
+    .claraos-tabcard-row {
+      display: flex; align-items: center; gap: 6px; padding: 8px 6px 8px 12px;
+    }
+    .claraos-tabcard-title { flex: 1 1 auto; min-width: 0; font-size: 13px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .claraos-tabcard-close {
+      flex: 0 0 30px; width: 30px; height: 30px; border: none; padding: 6px;
+      background: transparent; color: var(--bar-fg-dim); border-radius: 15px;
+      touch-action: manipulation;
+    }
+    .claraos-tabcard-close svg { width: 18px; height: 18px; display: block; }
+    .claraos-tabcard-thumb { height: 130px; background: #000; }
+    .claraos-tabcard-thumb img { width: 100%; height: 100%; object-fit: cover;
+      object-position: top; display: block; }
+
+    /* ── Selection drag handles + floating toolbar ── */
+    .claraos-selhandle {
+      position: fixed; z-index: 2147483003; width: 22px; height: 22px;
+      background: #1a73e8; display: none; touch-action: none;
+      box-shadow: 0 1px 4px rgba(0,0,0,.35);
+    }
+    /* Android look: teardrop, rounded corners except the pointing corner at the top */
+    .claraos-selhandle.start {
+      border-radius: 50% 4px 50% 50%;
+      transform: translate(-100%, 0);
+    }
+    .claraos-selhandle.end {
+      border-radius: 4px 50% 50% 50%;
+    }
+    .claraos-selhandle::after { /* larger touch target */
+      content: ""; position: absolute; inset: -12px;
+    }
+    .claraos-seltoolbar {
+      position: fixed; z-index: 2147483004; display: none; gap: 2px;
+      background: var(--menu-bg); color: var(--bar-fg);
+      border-radius: 22px; padding: 4px 6px; box-shadow: var(--menu-shadow);
+      font-family: system-ui, Roboto, "Segoe UI", sans-serif;
+    }
+    .claraos-seltool {
+      display: flex; align-items: center; gap: 7px; border: none;
+      background: transparent; color: var(--bar-fg); font-size: 14px;
+      font-family: inherit; padding: 8px 12px; border-radius: 18px;
+      touch-action: manipulation;
+    }
+    .claraos-seltool:active { background: var(--pill-bg); }
+    .claraos-seltool svg { width: 18px; height: 18px; color: var(--bar-fg-dim); }
+
+    /* ── Find-in-page bar ── */
+    #claraos-findbar {
+      position: fixed; top: calc(var(--bar-h) + env(safe-area-inset-top, 0px));
+      left: 0; right: 0; z-index: 2147483002; display: none;
+      align-items: center; gap: 2px; padding: 6px 8px;
+      background: var(--bar-bg); color: var(--bar-fg);
+      border-bottom: 1px solid var(--divider);
+      font-family: system-ui, Roboto, "Segoe UI", sans-serif;
+    }
+    #claraos-findbar.open { display: flex; }
+    .claraos-findinput {
+      flex: 1 1 auto; min-width: 0; height: 38px; border: none; outline: none;
+      border-radius: 19px; padding: 0 14px; background: var(--pill-bg);
+      color: var(--bar-fg); font-size: 15px; font-family: inherit;
+    }
+
+    /* ── Clara button (same look as the shell FAB, MobileShell.module.css) ── */
+    .claraos-clarafab {
+      position: fixed; right: 14px; bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+      z-index: 2147483002; width: 52px; height: 52px; padding: 0;
+      border: 1px solid rgba(150, 185, 240, 0.55); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
+      background:
+        radial-gradient(62% 28% at 50% 95%, rgba(130, 170, 235, 0.5), transparent 72%),
+        radial-gradient(125% 95% at 50% 16%, #1c2a48 0%, #0b1428 40%, #05091a 74%, #02040e 100%);
+      color: #7dd3fc; box-shadow: 0 2px 12px rgba(0,0,0,.45);
+      touch-action: manipulation;
+    }
+    .claraos-clarafab:active { transform: scale(0.94); }
+    .claraos-clarafab svg { width: 24px; height: 24px; display: block; }
+    /* Highlight the Clara menu entry in the brand colour */
+    #claraos-menu .claraos-menuitem:first-child svg { color: #7dd3fc; }
+
+    /* ── Watchdog toast ── */
+    #claraos-toast {
+      position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%);
+      z-index: 2147483003; padding: 10px 18px; border-radius: 20px;
+      background: rgba(32,33,36,.92); color: #e8eaed; font-size: 14px;
+      font-family: system-ui, Roboto, "Segoe UI", sans-serif;
+      opacity: 0; transition: opacity .3s; pointer-events: none;
+      white-space: nowrap;
+    }
+    #claraos-toast.visible { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="src/claraos-config.js"></script>
+  <script type="module" src="src/selkies-core.js"></script>
+  <script src="src/claraos-bridge.js"></script>
+  <script src="src/claraos-touch-cdp.js"></script>
+</body>
+</html>

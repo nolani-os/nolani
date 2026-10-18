@@ -1,0 +1,212 @@
+.callsView {
+  grid-column: 2 / 5;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: var(--bg-primary, #1e1e2e);
+}
+
+.header {
+  padding: 16px 20px 12px;
+  font-size: 1.125rem;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color, #313244);
+}
+
+.section {
+  padding: 16px 20px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary, #a6adc8);
+}
+
+.empty {
+  padding: 24px 20px;
+  text-align: center;
+  color: var(--text-secondary, #a6adc8);
+  font-size: 0.8125rem;
+}
+
+.callRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border-color, rgba(49, 50, 68, 0.5));
+  background: transparent;
+  color: var(--text-primary, #cdd6f4);
+}
+
+.callRow:hover {
+  background: var(--bg-hover, #313244);
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-color, #89b4fa);
+  color: var(--bg-primary, #1e1e2e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.callMeta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.roomName {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.6875rem;
+  color: var(--text-secondary, #a6adc8);
+}
+
+.liveDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger, #f38ba8);
+  box-shadow: 0 0 6px var(--danger, #f38ba8);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 32px; padding: 0 14px;
+  border: none; border-radius: var(--radius-md, 10px);
+  background: color-mix(in srgb, var(--accent-color, #89b4fa) 16%, var(--surface-2, var(--bg-secondary, #181825))); color: var(--text-primary);
+  font: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+}
+
+.btn:hover {
+  background: var(--bg-hover, #313244);
+}
+
+.btnPrimary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 32px; padding: 0 14px;
+  border: none; border-radius: var(--radius-md, 10px);
+  background: var(--accent-color, var(--accent, #89b4fa)); color: var(--on-accent, #101418);
+  font: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+}
+
+.btnPrimary:hover {
+  background: var(--accent-hover-color, #b4befe);
+  border-color: var(--accent-hover-color, #b4befe);
+}
+
+.btnDanger {
+  background: var(--danger, #f38ba8);
+  color: var(--bg-primary, #1e1e2e);
+  border-color: var(--danger, #f38ba8);
+}
+
+.btnDanger:hover {
+  background: var(--danger, #eba0ac);
+  border-color: var(--danger, #eba0ac);
+}
+
+.newCallPanel {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid var(--border-color, #313244);
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.select {
+  flex: 1;
+  padding: 6px 10px;
+  background: var(--bg-secondary, #181825);
+  color: var(--text-primary, #cdd6f4);
+  border: 1px solid var(--border-color, #313244);
+  border-radius: 6px;
+  font-size: 0.8125rem;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border-color, #313244);
+  margin: 4px 0;
+}
+
+.hint {
+  font-size: 0.6875rem;
+  color: var(--text-secondary, #a6adc8);
+}
+
+.inCall {
+  grid-column: 2 / 5;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary, #1e1e2e);
+  height: 100%;
+}
+
+.inCallToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color, #313244);
+  background: var(--bg-secondary, #181825);
+}
+
+.inCallTitle {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.iframeWrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}

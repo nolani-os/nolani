@@ -1,0 +1,124 @@
+/* Shade — opaque background with blur behind it, cards from tokens.
+   Deliberately NO translucent cards (rule: "over content = opaque"). */
+
+.panel {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  /* room at the bottom for the navigation bar (z-index 100 sits above) —
+     otherwise the grip sits behind the home button and looks like a slider */
+  padding: calc(30px + env(safe-area-inset-top)) 14px calc(60px + env(safe-area-inset-bottom));
+  /* Horizontal swipes belong to us (panel switch); Chrome would otherwise
+     treat them as a pan and abort with pointercancel before 72 px are reached */
+  touch-action: pan-y;
+  background: color-mix(in srgb, var(--bg-window-solid, #0b1220) 90%, transparent);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  color: var(--text-1, #e5e7eb);
+  overflow: hidden;
+  z-index: 60;
+}
+.inhalt {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  padding-bottom: 8px;
+}
+.inhalt::-webkit-scrollbar { display: none; }
+
+/* Clock like Android: large, left, then the date */
+.kopfUhr { padding: 8px 4px 6px; }
+.uhr {
+  font-size: 3.5rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.datum { margin-top: 6px; font-size: 0.875rem; color: var(--text-2, #9aa8c2); }
+
+.gruppe {
+  display: flex; align-items: center; justify-content: space-between;
+  min-height: 32px;
+  padding: 4px 8px 0;
+  font-size: 0.6875rem; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-2, #9aa8c2);
+}
+
+.leer {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 28px 0;
+  color: var(--text-2, #9aa8c2);
+  font-size: 0.875rem;
+}
+
+/* Card */
+.karte {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  padding: 12px 12px 12px 12px;
+  border-radius: 22px;
+  background: var(--surface-2, #182236);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.karte:active { background: var(--surface-3, #1f2b42); }
+.karteGelesen { opacity: .62; }
+.kreis {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--accent, #38bdf8);
+  color: var(--on-accent, #101418);
+  flex-shrink: 0;
+}
+.karteGelesen .kreis { background: var(--surface-3, #1f2b42); color: var(--text-2, #9aa8c2); }
+.kreisZeichen { font-size: 1.125rem; line-height: 1; }
+.karteText { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.karteTitel { font-size: 0.875rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.karteText2 { font-size: 0.8125rem; color: var(--text-2, #9aa8c2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.karteText2Offen { white-space: normal; }
+.aktionen { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.karteRechts { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.zeit { font-size: 0.6875rem; color: var(--text-2, #9aa8c2); font-variant-numeric: tabular-nums; }
+.pfeil {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: color-mix(in srgb, var(--text-1, #e5e7eb) 7%, transparent);
+  color: var(--text-2, #9aa8c2);
+  transition: transform .15s ease;
+}
+.pfeilOffen { transform: rotate(180deg); }
+
+/* Footer: round · pill · round */
+.fuss {
+  flex-shrink: 0;
+  display: flex; align-items: center; gap: 8px;
+  padding-top: 6px;
+}
+.fussPille { flex: 1; }
+
+/* Page dots and grip */
+.seiten { display: flex; justify-content: center; gap: 6px; padding: 8px 0 0; }
+.punkt {
+  width: 6px; height: 6px; padding: 0; border: none; border-radius: 3px;
+  background: var(--border-1, rgba(229,231,235,.24));
+  transition: width .15s ease, background-color .15s ease;
+}
+.punktAn { width: 16px; background: var(--accent, #38bdf8); }
+.griff {
+  flex-shrink: 0;
+  height: 26px; border: none; background: transparent; padding: 0;
+  display: grid; place-items: center;
+  cursor: pointer;
+}
+.griffLinie { width: 110px; height: 4px; border-radius: 2px; background: var(--text-2, #9aa8c2); opacity: .55; }

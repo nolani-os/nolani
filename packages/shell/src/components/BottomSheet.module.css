@@ -1,0 +1,74 @@
+.layer {
+  position: fixed;
+  inset: 0;
+  z-index: 3000; /* above MobileShell surfaces and the shade */
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  animation: sheetFadeIn 0.18s ease-out;
+}
+
+@keyframes sheetFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes sheetSlideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.panel {
+  animation: sheetSlideUp 0.22s ease-out;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 70dvh;
+  display: flex;
+  flex-direction: column;
+  /* Warning: with `--bg-window` the sheet is TRANSPARENT — the list behind it
+     shows through filter and sort options. `--bg-window` is translucent in
+     `clara-glass`; a sheet lying over content needs an opaque surface.
+     Lesson: whoever places a surface OVER something must use
+     `--bg-window-solid` first. */
+  background: var(--bg-window-solid, var(--bg-window, #1e1e2e));
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 1rem 1rem 0 0;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.handleArea {
+  flex-shrink: 0;
+  padding: 8px 16px 4px;
+  touch-action: none;
+  cursor: grab;
+}
+
+.handle {
+  width: 2.5rem;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--text-secondary);
+  opacity: 0.5;
+  margin: 0 auto 6px;
+}
+
+.title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  padding-bottom: 4px;
+}
+
+.content {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 8px 12px;
+}

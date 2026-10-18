@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "paths": {
+      "@claraos/core": ["../core/src"],
+      "@claraos/core/*": ["../core/src/*"]
+    }
+  },
+  "include": ["src"]
+}

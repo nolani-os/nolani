@@ -1,0 +1,255 @@
+/* Shared popover shell for the tray flyouts — pattern from
+   QuickSettingsPanel.module.css: fixed above the taskbar on the right,
+   transparent backdrop to click away, glass via aeroWidget. */
+
+.backdrop {
+  position: fixed;
+  /* Keep the taskbar free: clicking another tray item switches the popover
+     directly (KDE behavior) instead of getting stuck on the backdrop. */
+  inset: 0 0 var(--taskbar-height, 48px) 0;
+  background: transparent;
+  z-index: 11000;
+}
+
+.panel {
+  position: fixed;
+  bottom: calc(var(--taskbar-height, 48px) + 8px);
+  right: 8px;
+  width: 360px;
+  max-height: calc(100vh - var(--taskbar-height, 48px) - 24px);
+  border-radius: 14px;
+  padding: 14px;
+  background: var(--bg-surface, rgba(28, 32, 52, 0.85));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(36px) saturate(160%);
+  -webkit-backdrop-filter: blur(36px) saturate(160%);
+  font-family: var(--font-system);
+  color: var(--text-primary);
+  z-index: 11500;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+}
+
+.title {
+  flex: 1;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+}
+
+.sectionLabel {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  opacity: 0.6;
+  letter-spacing: 0.4px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8125rem;
+}
+
+.rowGrow {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Device picker: only appears when there really is more than one device. */
+.select {
+  width: 100%;
+  margin-bottom: 6px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.14));
+  background: var(--bg-input, rgba(255, 255, 255, 0.06));
+  color: inherit;
+  font-size: 0.75rem;
+}
+
+.select:disabled {
+  opacity: 0.6;
+}
+
+.slider {
+  flex: 1;
+  accent-color: var(--accent, #6c8cff);
+}
+
+.value {
+  width: 42px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.iconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.iconBtn:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+.iconBtnActive {
+  background: var(--accent-bg, rgba(108, 140, 255, 0.25));
+  color: var(--accent, #6c8cff);
+}
+
+.listBtn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 8px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.listBtn:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+.listBtnActive {
+  background: var(--accent-bg, rgba(108, 140, 255, 0.18));
+}
+
+.muted {
+  opacity: 0.6;
+  font-size: 0.75rem;
+}
+
+.toggle {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  border: none;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.14);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--transition-fast, 0.15s);
+}
+
+.toggleOn {
+  background: var(--accent, #6c8cff);
+}
+
+.toggle::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform var(--transition-fast, 0.15s);
+}
+
+.toggleOn::after {
+  transform: translateX(16px);
+}
+
+.pskForm {
+  display: flex;
+  gap: 6px;
+  padding: 4px 8px 8px 34px;
+}
+
+.pskInput {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.14));
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+}
+
+.pskBtn {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent, #6c8cff);
+  color: #fff;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.error {
+  color: #ff6b6b;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+}
+
+.usageBar {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.usageFill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent, #6c8cff);
+}
+
+/* "Clara is working" glyph: the spark pulses while something is running —
+   the same language as the dot in front of each list entry. */
+.claraWorkGlyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent, #60cdff);
+  animation: claraWorkPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes claraWorkPulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .claraWorkGlyph { animation: none; }
+}

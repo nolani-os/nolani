@@ -1,0 +1,48 @@
+.wrap {
+  display: grid;
+  gap: 6px;
+  margin: 2px 0 4px;
+}
+
+.zeile {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 2px;
+  background: transparent;
+  border: none;
+  color: var(--text-2, var(--color-muted, #8c8e98));
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  text-align: left;
+  min-height: 32px;
+  max-width: 100%;
+}
+
+.punkt {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-3, #7f8aa3);
+  flex: 0 0 auto;
+}
+.punktAktiv {
+  background: var(--accent, #38bdf8);
+  box-shadow: 0 0 8px var(--accent, #38bdf8);
+  animation: denkPuls 1.6s ease-in-out infinite;
+}
+@keyframes denkPuls { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .punktAktiv { animation: none; } }
+
+.text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pfeil { color: var(--text-3, #7f8aa3); flex: 0 0 auto; }
+
+.details {
+  display: grid;
+  gap: 6px;
+}

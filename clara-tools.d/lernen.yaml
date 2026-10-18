@@ -1,0 +1,40 @@
+# Learning: Clara records preferences and proven ways of doing things. Both go
+# into the per-user profile, which is injected into every chat — next time Clara
+# knows the preference and the shorter way. Users see and edit everything under
+# Settings › "What Clara knows about me".
+tools:
+  - name: merke_praeferenz
+    description: |
+      Halte EINE dauerhafte Vorliebe des Users fest, die du gerade gelernt hast
+      ("mag Tabellen statt Fließtext", "will Antworten knapp", "duzt gern").
+      Nutze es beiläufig, wenn der User eine Vorliebe äußert — nicht nachfragen,
+      nur festhalten. Erscheint künftig in deinem Chat-Kontext.
+    endpoint: "http://localhost:8090/api/claraos/guide/merke_praeferenz"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      additionalProperties: false
+      required: [text]
+      properties:
+        text: { type: string, description: "Die Vorliebe in einem kurzen Satz" }
+
+  - name: gelernter_weg
+    description: |
+      Halte einen BEWÄHRTEN Lösungsweg fest, nachdem eine Aufgabe gut geklappt
+      hat: bei welchem Anliegen welche Werkzeuge/Schritte zum Ziel führten.
+      Beispiel: ausloeser="Bild von einer Person", weg="bild_von_person(person, prompt,
+      staerke 0.4)". Beim nächsten ähnlichen Anliegen findest du so schneller den
+      kurzen Weg, statt zu suchen. Halte den Weg knapp und konkret.
+    endpoint: "http://localhost:8090/api/claraos/guide/gelernter_weg"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      additionalProperties: false
+      required: [ausloeser, weg]
+      properties:
+        ausloeser: { type: string, description: "Kurz: die Art von Anliegen" }
+        weg: { type: string, description: "Kurz: Werkzeuge/Schritte, die funktioniert haben" }

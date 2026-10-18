@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+<defs>
+<linearGradient id="spdfviewer-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7e79"/><stop offset="1" stop-color="#c62a2a"/></linearGradient>
+<radialGradient id="spdfviewer-hi" cx="0.28" cy="0.16" r="0.75"><stop offset="0" stop-color="#ffffff" stop-opacity="0.5"/><stop offset="0.55" stop-color="#ffffff" stop-opacity="0.06"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
+<linearGradient id="spdfviewer-sh" x1="0" y1="0" x2="0" y2="1"><stop offset="0.55" stop-color="#000000" stop-opacity="0"/><stop offset="1" stop-color="#000000" stop-opacity="0.28"/></linearGradient>
+<linearGradient id="spdfviewer-rim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0.7"/><stop offset="0.4" stop-color="#ffffff" stop-opacity="0.08"/><stop offset="1" stop-color="#000000" stop-opacity="0.35"/></linearGradient>
+<linearGradient id="spdfviewer-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dfe6f2"/></linearGradient>
+<filter id="spdfviewer-ds" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="1.4" stdDeviation="1.1" flood-color="#000000" flood-opacity="0.35"/></filter>
+<clipPath id="spdfviewer-c"><path d="M20,0 L44,0 C55,0 64,9 64,20 L64,44 C64,55 55,64 44,64 L20,64 C9,64 0,55 0,44 L0,20 C0,9 9,0 20,0 Z"/></clipPath>
+</defs>
+<path d="M20,0 L44,0 C55,0 64,9 64,20 L64,44 C64,55 55,64 44,64 L20,64 C9,64 0,55 0,44 L0,20 C0,9 9,0 20,0 Z" fill="url(#spdfviewer-bg)"/>
+<path d="M20,0 L44,0 C55,0 64,9 64,20 L64,44 C64,55 55,64 44,64 L20,64 C9,64 0,55 0,44 L0,20 C0,9 9,0 20,0 Z" fill="url(#spdfviewer-hi)"/>
+<path d="M20,0 L44,0 C55,0 64,9 64,20 L64,44 C64,55 55,64 44,64 L20,64 C9,64 0,55 0,44 L0,20 C0,9 9,0 20,0 Z" fill="url(#spdfviewer-sh)"/>
+<ellipse cx="32" cy="4" rx="38" ry="18" fill="#ffffff" opacity="0.13" clip-path="url(#spdfviewer-c)"/>
+<path d="M20,0 L44,0 C55,0 64,9 64,20 L64,44 C64,55 55,64 44,64 L20,64 C9,64 0,55 0,44 L0,20 C0,9 9,0 20,0 Z" fill="none" stroke="url(#spdfviewer-rim)" stroke-width="2" clip-path="url(#spdfviewer-c)"/>
+<g transform="translate(0 1.6)" opacity="0.95"><path d="M17,12 L38,12 L50,24 L50,49 C50,51 48.5,52.5 46.5,52.5 L17.5,52.5 C15.5,52.5 14,51 14,49 L14,15 C14,13.5 15.5,12 17,12 Z" fill="#591313" /><path d="M38,12 L38,21 C38,22.5 39.5,24 41,24 L50,24 Z" fill="#591313" /><rect x="20" y="32" width="24" height="3.5" rx="1.75" fill="#591313" /><rect x="20" y="39" width="24" height="3.5" rx="1.75" fill="#591313" /><rect x="20" y="46" width="15" height="3.5" rx="1.75" fill="#591313" /></g>
+<g filter="url(#spdfviewer-ds)"><path d="M17,12 L38,12 L50,24 L50,49 C50,51 48.5,52.5 46.5,52.5 L17.5,52.5 C15.5,52.5 14,51 14,49 L14,15 C14,13.5 15.5,12 17,12 Z" fill="url(#spdfviewer-g)" /><path d="M38,12 L38,21 C38,22.5 39.5,24 41,24 L50,24 Z" fill="#731818" /><rect x="20" y="32" width="24" height="3.5" rx="1.75" fill="#731818" /><rect x="20" y="39" width="24" height="3.5" rx="1.75" fill="#731818" /><rect x="20" y="46" width="15" height="3.5" rx="1.75" fill="#731818" /></g>
+</svg>

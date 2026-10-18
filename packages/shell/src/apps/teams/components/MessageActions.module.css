@@ -1,0 +1,49 @@
+.actions {
+  position: absolute;
+  top: -16px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px;
+  background: var(--bg-secondary, #181825);
+  border: 1px solid var(--border-color, #313244);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s;
+}
+
+.quickReactions {
+  display: flex;
+  gap: 1px;
+}
+
+.reactionBtn {
+  height: 28px; min-width: 28px; padding: 0 6px; border: none; border-radius: 7px;
+  background: transparent; color: var(--text-secondary, #a6adc8);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+
+.reactionBtn:hover {
+  background: var(--bg-hover, #313244);
+}
+
+.separator {
+  width: 1px;
+  height: 16px;
+  background: var(--border-color, #313244);
+  margin: 0 2px;
+}
+
+.actionBtn {
+  width: 28px; height: 28px; padding: 0; border: none; border-radius: 7px;
+  background: transparent; color: var(--text-secondary, #a6adc8);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+
+.actionBtn:hover {
+  background: var(--bg-hover, #313244);
+}

@@ -1,0 +1,128 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9400;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.overlay {
+  position: fixed;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 580px;
+  max-height: 70vh;
+  background: var(--bg-surface-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-menu);
+  backdrop-filter: var(--blur-menu);
+  z-index: 9500;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm);
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.searchIcon {
+  font-size: 1.125rem;
+  flex-shrink: 0;
+}
+
+.searchInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--font-size-lg);
+  font-family: var(--font-system);
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: var(--text-disabled);
+}
+
+.results {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--gap-sm);
+}
+
+.group {
+  margin-bottom: var(--gap-sm);
+}
+
+.groupLabel {
+  font-size: var(--font-size-xs, 11px);
+  color: var(--text-disabled);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 12px;
+  font-weight: 600;
+}
+
+.resultItem {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  cursor: default;
+  transition: background var(--transition-fast);
+}
+
+.resultItem:hover,
+.resultItem.selected {
+  background: var(--bg-hover);
+}
+
+.resultIcon {
+  font-size: 1.25rem;
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.resultText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.resultTitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.resultSub {
+  font-size: var(--font-size-xs, 11px);
+  color: var(--text-disabled);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.noResults {
+  text-align: center;
+  color: var(--text-disabled);
+  padding: 24px;
+  font-size: var(--font-size-sm);
+}
+
+.quickActions {
+  padding: 20px;
+  text-align: center;
+}
+
+.hint {
+  font-size: var(--font-size-sm);
+  color: var(--text-disabled);
+}

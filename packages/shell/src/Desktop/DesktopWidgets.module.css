@@ -1,0 +1,158 @@
+.widgetLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.widget {
+  position: absolute;
+  pointer-events: auto;
+  cursor: grab;
+  user-select: none;
+  /* Default appearance for skins without their own widget styling */
+  background: rgba(20, 22, 38, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 12px;
+  color: var(--text-primary, #fff);
+  font-family: var(--font-system, system-ui, sans-serif);
+  overflow: hidden;
+  transition: transform 0.18s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+.widget:active,
+.widget.dragging {
+  cursor: grabbing;
+  transform: scale(1.015);
+}
+
+.widget.resizing {
+  transition: none; /* resizing follows the mouse without spring-back */
+}
+
+/* Hover chrome: ⋯ menu top right + resize handle bottom right.
+   position/z-index with !important: the skins set `.aeroWidget > *`
+   to position:relative/z-index:1 (noise overlay stacking) and would
+   otherwise force the chrome into the text flow. */
+.menuBtn {
+  position: absolute !important;
+  z-index: 5 !important;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.875rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.widget:hover .menuBtn {
+  opacity: 1;
+}
+
+.menuBtn:hover {
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+}
+
+/* Grab bar top center — drag zone for every widget (including fully interactive ones).
+   position/z-index !important because of the skin rule .aeroWidget > * (relative/z1).
+   NO large border-radius: it would clip the hit-test area. */
+.dragHandle {
+  position: absolute !important;
+  z-index: 5 !important;
+  top: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 76px;
+  height: 14px;
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  border-radius: 4px;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.55) 1.2px, transparent 1.7px)
+    center / 8px 14px repeat-x;
+}
+
+.widget:hover .dragHandle {
+  opacity: 1;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+.resizeGrip {
+  position: absolute !important;
+  z-index: 5 !important;
+  right: 0;
+  bottom: 0;
+  width: 18px;
+  height: 18px;
+  cursor: nwse-resize;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  /* Two diagonal strokes as the handle look. NO border-radius: rounding
+     cuts away almost all of the hit-test area of the 18px handle
+     (Chromium clips events to its own rounded box); the visual rounding
+     is already done by the widget's overflow:hidden. */
+  background:
+    linear-gradient(135deg, transparent 55%, rgba(255, 255, 255, 0.55) 55%, rgba(255, 255, 255, 0.55) 62%, transparent 62%),
+    linear-gradient(135deg, transparent 72%, rgba(255, 255, 255, 0.55) 72%, rgba(255, 255, 255, 0.55) 79%, transparent 79%);
+}
+
+.widget:hover .resizeGrip {
+  opacity: 1;
+}
+
+.loading {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary, #aaa);
+  font-size: 1.5rem;
+}
+
+.ctxMenu {
+  min-width: 180px;
+  background: var(--bg-surface-solid, #2c2c2c);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  border-radius: var(--radius-md, 8px);
+  padding: 4px;
+  box-shadow: var(--shadow-menu, 0 8px 32px rgba(0, 0, 0, 0.24));
+  z-index: 9999;
+}
+
+.ctxItem {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm, 4px);
+  font-size: var(--font-size-sm, 12px);
+  color: var(--text-primary, #fff);
+  cursor: default;
+  outline: none;
+  transition: background 0.1s ease;
+}
+
+.ctxItem[data-highlighted] {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+.ctxSeparator {
+  height: 1px;
+  margin: 4px 8px;
+  background: var(--border, rgba(255, 255, 255, 0.08));
+}

@@ -1,0 +1,660 @@
+/* ClaraOverlay — clara-glass palette (navy glass, ice-blue rims, Clara cyan).
+   The token bridge below feeds the embedded ClaraChatPanel's var() fallbacks,
+   so the quick chat matches the skin without touching skin machinery. */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: radial-gradient(120% 90% at 50% 100%, #12203e 0%, #0a0f1e 55%, #070a13 100%);
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+
+  /* clara-glass token bridge (consumed by ClaraChatPanel.module.css var()s) */
+  --surface-1: rgba(14, 20, 38, 0.8);
+  --surface-2: rgba(19, 26, 46, 0.68);
+  --surface-3: rgba(147, 197, 253, 0.05);
+  --border-1: rgba(147, 197, 253, 0.12);
+  --border-2: rgba(147, 197, 253, 0.16);
+  --accent: #38bdf8;
+  --accent-1: rgba(56, 189, 248, 0.16);
+  --accent-2: rgba(56, 189, 248, 0.28);
+  --color-text: #f2f6ff;
+  --color-muted: #afc0e0;
+  --radius-window: 12px;
+  --radius-tile: 10px;
+}
+
+/* Soft glow rising from the bottom edge — Clara cyan */
+.glow {
+  position: absolute;
+  left: 50%;
+  bottom: -40%;
+  width: 160%;
+  height: 90%;
+  transform: translateX(-50%);
+  background: radial-gradient(closest-side,
+    rgba(56, 189, 248, 0.35),
+    rgba(34, 211, 238, 0.18) 45%,
+    transparent 70%);
+  filter: blur(8px);
+  opacity: 0.3;
+  pointer-events: none;
+  transition: opacity 0.4s;
+}
+
+.glowActive {
+  opacity: 0.85;
+  animation: glowPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+  0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.7; }
+  50%      { transform: translateX(-50%) scale(1.05); opacity: 1; }
+}
+
+.topBar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+}
+
+.titleRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  /* A <button> (tap the title = history) */
+  border: 0;
+  background: none;
+  padding: 4px 6px 4px 0;
+  margin: 0;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.titleRow:disabled { cursor: default; }
+.titleRow:active:not(:disabled) { opacity: 0.7; }
+/* Warning: chat titles can be long ("Summarize the quarterly report and draft
+   a reply to the team"). Without these three lines the header grew to 128 px
+   in height — measured. Truncate the title, never the buttons. */
+.titleRow { flex: 1 1 auto; min-width: 0; }
+.topBarAktionen { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
+.title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.titleCaret {
+  font-size: 0.75rem;
+  color: var(--color-muted, #afc0e0);
+  line-height: 1;
+}
+.titleLogo {
+  /* Warning: WITHOUT `flex: 0 0 auto` the logo, as a flex child of the
+     title row, shrinks to a thin line — exactly the "distorted icons" that
+     were reported. `width` alone does not protect a flex child; it is only
+     the initial size, and it may still shrink. */
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.45));
+}
+.title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  background: linear-gradient(90deg, #7dd3fc, #a5b4fc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.close {
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(147, 197, 253, 0.16);
+  border-radius: 50%;
+  background: rgba(147, 197, 253, 0.1);
+  color: #f2f6ff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.close:active { background: rgba(147, 197, 253, 0.2); }
+
+
+/* ===== The single orb control ===== */
+.orbArea {
+  position: relative;
+  z-index: 2;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  min-height: 0;
+}
+
+.orbBtn {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s;
+}
+
+.orbBtn:active { transform: scale(0.95); }
+
+/* Clara-cyan conic orb; per-state variants below (data-voice-state) */
+.orb {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #38bdf8, #22d3ee, #a5b4fc, #7dd3fc, #38bdf8);
+  filter: blur(14px);
+  opacity: 0.45;                 /* idle: calm */
+  animation: orbSpin 12s linear infinite;
+  transition: opacity 0.4s;
+}
+
+/* arming: mic opening — brighten, no pulse yet */
+.orbBtn[data-voice-state="arming"] .orb {
+  opacity: 0.7;
+  animation: orbSpin 6s linear infinite;
+}
+
+/* recording: lively spin + pulse (level ring is a separate element) */
+.orbBtn[data-voice-state="recording"] .orb {
+  opacity: 1;
+  animation: orbSpin 4s linear infinite, orbPulse 1.6s ease-in-out infinite;
+}
+
+/* transcribing: shimmer — thinking it over, no ring */
+.orbBtn[data-voice-state="transcribing"] .orb {
+  opacity: 0.85;
+  animation: orbSpin 6s linear infinite, orbShimmer 1.1s ease-in-out infinite;
+}
+
+/* thinking: slow, desaturated */
+.orbBtn[data-voice-state="thinking"] .orb {
+  opacity: 0.6;
+  filter: blur(14px) saturate(60%);
+  animation: orbSpin 8s linear infinite;
+}
+
+/* speaking: pulse in TTS rhythm */
+.orbBtn[data-voice-state="speaking"] .orb {
+  opacity: 1;
+  animation: orbSpin 6s linear infinite, orbPulse 1.2s ease-in-out infinite;
+}
+
+/* error: red rim, calm orb */
+.orbBtn[data-voice-error="true"]::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid #ff5c7a;
+  opacity: 0.9;
+}
+
+.orbIcon {
+  position: relative;
+  z-index: 1;
+  font-size: 2.5rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+}
+.orbLogo {
+  width: 52px;
+  height: 52px;
+}
+
+/* recording: "tap to send" ring */
+.orbBtn[data-voice-state="recording"]::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid rgba(242, 246, 255, 0.55);
+  animation: ring 1.6s ease-in-out infinite;
+}
+
+/* live mic level: cyan ring that grows/brightens with input (--mic-level 0..1),
+   so the user SEES the mic hears them */
+.levelRing {
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  border: 2px solid rgba(56, 189, 248, 0.6);
+  transform: scale(calc(0.98 + var(--mic-level, 0) * 0.22));
+  opacity: calc(0.25 + var(--mic-level, 0) * 0.75);
+  transition: transform 90ms linear, opacity 140ms linear;
+  pointer-events: none;
+}
+
+@keyframes ring {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50%      { transform: scale(1.06); opacity: 1; }
+}
+
+@keyframes orbSpin { to { transform: rotate(360deg); } }
+@keyframes orbPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.12); }
+}
+@keyframes orbShimmer {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
+.statusLine {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-align: center;
+  color: #afc0e0;
+  padding: 0 24px;
+}
+
+.statusError {
+  color: #ff8ba3;
+}
+
+/* Clara-cyan listening bar */
+.sweep {
+  position: relative;
+  z-index: 2;
+  height: 4px;
+  margin: 0 22px 6px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #38bdf8, #22d3ee, #a5b4fc, #38bdf8);
+  background-size: 200% 100%;
+  opacity: 0.3;
+  transition: opacity 0.4s, height 0.3s;
+  animation: sweepMove 6s linear infinite;
+}
+
+.sweepActive {
+  height: 6px;
+  opacity: 1;
+  animation: sweepMove 1.2s linear infinite;
+}
+
+@keyframes sweepMove { to { background-position: 200% 0; } }
+
+/* Hosts the reused ClaraChatPanel (messages + text fallback) */
+.panelWrap {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 46vh;
+  padding: 8px 10px 10px;
+}
+
+.panelWrap > * {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ===== Cobrowse split-view: live app on top, the SAME quick-chat below =====
+   Toggled via data-cobrowse on the overlay so the ClaraChatPanel instance stays
+   mounted (conversation continuity, incl. mid-stream). */
+.splitApp { display: none; }
+.overlay[data-cobrowse="true"] .splitApp {
+  display: block;
+  position: relative;
+  z-index: 2;
+  flex: 1 1 55%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg-window, rgba(14, 20, 38, 0.8));
+  border-bottom: 1px solid rgba(147, 197, 253, 0.16);
+}
+/* the app content fills the pane — but NOT the absolutely-positioned strip */
+.overlay[data-cobrowse="true"] .splitApp > *:not(.statusStrip) { height: 100%; }
+.overlay[data-cobrowse="true"] .glow,
+.overlay[data-cobrowse="true"] .orbArea,
+.overlay[data-cobrowse="true"] .sweep {
+  display: none;
+}
+.overlay[data-cobrowse="true"] .panelWrap {
+  flex: 1 1 45%;
+  max-height: none;
+  min-height: 0;
+}
+
+/* ===== Cobrowse status strip: glass pill over the app's bottom edge showing
+   what Clara is doing right now ("Clara: füge 12 Fotos hinzu …") ===== */
+.statusStrip {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 32px);
+  padding: 7px 14px;
+  border-radius: 9999px;
+  background: rgba(14, 20, 38, 0.8);
+  border: 1px solid rgba(147, 197, 253, 0.16);
+  backdrop-filter: blur(30px) saturate(125%);
+  -webkit-backdrop-filter: blur(30px) saturate(125%);
+  color: #f2f6ff;
+  font-size: 0.7812rem;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.5s;
+}
+.statusStripText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.statusStripDone { opacity: 0; }
+.statusStripDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: linear-gradient(110deg, #38bdf8, #22d3ee);
+  animation: stripPulse 1.4s ease-in-out infinite;
+}
+@keyframes stripPulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.85); }
+  50%      { opacity: 1; transform: scale(1.15); }
+}
+
+/* ═══ Chat sheet with drag resize ═══════════════════════════════════════
+   Snap "voice" = old layout (large orb, chat 46vh).
+   Snap "chat"  = chat-first: the panel fills almost everything, orb area gone,
+                  voice via the mini orb in the top bar. */
+.overlay[data-sheet="chat"]:not([data-cobrowse="true"]) .orbArea,
+.overlay[data-sheet="chat"]:not([data-cobrowse="true"]) .sweep {
+  display: none;
+}
+
+.overlay:not([data-cobrowse="true"]) .panelWrap {
+  height: 46dvh;
+  max-height: none;
+  transition: height 0.22s ease;
+  /* Warning: the bottom anchor was missing here, which caused a second bug:
+     "dragging the handle down shrinks the sheet from the bottom edge instead
+     of from the handle."
+     The sheet is the LAST child of a flex column. Previously
+     `.orbArea { flex: 1 1 auto }` pushed it to the bottom edge; since the
+     three new snap points hide the orb (see below), that spacer was missing —
+     and `justify-content: flex-end` was only added for "strip".
+     Result in "half", measured at 412x915: 367 px of dead space below the
+     input field, and while dragging the handle stood still (dTop = 0) while
+     the bottom edge moved the other way (dBottom = -150 for 150 px of finger
+     travel). With `margin-top: auto`: dead space 0, bottom edge +-0, handle
+     +150 — i.e. following the finger exactly. Measured, not assumed. */
+  margin-top: auto;
+}
+
+.overlay[data-sheet="chat"]:not([data-cobrowse="true"]) .panelWrap {
+  height: calc(100dvh - 64px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+
+.panelWrap[data-dragging="true"] {
+  transition: none !important;
+}
+
+/* The handle is a flex child of panelWrap — it must NOT be inflated to flex:1
+   (the generic .panelWrap > * rule above). */
+.sheetHandle {
+  flex: 0 0 auto !important;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Previously 10/12 px = ~26 px high and thus below the 48 dp target
+     (M3). In the strip it stays tight, every line counts there — see below. */
+  flex-direction: column;
+  gap: 4px;
+  padding: 22px 0 22px; /* 22+4+22 = 48 px — the M3 target, re-measured */
+  cursor: grab;
+  touch-action: none; /* the drag is ours, no scroll/pull-to-refresh */
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sheetHandleBar {
+  width: 44px;
+  height: 4px;
+  border-radius: 4px;
+  background: rgba(147, 197, 253, 0.35);
+}
+
+.sheetHandle:active { cursor: grabbing; }
+.sheetHandle:active .sheetHandleBar { background: rgba(56, 189, 248, 0.7); }
+
+/* Mini orb in the top bar: voice access + status indicator when the large
+   orb is hidden. Same state semantics as the large orb. */
+.miniOrb {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  color: #fff;
+  background: conic-gradient(from 0deg, #38bdf8, #22d3ee, #a5b4fc, #7dd3fc, #38bdf8);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.miniOrb:active { transform: scale(0.93); }
+
+.miniOrb[data-voice-state="recording"] {
+  animation: miniOrbPulse 1.2s ease-in-out infinite;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.55);
+}
+
+.miniOrb[data-voice-state="speaking"] {
+  animation: miniOrbPulse 1.6s ease-in-out infinite;
+}
+
+.miniOrb[data-voice-error="true"] {
+  box-shadow: 0 0 0 2px rgba(255, 139, 163, 0.8);
+}
+
+@keyframes miniOrbPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.1); }
+}
+
+/* Cobrowse split resize: the chat share is freely draggable — the
+   panelWrap gets its height inline (dvh), the app pane fills the rest. */
+.overlay[data-cobrowse="true"] .splitApp {
+  flex: 1 1 auto;
+}
+.overlay[data-cobrowse="true"] .panelWrap {
+  flex: 0 0 auto;
+  max-height: none;
+  transition: height 0.22s ease;
+}
+
+/* ═══ Three snap points + glow while working ═══════════════════════════
+   strip = strip (last line + composer, the app above stays usable),
+   half = default, full = almost everything. "voice" keeps the orb layout on top. */
+.overlay[data-sheet="strip"]:not([data-cobrowse="true"]) .orbArea,
+.overlay[data-sheet="strip"]:not([data-cobrowse="true"]) .sweep,
+.overlay[data-sheet="half"]:not([data-cobrowse="true"]) .orbArea,
+.overlay[data-sheet="half"]:not([data-cobrowse="true"]) .sweep,
+.overlay[data-sheet="full"]:not([data-cobrowse="true"]) .orbArea,
+.overlay[data-sheet="full"]:not([data-cobrowse="true"]) .sweep {
+  display: none;
+}
+.overlay[data-sheet="half"]:not([data-cobrowse="true"]) .panelWrap {
+  height: 52dvh;
+}
+.overlay[data-sheet="full"]:not([data-cobrowse="true"]) .panelWrap {
+  height: calc(100dvh - 64px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+.overlay[data-sheet="strip"]:not([data-cobrowse="true"]) .panelWrap {
+  height: 7.5rem;
+}
+/* In the strip: only the last message visible, actions/chips hidden */
+.overlay[data-sheet="strip"] .panelWrap [class*="msgActions"],
+.overlay[data-sheet="strip"] .panelWrap [class*="folgeChips"],
+.overlay[data-sheet="strip"] .panelWrap [class*="kontextChips"] {
+  display: none;
+}
+/* Outside the strip/sheet: the rest of the area lets taps through to the app */
+.overlay[data-sheet="strip"]:not([data-cobrowse="true"]) {
+  pointer-events: none;
+}
+.overlay[data-sheet="strip"]:not([data-cobrowse="true"]) .panelWrap,
+.overlay[data-sheet="strip"]:not([data-cobrowse="true"]) .topBar {
+  pointer-events: auto;
+}
+
+/* Glow at the top sheet edge while Clara is working (fades out when done) */
+.panelWrap::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent, #38bdf8), #a5b4fc, transparent);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.overlay[data-streamt="true"] .panelWrap::before {
+  opacity: 1;
+  animation: sheetGlow 2s ease-in-out infinite;
+}
+@keyframes sheetGlow { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .overlay[data-streamt="true"] .panelWrap::before { animation: none; opacity: 0.8; }
+}
+
+/* Strip without split: the app underneath stays visible and usable —
+   overlay background transparent, header + sheet anchored at the bottom,
+   header opaque (surface over content). */
+.overlay[data-sheet="strip"]:not([data-cobrowse="true"]) {
+  background: transparent;
+  justify-content: flex-end;
+}
+.overlay[data-sheet="strip"]:not([data-cobrowse="true"]) .glow {
+  display: none;
+}
+.overlay[data-sheet="strip"]:not([data-cobrowse="true"]) .topBar {
+  background: var(--bg-window-solid, #0c1426);
+  border-top: 1px solid var(--border-2, rgba(147, 197, 253, 0.16));
+  padding: 8px 12px;
+}
+.overlay[data-sheet="strip"]:not([data-cobrowse="true"]) .panelWrap {
+  background: var(--bg-window-solid, #0c1426);
+}
+
+/* ═══ A handle you can actually grab ════════════════════════════════════
+   Three ingredients, all from the report "resizing does not work":
+   1. Bottom anchoring (above at .panelWrap) — the actual cause.
+   2. Snap lines while dragging: you should SEE where it will snap to.
+   3. A one-time hint about double-tap, which existed all along but was
+      documented nowhere. */
+
+.rastLinien {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  /* Important: BEHIND the sheet (.panelWrap has z-index 2), not above it:
+     otherwise the strip line cuts straight through the suggestion chips and
+     looks like a rendering bug instead of a help. In the open area above the
+     sheet the lines stay visible — exactly where you drag to. */
+  z-index: 1;
+  pointer-events: none;
+}
+.rastLinien span {
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  height: 1px;
+  border-radius: 1px;
+  background: rgba(147, 197, 253, 0.28);
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.25);
+}
+/* The same heights as the snap points further up — if one changes, the other
+   must change too. That is why they are listed right below each other. */
+.rastLinien span[data-rast="strip"] { bottom: 7.5rem; }
+.rastLinien span[data-rast="half"]  { bottom: 52dvh; }
+.rastLinien span[data-rast="full"]  {
+  bottom: calc(100dvh - 64px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+
+.griffHinweis {
+  font-size: 0.6875rem;
+  line-height: 1;
+  color: var(--color-muted, #afc0e0);
+  opacity: 0.75;
+  pointer-events: none;
+  animation: hinweisAus 4.5s ease forwards;
+}
+@keyframes hinweisAus {
+  0%, 70% { opacity: 0.75; }
+  100%    { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .griffHinweis { animation: none; }
+}
+
+/* In the strip every line counts: the handle stays compact there. Everywhere
+   else it is 48 px high (M3 target). */
+.overlay[data-sheet="strip"] .sheetHandle {
+  padding: 8px 0 8px;
+}
+.sheetHandle[data-zieht="true"] .sheetHandleBar {
+  background: rgba(56, 189, 248, 0.85);
+  width: 56px;
+}
+
+/* Warning: reported as "the buttons in the top bar are stretched, partly
+   oval." Measured: 36 wide, 44 high.
+   The cause is NOT this file but the interaction with the global touch rule
+   in `tokens.css`: with `pointer: coarse` every non-empty button gets
+   `min-height: 44px` — but the matching `min-width` rule only applies to
+   buttons with a bare `<svg>`, and these carry characters (＋ ☰ ✕ 🎤).
+   So 36 × 36 becomes 36 × 44. This is exactly the case `tokens.css`
+   describes for the round color dots — it just had not been noticed here.
+   The right answer is not to override the touch rule (44 px is right for
+   fingers), but to make the buttons round AND large enough.
+   Important: this sits at the END OF THE FILE on purpose: `.miniOrb` is
+   defined further up, and with equal specificity the later rule wins. In
+   the first attempt this block stood before `.miniOrb` — three buttons
+   became round, the fourth stayed 36 × 44. */
+@media (pointer: coarse) {
+  .close,
+  .miniOrb {
+    width: 44px;
+    height: 44px;
+  }
+}

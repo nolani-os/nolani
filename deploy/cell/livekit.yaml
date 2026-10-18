@@ -1,0 +1,16 @@
+# The cell's LiveKit (calls in Teams via Element Call). Template
+# WITHOUT keys: those come from the environment (LIVEKIT_KEYS)
+# — no file containing secrets.
+# Signalling 7880 internal only (Caddy: matrix.<domain>/livekit/ws → wss),
+# media direct: UDP 50100–50200 + TCP 7881 (Hetzner firewall, OpenTofu module).
+port: 7880
+rtc:
+  port_range_start: 50100
+  port_range_end: 50200
+  tcp_port: 7881
+  # The cell has its public IP directly on the interface (Hetzner) — discover it via
+  # STUN so the candidates carry the public address, not the Docker network's.
+  use_external_ip: true
+logging:
+  json: true
+  level: info

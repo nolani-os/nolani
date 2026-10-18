@@ -1,0 +1,11 @@
+[Unit]
+Description=ClaraOS-Zelle: nächtliche Sicherung (vor dem Hetzner-Backup-Fenster)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/claraos
+ExecStart=/opt/claraos/backup.sh
+Nice=10
+IOSchedulingClass=idle

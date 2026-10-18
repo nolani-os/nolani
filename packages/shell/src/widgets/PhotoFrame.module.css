@@ -1,0 +1,94 @@
+.frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* per Config überschreibbar (inline style) */
+  opacity: 1;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Ken-Burns nur bei aktivierter Option; jede Layer-Instanz startet neu */
+.photo.kenburns {
+  animation: kenburns 60s ease-out forwards;
+}
+
+.photoTop {
+  animation: fadein 0.9s ease both;
+}
+
+.photoTop.kenburns {
+  /* Reihenfolge muss zur inline animationDuration "Xms, 60s" passen */
+  animation:
+    fadein 0.9s ease both,
+    kenburns 60s ease-out forwards;
+}
+
+@keyframes fadein {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes kenburns {
+  from { transform: scale(1); }
+  to { transform: scale(1.08); }
+}
+
+.hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.75);
+  text-align: center;
+  padding: 12px;
+}
+
+.hintInline {
+  font-size: 0.6875rem;
+  opacity: 0.6;
+  padding: 4px 0;
+}
+
+.caption {
+  position: absolute;
+  left: 10px;
+  bottom: 8px;
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 6px;
+  padding: 2px 8px;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+  max-width: calc(100% - 20px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clock {
+  position: absolute;
+  right: 12px;
+  top: 8px;
+  font-size: 1.625rem;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}

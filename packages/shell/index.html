@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- interactive-widget=resizes-content: the Android soft keyboard shrinks the
+         layout (like a terminal app) instead of overlaying it — otherwise the keyboard
+         covers fixed bottom UI such as the terminal VirtualKeyBar (Chrome 108+). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, interactive-widget=resizes-content" />
+    <meta name="theme-color" content="#0b1929" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ClaraOS" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <title>ClaraOS</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      /* overflow: clip also forbids PROGRAMMATIC scrolling — otherwise Chrome may
+         silently shift overflow:hidden containers on focus (scrollIntoView of the
+         xterm helper textarea), with no way back. */
+      html, body, #root { width: 100%; height: 100%; overflow: hidden; overflow: clip; overscroll-behavior: none; }
+      body { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/sw.js").catch((e) => console.warn("SW reg failed", e));
+        });
+      }
+    </script>
+  </body>
+</html>

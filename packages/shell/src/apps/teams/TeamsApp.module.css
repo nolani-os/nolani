@@ -1,0 +1,97 @@
+.container {
+  display: grid;
+  grid-template-columns: 48px 240px 1fr 320px;
+  grid-template-rows: 1fr;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-primary, #1e1e2e);
+  color: var(--text-primary, #cdd6f4);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.8125rem;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  color: var(--text-secondary, #a6adc8);
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border-color, #313244);
+  border-top-color: var(--accent-color, #89b4fa);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.emptyState {
+  grid-column: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-secondary, #a6adc8);
+}
+
+.emptyState h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary, #cdd6f4);
+  margin: 0;
+}
+
+.emptyState p {
+  margin: 0;
+}
+
+.hint {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.iframeView {
+  grid-column: 2 / -1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.fullIframe {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: var(--bg-primary, #1e1e2e);
+}
+
+/* Mobile: hide sidebar, TabArea collapses, Rail becomes bottom bar */
+@media (max-width: 768px) {
+  .container {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: 1fr 48px;
+  }
+
+  .emptyState {
+    grid-column: 1;
+  }
+
+  .iframeView {
+    grid-column: 1;
+  }
+}
+
+/* Tablet: hide TabArea */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .container {
+    grid-template-columns: 48px 200px 1fr !important;
+  }
+}

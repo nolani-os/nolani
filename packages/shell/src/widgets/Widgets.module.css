@@ -1,0 +1,281 @@
+/* Shared widget styles. Sit on top of the .aeroWidget glass treatment that
+   skin stylesheets provide. Use plain padding/typography here. */
+
+/* === Clock + Weather === */
+.cw {
+  padding: 16px 18px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.cwTime {
+  font-size: 2.75rem;
+  font-weight: 600;
+  letter-spacing: -1.5px;
+  line-height: 1;
+}
+
+.cwDate {
+  font-size: 0.8125rem;
+  opacity: 0.78;
+  text-transform: capitalize;
+}
+
+.cwWeather {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.875rem;
+}
+
+.cwIcon {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.cwGlyph {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.35));
+}
+
+.cwHiLo {
+  opacity: 0.8;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.cwTemp {
+  font-size: 1.375rem;
+  font-weight: 600;
+}
+
+.cwDesc {
+  opacity: 0.7;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* === System Stats === */
+.sys {
+  padding: 14px 16px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sysTitle {
+  font-size: 0.75rem;
+  letter-spacing: 0.4px;
+  opacity: 0.6;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.sysRow {
+  display: grid;
+  grid-template-columns: 38px 1fr 50px;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.75rem;
+}
+
+.sysLabel { opacity: 0.75; }
+
+.sysTrack {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.sysFill {
+  height: 100%;
+  background: linear-gradient(90deg, #7B9FFF 0%, #A78BFA 100%);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.sysVal {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.sysNet {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6875rem;
+  opacity: 0.7;
+  margin-top: auto;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-variant-numeric: tabular-nums;
+}
+
+/* === Multi-Target-Monitor === */
+.sysScroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sysEmpty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  opacity: 0.65;
+  text-align: center;
+  padding: 8px;
+}
+
+.sysTarget {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sysTarget:last-child {
+  border-bottom: none;
+}
+
+.sysTargetHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.sysDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sysTargetName {
+  font-size: 0.75rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sysKind {
+  font-size: 0.5625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.sysSpark {
+  margin-left: auto;
+  width: 60px;
+  height: 18px;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+/* === Clara Quick === */
+.cq {
+  padding: 14px 16px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cqHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cqLogo {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7B9FFF 0%, #A78BFA 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.cqTitle {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  opacity: 0.92;
+}
+
+.cqInput {
+  flex: 1;
+  resize: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 10px;
+  color: var(--text-primary, #fff);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.cqInput:focus {
+  border-color: rgba(123, 159, 255, 0.7);
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.cqInput::placeholder {
+  color: var(--text-secondary, rgba(255, 255, 255, 0.5));
+}
+
+.cqChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cqChip {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 999px;
+  color: var(--text-primary, #fff);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  padding: 4px 11px;
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.12s ease;
+}
+
+.cqChip:hover:not(:disabled) {
+  background: rgba(123, 159, 255, 0.18);
+  transform: translateY(-1px);
+}
+
+.cqChip:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

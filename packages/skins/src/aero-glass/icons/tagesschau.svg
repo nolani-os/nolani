@@ -1,0 +1,11 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#1E3A8A"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" fill="url(#bg)"/>
+  <rect x="10" y="22" width="44" height="22" rx="3" fill="#FFFFFF"/>
+  <text x="32" y="40" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-weight="900" font-size="14" fill="#1E3A8A" letter-spacing=".5">tagesschau</text>
+</svg>

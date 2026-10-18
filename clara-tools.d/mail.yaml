@@ -1,0 +1,186 @@
+# Mail (Stalwart) — Clara tools. Core tools (no loader module). Endpoints are the
+# API's own mail router (routers/mail.py): per-user IMAP/SMTP with the credential
+# from claraos_app_credentials app_id='mail' (username = FULL address). The tool
+# gateway forwards the trusted caller as X-Claraos-User, hence `auth: none`.
+tools:
+  - name: list_messages
+    description: |
+      List the CURRENT USER's e-mails (newest first) from their own
+      mailbox. mailbox default INBOX; unread_only for "habe ich neue Mails?";
+      query filters by subject OR sender. Returns messages[].uid for
+      get_message/delete_message, plus `total` = number of ALL matching mails.
+      The list is capped (limit, max 50): if `more` is present, say so ("die
+      neuesten 10 von 69") — never present the list length as the total. For
+      "how many" questions use count_messages instead. Open the mail app with
+      claraos_action_open_window(app_id="bulwark-mail").
+    endpoint: "http://localhost:8090/api/claraos/mail/list_messages"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        mailbox: { type: string, default: INBOX }
+        limit: { type: integer, default: 10, description: "max messages (<=50)" }
+        unread_only: { type: boolean, default: false }
+        query: { type: string, description: "filter: subject or sender contains" }
+
+  - name: count_messages
+    description: |
+      Exact number of e-mails per folder: `total` and `unread` (IMAP STATUS, no
+      cap). Use for "wie viele (ungelesene) Mails habe ich?" — one call, no
+      listing. Without `mailbox` every folder is counted and `total_unread`
+      sums them; with `mailbox` (e.g. INBOX) only that folder. Do NOT use it to
+      find or read mails (list_messages / get_message).
+    endpoint: "http://localhost:8090/api/claraos/mail/count_messages"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        mailbox: { type: string, description: "folder name, e.g. INBOX; omit = all folders" }
+
+  - name: create_draft
+    description: |
+      Bevorzuge Entwurf statt send_mail; der Nutzer sendet per Knopf.
+      Save an e-mail as a DRAFT in the user's own drafts folder — nothing is
+      sent. This is the normal way to write a mail for the user: the chat shows
+      the draft as a card with the buttons "Senden", "In Post öffnen" and
+      "Verwerfen", and the user sends it there. So after creating it, do NOT
+      ask "soll ich senden?" and do not call send_mail for it — just say the
+      draft is ready in the card. `to` may be empty for a draft. For a draft
+      to the user THEMSELVES ("an mich", "schick mir das") set
+      `an_mich_selbst: true` and leave `to` empty — the API fills in the
+      account's own address; never look the user's address up in contacts.
+      The result is read back: report success only if `ok` and `verified`
+      are true.
+    endpoint: "http://localhost:8090/api/claraos/mail/create_draft"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        to: { type: array, items: { type: string }, description: "recipient addresses (optional for a draft)" }
+        subject: { type: string }
+        body: { type: string, description: "plain-text body" }
+        cc: { type: array, items: { type: string } }
+        an_mich_selbst: { type: boolean, description: "true = draft addressed to the user's own mail address" }
+      required: [subject, body]
+
+  - name: get_message
+    description: |
+      Read one e-mail (full text body, plus attachments list) by uid from
+      list_messages.
+    endpoint: "http://localhost:8090/api/claraos/mail/get_message"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        uid: { type: string }
+        mailbox: { type: string, default: INBOX }
+      required: [uid]
+
+  - name: list_mailboxes
+    description: |
+      List the user's mail folders (INBOX, Sent, Drafts, …) — use when a mail
+      isn't in INBOX.
+    endpoint: "http://localhost:8090/api/claraos/mail/list_mailboxes"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties: {}
+
+  - name: send_mail
+    description: |
+      Send an e-mail AS the current user (from their own address). Prefer
+      create_draft: the user then sends with one tap on the draft card.
+      ⚠️ GUARDRAIL: sending is irreversible and visible to the recipient —
+      ALWAYS show the user recipient(s), subject and full body first and get an
+      explicit confirmation (ask_user_question) BEFORE calling this tool. Never
+      send without confirmation.
+    endpoint: "http://localhost:8090/api/claraos/mail/send_mail"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        to: { type: array, items: { type: string }, description: "recipient addresses" }
+        subject: { type: string }
+        body: { type: string, description: "plain-text body" }
+        cc: { type: array, items: { type: string } }
+      required: [to, subject, body]
+
+  - name: create_mailbox
+    description: |
+      Create a mail folder (and subscribe to it). Needed before a Post rule can
+      file messages into it — Sieve `fileinto` requires an existing folder.
+      Idempotent: an existing folder is reported as existed=true, not an error.
+      Returns the full folder list afterwards.
+    endpoint: "http://localhost:8090/api/claraos/mail/create_mailbox"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        name: { type: string, description: "folder name, e.g. DMARC" }
+      required: [name]
+
+  - name: get_attachment
+    description: |
+      Read the CONTENT of a text attachment (uid from list_messages).
+      get_message only lists attachment FILENAMES — this returns the text.
+      ZIP and GZIP are unpacked automatically, so DMARC aggregate reports
+      (*.xml.gz, *.zip) can be read directly. Use filename when the mail has
+      several attachments; with exactly one it may be omitted. Binary formats
+      (PDF, images) are not returned as usable text.
+    endpoint: "http://localhost:8090/api/claraos/mail/get_attachment"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        uid: { type: string }
+        mailbox: { type: string, default: INBOX }
+        filename: { type: string, description: "exact or unique substring; omit if only one attachment" }
+      required: [uid]
+
+  - name: delete_message
+    description: |
+      Delete one e-mail by uid (moves to expunge — irreversible). Confirm with
+      the user which mail (uid + subject) before deleting.
+    endpoint: "http://localhost:8090/api/claraos/mail/delete_message"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        uid: { type: string }
+        mailbox: { type: string, default: INBOX }
+      required: [uid]
+
+  - name: mark_read
+    description: |
+      Mark one e-mail as read (uid from list_messages).
+    endpoint: "http://localhost:8090/api/claraos/mail/mark_read"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        uid: { type: string }
+        mailbox: { type: string, default: INBOX }
+      required: [uid]
+
+  - name: mark_unread
+    description: |
+      Mark one e-mail as unread again.
+    endpoint: "http://localhost:8090/api/claraos/mail/mark_unread"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        uid: { type: string }
+        mailbox: { type: string, default: INBOX }
+      required: [uid]

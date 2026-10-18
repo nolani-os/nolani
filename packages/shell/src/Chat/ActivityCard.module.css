@@ -1,0 +1,134 @@
+/* Live activity card under the in-flight assistant message. */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--surface-2, rgba(28, 30, 38, 0.92));
+  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.08));
+  border-radius: 10px;
+  font-size: 0.7812rem;
+  color: var(--color-text, #e7e7eb);
+  animation: activityFadeIn 200ms ease both;
+}
+
+@keyframes activityFadeIn {
+  0%   { opacity: 0; transform: translateY(-2px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spinner {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(110deg, #199fd7, #99bd3c, #fc7942, #ee5091, #8a50d8);
+  animation: activityPulse 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes activityPulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.85); }
+  50%      { opacity: 1;   transform: scale(1.15); }
+}
+
+.phaseLabel {
+  flex: 1;
+  font-weight: 500;
+  color: var(--color-text, #e7e7eb);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.timer {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.6875rem;
+  color: var(--color-muted, #8c8e98);
+}
+
+.subRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 16px;
+  font-size: 0.7188rem;
+  color: var(--color-muted, #aab0bd);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.subRow .icon {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+}
+
+.subRow .label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subRow .duration {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.6562rem;
+  opacity: 0.75;
+}
+
+.slowNotice {
+  margin-top: 4px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: rgba(255, 184, 80, 0.10);
+  border-left: 2px solid rgba(255, 184, 80, 0.6);
+  color: rgba(255, 200, 130, 0.95);
+  font-size: 0.6875rem;
+}
+
+/* TodoWrite plan list */
+.todoBox {
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(96, 205, 255, 0.06);
+  border-left: 2px solid rgba(96, 205, 255, 0.5);
+}
+
+.todoTitle {
+  font-weight: 600;
+  font-size: 0.6875rem;
+  color: var(--color-muted, #aab0bd);
+  margin-bottom: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.todoItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.7188rem;
+  padding: 1px 0;
+}
+
+.todoIcon { flex-shrink: 0; font-size: 0.6875rem; }
+.todoText {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.todo_completed .todoText { color: var(--color-muted, #8c8e98); text-decoration: line-through; }
+.todo_in_progress .todoText { color: var(--color-text, #e7e7eb); font-weight: 500; }
+.todo_pending .todoText { color: var(--color-muted, #aab0bd); }
+
+/* finished steps stay visible but step back */
+.subRowDone { opacity: 0.72; }

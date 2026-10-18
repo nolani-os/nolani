@@ -1,0 +1,26 @@
+# CELL ONLY — the user's third-party services (Dienste hub tiles, routers/apps.py).
+# Clara can list the services THIS user has and open one in their own browser (logged in,
+# like the tile). Adding, changing or removing services stays with a human admin.
+tools:
+  - name: list_services
+    description: "The third-party services the user has as tiles in ClaraOS (Dienste): id, name, url."
+    endpoint: "http://localhost:8090/api/claraos/apps/dienste"
+    method: GET
+    auth: none
+    schema:
+      type: object
+      properties: {}
+
+  - name: open_service
+    description: |
+      Open one of the user's services (id from list_services) in their own browser, logged
+      in like the tile. Then tell the user to look at the "Browser" tile.
+    endpoint: "http://localhost:8090/api/claraos/apps/dienste/oeffnen"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string }
+      required: [id]

@@ -1,0 +1,64 @@
+.desktop {
+  position: absolute;
+  inset: 0;
+}
+
+.wallpaper {
+  position: absolute;
+  inset: 0;
+  background: var(--wallpaper, linear-gradient(135deg, #000428 0%, #004e92 100%));
+}
+
+/* === Radix Context Menu === */
+.contextMenu {
+  min-width: 220px;
+  background: var(--bg-surface-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  box-shadow: var(--shadow-menu);
+  backdrop-filter: var(--blur-menu);
+  -webkit-backdrop-filter: var(--blur-menu);
+  z-index: 9999;
+  animation: menuIn 0.15s var(--transition-slow, ease);
+}
+
+@keyframes menuIn {
+  from { opacity: 0; transform: scale(0.97) translateY(4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.contextItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  cursor: default;
+  outline: none;
+  user-select: none;
+  transition: background var(--transition-fast, 0.1s);
+}
+
+.contextItem[data-highlighted] {
+  background: var(--bg-hover);
+}
+
+.contextItem[data-disabled] {
+  color: var(--text-disabled);
+  pointer-events: none;
+}
+
+.contextArrow {
+  color: var(--text-secondary);
+  margin-left: 16px;
+  font-size: 0.875rem;
+}
+
+.contextSeparator {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 8px;
+}

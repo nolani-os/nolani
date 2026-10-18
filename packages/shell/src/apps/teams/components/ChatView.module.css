@@ -1,0 +1,92 @@
+/* Chat view — header + timeline, no tabs. */
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  background: var(--bg-primary);
+}
+
+.kopf {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+/* Container for image + badge — the badge is absolutely positioned. */
+.bild {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+.name {
+  font-size: var(--teams-font-md, 15px);
+  font-weight: 600;
+  color: var(--text-primary, #cdd6f4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.schloss {
+  display: inline-flex;
+  color: var(--text-secondary, #a6adc8);
+}
+
+.fueller { flex: 1; }
+
+.knopf {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary, #a6adc8);
+  cursor: pointer;
+}
+
+.knopf:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.06));
+  color: var(--text-primary, #cdd6f4);
+}
+
+.knopfAktiv {
+  background: var(--accent-bg);
+  color: var(--accent-color);
+}
+
+.zahl { font-size: var(--teams-font-xs, 11px); }
+
+.koerper {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.verlauf {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.seite {
+  width: 280px;
+  flex: none;
+  border-left: 1px solid var(--border-color);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+  .seite { display: none; }
+}

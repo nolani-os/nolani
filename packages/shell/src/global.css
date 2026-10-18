@@ -1,0 +1,182 @@
+/* ClaraOS Global Styles */
+
+:root {
+  /* Not hard-wired to `dark`: otherwise the parts the browser draws itself —
+     scrollbars, sliders, selects, date fields — stay dark even under a LIGHT
+     skin (e.g. a slider showing as a dark bar on a white background).
+     The SkinManager sets the value based on the measured brightness of the
+     skin; only the fallback is defined here. */
+  color-scheme: var(--claraos-color-scheme, dark);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  /* The AppearanceManager sets --font-ui from the settings; without a
+     choice it stays at the skin value (--font-system). */
+  font-family: var(--font-ui, var(--font-system, system-ui, sans-serif));
+  font-size: var(--font-size-base, 14px);
+  font-weight: var(--font-weight-normal, 400);
+  color: var(--text-primary, #fff);
+  background: var(--bg-desktop, #000);
+  user-select: none;
+  -webkit-user-select: none;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Allow text selection inside window content */
+.window-content-selectable {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* Scrollbar – thin, translucent (Win11 style) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--text-disabled, #6b6b6b);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary, #c5c5c5);
+}
+
+/* Focus ring for accessibility — OUTSIDE and without a fixed radius.
+   With -2px the ring sat inside and clipped at every round shape; a fixed
+   --radius-sm turned a pill into a ring with corners. */
+:focus-visible {
+  outline: 2px solid var(--accent, #60cdff);
+  outline-offset: 2px;
+}
+
+/* Remove default button styles */
+button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+
+
+/* Acrylic surface mixin via class */
+.acrylic {
+  backdrop-filter: var(--blur-acrylic);
+  -webkit-backdrop-filter: var(--blur-acrylic);
+}
+
+/* Mica surface (heavier blur) */
+.mica {
+  backdrop-filter: var(--blur-mica);
+  -webkit-backdrop-filter: var(--blur-mica);
+}
+
+/* === Accessibility / appearance ===
+   Set by the AppearanceManager from the settings module "appearance".
+   The device's system setting still applies in addition — anyone with
+   prefers-reduced-motion set gets it even without our switch. */
+
+:root[data-reduce-motion="1"] *,
+:root[data-reduce-motion="1"] *::before,
+:root[data-reduce-motion="1"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+:root[data-high-contrast="1"] {
+  --border: rgba(255, 255, 255, 0.55);
+  --border-window: rgba(255, 255, 255, 0.45);
+  --text-secondary: var(--text-primary);
+}
+
+:root[data-high-contrast="1"] :focus-visible {
+  outline: 2px solid var(--border-focus, #3daee9);
+  outline-offset: 2px;
+}
+
+/* Tooltips can be turned off (Settings → General behavior).
+   The browser renders title attributes itself — we can only hide our own
+   tooltip elements. */
+:root[data-hide-tooltips="1"] [class*="tooltip"],
+:root[data-hide-tooltips="1"] [role="tooltip"] {
+  display: none !important;
+}
+
+/* ── Form elements, once for all apps ─────────────────────────────────────
+   Without these, every app builds its own inputs or uses the browser's raw
+   ones (which look like Windows 95). Element rules have the lowest
+   specificity — any app class still wins. */
+select:not([multiple]):not([size]),
+input[type="text"], input[type="search"], input[type="email"], input[type="password"],
+input[type="url"], input[type="number"], input[type="tel"], input[type="date"], input[type="time"] {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border-1, var(--border, rgba(229,231,235,.18)));
+  border-radius: var(--radius-md, 10px);
+  background: var(--surface-2, var(--bg-surface, rgba(127,127,127,.08)));
+  color: var(--text-primary, #e5e7eb);
+  font: inherit;
+  font-size: 0.875rem;
+  accent-color: var(--accent, #60cdff);
+}
+input[type="number"] { font-variant-numeric: tabular-nums; }
+select:not([multiple]):not([size]) {
+  appearance: none; -webkit-appearance: none;
+  padding-right: 34px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239aa8c2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m7 10 5-5 5 5M7 14l5 5 5-5'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px;
+  cursor: pointer;
+}
+select:not([multiple]):not([size]):hover,
+input[type="text"]:hover, input[type="search"]:hover, input[type="number"]:hover {
+  border-color: color-mix(in srgb, var(--text-primary, #e5e7eb) 30%, transparent);
+}
+textarea {
+  padding: 8px 12px;
+  border: 1px solid var(--border-1, var(--border, rgba(229,231,235,.18)));
+  border-radius: var(--radius-md, 10px);
+  background: var(--surface-2, var(--bg-surface, rgba(127,127,127,.08)));
+  color: var(--text-primary, #e5e7eb);
+  font: inherit; font-size: 0.875rem;
+}
+input[type="range"] { accent-color: var(--accent, #60cdff); height: 24px; }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--accent, #60cdff); width: 16px; height: 16px; }
+/* Switches: only what declares itself a switch (role=switch) — checkboxes
+   in lists stay checkboxes, otherwise the meaning flips. */
+input[type="checkbox"][role="switch"] {
+  appearance: none; -webkit-appearance: none;
+  position: relative;
+  width: 40px; height: 22px; margin: 0;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--surface-3, rgba(127,127,127,.2));
+  border: 1px solid var(--border-1, rgba(229,231,235,.18));
+  cursor: pointer;
+  transition: background-color .15s, border-color .15s;
+}
+input[type="checkbox"][role="switch"]::before {
+  content: "";
+  position: absolute; top: 2px; left: 2px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--text-2, #9aa8c2);
+  transition: transform .15s ease, background-color .15s;
+}
+input[type="checkbox"][role="switch"]:checked { background: var(--accent, #60cdff); border-color: var(--accent, #60cdff); }
+input[type="checkbox"][role="switch"]:checked::before { transform: translateX(18px); background: var(--on-accent, #101418); }
+input[type="checkbox"][role="switch"]:disabled { opacity: .45; cursor: default; }
+input[type="color"] { width: 32px; height: 32px; padding: 0; border: none; border-radius: 50%; background: transparent; cursor: pointer; }
+input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+input[type="color"]::-webkit-color-swatch { border: 2px solid var(--border-1, rgba(229,231,235,.24)); border-radius: 50%; }

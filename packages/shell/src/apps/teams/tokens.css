@@ -1,0 +1,43 @@
+/* Teams app token bridge — maps the app-internal variable names to the
+ * ClaraOS skin tokens (applySkin() sets them on :root). Before this bridge,
+ * --bg-primary/--accent-color/--border-color were defined nowhere, so the
+ * Catppuccin fallbacks applied everywhere and the app ignored the clara-glass
+ * look entirely. The Catppuccin values remain as a fallback chain for when
+ * no skin engine is running (e.g. Storybook/tests).
+ *
+ * --text-primary / --text-secondary / --bg-hover / --bg-active already match
+ * the skin names directly and need no bridge. */
+
+[data-teams-app] {
+  --bg-primary: var(--bg-window, var(--bg-surface-solid, #1e1e2e));
+  --bg-secondary: var(--surface-2, color-mix(in srgb, var(--bg-surface-solid, #1e1e2e) 88%, black));
+  --bg-tertiary: var(--surface-1, color-mix(in srgb, var(--bg-surface-solid, #1e1e2e) 74%, black));
+  --accent-color: var(--accent, #89b4fa);
+  --accent-hover-color: var(--accent-hover, #b4befe);
+  --accent-bg: var(--accent-bg, rgba(137, 180, 250, 0.16));
+  --border-color: var(--border, #313244);
+
+  /* Status — close to the skin where possible, Catppuccin as fallback */
+  --danger: var(--status-danger, var(--close-hover, #f38ba8));
+  --warning: var(--status-warn, #f9e2af);
+  --success: var(--status-ok, #a6e3a1);
+
+  /* Type ramp (4px-grid compatible, compact Teams density) */
+  --teams-font-xs: 11px;
+  --teams-font-sm: 13px;
+  --teams-font-md: 15px;
+  --teams-font-lg: 20px;
+
+  font-family: var(
+    --font-system,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif
+  );
+  color-scheme: dark;
+}
+
+/* Bridge to the newer shell tokens */
+[data-teams-app] { --on-accent-color: var(--on-accent, #101418); }

@@ -1,0 +1,728 @@
+# Idea suite + knowledge suite (idea pipeline + personal knowledge base) — Clara tools.
+# One backend router (routers/knowledge.py, flat /clara/* routes) behind two tiles
+# (app_id "ideas" = pipeline, app_id "knowledge" = collections/notes). Core tools
+# (no loader module). The tool gateway forwards the trusted caller as
+# X-Claraos-User, hence `auth: none`. Clara always acts AS the chat user (objects
+# belong to the user); the static header `X-Claraos-Actor: clara` only sets the
+# attribution ("clara" in the history).
+# Scope: this is the user's PERSONAL idea/knowledge base (ideas, visions, notes,
+# belongings) — not operational system knowledge.
+tools:
+  - name: capture_idea
+    description: |
+      Capture a NEW idea for the USER's personal idea pipeline (Ideen app).
+      Use whenever the user mentions an idea, a "was wäre wenn", a project
+      thought or something they want to explore later. Creates it as stage
+      "spark". Visibility is private; family only on the user's explicit
+      request (with teilen_bestaetigt=true). AFTER capturing, ask the user
+      1-2 smart follow-up questions that help develop the idea; persist their
+      answers with update_object (extend the body) so nothing is lost.
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/capture_idea"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        title: { type: string, description: "short, catchy idea title (German)" }
+        body: { type: string, description: "markdown: everything the user said about it, verbatim details welcome" }
+        visibility: { type: string, enum: [private, family], default: private, description: "private (default). family ONLY if the user explicitly asked to share with the family" }
+        teilen_bestaetigt: { type: boolean, default: false, description: "true ONLY when the user explicitly asked to share this with the family in this conversation" }
+      required: [title]
+
+  - name: list_ideas
+    description: |
+      List the user's ideas (their own + family-shared), newest first. Filter
+      by stage (spark=raw flash, developing=being developed, elaborated=fully
+      shaped, planned=handed to planner, done, archived) or a text query.
+      Returns ids for get_object/update_object.
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/list_ideas"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        stage: { type: string, enum: [spark, developing, elaborated, planned, done, archived] }
+        query: { type: string, description: "fulltext filter" }
+        limit: { type: integer, default: 20 }
+
+  - name: get_object
+    description: |
+      Read one object of the user's idea/knowledge base in full: markdown
+      body, properties, linked objects (ideas/visions) and the recent activity
+      trail (comments, questions, answers, stage changes). ALWAYS call this
+      before helping the user develop an idea further.
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/get_object"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        object_id: { type: string, description: "UUID from list_ideas/search_knowledge_db" }
+      required: [object_id]
+
+  - name: create_object
+    description: |
+      Create a structured object in the user's personal knowledge base.
+      Built-in types: idea, vision, note, research (Recherche-Fund),
+      item (Inventar/Besitz), comparison (Shopping-Vergleichs-Option),
+      trip (Reise) — plus any user-defined type (define_type). Put structured
+      facts into properties (keys per the type's schema, e.g. comparison:
+      preis/url/bewertung/pro/contra), prose into body (markdown). Pass
+      collection_id to file it into a Sammlung directly. USE THIS to persist
+      research/shopping results as one object per finding/option — that's how
+      the user gets a Notion-like comparison table. UI: non-idea objects live
+      in the Knowledge Suite — show one via claraos_action_navigate_to(
+      app_id="knowledge", pattern_key="object", params={"object_id": <id>});
+      ideas/visions live in the Idea Suite (app_id="ideas").
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/create_object"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        type: { type: string, description: "type slug, e.g. research | item | comparison | trip | note" }
+        title: { type: string }
+        body: { type: string, description: "markdown" }
+        properties: { type: object, description: "flat key→value facts, e.g. {\"preis\": 499, \"url\": \"…\"}" }
+        visibility: { type: string, enum: [private, family], default: private, description: "private (default). family ONLY if the user explicitly asked to share with the family" }
+        teilen_bestaetigt: { type: boolean, default: false, description: "true ONLY when the user explicitly asked to share this with the family in this conversation" }
+        collection_id: { type: string, description: "optional: UUID from list_collections/create_collection" }
+      required: [type, title]
+
+  - name: list_collections
+    description: |
+      List the user's Sammlungen (collections) in the Knowledge Suite — id,
+      name, default_type, item_count. Collections group typed objects (e.g. one
+      per research topic, shopping comparison, trip, inventory room).
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/list_collections"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties: {}
+
+  - name: create_collection
+    description: |
+      Für Reisen, Projekte und Recherchen IMMER eine Vorlage verwenden
+      (create_collection_from_template) statt Felder einzeln anzulegen.
+      Create a Sammlung (collection) to group objects — e.g. "Kaufberatung
+      E-Bike" (default_type comparison), "Recherche Solaranlage" (research),
+      "Inventar Keller" (item). Then add objects via create_object with
+      collection_id. Visibility is ALWAYS private unless the user explicitly
+      asks to share it with the family — never choose family on your own, not
+      even for trips or shared topics. Sharing needs visibility=family plus
+      teilen_bestaetigt=true; without the flag the server keeps it private and
+      says so in `hinweis`. Show the result via claraos_action_navigate_to(
+      app_id="knowledge", pattern_key="collection",
+      params={"collection_id": <id>}).
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/create_collection"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        name: { type: string }
+        icon: { type: string, description: "single emoji" }
+        description: { type: string }
+        default_type: { type: string, description: "type slug new items default to" }
+        visibility: { type: string, enum: [private, family], default: private, description: "private (default). family ONLY if the user explicitly asked to share with the family" }
+        teilen_bestaetigt: { type: boolean, default: false, description: "true ONLY when the user explicitly asked to share this with the family in this conversation" }
+      required: [name]
+
+  - name: create_collection_from_template
+    description: |
+      Für Reisen, Projekte und Recherchen IMMER eine Vorlage verwenden statt
+      Felder einzeln anzulegen. Creates a complete Sammlung in ONE call:
+      collection + fields + saved views + an overview note. Templates:
+      reise (trip: Kategorie, Priorität, Geplant am, Region, km, Fahrzeit,
+      Zeitbedarf, Eintritt, Status, Link; views table by date, calendar, board
+      by priority; overview note of type trip with Tagesplan, Buchungen
+      checklist, Packliste, Kosten, offene Fragen) · projekt (status board,
+      due dates, milestones) · recherche (sources with status and rating,
+      result note). Always private — sharing is a separate, explicit step.
+      `optionen` fills the template's free choice field (reise: regions,
+      projekt: areas, recherche: topics). Afterwards add entries with
+      create_object(collection_id=id, properties using the field keys) and
+      fill the overview with update_object(overview_id). Report success only if
+      `ok` and `verified` are true; show it with claraos_action_navigate_to(
+      app_id="knowledge", pattern_key="collection", params={"collection_id": id}).
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/create_collection_from_template"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        template: { type: string, enum: [reise, projekt, recherche] }
+        name: { type: string, description: "collection name, e.g. 'Summer trip 2026'" }
+        ziel: { type: string, description: "trip destination / project goal / research question" }
+        von: { type: string, description: "start date YYYY-MM-DD (trip: one Tagesplan row per day)" }
+        bis: { type: string, description: "end date YYYY-MM-DD" }
+        beschreibung: { type: string, description: "one or two sentences for the overview note" }
+        optionen: { type: array, items: { type: string }, description: "choices for the free select field (regions / areas / topics)" }
+        icon: { type: string, description: "single emoji, optional" }
+      required: [template, name]
+
+  - name: add_to_collection
+    description: Add an existing object to a Sammlung (both by UUID).
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/add_to_collection"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        collection_id: { type: string }
+        object_id: { type: string }
+      required: [collection_id, object_id]
+
+  - name: define_type
+    description: |
+      Define a NEW object type with a property schema when no built-in type
+      fits (e.g. "rezept" with zutaten/dauer/portionen). properties is a list
+      of {key, label, kind} with kind one of text|number|date|select|
+      multi_select|url|checkbox (select needs options: [..]). Reuse built-in
+      types when possible; ask the user before inventing exotic ones.
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/define_type"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        id: { type: string, description: "slug: lowercase, a-z0-9-_" }
+        name: { type: string, description: "German display name" }
+        icon: { type: string, description: "single emoji" }
+        properties:
+          type: array
+          items:
+            type: object
+            properties:
+              key: { type: string }
+              label: { type: string }
+              kind: { type: string, enum: [text, number, date, select, multi_select, url, checkbox] }
+              options: { type: array, items: { type: string } }
+            required: [key, label, kind]
+      required: [id, name]
+
+  - name: update_object
+    description: |
+      Update an object (only passed fields change). Use to extend an idea's
+      body after discussing it, set structured properties, or advance the
+      stage as the idea matures: spark → developing → elaborated → planned.
+      Only the owner's objects can be updated.
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/update_object"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        object_id: { type: string }
+        title: { type: string }
+        body: { type: string, description: "full replacement markdown body — read with get_object first, then extend" }
+        properties: { type: object }
+        stage: { type: string, enum: [spark, developing, elaborated, planned, done, archived] }
+        visibility: { type: string, enum: [private, family], description: "change only on the user's explicit request; family needs teilen_bestaetigt=true" }
+        teilen_bestaetigt: { type: boolean, default: false, description: "true ONLY when the user explicitly asked to share this with the family in this conversation" }
+      required: [object_id]
+
+  - name: add_insight
+    description: |
+      Append an entry to an object's activity trail (shows as "Clara" in the
+      Idea/Knowledge Suite): kind=analysis (your assessment), question (a follow-up for
+      the user), answer (persisting the user's answer), comment. Use this to
+      make the idea-development dialog durable — insights belong on the
+      OBJECT, not just in the chat.
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/add_insight"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        object_id: { type: string }
+        content: { type: string, description: "markdown, German" }
+        kind: { type: string, enum: [analysis, question, answer, comment], default: analysis }
+      required: [object_id, content]
+
+  - name: link_objects
+    description: |
+      Link two objects of the user's idea/knowledge base (directed):
+      rel=part_of_vision (idea belongs to a vision), relates_to,
+      inspired_by, duplicates. Use when ideas connect to each other or to a
+      bigger vision — that's how the user's Gesamtbild emerges.
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/link_objects"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        from_id: { type: string }
+        to_id: { type: string }
+        rel: { type: string, enum: [relates_to, part_of_vision, inspired_by, duplicates], default: relates_to }
+      required: [from_id, to_id]
+
+  - name: promote_idea_to_plan
+    description: |
+      Hand a matured idea (stage elaborated) over to the Planner: creates a
+      Vikunja project WITH a task list in one go. Derive 3-8 concrete tasks
+      from the idea's body/discussion; depends_on uses 1-based indices of
+      earlier tasks. Only do this when the user agrees the idea is ready.
+      Afterwards the idea is stage=planned and linked to the project. Show
+      it via claraos_action_navigate_to(app_id="planner", pattern_key="gantt",
+      params={"project_id": <id>}).
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/promote_idea_to_plan"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        object_id: { type: string, description: "the idea's UUID" }
+        project_title: { type: string, description: "defaults to the idea title" }
+        project_description: { type: string }
+        tasks:
+          type: array
+          items:
+            type: object
+            properties:
+              title: { type: string }
+              description: { type: string, description: "markdown; - [ ] lines for checklists" }
+              due_date: { type: string, description: "ISO 8601 datetime" }
+              depends_on: { type: array, items: { type: integer }, description: "1-based indices of earlier tasks" }
+            required: [title]
+      required: [object_id, tasks]
+
+  - name: get_backlinks
+    description: |
+      P0 v2: List which objects LINK TO a given object (backlinks, visibility-
+      filtered). Use when the user asks "wo habe ich das erwähnt/verlinkt?"
+      or to understand how a note connects to the rest of the knowledge base.
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/get_backlinks"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        object_id: { type: string }
+      required: [object_id]
+
+  - name: move_object
+    description: |
+      P0 v2: File an object as a SUBPAGE of another object (page hierarchy),
+      or move it back to top level (parent_id=null). Use when the user wants
+      to organize notes into a tree ("häng das unter X").
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/move_object"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        object_id: { type: string }
+        parent_id: { type: string, description: "target parent object UUID; omit/null for top level" }
+      required: [object_id]
+
+  - name: clip_url
+    description: |
+      Save a WEB PAGE into the user's knowledge base: fetches the page,
+      extracts the article as markdown and stores it as a `research` object
+      with the source URL in properties. Use when the user shares a link and
+      wants to keep it ("merk dir den Artikel", "speicher das für später"),
+      or when you found a source during research and want it preserved.
+      Only PUBLIC http/https pages — internal/LAN addresses are refused by the
+      server for security reasons. Afterwards the clip is searchable and you
+      can summarize it with update_object/add_insight.
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/clip_url"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        url: { type: string }
+        note: { type: string, description: "why this is worth keeping (German)" }
+        collection_id: { type: string, description: "optionally file into a Sammlung" }
+      required: [url]
+
+  - name: comment_on_object
+    description: |
+      P3: Comment on an object — optionally anchored to a SPECIFIC PASSAGE.
+      Pass `anchor_text` with the EXACT wording from the object's body (quote
+      it literally, don't paraphrase); the comment then appears next to that
+      passage and survives later edits. Without anchor_text it is a comment on
+      the whole object. Use this for review-style feedback („hier fehlt ein
+      Beleg") — it is more visible to the user than add_insight.
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/comment_on_object"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        object_id: { type: string }
+        body: { type: string, description: "markdown, German" }
+        anchor_text: { type: string, description: "verbatim quote from the body" }
+      required: [object_id, body]
+
+  - name: query_collection
+    description: |
+      P2: Query the ROWS of a Sammlung with filters and sorting — the proper
+      way to answer "welche Reisen kosten mehr als 500?" or "zeig mir offene
+      Recherchen". `filters` is a tree: {"op":"and"|"or","children":[…]} where
+      each leaf is {"key":"<field key>","op":"<operator>","value":…}.
+      Operators by field type — text/url: is, is_not, contains, not_contains,
+      starts_with, ends_with, is_empty, is_not_empty · number/rollup: eq, neq,
+      gt, gte, lt, lte · date: on, before, after, on_or_before, on_or_after,
+      between (value=[von,bis]); relative values "today"/"yesterday"/
+      {"days_ago":n} · select: is, is_not · multi_select/relation:
+      contains_any, contains_all, contains_none (value = list) · checkbox:
+      is_checked, is_unchecked. Get the field keys from list_collections →
+      the response of this call also returns them. Sorts: [{"key":…,"dir":"asc"|"desc"}].
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/query_collection"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        collection_id: { type: string }
+        filters: { type: object, description: "filter tree; omit for all rows" }
+        sorts: { type: array, items: { type: object } }
+        limit: { type: integer, default: 25 }
+      required: [collection_id]
+
+  - name: define_field
+    description: |
+      P2/P6: Add a COLUMN to an existing Sammlung (for a new trip, project or
+      research use create_collection_from_template instead). field_type: 0 text, 1 number, 2 date,
+      3 select (pass options), 4 multi_select, 5 url, 6 checkbox, 7 checklist,
+      9 person, 10 relation (pass target_collection), 11 rollup (pass
+      relation_field + target_field + aggregate sum|avg|min|max|count),
+      14 formula (pass expression).
+      Formula syntax: prop("feld"), rollup("feld"), if(cond, a, b), round(x, n),
+      min/max/abs/len/concat/contains/empty, today(), days_between(a, b),
+      days_until(d), + - * / and comparisons. Example:
+      `if(prop("budget") > 1000, concat("teuer: ", prop("ziel")), "ok")`.
+      Formulas are validated server-side; unsafe expressions are rejected.
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/define_field"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        collection_id: { type: string }
+        key: { type: string, description: "property key, lowercase a-z0-9_-" }
+        name: { type: string, description: "German column label" }
+        field_type: { type: integer, default: 0 }
+        options: { type: array, items: { type: string }, description: "for select/multi_select" }
+        target_collection: { type: string, description: "for relation (10)" }
+        relation_field: { type: string, description: "rollup (11): key of the relation column" }
+        target_field: { type: string, description: "rollup (11): key to aggregate in the target" }
+        aggregate: { type: string, description: "rollup (11): sum|avg|min|max|count" }
+        expression: { type: string, description: "formula (14)" }
+      required: [collection_id, key, name]
+
+  - name: create_view
+    description: |
+      P2: Save a named VIEW on a Sammlung so the user can come back to it —
+      layout table|board|gallery|list|calendar|timeline, with stored filters
+      and sorting (same syntax as query_collection). board needs group_by
+      (a select column), calendar needs date_field.
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/create_view"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        collection_id: { type: string }
+        name: { type: string }
+        layout: { type: string, enum: [table, board, gallery, list, calendar, timeline], default: table }
+        filters: { type: object }
+        sorts: { type: array, items: { type: object } }
+        group_by: { type: string }
+        date_field: { type: string }
+      required: [collection_id, name]
+
+  - name: set_relation
+    description: |
+      P2: Link objects through a relation column (field_type 10). Replaces the
+      whole set for that cell. Targets the user cannot see are silently
+      dropped. The link shows up in the target's backlinks automatically.
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/set_relation"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        object_id: { type: string }
+        field_key: { type: string }
+        target_ids: { type: array, items: { type: string } }
+      required: [object_id, field_key, target_ids]
+
+  - name: list_templates
+    description: "P5: List available Vorlagen (templates) with their target type."
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/list_templates"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema: { type: object, properties: {} }
+
+  - name: create_from_template
+    description: |
+      P5: Create an object FROM a template (body + default properties come
+      along). Without template_id the default template of `type` is used —
+      prefer this over create_object when a template exists for that type.
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/create_from_template"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        title: { type: string }
+        template_id: { type: string }
+        type: { type: string, description: "use the default template of this type" }
+        collection_id: { type: string, description: "optionally file it into a Sammlung" }
+      required: [title]
+
+  - name: duplicate_object
+    description: "P5: Copy an object (content + properties + Sammlung membership)."
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/duplicate_object"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        object_id: { type: string }
+      required: [object_id]
+
+  - name: get_backmentions
+    description: |
+      P5: Find UNLINKED mentions — objects whose text contains this object's
+      title but which are not linked to it yet. Useful to offer "soll ich das
+      verknüpfen?" (then use update_object to insert a [Titel](#kb-<uuid>) link).
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/get_backmentions"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        object_id: { type: string }
+      required: [object_id]
+
+  - name: get_history
+    description: |
+      P4: List saved versions of an object (version number, author, time,
+      optional name). Use before restore_version, and to answer "wann habe ich
+      das zuletzt geändert?".
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/get_history"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        object_id: { type: string }
+      required: [object_id]
+
+  - name: restore_version
+    description: |
+      P4: Restore an older version. The CURRENT state is saved as a new version
+      first, so nothing is lost. Ask the user before doing this.
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/restore_version"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        object_id: { type: string }
+        version: { type: integer }
+      required: [object_id, version]
+
+  - name: search_knowledge_db
+    description: |
+      Semantic search over the USER's personal idea & knowledge base (ideas,
+      visions, notes, possessions, research). Use PROACTIVELY whenever the
+      user refers to their own ideas, plans, belongings or past research
+      ("meine Idee zu…", "was hatte ich zu X notiert?"). Results are
+      visibility-filtered server-side (private stays private).
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/search"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        query: { type: string }
+        type: { type: string, enum: [idea, vision, note], description: "optional type filter" }
+        limit: { type: integer, default: 8 }
+      required: [query]
+
+  # ── Strategy layer ─────────────────────────────────────────────────────
+  # Clara thinks along vision and goals. Rule: propose, do not decide —
+  # rate_contribution only writes a PROPOSAL the human confirms. link_to_goal
+  # makes the rating binding and is therefore only for numbers the user named.
+
+  - name: list_goals
+    description: |
+      List the user's visions and goals with their traffic-light status and
+      KPIs. Use this FIRST whenever the user mentions a goal by name ("mein
+      Fitness-Ziel", "unser Sparziel") — you need the goal_id for every other
+      strategy tool.
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/list_goals"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties: {}
+
+  - name: suggest_ideas
+    description: |
+      Propose concrete ideas that pay into a specific goal. Considers the
+      vision, sub-goals, current KPI status and the ideas that already exist
+      (so you do not repeat them). Returns PROPOSALS ONLY — nothing is saved.
+      Present them to the user and let them choose.
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/suggest_ideas"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        goal_id: { type: string }
+        n: { type: integer, default: 5, description: "1-8" }
+      required: [goal_id]
+
+  - name: develop_concept
+    description: |
+      Turn an existing idea into a worked-out concept object (problem,
+      solution, why it moves the KPI, first steps, risks). Creates a new
+      'concept' object linked to the idea. Use when the user says "arbeite das
+      aus" / "mach ein Konzept daraus".
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/develop_concept"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        object_id: { type: string, description: "the idea to develop" }
+        goal_id: { type: string, description: "goal it should pay into" }
+      required: [object_id, goal_id]
+
+  - name: rate_contribution
+    description: |
+      Estimate how much an idea/concept moves a specific goal (impact) and how
+      much work it is (effort), each 1-5, with a reason. The estimate is stored
+      as a SUGGESTION only — the user confirms it in the effort/impact matrix.
+      Never claim the rating is final.
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/rate_contribution"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        object_id: { type: string }
+        goal_id: { type: string }
+      required: [object_id, goal_id]
+
+  - name: link_to_goal
+    description: |
+      Attach an idea/concept to a goal with a CONFIRMED impact/effort rating
+      (1-5 each). Only use when the user stated the numbers themselves — for
+      your own estimate use rate_contribution instead.
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/link_to_goal"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        object_id: { type: string }
+        goal_id: { type: string }
+        impact: { type: integer, description: "1-5" }
+        effort: { type: integer, description: "1-5" }
+      required: [object_id, goal_id, impact, effort]
+
+  - name: promote_to_action_plan
+    description: |
+      Move an idea/concept into the goal's action plan: creates a real task in
+      the goal's Vikunja project (creating that project if needed) and links it
+      back to the goal. Ask the user before doing this — it creates real work.
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/promote_to_action_plan"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        object_id: { type: string }
+        goal_id: { type: string }
+      required: [object_id, goal_id]
+
+  # ── Kaizen ─────────────────────────────────────────────────────────────
+  # Both methods live on the human's knowledge. Clara asks and calculates; she
+  # invents neither causes nor numbers.
+
+  - name: run_five_why
+    description: |
+      Guided 5-Why root-cause analysis for a goal that is behind. Call WITHOUT
+      "finish" to get the next "why?" question plus candidate answers — ask the
+      user, do NOT answer for them; the value of this method is THEIR knowledge.
+      Append each {question, answer} pair to "chain" and call again. When the
+      chain reaches the root cause, call once more with finish=true to store the
+      analysis and get concrete countermeasures.
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/run_five_why"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        goal_id: { type: string }
+        problem: { type: string, description: "what is going wrong, in one sentence" }
+        chain:
+          type: array
+          description: "[{question, answer}] collected so far"
+          items: { type: object }
+        finish: { type: boolean, default: false }
+      required: [goal_id, problem]
+
+  - name: pareto_analysis
+    description: |
+      Pareto (80/20) analysis for a goal. WITHOUT "items" it proposes countable
+      causes plus a unit — then ask the user for the NUMBERS, never invent them.
+      WITH items [{cause, value, unit}] it computes shares, the cumulative curve
+      and the vital few, and stores the analysis.
+    endpoint: "http://localhost:8090/api/claraos/knowledge/clara/pareto_analysis"
+    method: POST
+    auth: none
+    headers: { X-Claraos-Actor: clara }
+    schema:
+      type: object
+      properties:
+        goal_id: { type: string }
+        problem: { type: string }
+        items:
+          type: array
+          description: "[{cause, value, unit}] — values come from the user"
+          items: { type: object }
+      required: [goal_id, problem]

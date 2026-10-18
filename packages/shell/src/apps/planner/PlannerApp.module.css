@@ -1,0 +1,1143 @@
+/* Planner — all colours/spacing via skin tokens (var(--…)) with fallbacks.
+ *
+ * Warning: everything that sits ON TOP of other content uses
+ * `--bg-window-solid` first. `--bg-window` is translucent in `clara-glass`
+ * (rgba …, 0.80) — a bar or popover with that surface lets the text beneath
+ * show through. Applied to: `.filterPop`, `.pickerPop`, `.bulkBar`,
+ * `.mobileTabs`, `.detail` (mobile), `.ganttLabel`, `.costsTable th`.
+ * Important: NOT changed: `.card` — it sits on the window background, not on
+ * top of content; there the translucency is intended by the skin.
+ */
+
+.app {
+  display: flex;
+  height: 100%;
+  background: var(--bg-window-solid, var(--bg-window, transparent));
+  color: var(--text-primary, #e5e7eb);
+  font-family: var(--font-system, system-ui, sans-serif);
+  font-size: var(--font-size-base, 14px);
+}
+
+/* ── Rail ─────────────────────────────────────────────────────── */
+.rail {
+  width: 210px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-xs, 4px);
+  padding: var(--gap-md, 12px) var(--gap-sm, 8px);
+  border-right: 1px solid var(--border, rgba(127,127,127,0.25));
+  overflow-y: auto;
+}
+.railBtn, .railProjBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm, 8px);
+  padding: 7px 10px;
+  border: none;
+  border-radius: var(--radius-sm, 6px);
+  background: transparent;
+  color: var(--text-primary, #e5e7eb);
+  cursor: pointer;
+  text-align: left;
+  font-size: var(--font-size-sm, 13px);
+  transition: background var(--transition-fast, 0.12s);
+}
+.railBtn:hover, .railProjBtn:hover { background: var(--bg-hover, rgba(127,127,127,0.08)); }
+.railActive { background: var(--accent-bg, rgba(56,189,248,0.15)) !important; color: var(--accent, #38bdf8); }
+.railIcon { width: 20px; display: inline-flex; align-items: center; justify-content: center; }
+.railProjects {
+  margin-top: var(--gap-md, 12px);
+  padding-top: var(--gap-md, 12px);
+  border-top: 1px solid var(--border, rgba(127,127,127,0.25));
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.projDot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent, #38bdf8);
+  flex-shrink: 0;
+}
+.railProjTitle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Content / Views ──────────────────────────────────────────── */
+.content { flex: 1; overflow-y: auto; min-width: 0; }
+.view { padding: var(--gap-lg, 16px) var(--gap-xl, 24px); max-width: 860px; }
+.viewHeader {
+  display: flex;
+  align-items: baseline;
+  gap: var(--gap-md, 12px);
+  margin-bottom: var(--gap-lg, 16px);
+}
+.viewHeader h2 { margin: 0; font-size: var(--font-size-xl, 20px); }
+.viewSub { color: var(--text-secondary, #9ca3af); font-size: var(--font-size-sm, 13px); }
+.viewTools { margin-left: auto; }
+.loading, .empty {
+  color: var(--text-secondary, #9ca3af);
+  padding: var(--gap-xl, 24px);
+  text-align: center;
+}
+.errorBox {
+  background: color-mix(in srgb, var(--status-danger, #f87171) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--status-danger, #f87171) 40%, transparent);
+  border-radius: var(--radius-sm, 6px);
+  padding: var(--gap-sm, 8px) var(--gap-md, 12px);
+  margin: var(--gap-sm, 8px) var(--gap-lg, 16px);
+  font-size: var(--font-size-sm, 13px);
+  /* Warning: on phones "session expired — renewing sign-in" was truncated
+     with "…". An error message you can't read to the end explains nothing. */
+  overflow-wrap: anywhere;
+}
+.section { margin-bottom: var(--gap-lg, 16px); }
+.sectionTitle {
+  font-size: var(--font-size-sm, 13px);
+  color: var(--text-secondary, #9ca3af);
+  margin: 0 0 var(--gap-xs, 4px);
+  font-weight: var(--font-weight-semibold, 600);
+}
+.count {
+  background: var(--bg-subtle, rgba(127,127,127,0.12));
+  border-radius: var(--radius-pill, 999px);
+  padding: 1px 8px;
+  font-size: var(--font-size-xs, 11px);
+  margin-left: var(--gap-xs, 4px);
+}
+.overdue { color: var(--status-danger, #f87171) !important; }
+.doneToggle {
+  background: none; border: none;
+  color: var(--text-secondary, #9ca3af);
+  cursor: pointer; padding: 4px 0;
+  font-size: var(--font-size-sm, 13px);
+}
+
+/* ── TaskRow ──────────────────────────────────────────────────── */
+.taskRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gap-sm, 8px);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm, 6px);
+  background: var(--bg-surface, rgba(127,127,127,0.05));
+  margin-bottom: 4px;
+  cursor: pointer;
+  transition: background var(--transition-fast, 0.12s);
+}
+.taskRow:hover { background: var(--bg-hover, rgba(127,127,127,0.1)); }
+.taskDone { opacity: 0.55; }
+.taskDone .taskRowTitle { text-decoration: line-through; }
+.checkBtn {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-secondary, #9ca3af);
+  background: transparent;
+  color: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-size: 0.6875rem;
+  line-height: 1;
+  padding: 0;
+}
+.checkBtn:hover { border-color: var(--accent, #38bdf8); }
+.checkBtnDone {
+  background: var(--accent, #38bdf8);
+  border-color: var(--accent, #38bdf8);
+  color: var(--bg-window, #0b1120);
+}
+.taskRowMain { flex: 1; min-width: 0; }
+.taskRowTitle { display: flex; align-items: center; gap: var(--gap-sm, 8px); flex-wrap: wrap; }
+.taskRowSub {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-xs, 4px);
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.metaBadge {
+  font-size: var(--font-size-xs, 11px);
+  color: var(--text-secondary, #9ca3af);
+  background: var(--bg-subtle, rgba(127,127,127,0.1));
+  border-radius: var(--radius-pill, 999px);
+  padding: 1px 7px;
+  white-space: nowrap;
+}
+.inWorkBadge {
+  font-size: var(--font-size-xs, 11px);
+  color: var(--status-ok, #4ade80);
+  border: 1px solid rgba(74, 222, 128, 0.4);
+  border-radius: var(--radius-pill, 999px);
+  padding: 1px 7px;
+  white-space: nowrap;
+}
+.prioBadge {
+  font-size: var(--font-size-xs, 11px);
+  color: var(--status-warn, #fbbf24);
+}
+.prioUrgent { color: var(--status-danger, #f87171); }
+.labelChips { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.labelChip {
+  font-size: var(--font-size-xs, 11px);
+  border: 1px solid var(--border, rgba(127,127,127,0.35));
+  border-radius: var(--radius-pill, 999px);
+  padding: 1px 8px;
+  background: transparent;
+  color: var(--text-secondary, #9ca3af);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.labelChipActive {
+  background: var(--accent-bg, rgba(56,189,248,0.15));
+  color: var(--accent, #38bdf8);
+  border-color: var(--accent, #38bdf8);
+}
+
+/* ── QuickAdd / Inputs ────────────────────────────────────────── */
+.quickAdd { display: flex; gap: var(--gap-sm, 8px); margin-bottom: var(--gap-lg, 16px); }
+.input, .select, .textarea, .inputSmall {
+  background: var(--bg-surface, rgba(127,127,127,0.07));
+  border: 1px solid var(--border, rgba(127,127,127,0.3));
+  border-radius: var(--radius-sm, 6px);
+  color: var(--text-primary, #e5e7eb);
+  padding: 7px 10px;
+  font-size: var(--font-size-sm, 13px);
+  font-family: inherit;
+  outline: none;
+}
+.input { flex: 1; min-width: 0; }
+.inputSmall { width: 110px; padding: 2px 8px; font-size: var(--font-size-xs, 11px); border-radius: var(--radius-pill, 999px); }
+.textarea { width: 100%; resize: vertical; }
+.input:focus, .select:focus, .textarea:focus { border-color: var(--border-focus, var(--accent, #38bdf8)); }
+.btn, .btnPrimary, .btnDanger {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 32px; padding: 0 14px;
+  border: 1px solid transparent; border-radius: var(--radius-md, 10px);
+  background: color-mix(in srgb, var(--accent, #38bdf8) 14%, var(--surface-2, #182236));
+  color: var(--text-primary, #e5e7eb);
+  font: inherit; font-size: 0.8125rem; font-weight: 600; cursor: pointer;
+  transition: border-radius .12s ease, transform .12s ease, background-color .15s ease;
+}
+.btn:hover:not(:disabled) { background: color-mix(in srgb, var(--accent, #38bdf8) 22%, var(--surface-2, #182236)); }
+.btn:active:not(:disabled) { border-radius: var(--radius-sm, 6px); transform: scale(.98); }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn:hover { background: var(--bg-hover, rgba(127,127,127,0.12)); }
+.btnPrimary {
+  background: var(--accent, #38bdf8);
+  border-color: var(--accent, #38bdf8);
+  color: var(--bg-window, #0b1120);
+  font-weight: var(--font-weight-semibold, 600);
+}
+.btnPrimary:hover { background: var(--accent-hover, #7dd3fc); }
+.btnPrimary:disabled { opacity: 0.5; cursor: default; }
+.btnDanger { background: color-mix(in srgb, var(--status-danger, #f87171) 14%, var(--surface-2, #182236)); color: var(--status-danger, #f87171); }
+.btnDanger:hover { background: color-mix(in srgb, var(--status-danger, #f87171) 22%, var(--surface-2, #182236)); }
+
+/* ── Projects grid ────────────────────────────────────────────── */
+.projectGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: var(--gap-md, 12px);
+}
+.projectCard {
+  position: relative; /* Anchor for the ⋯ menu button */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--gap-xs, 4px);
+  padding: var(--gap-md, 12px);
+  border: 1px solid var(--border, rgba(127,127,127,0.25));
+  border-radius: var(--radius-md, 10px);
+  background: var(--bg-surface, rgba(127,127,127,0.05));
+  color: var(--text-primary, #e5e7eb);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition-fast, 0.12s);
+}
+.projectCard:hover { background: var(--bg-hover, rgba(127,127,127,0.1)); }
+.projectCardDot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent, #38bdf8); }
+.projectCardTitle { font-weight: var(--font-weight-semibold, 600); }
+.projectCardDesc { font-size: var(--font-size-xs, 11px); color: var(--text-secondary, #9ca3af); }
+
+/* ── Kanban ───────────────────────────────────────────────────── */
+.boardWrap { display: flex; flex-direction: column; height: 100%; padding: var(--gap-lg, 16px) var(--gap-xl, 24px) 0; }
+.board {
+  display: flex;
+  gap: var(--gap-md, 12px);
+  overflow-x: auto;
+  flex: 1;
+  padding-bottom: var(--gap-lg, 16px);
+  align-items: flex-start;
+}
+.bucket {
+  width: 270px;
+  flex-shrink: 0;
+  background: var(--bg-surface, rgba(127,127,127,0.05));
+  border: 1px solid var(--border, rgba(127,127,127,0.2));
+  border-radius: var(--radius-md, 10px);
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+}
+.bucketDrop { border-color: var(--accent, #38bdf8); background: var(--accent-bg, rgba(56,189,248,0.08)); }
+.bucketHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  font-weight: var(--font-weight-semibold, 600);
+  font-size: var(--font-size-sm, 13px);
+}
+.bucketBody {
+  padding: 0 8px 8px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.card {
+  background: var(--bg-window, rgba(20,25,40,0.7));
+  border: 1px solid var(--border, rgba(127,127,127,0.25));
+  border-radius: var(--radius-sm, 6px);
+  padding: 8px 10px;
+  cursor: grab;
+  transition: border-color var(--transition-fast, 0.12s);
+}
+.card:hover { border-color: var(--accent, #38bdf8); }
+.card:active { cursor: grabbing; }
+.cardTitle { font-size: var(--font-size-sm, 13px); margin-bottom: 4px; }
+.cardMeta { display: flex; gap: 4px; flex-wrap: wrap; }
+.addCardBtn {
+  background: none;
+  border: 1px dashed var(--border, rgba(127,127,127,0.35));
+  border-radius: var(--radius-sm, 6px);
+  color: var(--text-secondary, #9ca3af);
+  padding: 6px;
+  cursor: pointer;
+  font-size: var(--font-size-sm, 13px);
+}
+.addCardBtn:hover { color: var(--accent, #38bdf8); border-color: var(--accent, #38bdf8); }
+.bucketAdd { width: 220px; flex-shrink: 0; }
+
+/* ── TaskDetail ───────────────────────────────────────────────── */
+.detail {
+  /* The detail column was already a real column and not an overlay —
+     only the basic form was right, though. On a wide screen it stayed at a
+     rigid 340 px while space next to it went to waste; a task's description
+     then sat in a ravine. */
+  width: clamp(340px, 26vw, 480px);
+  flex-shrink: 0;
+  border-left: 1px solid var(--border, rgba(127,127,127,0.25));
+  overflow-y: auto;
+  padding: var(--gap-md, 12px) var(--gap-lg, 16px);
+  background: var(--bg-surface, rgba(127,127,127,0.03));
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-sm, 8px);
+}
+.detailHeader { display: flex; align-items: center; gap: var(--gap-sm, 8px); }
+.detailProject { flex: 1; color: var(--text-secondary, #9ca3af); font-size: var(--font-size-xs, 11px); }
+.detailTitle {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  color: var(--text-primary, #e5e7eb);
+  font-size: var(--font-size-lg, 16px);
+  font-weight: var(--font-weight-semibold, 600);
+  padding: 4px 0;
+  outline: none;
+  width: 100%;
+}
+.detailTitle:focus { border-bottom-color: var(--accent, #38bdf8); }
+.detailInWork {
+  color: var(--status-ok, #4ade80);
+  font-size: var(--font-size-xs, 11px);
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  border-radius: var(--radius-sm, 6px);
+  padding: 4px 8px;
+}
+.detailSection { border-top: 1px solid var(--border, rgba(127,127,127,0.15)); padding-top: var(--gap-sm, 8px); }
+/* Warning: this used to be ALL CAPS (CHECKLIST, PLANNING, TAGS …) — exactly
+   what was abolished in the knowledge sidebar. All caps read more slowly, and a
+   section marker doesn't need to shout. */
+.detailSection h4 {
+  margin: 0 0 var(--gap-xs, 4px);
+  font-size: var(--font-size-xs, 11px);
+  font-weight: 600;
+  color: var(--text-tertiary, #6b7280);
+}
+
+/* Date at rest: text, not a control (same pattern as the select badges). */
+.datumText {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-primary, #e5e7eb);
+  font: inherit;
+  font-size: var(--font-size-sm, 13px);
+  text-align: left;
+  padding: 6px 8px;
+  cursor: text;
+  white-space: nowrap;
+}
+.datumText:hover { border-color: var(--border, rgba(127,127,127,0.35)); }
+.datumLeer { color: var(--text-tertiary, #6b7280); font-style: italic; }
+@media (pointer: coarse) { .datumText { min-height: 44px; } }
+.checkItem {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm, 8px);
+  padding: 3px 0;
+  cursor: pointer;
+  font-size: var(--font-size-sm, 13px);
+}
+.checkItem input { accent-color: var(--accent, #38bdf8); }
+.checkItemDone { text-decoration: line-through; color: var(--text-secondary, #9ca3af); }
+.fieldRow {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm, 8px);
+  margin-bottom: 6px;
+}
+.fieldRow label { width: 92px; flex-shrink: 0; color: var(--text-secondary, #9ca3af); font-size: var(--font-size-xs, 11px); }
+.fieldRow .input, .fieldRow .select { flex: 1; padding: 4px 8px; }
+.labelPicker { display: flex; gap: 4px; flex-wrap: wrap; }
+.relGroup { margin-bottom: 6px; }
+.relLabel { font-size: var(--font-size-xs, 11px); color: var(--text-secondary, #9ca3af); display: block; margin-bottom: 2px; }
+.relItem { font-size: var(--font-size-sm, 13px); padding: 2px 0 2px 12px; }
+.estimates { display: flex; gap: 4px; flex-wrap: wrap; }
+.comment { margin-bottom: var(--gap-sm, 8px); }
+.commentAuthor { font-weight: var(--font-weight-semibold, 600); font-size: var(--font-size-xs, 11px); margin-right: 6px; }
+.commentTime { color: var(--text-secondary, #9ca3af); font-size: var(--font-size-xs, 11px); }
+.commentBody { font-size: var(--font-size-sm, 13px); white-space: pre-wrap; }
+.detailFooter {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-sm, 8px);
+  padding-top: var(--gap-md, 12px);
+  color: var(--text-secondary, #9ca3af);
+  font-size: var(--font-size-xs, 11px);
+}
+.hint { color: var(--text-secondary, #9ca3af); font-size: var(--font-size-xs, 11px); font-style: italic; }
+
+/* ── Project tabs (Board | Gantt) ─────────────────────────────── */
+.projWrap { display: flex; flex-direction: column; height: 100%; }
+.projTabs {
+  display: flex;
+  gap: var(--gap-xs, 4px);
+  padding: var(--gap-sm, 8px) var(--gap-xl, 24px) 0;
+}
+.projTab {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #9ca3af);
+  padding: 6px 14px;
+  border-radius: var(--radius-sm, 6px) var(--radius-sm, 6px) 0 0;
+  cursor: pointer;
+  font-size: var(--font-size-sm, 13px);
+  border-bottom: 2px solid transparent;
+}
+.projTabActive {
+  color: var(--accent, #38bdf8);
+  border-bottom-color: var(--accent, #38bdf8);
+}
+
+/* ── Gantt ────────────────────────────────────────────────────── */
+.ganttWrap { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: var(--gap-sm, 8px) var(--gap-xl, 24px); }
+.ganttScroll { overflow: auto; flex: 1; border: 1px solid var(--border, rgba(127,127,127,0.2)); border-radius: var(--radius-md, 10px); }
+.ganttGrid { position: relative; }
+.ganttHeader {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--bg-surface-solid, #161b2c);
+  border-bottom: 1px solid var(--border, rgba(127,127,127,0.25));
+}
+.ganttDay {
+  flex-shrink: 0;
+  text-align: center;
+  font-size: var(--font-size-xs, 11px);
+  color: var(--text-secondary, #9ca3af);
+  padding: 4px 0;
+  position: relative;
+}
+.ganttToday { color: var(--accent, #38bdf8); font-weight: var(--font-weight-semibold, 600); }
+.ganttMonth {
+  position: absolute;
+  top: -1px;
+  left: 2px;
+  font-size: 0.5625rem;
+  color: var(--accent, #38bdf8);
+}
+.ganttBody { position: relative; }
+.ganttCol { position: absolute; top: 0; border-right: 1px solid var(--border, rgba(127,127,127,0.08)); }
+.ganttWeekend { background: var(--bg-subtle, rgba(127,127,127,0.05)); }
+.ganttTodayCol { background: var(--accent-bg, rgba(56,189,248,0.08)); }
+.ganttLabel {
+  position: absolute;
+  left: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  font-size: var(--font-size-sm, 13px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  z-index: 2;
+  background: var(--bg-window-solid, var(--bg-window, rgba(15,20,35,0.85)));
+  border-bottom: 1px solid var(--border, rgba(127,127,127,0.08));
+}
+.ganttLabel:hover { color: var(--accent, #38bdf8); }
+.ganttBar {
+  position: absolute;
+  background: var(--accent-bg, rgba(56,189,248,0.25));
+  border: 1px solid var(--accent, #38bdf8);
+  border-radius: var(--radius-sm, 6px);
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  z-index: 1;
+}
+.ganttBar:active { cursor: grabbing; }
+.ganttBarBlocked { border-color: var(--status-danger, #f87171); background: rgba(248, 113, 113, 0.15); }
+.ganttBarSoft { border-style: dashed; opacity: 0.8; }
+.ganttBarText {
+  font-size: var(--font-size-xs, 11px);
+  padding: 0 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+.ganttResize {
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+}
+.ganttSvg { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 2; }
+.ganttUnscheduled {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-xs, 4px);
+  flex-wrap: wrap;
+  padding-top: var(--gap-sm, 8px);
+}
+
+/* ── Calendar ─────────────────────────────────────────────────── */
+.calMonthLabel { min-width: 140px; text-align: center; display: inline-block; }
+.viewTools { display: flex; align-items: center; gap: var(--gap-xs, 4px); }
+.calGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.calWeekday {
+  text-align: center;
+  font-size: var(--font-size-xs, 11px);
+  color: var(--text-secondary, #9ca3af);
+  padding: 2px 0;
+}
+.calCell {
+  min-height: 96px;
+  background: var(--bg-surface, rgba(127,127,127,0.05));
+  border: 1px solid var(--border, rgba(127,127,127,0.12));
+  border-radius: var(--radius-sm, 6px);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+.calOutside { opacity: 0.4; }
+.calToday { border-color: var(--accent, #38bdf8); }
+.calDayNum { font-size: var(--font-size-xs, 11px); color: var(--text-secondary, #9ca3af); }
+.calToday .calDayNum { color: var(--accent, #38bdf8); font-weight: var(--font-weight-semibold, 600); }
+.calEvent {
+  font-size: var(--font-size-xs, 11px);
+  border-left: 3px solid var(--accent, #38bdf8);
+  background: var(--bg-subtle, rgba(127,127,127,0.1));
+  border-radius: 3px;
+  padding: 1px 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.calTask {
+  font-size: var(--font-size-xs, 11px);
+  border: 1px dashed var(--border, rgba(127,127,127,0.35));
+  border-radius: 3px;
+  padding: 1px 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: grab;
+}
+.calTask:hover { border-color: var(--accent, #38bdf8); }
+.calMore { font-size: var(--font-size-xs, 11px); color: var(--text-secondary, #9ca3af); }
+.scheduledRow { display: flex; align-items: center; gap: var(--gap-xs, 4px); flex: 1; }
+
+/* ── Onboarding / Dialog ──────────────────────────────────────── */
+.onboarding {
+  margin: auto;
+  max-width: 440px;
+  text-align: center;
+  padding: var(--gap-xl, 24px);
+}
+.onboarding ol { text-align: left; color: var(--text-secondary, #9ca3af); line-height: 1.7; }
+.onboarding code {
+  font-family: var(--font-mono, monospace);
+  background: var(--bg-subtle, rgba(127,127,127,0.12));
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.onboardingIcon { font-size: 2.625rem; margin-bottom: var(--gap-sm, 8px); }
+.dialogOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dialog {
+  background: var(--bg-surface-solid, #161b2c);
+  border: 1px solid var(--border, rgba(127,127,127,0.3));
+  border-radius: var(--radius-lg, 14px);
+  box-shadow: var(--shadow-menu, 0 12px 40px rgba(0,0,0,0.5));
+  padding: var(--gap-lg, 16px);
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-md, 12px);
+}
+.dialog h3 { margin: 0; }
+.dialogActions { display: flex; justify-content: flex-end; gap: var(--gap-sm, 8px); }
+
+/* ── Cost/time transparency ─────────────────────────────────────────────── */
+.costsWrap { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.costsHead {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--gap-sm, 8px); padding: var(--gap-md, 12px); flex: 0 0 auto;
+}
+.costsCards { display: flex; gap: var(--gap-sm, 8px); flex-wrap: wrap; }
+.costCard {
+  display: flex; flex-direction: column; gap: 2px; min-width: 150px;
+  padding: var(--gap-sm, 8px) var(--gap-md, 12px);
+  background: var(--bg-surface, rgba(127,127,127,0.05));
+  border: 1px solid var(--border, rgba(127,127,127,0.25));
+  border-radius: var(--radius-md, 8px);
+}
+.costCardLabel { font-size: var(--font-size-xs, 11px); color: var(--text-secondary, #9ca3af); }
+.costCardValue { font-size: var(--font-size-lg, 18px); font-weight: 600; color: var(--text-primary, #e5e7eb); }
+.costCardSub { font-size: var(--font-size-xs, 11px); color: var(--text-secondary, #9ca3af); }
+.emptyHint {
+  margin: var(--gap-md, 12px); padding: var(--gap-lg, 16px);
+  color: var(--text-secondary, #9ca3af); font-size: var(--font-size-sm, 13px);
+  text-align: center; border: 1px dashed var(--border, rgba(127,127,127,0.3));
+  border-radius: var(--radius-md, 8px);
+}
+.costsTableWrap { overflow: auto; flex: 1 1 auto; padding: 0 var(--gap-md, 12px) var(--gap-md, 12px); }
+.costsTable { width: 100%; border-collapse: collapse; font-size: var(--font-size-sm, 13px); }
+.costsTable th {
+  position: sticky; top: 0; text-align: left; font-weight: 600;
+  padding: var(--gap-xs, 4px) var(--gap-sm, 8px);
+  color: var(--text-secondary, #9ca3af);
+  background: var(--bg-window-solid, var(--bg-window, #1e1e1e));
+  border-bottom: 1px solid var(--border, rgba(127,127,127,0.25));
+}
+.costsTable td { padding: var(--gap-xs, 4px) var(--gap-sm, 8px); border-bottom: 1px solid var(--border, rgba(127,127,127,0.12)); }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.costRow { cursor: pointer; }
+.costRow:hover { background: var(--accent-bg, rgba(56,189,248,0.08)); }
+.costTitle { color: var(--text-primary, #e5e7eb); }
+.costWorking { margin-left: var(--gap-xs, 4px); font-size: var(--font-size-xs, 11px); color: var(--accent, #38bdf8); }
+.costOver { color: var(--danger, #f87171); font-weight: 600; }
+
+/* ── Tasks view v2: search/filter/smart lists/bulk/inline edit ── */
+.searchInput { flex: 0 1 180px; min-width: 120px; padding: 4px 10px; }
+.filterWrap { position: relative; }
+.btnActive {
+  border-color: var(--accent, #38bdf8);
+  color: var(--accent, #38bdf8);
+  background: var(--accent-bg, rgba(56,189,248,0.12));
+}
+.filterPop {
+  position: absolute; right: 0; top: calc(100% + 6px);
+  z-index: 30;
+  width: 320px; max-height: 420px; overflow-y: auto;
+  background: var(--bg-window-solid, var(--bg-window, #1e1e2a));
+  border: 1px solid var(--border, rgba(127,127,127,0.3));
+  border-radius: var(--radius-md, 8px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+  padding: var(--gap-md, 12px);
+  display: flex; flex-direction: column; gap: var(--gap-sm, 8px);
+}
+.filterGroup { display: flex; flex-direction: column; gap: var(--gap-xs, 4px); }
+.filterGroupLabel { font-size: var(--font-size-xs, 11px); color: var(--text-secondary, #9ca3af); }
+.smartChips, .activeChips {
+  display: flex; flex-wrap: wrap; gap: var(--gap-xs, 4px);
+  margin-bottom: var(--gap-sm, 8px);
+}
+.savedChip { display: inline-flex; align-items: center; gap: 2px; padding-right: 4px; }
+.savedChipBtn {
+  background: none; border: none; color: inherit; cursor: pointer;
+  font-size: inherit; padding: 0;
+}
+.savedChipDel {
+  background: none; border: none; color: var(--text-secondary, #9ca3af);
+  cursor: pointer; font-size: var(--font-size-xs, 11px); padding: 0 2px;
+}
+.savedChipDel:hover { color: var(--danger, #f87171); }
+.selectCheck {
+  width: 15px; height: 15px;
+  margin: 3px 0 0;
+  accent-color: var(--accent, #38bdf8);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.sectionTitle .selectCheck { margin: 0 6px 0 0; vertical-align: middle; }
+.taskRowSelected {
+  background: var(--accent-bg, rgba(56,189,248,0.1));
+  outline: 1px solid var(--accent, #38bdf8);
+}
+.inlineEdits { display: inline-flex; align-items: center; gap: var(--gap-xs, 4px); }
+.inlineSelect, .inlineDate {
+  background: var(--bg-subtle, rgba(127,127,127,0.1));
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill, 999px);
+  color: var(--text-secondary, #9ca3af);
+  font-size: var(--font-size-xs, 11px);
+  padding: 1px 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.inlineSelect:hover, .inlineDate:hover { border-color: var(--border, rgba(127,127,127,0.35)); }
+.inlineDate { color-scheme: dark; }
+
+/* ── Badges in the task row ───────────────────────────────────────────
+   Warning: previously each row had a native `<select>` and an `<input type=date>`
+   — forty controls for twenty tasks, and the date came in the BROWSER's
+   format, not ours. Now the badge displays the value; only a click opens the
+   picker (`components/PopupMenu`).
+   Important: the badge itself is `components/Chip` — the same as in the
+   Knowledge app. Only the planner-specific tones remain here. */
+/* Without a value it stays unobtrusive — an empty field shouldn't call out. */
+.zellLeer { opacity: 0.6; font-style: italic; }
+.prioHoch { color: var(--status-warn, #fbbf24); }
+.bulkBar {
+  position: sticky; bottom: 0;
+  z-index: 20;
+  display: flex; align-items: center; gap: var(--gap-sm, 8px); flex-wrap: wrap;
+  background: var(--bg-window-solid, var(--bg-window, #1e1e2a));
+  border: 1px solid var(--accent, #38bdf8);
+  border-radius: var(--radius-md, 8px);
+  padding: var(--gap-sm, 8px) var(--gap-md, 12px);
+  margin-top: var(--gap-md, 12px);
+  box-shadow: 0 -6px 24px rgba(0,0,0,0.35);
+}
+.bulkCount { font-size: var(--font-size-sm, 13px); font-weight: 600; }
+.bulkProgress { font-size: var(--font-size-sm, 13px); color: var(--accent, #38bdf8); }
+
+/* ── Project management / relation picker ────────────────────── */
+.projectArchived { opacity: 0.55; cursor: default; }
+.projectCardMenu {
+  position: absolute; top: 6px; right: 8px;
+  background: none; border: none;
+  color: var(--text-secondary, #9ca3af);
+  cursor: pointer; font-size: var(--font-size-md, 15px);
+  padding: 2px 6px; border-radius: var(--radius-sm, 6px);
+}
+.projectCardMenu:hover { background: var(--bg-hover, rgba(127,127,127,0.15)); color: var(--text-primary, #e5e7eb); }
+.colorRow { display: flex; align-items: center; gap: var(--gap-xs, 4px); flex-wrap: wrap; flex: 1; }
+.colorSwatch {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: var(--bg-subtle, rgba(127,127,127,0.15));
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.625rem;
+  color: var(--text-secondary, #9ca3af);
+}
+.colorSwatchActive { border-color: var(--text-primary, #e5e7eb); }
+.pickerWrap { position: relative; display: flex; gap: var(--gap-xs, 4px); margin-top: var(--gap-xs, 4px); }
+.pickerPop {
+  position: absolute; left: 0; top: calc(100% + 4px);
+  z-index: 30;
+  min-width: 240px; max-height: 240px; overflow-y: auto;
+  background: var(--bg-window-solid, var(--bg-window, #1e1e2a));
+  border: 1px solid var(--border, rgba(127,127,127,0.3));
+  border-radius: var(--radius-md, 8px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+  display: flex; flex-direction: column;
+}
+.pickerItem {
+  background: none; border: none;
+  color: var(--text-primary, #e5e7eb);
+  text-align: left; cursor: pointer;
+  padding: 7px 10px;
+  font-size: var(--font-size-sm, 13px);
+}
+.pickerItem:hover { background: var(--accent-bg, rgba(56,189,248,0.12)); }
+.attachRow {
+  display: flex; align-items: center; gap: var(--gap-sm, 8px);
+  padding: 4px 0;
+  font-size: var(--font-size-sm, 13px);
+}
+.attachName {
+  background: none; border: none; padding: 0;
+  color: var(--accent, #38bdf8);
+  cursor: pointer;
+  text-decoration: none;
+  font-size: var(--font-size-sm, 13px);
+  text-align: left;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 100%;
+}
+.attachName:hover { text-decoration: underline; }
+
+/* ── Calendar v2: time grid / agenda / editor / task sidebar ──── */
+.calSwitch { display: flex; gap: 2px; margin-right: var(--gap-sm, 8px); }
+.calWithSidebar { display: flex; gap: var(--gap-md, 12px); min-height: 0; flex: 1; }
+.calMain { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.timeGridWrap { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.allDayRow {
+  display: grid;
+  border-bottom: 1px solid var(--border, rgba(127,127,127,0.25));
+  min-height: 26px;
+}
+.allDayLabel {
+  font-size: var(--font-size-xs, 11px);
+  color: var(--text-secondary, #9ca3af);
+  padding: 4px 6px;
+}
+.allDayCell { padding: 2px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.allDayChip {
+  font-size: var(--font-size-xs, 11px);
+  border-left: 3px solid var(--accent, #38bdf8);
+  background: var(--bg-subtle, rgba(127,127,127,0.12));
+  border-radius: var(--radius-sm, 4px);
+  padding: 1px 5px;
+  cursor: pointer;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.timeGridScroll {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  max-height: calc(100vh - 260px);
+  border: 1px solid var(--border, rgba(127,127,127,0.2));
+  border-radius: var(--radius-md, 8px);
+}
+.timeGridBody { display: grid; position: relative; }
+.timeCol { position: relative; }
+.timeColHour {
+  position: absolute; right: 6px; transform: translateY(-50%);
+  font-size: var(--font-size-xs, 11px);
+  color: var(--text-secondary, #9ca3af);
+}
+.dayCols { display: grid; grid-auto-columns: 1fr; grid-auto-flow: column; position: relative; }
+.dayCol {
+  position: relative;
+  border-left: 1px solid var(--border, rgba(127,127,127,0.15));
+  cursor: copy;
+}
+.hourLine {
+  position: absolute; left: 0; right: 0; height: 0;
+  border-top: 1px solid var(--border, rgba(127,127,127,0.12));
+  pointer-events: none;
+}
+.evBlock {
+  position: absolute;
+  z-index: 5;
+  border-left: 4px solid var(--accent, #38bdf8);
+  background: var(--accent-bg, rgba(56,189,248,0.18));
+  border-radius: var(--radius-sm, 4px);
+  padding: 1px 4px;
+  overflow: hidden;
+  font-size: var(--font-size-xs, 11px);
+  display: flex; flex-direction: column;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+.evTime { color: var(--text-secondary, #9ca3af); font-size: 0.625rem; }
+.evTitle { color: var(--text-primary, #e5e7eb); overflow: hidden; text-overflow: ellipsis; }
+.evFree { background: transparent; border: 1px solid var(--border, rgba(127,127,127,0.4)); border-left-width: 4px; }
+.evTentative {
+  background:
+    repeating-linear-gradient(45deg, rgba(251,191,36,0.25) 0 4px, rgba(251,191,36,0.08) 4px 8px);
+}
+.evOof { border-left-color: #a78bfa !important; background: rgba(167,139,250,0.2); }
+.evGhost { opacity: 0.7; z-index: 10; pointer-events: none; outline: 1px dashed var(--accent, #38bdf8); }
+.evResizeHandle {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 6px;
+  cursor: ns-resize;
+}
+.nowLine {
+  position: absolute; left: 0; right: 0; height: 0;
+  border-top: 2px solid var(--status-danger, #f87171);
+  z-index: 8; pointer-events: none;
+}
+.nowLine::before {
+  content: ""; position: absolute; left: -4px; top: -5px;
+  width: 8px; height: 8px; border-radius: 50%; background: var(--status-danger, #f87171);
+}
+.slotHover {
+  position: absolute; left: 0; right: 0; height: 24px;
+  background: var(--accent-bg, rgba(56,189,248,0.25));
+  border: 1px dashed var(--accent, #38bdf8);
+  z-index: 9; pointer-events: none;
+}
+.agendaWrap { overflow-y: auto; }
+.agendaDay {
+  font-size: var(--font-size-sm, 13px);
+  color: var(--text-secondary, #9ca3af);
+  margin: var(--gap-md, 12px) 0 var(--gap-xs, 4px);
+  font-weight: 600;
+}
+.agendaToday { color: var(--accent, #38bdf8); }
+.agendaRow {
+  display: grid;
+  grid-template-columns: 110px 1fr auto;
+  gap: var(--gap-sm, 8px);
+  align-items: baseline;
+  padding: 6px 10px;
+  border-left: 4px solid var(--accent, #38bdf8);
+  background: var(--bg-surface, rgba(127,127,127,0.05));
+  border-radius: var(--radius-sm, 6px);
+  margin-bottom: 3px;
+  cursor: pointer;
+  font-size: var(--font-size-sm, 13px);
+}
+.agendaRow:hover { background: var(--bg-hover, rgba(127,127,127,0.1)); }
+.agendaTask { border-left-color: var(--text-secondary, #9ca3af); }
+.agendaTime { color: var(--text-secondary, #9ca3af); font-variant-numeric: tabular-nums; }
+.agendaTitle { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.agendaSub { color: var(--text-secondary, #9ca3af); font-size: var(--font-size-xs, 11px); }
+.eventDialog { max-width: 480px; width: 92%; max-height: 86vh; overflow-y: auto; }
+.hintInline { font-size: var(--font-size-xs, 11px); color: var(--text-secondary, #9ca3af); font-weight: 400; }
+.taskSidebar {
+  width: 230px; flex-shrink: 0;
+  border: 1px solid var(--border, rgba(127,127,127,0.2));
+  border-radius: var(--radius-md, 8px);
+  display: flex; flex-direction: column;
+  min-height: 0;
+  max-height: calc(100vh - 230px);
+}
+.taskSidebarToggle {
+  align-self: flex-start;
+  background: var(--bg-surface, rgba(127,127,127,0.07));
+  border: 1px solid var(--border, rgba(127,127,127,0.3));
+  border-radius: var(--radius-sm, 6px);
+  color: var(--text-secondary, #9ca3af);
+  cursor: pointer; padding: 4px 8px; font-size: var(--font-size-xs, 11px);
+}
+.taskSidebarHead {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--gap-sm, 8px);
+  font-size: var(--font-size-sm, 13px); font-weight: 600;
+  border-bottom: 1px solid var(--border, rgba(127,127,127,0.2));
+}
+.taskSidebarHint {
+  font-size: var(--font-size-xs, 11px);
+  color: var(--text-secondary, #9ca3af);
+  padding: 4px var(--gap-sm, 8px);
+}
+.taskSidebarList { overflow-y: auto; padding: 0 var(--gap-xs, 4px) var(--gap-xs, 4px); }
+.taskSidebarItem {
+  padding: 6px 8px;
+  border-radius: var(--radius-sm, 6px);
+  background: var(--bg-surface, rgba(127,127,127,0.05));
+  margin-bottom: 3px;
+  cursor: grab;
+  font-size: var(--font-size-xs, 12px);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.taskSidebarItem:hover { background: var(--bg-hover, rgba(127,127,127,0.12)); }
+.taskSidebarTitle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.calEvent.evFree, .agendaRow.evFree { background: transparent; }
+.calEvent.evTentative { background: repeating-linear-gradient(45deg, rgba(251,191,36,0.2) 0 4px, transparent 4px 8px); }
+.calEvent.evOof { border-left-color: #a78bfa !important; }
+
+/* ── Mobile (<768px, MobileShell renders the app fullscreen) ──────────── */
+/* Mobile redesign: large header, input as a pill, tasks as cards with
+   chips, floating toolbar + FAB. Tokens only. */
+.appMobile { flex-direction: column; position: relative; }
+.appMobile .content { padding-bottom: 96px; }
+.appMobile .view { padding: 8px 14px 0; }
+.appMobile .viewHeader { flex-direction: column; align-items: flex-start; gap: 2px; margin: 6px 2px 14px; }
+.appMobile .viewHeader h2 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+.appMobile .viewSub { font-size: 0.8125rem; }
+.appMobile .quickAdd { align-items: center; gap: 8px; margin-bottom: 14px; }
+.appMobile .quickAdd .input {
+  height: 48px; padding: 0 18px;
+  border-radius: var(--radius-pill, 999px);
+  border-color: transparent;
+  background: var(--surface-2, #182236);
+  font-size: 0.9375rem;
+}
+.appMobile .sectionTitle { padding: 4px 6px 2px; font-size: 0.75rem; letter-spacing: 0.04em; text-transform: uppercase; }
+.appMobile .taskRow {
+  gap: 12px; padding: 12px 12px;
+  border-radius: 18px;
+  background: var(--surface-2, #182236);
+  margin-bottom: 8px;
+}
+.appMobile .checkBtn { width: 26px; height: 26px; border-width: 2px; margin-top: 1px; }
+.appMobile .checkBtnDone { color: var(--on-accent, #101418); }
+.appMobile .taskRowTitle { font-size: 0.9375rem; font-weight: 600; }
+.appMobile .taskRowSub { gap: 6px; margin-top: 8px; }
+.appMobile .metaBadge, .appMobile .inWorkBadge, .appMobile .prioBadge {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 24px; padding: 0 10px;
+  border-radius: var(--radius-pill, 999px);
+  font-size: 0.6875rem; font-weight: 500;
+  background: color-mix(in srgb, var(--text-1, #e5e7eb) 7%, transparent);
+  border: none;
+}
+.appMobile .metaBadge.overdue { background: color-mix(in srgb, var(--status-danger, #f87171) 16%, transparent); }
+.appMobile .prioBadge { background: color-mix(in srgb, #fbbf24 16%, transparent); }
+.appMobile .prioBadge.prioUrgent { background: color-mix(in srgb, var(--status-danger, #f87171) 16%, transparent); }
+
+@media (max-width: 767px) {
+  /* Views fill the width, more compact margins */
+  .view { padding: var(--gap-md, 12px); max-width: none; }
+  .viewHeader { flex-wrap: wrap; row-gap: var(--gap-xs, 4px); }
+  .viewHeader h2 { font-size: var(--font-size-lg, 17px); }
+  .viewTools { display: flex; flex-wrap: wrap; gap: var(--gap-xs, 4px); margin-left: 0; width: 100%; }
+
+  /* TaskDetail: side drawer → fullscreen INSIDE the app (above the toolbar).
+     Warning: `position: fixed; inset: 0` covered the whole viewport — the header
+     under the phone shell's status bar, the footer under the navigation bar, and
+     without its own `overflow` the end was simply gone; the ✕ was unreachable
+     and you could no longer get out of the task.
+     Now: absolute within `.appMobile` (position: relative), i.e. exactly the area
+     the shell gives the app between its bars; scrolls by itself; the header with
+     ✕ sticks to the top. `env(safe-area-inset-*)` is no longer needed here —
+     the shell has already subtracted the bars. */
+  .detail {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    z-index: 80;
+    border-left: none;
+    background: var(--bg-window-solid, var(--bg-window, #101624));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 var(--gap-md, 12px) calc(var(--gap-xl, 24px) + 72px);
+  }
+  .detail .detailHeader {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin: 0 calc(-1 * var(--gap-md, 12px));
+    padding: var(--gap-md, 12px);
+    background: var(--bg-window-solid, var(--bg-window, #101624));
+  }
+  /* Height comes from tokens.css (44 px on touch devices) — only width here. */
+  .detailHeader .btn { min-width: 44px; }
+
+  /* Hit areas: tokens.css now sets the height globally to 44 px
+     (previously 38/36/24/20 px were set here — all below the standard and
+     with higher specificity, so they beat the global rule).
+     Important: the round toggle and the checkbox keep their SIZE; only the
+     area that accepts the finger grows via an invisible field — a 44 px circle
+     in a task row would be a block. */
+  .checkBtn { width: 24px; height: 24px; position: relative; }
+  .checkBtn::after {
+    content: ""; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%); width: 44px; height: 44px;
+  }
+  .selectCheck { width: 20px; height: 20px; }
+  .taskRow { padding: 10px; }
+
+  /* Project tabs / cards */
+  .projTabs { padding: var(--gap-sm, 8px) var(--gap-md, 12px) 0; overflow-x: auto; }
+  .projectGrid { grid-template-columns: 1fr !important; }
+
+  /* Dialogs */
+  .dialog { max-width: 94vw; width: 94vw; max-height: 84dvh; overflow-y: auto; }
+  .eventDialog { max-width: none; width: 100vw; height: 100dvh; max-height: none; border-radius: 0; }
+
+  /* Bulk bar above the tab bar */
+  .bulkBar { bottom: 0; }
+
+  /* Smart chips: one scrollable row */
+  .smartChips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
+  .smartChips > * { flex-shrink: 0; }
+
+  /* Cost cards in 2 columns */
+  .costsCards { display: grid !important; grid-template-columns: 1fr 1fr; gap: var(--gap-sm, 8px); }
+
+  /* Calendar */
+  .calWithSidebar { display: block; }
+  .timeGridScroll { max-height: none; flex: 1; }
+  .calMonthLabel { font-size: var(--font-size-sm, 13px); }
+  .calCell { min-height: 52px; padding: 2px; }
+  .calEvent, .calTask { display: none; } /* Month on mobile: dot markers instead of chips */
+}
+
+/* FAB (calendar "+ event" on mobile, FileBrowser pattern).
+ * bottom sits above the shell's Clara FAB (fixed right:14 bottom:60+safe-area, 52px)
+ * — otherwise both overlap at the bottom right. */
+.fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(128px + env(safe-area-inset-bottom, 0));
+  z-index: 70;
+  width: 54px; height: 54px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent, #38bdf8);
+  color: var(--bg-window, #0b1120);
+  font-size: 1.625rem;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+  cursor: pointer;
+}
+
+/* Month cell dot markers (mobile) */
+.calDots { display: none; }
+@media (max-width: 767px) {
+  .calDots { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 2px; }
+  .calDot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent, #38bdf8); }
+  .calDotTask { background: var(--text-secondary, #9ca3af); }
+}
+
+/* Filter contents in the mobile bottom sheet */
+.filterSheetBody {
+  display: flex; flex-direction: column; gap: var(--gap-sm, 8px);
+  padding: 0 var(--gap-md, 12px) var(--gap-md, 12px);
+}
+
+.daySheetList { padding: 0 var(--gap-md, 12px) var(--gap-md, 12px); }
+@media (max-width: 767px) {
+  .dayCol { touch-action: pan-y; cursor: default; }
+  .calCell { cursor: pointer; }
+}
+
+/* ── Free/busy grid in the event editor ────────────────────────────────── */
+.fbWrap { display: flex; flex-direction: column; gap: var(--gap-xs, 4px); margin-top: var(--gap-sm, 8px); }
+.fbHead { display: flex; align-items: center; gap: var(--gap-xs, 4px); }
+.fbGrid { display: flex; flex-direction: column; gap: 3px; }
+.fbRow { display: flex; align-items: center; gap: var(--gap-xs, 4px); }
+.fbName { width: 92px; flex-shrink: 0; font-size: var(--font-size-xs, 11px); color: var(--text-secondary, #9ca3af); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fbTrack { position: relative; flex: 1; height: 18px; background: var(--bg-surface, rgba(127,127,127,0.07)); border-radius: var(--radius-sm, 6px); overflow: hidden; }
+.fbHour { position: absolute; top: 0; font-size: 9px; color: var(--text-secondary, #9ca3af); transform: translateX(2px); }
+.fbBusy { position: absolute; top: 2px; bottom: 2px; background: color-mix(in srgb, var(--status-danger, #f87171) 55%, transparent); border-radius: 3px; }
+.fbTentative { background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--status-warning, #fbbf24) 55%, transparent) 0 4px, transparent 4px 8px); }
+.fbEvent { position: absolute; top: 0; bottom: 0; border: 2px solid var(--accent, #38bdf8); border-radius: 3px; box-sizing: border-box; pointer-events: none; }
+.fbSuggest { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.calHoliday { opacity: .8; font-style: italic; }
+
+/* Cancelled event: struck through and faded — it stays in the calendar
+   because the invitee may clear it away themselves, but it must not look like
+   a valid event for a single second. */
+.evAbgesagt { text-decoration: line-through; opacity: 0.55; }
+.evAbgesagt .agendaTitle { text-decoration: line-through; }

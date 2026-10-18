@@ -1,0 +1,30 @@
+{
+  "name": "ClaraOS",
+  "short_name": "ClaraOS",
+  "description": "Self-hosted AI operating system",
+  "start_url": "/",
+  "scope": "/",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#0a1826",
+  "theme_color": "#0b1929",
+  "lang": "de",
+  "share_target": {
+    "action": "/api/claraos/inbox/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "st_title",
+      "text": "st_text",
+      "url": "st_url",
+      "files": [{ "name": "files", "accept": ["image/*"] }]
+    }
+  },
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

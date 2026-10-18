@@ -1,0 +1,297 @@
+.backdrop {
+  position: fixed;
+  /* Keep the taskbar free: clicking another tray item switches the popover
+     directly (KDE behavior) instead of getting stuck on the backdrop. */
+  inset: 0 0 var(--taskbar-height, 48px) 0;
+  background: transparent;
+  z-index: 11000;
+}
+
+.panel {
+  position: fixed;
+  bottom: calc(var(--taskbar-height, 48px) + 8px);
+  right: 8px;
+  width: 360px;
+  max-height: calc(100vh - var(--taskbar-height, 48px) - 24px);
+  border-radius: 14px;
+  padding: 14px;
+  background: var(--bg-surface, rgba(28, 32, 52, 0.85));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.10));
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(36px) saturate(160%);
+  -webkit-backdrop-filter: blur(36px) saturate(160%);
+  font-family: var(--font-system);
+  color: var(--text-primary);
+  z-index: 11500;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
+.title {
+  flex: 1;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.closeBtn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 1.125rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.closeBtn:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+}
+
+.sectionLabel {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin-bottom: 4px;
+  letter-spacing: 0.4px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.icon {
+  font-size: 1.125rem;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent, #7B9FFF);
+  cursor: pointer;
+  border: 2px solid var(--text-primary, #fff);
+}
+
+.slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent, #7B9FFF);
+  cursor: pointer;
+  border: 2px solid var(--text-primary, #fff);
+}
+
+.value {
+  width: 38px;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  opacity: 0.85;
+}
+
+.statRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 4px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.statLabel {
+  font-size: 0.625rem;
+  opacity: 0.65;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.statValue {
+  font-size: 1rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+.statusIcon {
+  font-size: 0.6875rem;
+}
+
+.skinGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.skinTile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid transparent;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.6875rem;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.skinTile:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.skinActive {
+  background: rgba(123, 159, 255, 0.18);
+  border-color: var(--accent, #7B9FFF);
+}
+
+.skinSwatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.skinName {
+  font-size: 0.625rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  text-align: center;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.actionBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.logoutBtn:hover {
+  background: rgba(196, 43, 28, 0.32);
+  border-color: #c42b1c;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .panel {
+    background: #15172A;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* "Do not disturb" */
+.toggleBtn {
+  flex: 1;
+  text-align: left;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm, 4px);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm, 13px);
+  cursor: pointer;
+}
+
+.toggleBtn[aria-pressed="true"] {
+  background: var(--accent-bg, rgba(61, 174, 233, 0.16));
+  border-color: var(--border-focus, var(--accent, #3daee9));
+}
+
+.dndMenu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 6px 0 0 28px;
+}
+
+.dndMenu button {
+  text-align: left;
+  padding: 5px 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+}
+
+.dndMenu button:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}

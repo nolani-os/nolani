@@ -1,0 +1,27 @@
+/* Presence icon — Fluent 2 pattern: shape AND colour.
+   Colour alone is indistinguishable for colour-blind users. */
+
+.dot {
+  width: 10px;
+  height: 10px;
+  display: block;
+  flex: none;
+}
+
+.grund { fill: currentColor; }
+
+.strich {
+  fill: none;
+  stroke: var(--bg-window, #1e1e2e);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* "Do not disturb" deliberately shares the colour of "busy" but has a
+   different shape: the meaning is related, the urgency is not. */
+.verfuegbar    { color: var(--success, #a6e3a1); }
+.beschaeftigt  { color: var(--danger, #f38ba8); }
+.nicht_stoeren { color: var(--danger, #f38ba8); }
+.abwesend      { color: var(--warning, #f9e2af); }
+.offline       { color: var(--text-secondary, #6c7086); }
