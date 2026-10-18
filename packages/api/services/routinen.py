@@ -37,6 +37,12 @@ except Exception:  # noqa: BLE001
 LITELLM_URL = os.environ.get("LITELLM_BASE_URL", "").rstrip("/")
 LITELLM_KEY = os.environ.get("LITELLM_MASTER_KEY", "")
 MODELL = os.environ.get("CLARAOS_ROUTINE_MODEL", "clara/everyday")
+# Same situation as the chat (routers/chat_v2.py): the run goes to the agent behind
+# `clara/everyday`, which picks its model itself — a class could not be enforced
+# here. The declaration marks the place where it has to arrive once the agent
+# accepts one; without it the gap would be invisible.
+DATENKLASSE = "oeffentlich"
+DATENKLASSE_ERZWUNGEN = False
 MAX_SEKUNDEN = int(os.environ.get("CLARAOS_ROUTINE_TIMEOUT", "300"))
 
 # Tools a routine may call without asking — they only read. Everything else (and every
