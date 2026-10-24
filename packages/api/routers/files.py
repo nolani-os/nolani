@@ -5,7 +5,7 @@ user's files live in their Nextcloud account.  Group Folders appear
 automatically (Nextcloud mounts them into the user's DAV tree).
 """
 
-from betriebsprofil import heim_default  # external deployment: no silent home-server fallback
+from betriebsprofil import IS_CELL, PRODUCT_NAME, heim_default  # external deployment: no silent home-server fallback
 import base64
 import logging
 import os
@@ -79,10 +79,11 @@ async def _nc_credentials(username: str) -> tuple[str, str]:
         return creds.get("username", username), creds.get("password", "")
 
     # Fallback: service account (admin-level access, should only be used
-    # for testing or migration)
+    # for testing or migration). Never in a cell: every user without their own
+    # credentials would share this one account and see the same files.
     svc_user = os.environ.get("NEXTCLOUD_SERVICE_USER", "")
     svc_pass = os.environ.get("NEXTCLOUD_SERVICE_PASS", "")
-    if svc_user and svc_pass:
+    if svc_user and svc_pass and not IS_CELL:
         return svc_user, svc_pass
 
     # Warning: 424, not 401. A user WITHOUT stored Nextcloud credentials used to
@@ -95,7 +96,7 @@ async def _nc_credentials(username: str) -> tuple[str, str]:
     # files/files_v2/bilder/contacts/planner, all of which mean the same thing.
     raise HTTPException(
         status_code=424,
-        detail="No Nextcloud credentials found. Please save your Nextcloud credentials in ClaraOS Settings.",
+        detail=f"No Nextcloud credentials found. Please save your Nextcloud credentials in {PRODUCT_NAME} Settings.",
     )
 
 
@@ -103,6 +104,10 @@ def _webdav_url(nc_user: str, path: str = "/") -> str:
     """Build the full WebDAV URL for a user path."""
     path = path.strip("/")
     segments = path.split("/") if path else []
+    # ".."/"." would be normalised by the HTTP client and leave the user's
+    # WebDAV root for other Nextcloud endpoints.
+    if any(s in ("", ".", "..") for s in segments):
+        raise HTTPException(status_code=400, detail="Ungültiger Pfad")
     encoded = "/".join(urlquote(s, safe="") for s in segments)
     base = f"{NEXTCLOUD_INTERNAL_URL}/remote.php/dav/files/{urlquote(nc_user, safe='')}"
     return f"{base}/{encoded}" if encoded else base

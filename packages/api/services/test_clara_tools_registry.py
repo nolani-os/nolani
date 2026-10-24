@@ -1,6 +1,7 @@
 """Unit tests for the clara-tools drop-in registry."""
 from __future__ import annotations
 
+from betriebsprofil import PRODUCT_NAME
 import os
 from pathlib import Path
 
@@ -80,7 +81,7 @@ def test_openapi_spec_empty_registry(tools_dir):
     r = ToolsRegistry()
     spec = r.to_openapi_spec()
     assert spec["openapi"] == "3.1.0"
-    assert spec["info"]["title"] == "ClaraOS Module Tools"
+    assert spec["info"]["title"] == f"{PRODUCT_NAME} Module Tools"
     assert spec["paths"] == {}
     assert spec["components"]["schemas"] == {}
 

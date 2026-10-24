@@ -2,7 +2,7 @@
 // persist through updateWidgetConfig (debounced — the workspace store
 // writes through to the backend on every change). No backend of its own.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useWorkspaceStore } from "@claraos/core";
+import { useWorkspaceStore, useTranslation } from "@claraos/core";
 import type { WidgetProps } from "./registry";
 import s from "./StickyNote.module.css";
 
@@ -13,6 +13,7 @@ const SAVE_DEBOUNCE_MS = 600;
 
 export default function StickyNoteWidget({ widgetId, config }: WidgetProps) {
   const updateWidgetConfig = useWorkspaceStore((st) => st.updateWidgetConfig);
+  const { t } = useTranslation("desktop");
   const color: NoteColor = NOTE_COLORS.includes(config?.color as NoteColor)
     ? (config?.color as NoteColor)
     : "yellow";
@@ -52,7 +53,7 @@ export default function StickyNoteWidget({ widgetId, config }: WidgetProps) {
         data-no-drag
         data-native-menu
         value={text}
-        placeholder="Notiz…"
+        placeholder={t("widgets.stickyNote.placeholder")}
         onChange={(e) => onChange(e.target.value)}
         spellCheck={false}
       />
@@ -62,7 +63,7 @@ export default function StickyNoteWidget({ widgetId, config }: WidgetProps) {
             key={c}
             className={`${s.dot} ${s[`dot_${c}`]} ${c === color ? s.dotActive : ""}`}
             onClick={() => updateWidgetConfig(widgetId, { color: c })}
-            aria-label={`Farbe ${c}`}
+            aria-label={t("widgets.stickyNote.colorLabel", { color: t(`widgets.stickyNote.color.${c}`) })}
           />
         ))}
       </div>

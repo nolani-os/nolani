@@ -1,3 +1,4 @@
+import { getBrand } from "@claraos/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./IframeApp.module.css";
 import { useIsMobile } from "../Mobile/useIsMobile";
@@ -195,7 +196,7 @@ export function IframeApp({ windowId, appId, url: rawUrl, title, extraSandbox, f
     const isChoice = strat === "choice";
     const isDeeplink = strat === "deeplink";
     const hint = isChoice
-      ? "Diese App hat eine native Android-App. Inline in ClaraOS bleiben oder die App öffnen?"
+      ? `Diese App hat eine native Android-App. Inline in ${getBrand().product} bleiben oder die App öffnen?`
       : isDeeplink
         ? "Öffnet die native App, falls installiert — sonst im Browser."
         : "Diese App läuft auf dem Handy am besten in einem eigenen Tab.";
@@ -206,7 +207,7 @@ export function IframeApp({ windowId, appId, url: rawUrl, title, extraSandbox, f
         {isChoice ? (
           <>
             <button className={styles.mobileLandingBtn} onClick={() => setForceInline(true)}>
-              In ClaraOS öffnen
+              In {getBrand().product} öffnen
             </button>
             <button
               className={`${styles.mobileLandingBtn} ${styles.mobileLandingBtnSecondary}`}

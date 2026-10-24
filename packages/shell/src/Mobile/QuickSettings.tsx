@@ -27,9 +27,11 @@ import {
   useSettingsStore,
   useDeviceStore,
   isDndActive,
-  dndRemainingLabel,
+  dndRemainingText,
   dndUntilFor,
   getNativeDevice,
+  i18n,
+  useTranslation,
   type DevicePanel,
 } from "@claraos/core";
 import { COMPANION_APK_URL, IS_COMPANION } from "../OnboardingInstallPrompt";
@@ -37,6 +39,7 @@ import { Icon, type IconName } from "../components/Icon";
 import { IconButton } from "../components/Button";
 import { ActionSheet } from "../components/ActionSheet";
 import styles from "./QuickSettings.module.css";
+import { regionLocale } from "@claraos/core";
 
 /* Android browser/PWA (but not already the Companion app): offer the native app. */
 const OFFER_ANDROID_APP = /Android/i.test(navigator.userAgent) && !IS_COMPANION;
@@ -102,13 +105,14 @@ function Regler({
  *  embedding frame). Previously the toggle then appeared to do nothing. */
 function meldeVollbild() {
   useUIStore.getState().addNotification({
-    title: "Vollbild nicht möglich",
-    body: "Der Browser hat den Wechsel abgelehnt.",
+    title: i18n.t("mobile:quickSettings.fullscreenFailed.title"),
+    body: i18n.t("mobile:quickSettings.fullscreenFailed.body"),
     icon: "⚠️",
   });
 }
 
 export function QuickSettings({ onResetDock }: { onResetDock: () => void }) {
+  const { t } = useTranslation("mobile");
   const theme = useUIStore((s) => s.theme);
   const setTheme = useUIStore((s) => s.setTheme);
   const muted = useVoiceStore((s) => s.muted);
@@ -235,7 +239,7 @@ export function QuickSettings({ onResetDock }: { onResetDock: () => void }) {
 
   const hatWifi = caps.includes("wifi") && !!wifi;
   const hatBt = caps.includes("bluetooth") && !!bluetooth;
-  const datum = new Date().toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "short" });
+  const datum = new Date().toLocaleDateString(regionLocale(), { weekday: "short", day: "numeric", month: "short" });
 
   return (
     <div className={styles.panel} data-qs-root>
@@ -244,11 +248,11 @@ export function QuickSettings({ onResetDock }: { onResetDock: () => void }) {
         <span className={styles.konto} aria-hidden="true" />
         <span className={styles.datum}>{datum}</span>
         <span className={styles.kopfAktionen}>
-          <IconButton label="Aufbau der Shade ändern" icon="pen" groesse="s"
+          <IconButton label={t("quickSettings.editLayout")} icon="pen" groesse="s"
                       data-qs-tile="aufbau" onClick={() => setAufbauOffen(true)} />
-          <IconButton label="Einstellungen öffnen" icon="gear" groesse="s"
+          <IconButton label={t("quickSettings.openSettings")} icon="gear" groesse="s"
                       data-qs-tile="settings" onClick={oeffneEinstellungen} />
-          <IconButton label="ClaraOS neu laden" icon="reload" groesse="s"
+          <IconButton label={t("quickSettings.reload")} icon="reload" groesse="s"
                       data-qs-tile="reload" onClick={() => window.location.reload()} />
         </span>
       </div>
@@ -256,17 +260,17 @@ export function QuickSettings({ onResetDock }: { onResetDock: () => void }) {
       {/* ── Sliders ── */}
       {hasCap("brightness") && (
         canSetBrightness ? (
-          <Regler icon="sun" value={brightness ?? 50} label="Helligkeit" testId="brightness"
+          <Regler icon="sun" value={brightness ?? 50} label={t("quickSettings.brightness")} testId="brightness"
                   onChange={setBrightness} />
         ) : (
           <button type="button" className={styles.freigabe} onClick={requestBrightness}
                   disabled={!canRequestBrightness} data-qs-tile="brightness-perm" data-qs-control>
-            <Icon name="sun" size={20} /> Helligkeitssteuerung erlauben
+            <Icon name="sun" size={20} /> {t("quickSettings.allowBrightness")}
           </button>
         )
       )}
       <Regler icon={volumeValue === 0 ? "volumeOff" : "volume"} value={volumeValue}
-              label={systemVolume ? "Lautstärke" : "Medien-Lautstärke"}
+              label={systemVolume ? t("quickSettings.volume") : t("quickSettings.mediaVolume")}
               testId={systemVolume ? "volume" : "media"} onChange={onVolumeChange}>
         <span className={styles.reglerWert}>{volumeValue} %</span>
       </Regler>
@@ -275,37 +279,37 @@ export function QuickSettings({ onResetDock }: { onResetDock: () => void }) {
           rows fill up instead of an orphan standing next to two gaps ── */}
       <div className={styles.tiles}>
         {hatWifi ? (
-          <Tile gross icon="wifi" label="WLAN"
-                sub={wifi!.connected ?? (wifi!.enabled ? "An" : "Aus")}
+          <Tile gross icon="wifi" label={t("quickSettings.wifi")}
+                sub={wifi!.connected ?? (wifi!.enabled ? t("quickSettings.on") : t("quickSettings.off"))}
                 active={wifi!.enabled} testId="wifi" onClick={onWifiTile} />
         ) : (
-          <Tile gross icon={dndOn ? "dnd" : "bell"} label="Nicht stören"
-                sub={dndOn ? dndRemainingLabel(dndPolicy) : "Aus"}
+          <Tile gross icon={dndOn ? "dnd" : "bell"} label={t("quickSettings.dnd")}
+                sub={dndOn ? dndRemainingText(dndPolicy) : t("quickSettings.off")}
                 active={dndOn} testId="dnd" onClick={() => void toggleDnd()} />
         )}
         {hatBt ? (
-          <Tile gross icon="bluetooth" label="Bluetooth"
-                sub={bluetooth!.enabled ? "An" : "Aus"}
+          <Tile gross icon="bluetooth" label={t("quickSettings.bluetooth")}
+                sub={bluetooth!.enabled ? t("quickSettings.on") : t("quickSettings.off")}
                 active={bluetooth!.enabled} testId="bluetooth" onClick={onBtTile} />
         ) : (
           <Tile gross icon={theme === "dark" ? "moon" : "sun"}
-                label={theme === "dark" ? "Dunkel" : "Hell"}
-                sub={theme === "dark" ? "Dunkles Design" : "Helles Design"}
+                label={theme === "dark" ? t("quickSettings.dark") : t("quickSettings.light")}
+                sub={theme === "dark" ? t("quickSettings.darkTheme") : t("quickSettings.lightTheme")}
                 active={theme === "dark"} testId="theme"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")} />
         )}
-        <Tile gross icon="devices" label="Geräte-Hub" sub="Zuhause"
+        <Tile gross icon="devices" label={t("quickSettings.devices")} sub={t("quickSettings.devicesSub")}
               active={false} testId="devices"
               onClick={() => useWindowsStore.getState().openWindow("geraete")} />
         {canOpenPanels ? (
-          <Tile gross icon="hotspot" label="Hotspot" sub="System" active={false}
+          <Tile gross icon="hotspot" label={t("quickSettings.hotspot")} sub={t("quickSettings.hotspotSub")} active={false}
                 testId="tethering" onClick={() => openPanel("tethering")} />
         ) : battery ? (
-          <Tile gross icon="battery" label="Akku"
-                sub={`${battery.percent} %${battery.charging ? " · lädt" : ""}`}
+          <Tile gross icon="battery" label={t("quickSettings.battery")}
+                sub={battery.charging ? t("quickSettings.batteryCharging", { percent: battery.percent }) : t("quickSettings.batteryLevel", { percent: battery.percent })}
                 active={battery.charging} testId="battery" onClick={() => { /* display only */ }} />
         ) : (
-          <Tile gross icon="comment" label="Feedback" sub="An den Admin" active={false} testId="feedback"
+          <Tile gross icon="comment" label={t("quickSettings.feedback")} sub={t("quickSettings.feedbackSub")} active={false} testId="feedback"
                 onClick={() =>
                   window.dispatchEvent(new CustomEvent("claraos-open-feedback", {
                     detail: { source: "quicksettings" },
@@ -313,36 +317,36 @@ export function QuickSettings({ onResetDock }: { onResetDock: () => void }) {
         )}
 
         {hatWifi && (
-          <Tile icon={dndOn ? "dnd" : "bell"} label={dndOn ? `Nicht stören · ${dndRemainingLabel(dndPolicy)}` : "Nicht stören"}
+          <Tile icon={dndOn ? "dnd" : "bell"} label={dndOn ? t("quickSettings.dndUntil", { remaining: dndRemainingText(dndPolicy) }) : t("quickSettings.dnd")}
                 active={dndOn} testId="dnd" onClick={() => void toggleDnd()} />
         )}
         {hatBt && (
-          <Tile icon={theme === "dark" ? "moon" : "sun"} label={theme === "dark" ? "Dunkel" : "Hell"}
+          <Tile icon={theme === "dark" ? "moon" : "sun"} label={theme === "dark" ? t("quickSettings.dark") : t("quickSettings.light")}
                 active={theme === "dark"} testId="theme"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")} />
         )}
-        <Tile icon={muted ? "volumeOff" : "volume"} label={muted ? "Clara-Stimme stumm" : "Clara-Stimme"}
+        <Tile icon={muted ? "volumeOff" : "volume"} label={muted ? t("quickSettings.voiceMuted") : t("quickSettings.voice")}
               active={!muted} testId="voice" onClick={toggleMute} />
-        <Tile icon="vibrate" label="Haptik" active={haptics} testId="haptics" onClick={toggleHaptics} />
+        <Tile icon="vibrate" label={t("quickSettings.haptics")} active={haptics} testId="haptics" onClick={toggleHaptics} />
         {caps.includes("mic.set") && mic && (
-          <Tile icon="mic" label={mic.muted ? "Mikrofon stumm" : "Mikrofon"}
+          <Tile icon="mic" label={mic.muted ? t("quickSettings.micMuted") : t("quickSettings.mic")}
                 active={!mic.muted} testId="mic" onClick={onMicTile} />
         )}
-        <Tile icon="fullscreen" label="Vollbild" active={isFullscreen}
+        <Tile icon="fullscreen" label={t("quickSettings.fullscreen")} active={isFullscreen}
               testId="fullscreen" onClick={toggleFullscreen} />
-        <Tile icon="camera" label="Kamera" active={false} testId="kamera"
+        <Tile icon="camera" label={t("quickSettings.camera")} active={false} testId="kamera"
               onClick={() => useWindowsStore.getState().openWindow("kamera")} />
         {(canOpenPanels || battery) && (
-          <Tile icon="comment" label="Feedback" active={false} testId="feedback"
+          <Tile icon="comment" label={t("quickSettings.feedback")} active={false} testId="feedback"
                 onClick={() =>
                   window.dispatchEvent(new CustomEvent("claraos-open-feedback", {
                     detail: { source: "quicksettings" },
                   }))} />
         )}
-        <Tile icon="restore" label="Dock zurücksetzen" active={false}
+        <Tile icon="restore" label={t("quickSettings.resetDock")} active={false}
               testId="dock-reset" onClick={onResetDock} />
         {OFFER_ANDROID_APP && (
-          <Tile icon="android" label="Android-App laden" active={false} testId="get-app"
+          <Tile icon="android" label={t("quickSettings.getAndroidApp")} active={false} testId="get-app"
                 onClick={() => window.location.assign(COMPANION_APK_URL)} />
         )}
       </div>
@@ -352,22 +356,22 @@ export function QuickSettings({ onResetDock }: { onResetDock: () => void }) {
       <div className={styles.schrift}>
         <span className={styles.schriftLabel}>
           <Icon name="textSize" size={22} />
-          <span>Schrift {uiScale} %</span>
+          <span>{t("quickSettings.fontSize", { value: uiScale })}</span>
         </span>
         <span className={styles.schriftKnoepfe}>
-          <button type="button" className={styles.schriftKnopf} onClick={() => stelleSchrift(uiScale - 5)} aria-label="Schrift kleiner">A−</button>
-          <button type="button" className={styles.schriftKnopf} onClick={() => stelleSchrift(uiScale + 5)} aria-label="Schrift größer">A+</button>
+          <button type="button" className={styles.schriftKnopf} onClick={() => stelleSchrift(uiScale - 5)} aria-label={t("quickSettings.fontSmaller")}>A−</button>
+          <button type="button" className={styles.schriftKnopf} onClick={() => stelleSchrift(uiScale + 5)} aria-label={t("quickSettings.fontLarger")}>A+</button>
         </span>
       </div>
 
       <ActionSheet
         open={aufbauOffen}
         onClose={() => setAufbauOffen(false)}
-        title="Aufbau der Shade"
+        title={t("quickSettings.layoutTitle")}
         items={[
-          { id: "getrennt", label: `${shadeAufbau === "getrennt" ? "● " : "○ "}Getrennt — links Benachrichtigungen, rechts Einstellungen`,
+          { id: "getrennt", label: `${shadeAufbau === "getrennt" ? "● " : "○ "}${t("quickSettings.layoutSeparate")}`,
             onSelect: () => setShadeAufbau("getrennt") },
-          { id: "kombiniert", label: `${shadeAufbau === "kombiniert" ? "● " : "○ "}Kombiniert — alles in einem Panel`,
+          { id: "kombiniert", label: `${shadeAufbau === "kombiniert" ? "● " : "○ "}${t("quickSettings.layoutCombined")}`,
             onSelect: () => setShadeAufbau("kombiniert") },
         ]}
       />

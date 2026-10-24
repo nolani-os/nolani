@@ -23,7 +23,7 @@ import secrets
 
 import httpx
 
-from betriebsprofil import IS_CELL
+from betriebsprofil import ASSISTANT_NAME, IS_CELL
 
 logger = logging.getLogger(__name__)
 
@@ -45,18 +45,18 @@ async def _paperless(username: str) -> dict:
     is forgotten. Interactive login stays OIDC-only (PAPERLESS_DISABLE_REGULAR_LOGIN)."""
     admin_pw = os.environ.get("PAPERLESS_ADMIN_PASSWORD", "")
     if not admin_pw:
-        raise ZugangFehlt("Paperless ist in dieser Zelle nicht für Clara eingerichtet.")
+        raise ZugangFehlt(f"Paperless ist in dieser Zelle nicht für {ASSISTANT_NAME} eingerichtet.")
     admin = ("admin", admin_pw)
     async with httpx.AsyncClient(base_url=PAPERLESS_URL, timeout=30) as c:
         r = await c.get("/api/users/", params={"username__iexact": username}, auth=admin)
         r.raise_for_status()
         treffer = [u for u in r.json().get("results", []) if u.get("username") == username]
         if not treffer:
-            raise ZugangFehlt("Öffne Paperless einmal über die Kachel — danach kann Clara "
+            raise ZugangFehlt(f"Öffne Paperless einmal über die Kachel — danach kann {ASSISTANT_NAME} "
                               "auf deine Dokumente zugreifen.")
         u = treffer[0]
         if u.get("is_superuser") or u.get("is_staff"):
-            raise ZugangFehlt("Für Paperless-Administratoren legt Clara keinen Zugang an.")
+            raise ZugangFehlt(f"Für Paperless-Administratoren legt {ASSISTANT_NAME} keinen Zugang an.")
         pw = secrets.token_urlsafe(32)
         r = await c.patch(f"/api/users/{u['id']}/", json={"password": pw}, auth=admin)
         r.raise_for_status()
@@ -75,7 +75,7 @@ async def _ueber_ctl(app: str, name: str, username: str) -> str:
     for apps without an admin API to issue one (Mastodon: rails, Immich: its database)."""
     from services import zellen_browser
     if not zellen_browser.CTL_URL:
-        raise ZugangFehlt(f"{name} ist in dieser Zelle nicht für Clara eingerichtet.")
+        raise ZugangFehlt(f"{name} ist in dieser Zelle nicht für {ASSISTANT_NAME} eingerichtet.")
     async with httpx.AsyncClient(timeout=260) as c:          # Mastodon boots rails: ~1 min
         r = await c.post(f"{zellen_browser.CTL_URL}/zugang", json={"user": username, "app": app},
                          headers={"X-Browser-Ctl-Token": zellen_browser.CTL_TOKEN})
@@ -85,9 +85,9 @@ async def _ueber_ctl(app: str, name: str, username: str) -> str:
     grund = d.get("reason")
     if grund == "KEIN_KONTO":
         raise ZugangFehlt(f"Öffne {name} einmal über die Kachel und melde dich an — danach "
-                          f"kann Clara dort für dich lesen.")
+                          f"kann {ASSISTANT_NAME} dort für dich lesen.")
     if grund == "PRIVILEGIERT":
-        raise ZugangFehlt(f"Für {name}-Konten mit Admin- oder Moderationsrechten legt Clara "
+        raise ZugangFehlt(f"Für {name}-Konten mit Admin- oder Moderationsrechten legt {ASSISTANT_NAME} "
                           f"keinen Zugang an.")
     if grund == "no_app":
         raise ZugangFehlt(f"In dieser Zelle läuft kein {name}.")

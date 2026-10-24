@@ -1,0 +1,499 @@
+{
+  "shell": {
+    "title": "Settings",
+    "role": {
+      "admin": "Admin",
+      "power-user": "Power user",
+      "guest": "Guest",
+      "user": "User"
+    },
+    "searchPlaceholder": "Search settings…",
+    "searchLabel": "Search settings",
+    "quick": "Quick settings",
+    "noResults": "Nothing found.",
+    "changedCount_one": "{{count}} changed",
+    "changedCount_other": "{{count}} changed",
+    "highlightChanged": "Highlight changed settings",
+    "loading": "Loading settings…",
+    "noModules": "No settings are enabled for this account. Please contact your administrator.",
+    "backToList": "Back to list",
+    "unsaved": "Unsaved changes",
+    "discard": "Discard",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "guardQuestion": "There are unsaved changes. What should happen to them?",
+    "unknownModule": "Unknown module: {{component}}"
+  },
+  "row": {
+    "changed": "Differs from the default",
+    "reset": "Reset {{label}} to default",
+    "color": "Color {{value}}",
+    "customColor": "Choose a custom color"
+  },
+  "enum": {
+    "uiLanguage": {
+      "system": "Same as browser"
+    },
+    "clickBehavior": {
+      "single": "Opens them",
+      "double": "Selects them (double-click opens)"
+    },
+    "animationSpeed": {
+      "instant": "Instant (off)",
+      "fast": "Fast",
+      "normal": "Normal",
+      "slow": "Slow"
+    },
+    "viewMode": {
+      "icons-large": "Large icons",
+      "icons-small": "Small icons",
+      "list": "List",
+      "details": "Details"
+    },
+    "sortKey": {
+      "name": "Name",
+      "modified": "Modified",
+      "size": "Size",
+      "type": "Type"
+    },
+    "sortDir": {
+      "asc": "Ascending",
+      "desc": "Descending"
+    },
+    "groupBy": {
+      "none": "Don't group",
+      "type": "By type",
+      "date": "By date"
+    },
+    "closeSplitViewChoice": {
+      "active": "The active side",
+      "inactive": "The inactive side",
+      "right": "Always the right side"
+    },
+    "themeMode": {
+      "skin": "Skin",
+      "light": "Light",
+      "dark": "Dark",
+      "auto": "Automatic"
+    },
+    "accentSource": {
+      "skin": "Theme",
+      "custom": "Custom"
+    },
+    "fontUi": {
+      "system": "System"
+    },
+    "fontMono": {
+      "system": "System"
+    },
+    "cursorStyle": {
+      "block": "Block",
+      "bar": "Bar",
+      "underline": "Underline"
+    },
+    "locale": {
+      "auto": "Automatic (browser)"
+    },
+    "timeFormat": {
+      "region": "Same as region",
+      "24h": "24-hour",
+      "12h": "12-hour (AM/PM)"
+    },
+    "firstDayOfWeek": {
+      "region": "Same as region",
+      "monday": "Monday",
+      "sunday": "Sunday"
+    },
+    "binaryDialect": {
+      "iec": "IEC (KiB, MiB)",
+      "metric": "Metric (kB, MB)",
+      "jedec": "JEDEC (KB, MB)"
+    }
+  },
+  "categories": {
+    "appearance": "Appearance",
+    "workspace": "Workspace",
+    "personalization": "Personal",
+    "privacy": "Security & privacy",
+    "language-time": "Language & time",
+    "connections": "Accounts & connections",
+    "system": "System"
+  },
+  "modules": {
+    "appearance": {
+      "name": "Colors & display",
+      "settings": {
+        "themeMode": {
+          "label": "Light/dark:",
+          "description": "'Skin' follows the selected theme, 'Automatic' switches by time of day."
+        },
+        "lightSkinId": {
+          "label": "Theme for light:"
+        },
+        "darkSkinId": {
+          "label": "Theme for dark:"
+        },
+        "sunriseHour": {
+          "label": "Light from (hour):",
+          "description": "Applies to the automatic switch."
+        },
+        "sunsetHour": {
+          "label": "Dark from (hour):"
+        },
+        "accentSource": {
+          "label": "Accent color:",
+          "description": "'Theme' uses the skin's color, 'Custom' overrides it."
+        },
+        "accentColor": {
+          "label": "Custom accent color:"
+        },
+        "uiScale": {
+          "label": "Interface size (%):",
+          "description": "Scales the whole interface — better than only enlarging the font."
+        },
+        "reduceMotion": {
+          "label": "Reduce motion",
+          "description": "Turns off animations — helps on slow devices and with motion sensitivity."
+        },
+        "highContrast": {
+          "label": "Higher contrast"
+        },
+        "fontUi": {
+          "label": "Interface font:"
+        },
+        "fontMono": {
+          "label": "Fixed width (terminal, code):"
+        }
+      }
+    },
+    "workspace-behavior": {
+      "name": "General behavior",
+      "settings": {
+        "clickBehavior": {
+          "label": "Clicking files and folders:",
+          "description": "Single click selects, double click opens — or a single click opens directly."
+        },
+        "animationSpeed": {
+          "label": "Animation speed:",
+          "description": "'Instant' turns animations off (also good for slow devices)."
+        },
+        "showTooltips": {
+          "label": "Show tooltips on hover"
+        }
+      }
+    },
+    "session": {
+      "name": "Session",
+      "settings": {
+        "restoreWindows": {
+          "label": "Restore windows from the last session"
+        },
+        "confirmLogout": {
+          "label": "Ask before logging out"
+        },
+        "autostartApps": {
+          "label": "Open on login"
+        }
+      }
+    },
+    "shortcuts": {
+      "name": "Keyboard shortcuts",
+      "settings": {
+        "bindings": {
+          "label": "Custom key bindings"
+        }
+      }
+    },
+    "notifications": {
+      "name": "Notifications",
+      "settings": {
+        "dndUntil": {
+          "label": "Do not disturb until (timestamp):",
+          "description": "Set via quick settings — 0 means off."
+        },
+        "criticalInDnd": {
+          "label": "Show critical messages despite “Do not disturb”"
+        },
+        "lowPriorityPopups": {
+          "label": "Popups for low urgency too"
+        },
+        "lowPriorityHistory": {
+          "label": "Keep low urgency in the history"
+        },
+        "popupTimeoutMs": {
+          "label": "Popup duration (ms):"
+        },
+        "appRules": {
+          "label": "Rules per app",
+          "description": "Per app: popup, popup despite “Do not disturb”, history, counter."
+        }
+      }
+    },
+    "terminal": {
+      "name": "Terminal",
+      "settings": {
+        "colorScheme": {
+          "label": "Color scheme:"
+        },
+        "fontSize": {
+          "label": "Font size:"
+        },
+        "scrollbackLines": {
+          "label": "Scrollback (lines):",
+          "description": "0 keeps nothing. The scrollback lives server-side in tmux."
+        },
+        "cursorStyle": {
+          "label": "Cursor:"
+        },
+        "cursorBlink": {
+          "label": "Blinking cursor"
+        },
+        "confirmPasteAlways": {
+          "label": "Ask before every paste",
+          "description": "Otherwise only asks for control characters or very large pastes."
+        },
+        "profiles": {
+          "label": "Terminal profiles"
+        },
+        "defaultProfile": {
+          "label": "Default profile:"
+        },
+        "quickCommands": {
+          "label": "Quick commands"
+        }
+      }
+    },
+    "files": {
+      "name": "Files",
+      "settings": {
+        "viewMode": {
+          "label": "View:"
+        },
+        "sortKey": {
+          "label": "Sort by:"
+        },
+        "sortDir": {
+          "label": "Order:"
+        },
+        "dirsFirst": {
+          "label": "Folders first"
+        },
+        "showHidden": {
+          "label": "Show hidden files"
+        },
+        "groupBy": {
+          "label": "Group:"
+        },
+        "openWithOverrides": {
+          "label": "Open-with associations"
+        },
+        "rememberOpenedTabs": {
+          "label": "Remember open tabs",
+          "description": "Pick up where you left off next time."
+        },
+        "openNewTabAfterLastTab": {
+          "label": "Add new tabs at the end",
+          "description": "Otherwise new tabs open right next to the current one."
+        },
+        "alwaysShowTabBar": {
+          "label": "Always show the tab bar",
+          "description": "Otherwise it only appears from the second tab on."
+        },
+        "confirmClosingMultipleTabs": {
+          "label": "Ask when several tabs are open"
+        },
+        "closeSplitViewChoice": {
+          "label": "Closing split view closes:",
+          "description": "Which side closes when you end split view."
+        },
+        "places": {
+          "label": "Places panel"
+        },
+        "openTabs": {
+          "label": "Open tabs (session)"
+        }
+      }
+    },
+    "region-formats": {
+      "name": "Language & formats",
+      "settings": {
+        "uiLanguage": {
+          "label": "Interface language:",
+          "description": "“Same as browser” follows the device's language setting."
+        },
+        "locale": {
+          "label": "Region format:",
+          "description": "Determines numbers, dates and times — not the interface language."
+        },
+        "timeFormat": {
+          "label": "Time:"
+        },
+        "firstDayOfWeek": {
+          "label": "Week starts on:"
+        },
+        "currency": {
+          "label": "Currency:"
+        },
+        "binaryDialect": {
+          "label": "File sizes:",
+          "description": "IEC = KiB/MiB (1024), metric = kB/MB (1000), JEDEC = KB as 1024."
+        }
+      }
+    },
+    "default-apps": {
+      "name": "Default apps & autostart"
+    },
+    "privacy-history": {
+      "name": "History",
+      "settings": {
+        "recentAppsEnabled": {
+          "label": "List recently used apps in the start menu"
+        },
+        "clipboardHistorySize": {
+          "label": "Entries in the clipboard history:",
+          "description": "0 turns the history (Win+V) off."
+        }
+      }
+    },
+    "personalization": {
+      "name": "Theme & background"
+    },
+    "credentials": {
+      "name": "App credentials"
+    },
+    "app-connections": {
+      "name": "App connections"
+    },
+    "agent-keys": {
+      "name": "Agent access"
+    },
+    "mobile-push": {
+      "name": "Phone push"
+    },
+    "federation": {
+      "name": "Federation"
+    },
+    "clara-memory": {
+      "name": "What {{assistant}} knows about me"
+    },
+    "clara-freigaben": {
+      "name": "{{assistant}} permissions"
+    },
+    "about": {
+      "name": "About {{product}}"
+    }
+  },
+  "quick": {
+    "mode": {
+      "title": "Light or dark",
+      "skin": "Like the theme",
+      "light": "Always light",
+      "dark": "Always dark",
+      "auto": "By time of day",
+      "autoHint": "Switches at {{sunrise}}:00 and {{sunset}}:00 — times under “{{module}}”."
+    },
+    "accent": {
+      "title": "Accent color",
+      "skin": "Theme color",
+      "useSkin": "Use the theme color",
+      "preset": "Accent color {{color}}"
+    },
+    "scale": "Interface size",
+    "recent": "Recently used"
+  },
+  "personalization": {
+    "heading": "Personalization",
+    "theme": "Theme",
+    "claraGlassHint": "Glass — the {{product}} design language",
+    "dark": "Dark",
+    "light": "Light",
+    "aeroGlassHint": "Aero Glass — premium laptop skin",
+    "skin": "Skin",
+    "liveWallpaper": "Live wallpaper",
+    "liveWallpaperDesc": "Animated mesh gradients + bokeh drift",
+    "on": "On",
+    "off": "Off",
+    "pausesOn": "Pauses automatically with",
+    "avatar": "Profile picture",
+    "avatarInitials": "Profile picture from initials",
+    "chooseImage": "Choose image …",
+    "resetToInitials": "Reset to initials",
+    "wallpaper": "Wallpaper",
+    "removeImage": "Remove image",
+    "removeNamed": "Remove {{name}}",
+    "ownImage": "Custom image …",
+    "uploadFailed": "Upload failed ({{status}})"
+  },
+  "about": {
+    "version": "Version {{version}}",
+    "tagline": "Browser-based desktop environment",
+    "platform": "Platform",
+    "windowManager": "Window manager",
+    "state": "State",
+    "skin": "Skin",
+    "openWindows": "Open windows",
+    "deployed": "Deployed",
+    "license": "Free software (AGPL-3.0-or-later)",
+    "source": "Source code",
+    "weatherData": "Weather data"
+  },
+  "defaultApps": {
+    "openWithTitle": "What opens your files",
+    "kind": {
+      "pdf": "PDF documents",
+      "png": "Images",
+      "mp4": "Videos",
+      "mp3": "Music",
+      "docx": "Text documents",
+      "xlsx": "Spreadsheets",
+      "md": "Markdown and text",
+      "stl": "3D models"
+    },
+    "app": {
+      "pdf-viewer": "PDF viewer",
+      "image-viewer": "Image viewer",
+      "video-player": "Video player",
+      "office-viewer": "Office (Collabora)",
+      "text-editor": "Text editor",
+      "model-viewer": "3D viewer",
+      "files": "Files"
+    },
+    "reset": "Reset to default",
+    "autostartTitle": "Open on login",
+    "autostartDesc": "These apps start by themselves after you log in. That is different from restoring the last session — it also applies when nothing was open before.",
+    "none": "Nothing selected yet.",
+    "unavailable": "App no longer available",
+    "remove": "Remove",
+    "add": "Add app",
+    "choose": "Choose …"
+  },
+  "shortcuts": {
+    "taken": "“{{binding}}” is already assigned to “{{command}}”.",
+    "duplicate": "Also assigned to “{{command}}”",
+    "change": "Change shortcut for {{command}}",
+    "pressKey": "Press a key… (Esc cancels)",
+    "reset": "Reset to default",
+    "category": {
+      "Apps": "Apps",
+      "Fenster": "Windows",
+      "Shell": "Shell",
+      "Sitzung": "Session"
+    },
+    "command": {
+      "open-files": "Open Files",
+      "open-settings": "Open Settings",
+      "open-search": "Open search",
+      "quick-settings": "Quick settings",
+      "open-clipboard": "Clipboard history",
+      "screenshot": "Screenshot",
+      "show-desktop": "Show desktop",
+      "task-manager": "Task Manager",
+      "logout": "Log out",
+      "close-window": "Close window",
+      "snap-left": "Snap window left",
+      "snap-right": "Snap window right",
+      "maximize": "Maximize window",
+      "minimize": "Minimize window"
+    }
+  }
+}

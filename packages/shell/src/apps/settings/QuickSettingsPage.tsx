@@ -9,7 +9,7 @@
  * curated list while there is too little data. Same here.
  */
 import { useEffect, useMemo, useState } from "react";
-import { useSettingsStore } from "@claraos/core";
+import { useSettingsStore, useTranslation, settingsModuleName } from "@claraos/core";
 import { ACCENT_PRESETS } from "@claraos/skins";
 import styles from "./SettingsApp.module.css";
 import { Icon } from "../../components/Icon";
@@ -51,6 +51,7 @@ interface Props {
 
 export function QuickSettingsPage({ onOpen }: Props) {
   const store = useSettingsStore();
+  const { t } = useTranslation("settings");
   const values = store.values["appearance"] ?? {};
   const [tick, setTick] = useState(0);
 
@@ -84,13 +85,13 @@ export function QuickSettingsPage({ onOpen }: Props) {
   return (
     <div className={styles.quickPage}>
       <section>
-        <h3>Hell oder dunkel</h3>
+        <h3>{t("quick.mode.title")}</h3>
         <div className={styles.modeTiles}>
           {[
-            { id: "skin", label: "Wie das Design" },
-            { id: "light", label: "Immer hell" },
-            { id: "dark", label: "Immer dunkel" },
-            { id: "auto", label: "Nach Tageszeit" },
+            { id: "skin", label: t("quick.mode.skin") },
+            { id: "light", label: t("quick.mode.light") },
+            { id: "dark", label: t("quick.mode.dark") },
+            { id: "auto", label: t("quick.mode.auto") },
           ].map((m) => (
             <button
               key={m.id}
@@ -105,20 +106,23 @@ export function QuickSettingsPage({ onOpen }: Props) {
         </div>
         {mode === "auto" && (
           <p className={styles.rowDesc}>
-            Wechselt um {String(values.sunriseHour ?? 7)} und{" "}
-            {String(values.sunsetHour ?? 20)} Uhr — Zeiten unter „Farben &amp; Darstellung“.
+            {t("quick.mode.autoHint", {
+              sunrise: String(values.sunriseHour ?? 7),
+              sunset: String(values.sunsetHour ?? 20),
+              module: settingsModuleName("appearance", "Farben & Darstellung"),
+            })}
           </p>
         )}
       </section>
 
       <section>
-        <h3>Akzentfarbe</h3>
+        <h3>{t("quick.accent.title")}</h3>
         <div className={styles.colorPicker} style={{ maxWidth: "none", justifyContent: "flex-start" }}>
           <button
             className={`${styles.swatch} ${accentSource === "skin" ? styles.swatchActive : ""}`}
             style={{ background: "var(--accent)" }}
-            title="Farbe des Designs"
-            aria-label="Farbe des Designs verwenden"
+            title={t("quick.accent.skin")}
+            aria-label={t("quick.accent.useSkin")}
             onClick={() => void set("accentSource", "skin")}
           />
           {ACCENT_PRESETS.map((c) => (
@@ -129,7 +133,7 @@ export function QuickSettingsPage({ onOpen }: Props) {
               }`}
               style={{ background: c }}
               title={c}
-              aria-label={`Akzentfarbe ${c}`}
+              aria-label={t("quick.accent.preset", { color: c })}
               onClick={async () => {
                 store.setDraft("appearance", "accentColor", c);
                 store.setDraft("appearance", "accentSource", "custom");
@@ -142,7 +146,7 @@ export function QuickSettingsPage({ onOpen }: Props) {
       </section>
 
       <section>
-        <h3>Oberflächengröße</h3>
+        <h3>{t("quick.scale")}</h3>
         <div className={styles.scaleRow}>
           <input
             type="range"
@@ -150,7 +154,7 @@ export function QuickSettingsPage({ onOpen }: Props) {
             max={150}
             step={10}
             value={scale}
-            aria-label="Oberflächengröße"
+            aria-label={t("quick.scale")}
             onChange={(e) => void set("uiScale", Number(e.target.value))}
           />
           <span>{scale} %</span>
@@ -158,12 +162,12 @@ export function QuickSettingsPage({ onOpen }: Props) {
       </section>
 
       <section>
-        <h3>Zuletzt benutzt</h3>
+        <h3>{t("quick.recent")}</h3>
         <div className={styles.recentGrid}>
           {recent.map((m) => (
             <button key={m.id} className={styles.recentTile} onClick={() => onOpen(m.id)}>
               <span className={styles.plaettchen} style={{ background: modulPlaettchen(m.id, m.category).farbe }} aria-hidden="true"><Icon name={modulPlaettchen(m.id, m.category).icon} size={15} /></span>
-              {m.name}
+              {settingsModuleName(m.id, m.name)}
             </button>
           ))}
         </div>

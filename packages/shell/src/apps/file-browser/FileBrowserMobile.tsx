@@ -24,7 +24,7 @@ import { useDialogs } from "../../Chat/Dialogs";
 import { useLongPress } from "../../Mobile/useLongPress";
 import { resolveFileApp, fileExt, sniffIsText } from "../../lib/fileTypeRouter";
 import { downloadFile, downloadMany } from "../../lib/downloadFile";
-import { NEW_FILE_TEMPLATES } from "../../lib/newFileTemplates";
+import { NEW_FILE_TEMPLATES, templateLabel } from "../../lib/newFileTemplates";
 import { useFileBrowserCore } from "./useFileBrowserCore";
 import { useArchiveOps } from "./useArchiveOps";
 import { useFileOps } from "./useFileOps";
@@ -232,7 +232,7 @@ export default function FileBrowserMobile({ windowId }: { windowId: string }) {
       id: "new-file", label: "Neue Datei", icon: sym("document"),
       submenu: NEW_FILE_TEMPLATES.map((tpl) => ({
         id: `tpl-${tpl.ext}`,
-        label: `${tpl.label} (${tpl.ext})`,
+        label: `${templateLabel(tpl)} (${tpl.ext})`,
         onSelect: () => {
           void createFromTemplateCore(tpl.ext).then((created) => {
             if (created) {

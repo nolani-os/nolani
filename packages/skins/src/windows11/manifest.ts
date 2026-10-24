@@ -105,7 +105,7 @@ const effects: SkinManifest["tokens"]["effects"] = {
 
 export const windows11DarkSkin: SkinManifest = {
   id: "windows11-dark",
-  name: "Windows 11 Dark",
+  name: "Classic Dark",
   tokens: { colors: darkColors, fonts, spacing, shadows, effects },
   layout: {
     taskbarPosition: "bottom",
@@ -122,7 +122,7 @@ export const windows11DarkSkin: SkinManifest = {
 
 export const windows11LightSkin: SkinManifest = {
   id: "windows11-light",
-  name: "Windows 11 Light",
+  name: "Classic Light",
   tokens: { colors: lightColors, fonts, spacing, shadows, effects },
   layout: {
     taskbarPosition: "bottom",

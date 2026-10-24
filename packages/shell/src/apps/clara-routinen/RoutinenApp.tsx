@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import styles from "./RoutinenApp.module.css";
+import { regionLocale, getBrand } from "@claraos/core";
 
 /**
  * Routines — recurring tasks for Clara (API: routers/routinen.py).
@@ -157,21 +158,21 @@ export function RoutinenApp() {
         <button className={styles.primaer} onClick={() => setForm({ ...LEER })}>+ Neue Routine</button>
       </header>
       <p className={styles.erklaerung}>
-        Wiederkehrende Aufträge an Clara. Sie liest selbstständig — ändern, senden oder anlegen
+        Wiederkehrende Aufträge an {getBrand().assistant}. Sie liest selbstständig — ändern, senden oder anlegen
         tut sie nur, wenn du den Vorschlag hier freigibst.
       </p>
-      {!gehirn && <p className={styles.warnung}>Clara ist in dieser Umgebung nicht angebunden — Routinen laufen nicht.</p>}
+      {!gehirn && <p className={styles.warnung}>{getBrand().assistant} ist in dieser Umgebung nicht angebunden — Routinen laufen nicht.</p>}
       {fehler && <p className={styles.fehler} role="alert">{fehler}</p>}
       {hinweis && <p className={styles.hinweis} onClick={() => setHinweis(null)}>{hinweis}</p>}
 
       {chatOffen.length > 0 && (
         <div className={styles.karte}>
           <h3 className={styles.abschnitt}>Wartet auf deine Freigabe</h3>
-          <p className={styles.erklaerung}>Clara hat das im Chat vorbereitet. Es passiert erst, wenn du es freigibst.</p>
+          <p className={styles.erklaerung}>{getBrand().assistant} hat das im Chat vorbereitet. Es passiert erst, wenn du es freigibst.</p>
           {chatOffen.map((l) => (
             <div key={l.id} className={styles.lauf}>
               <div className={styles.laufkopf}>
-                <span>{new Date(l.gestartet).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}</span>
+                <span>{new Date(l.gestartet).toLocaleString(regionLocale(), { dateStyle: "short", timeStyle: "short" })}</span>
               </div>
               {l.vorschlaege.map((v, i) => vorschlagZeile(l, v, i))}
             </div>
@@ -189,7 +190,7 @@ export function RoutinenApp() {
             </div>
           )}
           <label>Titel<input value={form.titel} maxLength={120} onChange={(e) => setForm({ ...form, titel: e.target.value })} /></label>
-          <label>Auftrag an Clara
+          <label>Auftrag an {getBrand().assistant}
             <textarea rows={4} value={form.auftrag} maxLength={4000}
               onChange={(e) => setForm({ ...form, auftrag: e.target.value })} />
           </label>
@@ -244,7 +245,7 @@ export function RoutinenApp() {
                 <div key={l.id} className={styles.lauf}>
                   <div className={styles.laufkopf}>
                     <span className={`${styles.status} ${styles["s_" + l.status] || ""}`}>{STATUS[l.status] || l.status}</span>
-                    <span>{new Date(l.gestartet).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}</span>
+                    <span>{new Date(l.gestartet).toLocaleString(regionLocale(), { dateStyle: "short", timeStyle: "short" })}</span>
                   </div>
                   {l.ergebnis && <p className={styles.ergebnis}>{l.ergebnis}</p>}
                   {l.vorschlaege.map((v, i) => vorschlagZeile(l, v, i))}

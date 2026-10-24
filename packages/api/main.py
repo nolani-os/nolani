@@ -1,10 +1,11 @@
 """ClaraOS API – FastAPI backend for the browser-based desktop environment."""
 
-from betriebsprofil import heim_default  # external cell: no silent home fallback
+from betriebsprofil import PRODUCT_NAME, heim_default  # external cell: no silent home fallback
 import logging
 import os
+import re
 from contextlib import AsyncExitStack, asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -211,16 +212,23 @@ async def lifespan(_app: FastAPI):
     await close_pool()
 
 
+SOURCE_URL_DEFAULT = "https://github.com/nolani-os/nolani"
+
 app = FastAPI(
-    title="ClaraOS API",
+    title=f"{PRODUCT_NAME} API",
     version="0.1.0",
     lifespan=lifespan,
 )
 
-# CORS (for dev mode when frontend runs on different port)
+# CORS: only the installation's own host names (shell, browser and admin-view
+# hosts call the API across subdomains). A wildcard together with credentials
+# would let any foreign site read signed-in GET responses. A dev frontend on
+# another port is added explicitly via CLARAOS_CORS_ORIGINS (comma-separated).
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[o.strip() for o in os.environ.get("CLARAOS_CORS_ORIGINS", "").split(",")
+                   if o.strip()],
+    allow_origin_regex=rf"https://([a-z0-9-]+\.)*{re.escape(BASE_DOMAIN)}",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -278,6 +286,18 @@ _ADMIN_ONLY_PREFIXES = (
 _ADMIN_GATE_EXEMPT_SUFFIXES = ("/health", "/readyz", "/livez", "/info", "/status")
 
 
+def _verified_groups(request: Request) -> list[str]:
+    """Groups of the caller, read only once the request is authenticated.
+
+    The raw `X-Authentik-Groups` header is only trustworthy next to a valid
+    proxy secret or service token; `get_current_user` checks exactly that.
+    """
+    try:
+        return get_current_user(request)["groups"]
+    except HTTPException:
+        return []
+
+
 @app.middleware("http")
 async def admin_path_gate(request: Request, call_next):
     """Administration endpoints only for clara-admins (or service callers)."""
@@ -291,8 +311,7 @@ async def admin_path_gate(request: Request, call_next):
         from auth import is_service_call  # local: avoids an import cycle at startup
         caller = request.headers.get("X-Authentik-Username", "").strip()
         if caller or not is_service_call(request):
-            groups = request.headers.get("X-Authentik-Groups", "")
-            if "clara-admins" not in [g.strip() for g in groups.split("|")]:
+            if "clara-admins" not in _verified_groups(request):
                 logger.warning("ADMIN_GATE: %s fuer %s abgelehnt",
                                path, request.headers.get("X-Authentik-Username", "?"))
                 return JSONResponse(
@@ -333,9 +352,9 @@ async def impersonation_middleware(request: Request, call_next):
 
         # Get original user from Authentik headers
         original_username = request.headers.get("X-Authentik-Username", "")
-        original_groups = request.headers.get("X-Authentik-Groups", "")
+        original_groups = _verified_groups(request)
 
-        # Security: only admins may impersonate
+        # Security: only admins may impersonate (exact group, authenticated request)
         if "clara-admins" in original_groups and original_username:
             # Fetch target user's groups from Authentik so role/permissions resolve correctly
             target_groups = await _fetch_user_groups(target_user)
@@ -390,6 +409,11 @@ async def get_me(request: Request) -> dict:
     user["logout_url"] = AUTHENTIK_LOGOUT_URL
     # External cell: the shell hides home-only features when running in a cell.
     user["profil"] = betriebsprofil.PROFILE
+    user["brand"] = {"product": betriebsprofil.PRODUCT_NAME,
+                     "assistant": betriebsprofil.ASSISTANT_NAME}
+    # AGPL §13: users of a network service can get its source. A modified
+    # installation points CLARAOS_SOURCE_URL at its own source.
+    user["source_url"] = os.environ.get("CLARAOS_SOURCE_URL", "").strip() or SOURCE_URL_DEFAULT
     return user
 
 

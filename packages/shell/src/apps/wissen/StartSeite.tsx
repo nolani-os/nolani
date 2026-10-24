@@ -13,6 +13,7 @@
  * collection entries that carry a date (contract expires, recipe for
  * Saturday). Two different things that merely sound similar.
  */
+import { getBrand } from "@claraos/core";
 import { useEffect, useMemo, useState } from "react";
 import styles from "./Wissen.module.css";
 import geteilt from "../ideas/IdeasApp.module.css";
@@ -146,10 +147,10 @@ export function StartSeite({ objekte, sammlungen, favoriten, onOpen, onClara }: 
           example: people who don't know what they may say, say nothing. */}
       <section className={styles.startClara}>
         <span className={styles.startClaraText}>
-          Oder sag es einfach Clara — <em>„Leg mir eine Sammlung für den Urlaub an,
+          Oder sag es einfach {getBrand().assistant} — <em>„Leg mir eine Sammlung für den Urlaub an,
           mit Ort, Datum und Kosten"</em>.
         </span>
-        <Button stufe="tonal" icon="sparkle" onClick={onClara}>Mit Clara anlegen</Button>
+        <Button stufe="tonal" icon="sparkle" onClick={onClara}>Mit {getBrand().assistant} anlegen</Button>
       </section>
     </div>
   );

@@ -28,6 +28,7 @@ import { RegelnDialog, AbwesenheitDialog, AufraeumenDialog } from "./Regeln";
 import { FreigabenDialog, VerzeichnisDialog, VerteilerDialog } from "./Business";
 import { MeinTag } from "./MeinTag";
 import { SucheDialog, ProfilKarte } from "./Fenster";
+import { regionLocale, getBrand } from "@claraos/core";
 
 const SEITE = 50;
 const POLL_MS = 300_000;   // fallback — normally push arrives via /post/events
@@ -44,9 +45,9 @@ function tagesGruppe(iso: string | null): string {
   const diff = Math.round((heute.getTime() - tag.getTime()) / 86_400_000);
   if (diff <= 0) return "Heute";
   if (diff === 1) return "Gestern";
-  if (diff < 7) return d.toLocaleDateString("de-DE", { weekday: "long" });
-  if (d.getFullYear() === heute.getFullYear()) return d.toLocaleDateString("de-DE", { day: "numeric", month: "long" });
-  return d.toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" });
+  if (diff < 7) return d.toLocaleDateString(regionLocale(), { weekday: "long" });
+  if (d.getFullYear() === heute.getFullYear()) return d.toLocaleDateString(regionLocale(), { day: "numeric", month: "long" });
+  return d.toLocaleDateString(regionLocale(), { day: "numeric", month: "long", year: "numeric" });
 }
 
 /** Swipe gestures: colour, icon and label per action. */
@@ -1178,7 +1179,7 @@ export default function PostApp({ windowId }: { windowId: string }) {
             )}
           </div>
           <div className={styles.claraLeiste}>
-            <span className={styles.claraMarke}>ClaraOS</span>
+            <span className={styles.claraMarke}>{getBrand().product}</span>
             <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void bruecke("task")} title="Aufgabe im Planner (Projekt Inbox)">→ Aufgabe</button>
             <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void bruecke("event")} title="Termin im Kalender">→ Termin</button>
             <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void bruecke("contact")} title="Absender in die Kontakte">→ Kontakt</button>

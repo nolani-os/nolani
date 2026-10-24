@@ -1,5 +1,5 @@
 [Unit]
-Description=ClaraOS-Zelle: nächtliche Sicherung (vor dem Hetzner-Backup-Fenster)
+Description=Zelle: nächtliche Sicherung (vor dem Hetzner-Backup-Fenster)
 After=docker.service
 Requires=docker.service
 

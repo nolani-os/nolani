@@ -7,6 +7,7 @@
  * because the same KPI may contribute to several goals.
  *
  * Important: all percentages and traffic lights arrive pre-computed from the server. */
+import { getBrand } from "@claraos/core";
 import { useCallback, useEffect, useState } from "react";
 import styles from "../IdeasApp.module.css";
 import { ideasApi } from "../api";
@@ -126,8 +127,8 @@ export function GoalsView({ currentUser, onOpen, onChanged, reloadTick }: Props)
                 <Icon name="plus" size={13} /><Icon name="kpi" size={17} />
               </button>
               {n.type === "goal" && (
-                <button className={styles.iconBtn} title="Clara Ideen vorschlagen lassen"
-                        aria-label="Clara Ideen vorschlagen lassen"
+                <button className={styles.iconBtn} title={`${getBrand().assistant} Ideen vorschlagen lassen`}
+                        aria-label={`${getBrand().assistant} Ideen vorschlagen lassen`}
                         onClick={() => setSuggestFor(n)}><Icon name="sparkle" size={18} /></button>
               )}
             </span>

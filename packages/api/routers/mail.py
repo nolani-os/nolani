@@ -17,7 +17,7 @@ synchronous, so all calls run in asyncio.to_thread.
 """
 from __future__ import annotations
 
-from betriebsprofil import heim_default  # external deployment: no silent home-server fallback
+from betriebsprofil import PRODUCT_NAME, heim_default  # external deployment: no silent home-server fallback
 import asyncio
 import email
 import email.header
@@ -83,7 +83,7 @@ async def _mail_credentials(username: str) -> tuple[str, str]:
         raise HTTPException(
             status_code=409,
             detail=(
-                f"Kein Mail-Konto für {username!r} verbunden — in ClaraOS unter "
+                f"Kein Mail-Konto für {username!r} verbunden — in {PRODUCT_NAME} unter "
                 "Apps → Mail verbinden (app_id 'mail': username = volle Adresse, password)."
             ),
         )

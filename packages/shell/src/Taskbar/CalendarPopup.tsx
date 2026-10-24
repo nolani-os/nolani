@@ -1,6 +1,10 @@
 import { useMemo } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import styles from "./CalendarPopup.module.css";
+import { regionLocale, useTranslation } from "@claraos/core";
+
+// Monday first — the grid below starts the week on Monday.
+const WEEKDAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 
 interface CalendarPopupProps {
   open: boolean;
@@ -8,6 +12,7 @@ interface CalendarPopupProps {
 }
 
 export function CalendarPopup({ open, onClose }: CalendarPopupProps) {
+  const { t } = useTranslation("shell");
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth();
@@ -15,13 +20,13 @@ export function CalendarPopup({ open, onClose }: CalendarPopupProps) {
   const { monthName, days, startDay } = useMemo(() => {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
-    const monthName = firstDay.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+    const monthName = firstDay.toLocaleDateString(regionLocale(), { month: "long", year: "numeric" });
     const days = lastDay.getDate();
     const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1; // Monday = 0
     return { monthName, days, startDay };
   }, [year, month]);
 
-  const dayNames = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+  const dayNames = WEEKDAY_KEYS.map((k) => t(`taskbar.calendar.weekday.${k}`));
 
   return (
     <>

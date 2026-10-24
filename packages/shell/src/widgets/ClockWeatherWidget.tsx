@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { WidgetProps } from "./registry";
 import { weatherPhoto } from "./weather-photo";
 import styles from "./Widgets.module.css";
+import { regionLocale, useTranslation } from "@claraos/core";
 
 interface WeatherData {
   temperature: number | null;
@@ -14,6 +15,7 @@ interface WeatherData {
 const EMPTY: WeatherData = { temperature: null, description: null, icon: null, hi: null, lo: null };
 
 export default function ClockWeatherWidget(_: WidgetProps) {
+  const { t } = useTranslation("desktop");
   const [now, setNow] = useState(new Date());
   const [weather, setWeather] = useState<WeatherData>(EMPTY);
 
@@ -53,15 +55,15 @@ export default function ClockWeatherWidget(_: WidgetProps) {
     };
   }, []);
 
-  const time = now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
-  const date = now.toLocaleDateString("de-DE", {
+  const time = now.toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" });
+  const date = now.toLocaleDateString(regionLocale(), {
     weekday: "long",
     day: "2-digit",
     month: "long",
   });
 
   return (
-    <div className={styles.cw}>
+    <div className={styles.cw} title="Wetterdaten: Deutscher Wetterdienst (DWD)">
       <div className={styles.cwTime}>{time}</div>
       <div className={styles.cwDate}>{date}</div>
       <div className={styles.cwWeather}>
@@ -70,7 +72,7 @@ export default function ClockWeatherWidget(_: WidgetProps) {
           {weather.temperature !== null ? `${Math.round(weather.temperature)}°` : "—°"}
         </span>
         <span className={styles.cwDesc}>
-          {weather.description ?? "Wetter laden…"}
+          {weather.description ?? t("widgets.weather.loading")}
           {weather.hi !== null && weather.lo !== null && (
             <span className={styles.cwHiLo}>
               {" "}▲{Math.round(weather.hi)}° ▽{Math.round(weather.lo)}°

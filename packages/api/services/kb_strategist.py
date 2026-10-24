@@ -19,6 +19,7 @@ triggered), while the difference is clearly noticeable.
 """
 from __future__ import annotations
 
+from betriebsprofil import ASSISTANT_NAME
 import ast
 import json
 import logging
@@ -72,7 +73,7 @@ async def _ask(prompt: str, *, temperature: float = 0.7, max_tokens: int = 2500)
         # needs to know.
         raise StrategistError(f"Aus Datenschutzgruenden nicht ausfuehrbar: {exc}") from exc
     except httpx.HTTPError as exc:
-        raise StrategistError(f"Clara ist gerade nicht erreichbar: {exc}") from exc
+        raise StrategistError(f"{ASSISTANT_NAME} ist gerade nicht erreichbar: {exc}") from exc
     try:
         content = antwort["choices"][0]["message"]["content"]
     except (KeyError, IndexError, ValueError) as exc:
@@ -189,7 +190,7 @@ Weitere vorhandene Ideen des Nutzers: {', '.join(ctx['other_ideas'][:25]) or '�
 
 # ── 1) Suggest ideas ────────────────────────────────────────────────────────
 
-_IDEAS_PROMPT = """Du bist Clara, eine persönliche Assistentin. Du hilfst \
+_IDEAS_PROMPT = "Du bist " + ASSISTANT_NAME + """, eine persönliche Assistentin. Du hilfst \
 dem Nutzer, ein Ziel zu erreichen. Schlage {n} konkrete, umsetzbare Ideen vor, die auf GENAU \
 dieses Ziel einzahlen.
 
@@ -229,13 +230,13 @@ async def suggest_ideas(goal_id: str, user: str, n: int = 5) -> list[dict]:
             "impact": _clamp(raw.get("impact"), 1, 5, 3),
         })
     if not out:
-        raise StrategistError("Clara hatte diesmal keinen brauchbaren Vorschlag")
+        raise StrategistError(f"{ASSISTANT_NAME} hatte diesmal keinen brauchbaren Vorschlag")
     return out
 
 
 # ── 2) Develop a concept ────────────────────────────────────────────────────
 
-_CONCEPT_PROMPT = """Du bist Clara. Arbeite aus dieser Idee ein belastbares Konzept aus.
+_CONCEPT_PROMPT = "Du bist " + ASSISTANT_NAME + """. Arbeite aus dieser Idee ein belastbares Konzept aus.
 
 Idee: {title}
 Notizen: {body}
@@ -289,7 +290,7 @@ async def develop_concept(idea_id: str, user: str, goal_id: str | None = None) -
 
 # ── 3) Estimate impact and effort ───────────────────────────────────────────
 
-_RATE_PROMPT = """Du bist Clara. Schätze, wie stark diese Idee auf DIESES Ziel einzahlt \
+_RATE_PROMPT = "Du bist " + ASSISTANT_NAME + """. Schätze, wie stark diese Idee auf DIESES Ziel einzahlt \
 und wie aufwendig sie ist.
 
 Idee/Konzept: {title}

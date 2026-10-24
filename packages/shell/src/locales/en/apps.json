@@ -1,0 +1,69 @@
+{
+  "teams-workspace": {
+    "description": "Unified collaboration hub — chat, calls, files, and planning"
+  },
+  "settings": {
+    "name": "Settings",
+    "description": "System settings and personalization"
+  },
+  "user-admin": {
+    "name": "Users",
+    "description": "Manage user and service accounts and work in their view"
+  },
+  "task-manager": {
+    "name": "Task Manager",
+    "description": "Open windows + active widgets, end-task action"
+  },
+  "planner": {
+    "name": "Planner",
+    "description": "Tasks, kanban and projects — My Day, checklists, dependencies (MS Planner style)"
+  },
+  "ideas": {
+    "name": "Knowledge — Strategy",
+    "description": "Goals, visions, metrics and ideas — the strategy section of the Knowledge app."
+  },
+  "knowledge": {
+    "name": "Knowledge",
+    "description": "Collections, notes, goals and metrics — the family's knowledge and strategy app."
+  },
+  "files": {
+    "name": "Files",
+    "description": "Browse files and objects"
+  },
+  "text-editor": {
+    "name": "Text Editor",
+    "description": "Text and code editor with syntax highlighting"
+  },
+  "pdf-viewer": {
+    "name": "PDF",
+    "description": "View PDF documents"
+  },
+  "office-viewer": {
+    "name": "Office",
+    "description": "Edit Word, Excel and PowerPoint documents (Collabora)"
+  },
+  "image-viewer": {
+    "name": "Image Viewer",
+    "description": "View, zoom and pan images"
+  },
+  "video-player": {
+    "name": "Video Player",
+    "description": "Play video files"
+  },
+  "kontakte": {
+    "name": "Contacts",
+    "description": "Your address book — with history, trash and vCard import"
+  },
+  "post": {
+    "name": "Mail",
+    "description": "Your email — read, sort, turn into a task/event/note"
+  },
+  "services-hub": {
+    "name": "Services",
+    "description": "External services — they open in your own browser"
+  },
+  "clara-routinen": {
+    "name": "Routines",
+    "description": "Recurring jobs for {{assistant}} — the result arrives as a notification"
+  }
+}

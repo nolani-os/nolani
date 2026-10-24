@@ -1,0 +1,261 @@
+{
+  "desktop": {
+    "icons": {
+      "archive": "Archive as ZIP",
+      "archiveFailed": "Archiving failed: {{reason}}",
+      "brokenShortcut": "Broken shortcut: {{target}}",
+      "cancel": "Cancel",
+      "confirmMany": "The selected items will be permanently removed from the server.",
+      "confirmOne": "\"{{name}}\" will be permanently removed from the server.",
+      "confirmTitle_one": "Delete file?",
+      "confirmTitle_other": "Delete {{count}} files?",
+      "delete": "Delete",
+      "deleteKey": "Del",
+      "deleteMany_one": "Delete {{count}} item",
+      "deleteMany_other": "Delete {{count}} items",
+      "download": "Download",
+      "encrypt": "Encrypt (AES ZIP) …",
+      "encryptFailed": "Encryption failed: {{reason}}",
+      "encryptPrompt": "Password for “{{name}}” — without the password the archive cannot be read:",
+      "moveTo": "Move to…",
+      "newFileName": "new-file",
+      "newFolderName": "New folder",
+      "open": "Open",
+      "openMany_one": "Open {{count}} item",
+      "openMany_other": "Open {{count}} items",
+      "openWith": "Open with…",
+      "properties": "Properties",
+      "rename": "Rename",
+      "withFiles": "Files",
+      "withImageViewer": "Image viewer",
+      "withPdfViewer": "PDF viewer",
+      "withTextEditor": "Text editor",
+      "withVideoPlayer": "Video player"
+    },
+    "menu": {
+      "darkTheme": "Dark theme",
+      "folder": "Folder",
+      "lightTheme": "Light theme",
+      "new": "New",
+      "personalize": "Personalize",
+      "refresh": "Refresh",
+      "settings": "Settings",
+      "sortBy": "Sort by",
+      "sortModified": "Date modified",
+      "sortName": "Name",
+      "sortType": "Type",
+      "widgets": "Widgets…"
+    },
+    "widgetMenu": {
+      "default": "Default",
+      "large": "Large",
+      "menu": "Widget menu",
+      "openApp": "Open app",
+      "remove": "Remove widget",
+      "settings": "Settings…",
+      "size": "Size",
+      "small": "Small"
+    }
+  },
+  "gallery": {
+    "add": "Add",
+    "close": "Close",
+    "title": "Widgets"
+  },
+  "widgets": {
+    "calendar": {
+      "add": "Add event",
+      "allDay": "all day",
+      "cancel": "Cancel",
+      "confirmDelete": "Delete “{{title}}”?",
+      "create": "Create",
+      "defaultCalendar": "Default calendar",
+      "delete": "Delete",
+      "deleteFailed": "The event could not be deleted.",
+      "edit": "Edit",
+      "editPlaceholder": "Edit event…",
+      "empty": "No events",
+      "emptyOn": "No events on {{date}}",
+      "eventFallback": "Event",
+      "inCalendar": "In calendar",
+      "listView": "List view",
+      "loading": "Loading events…",
+      "loadingCalendars": "Loading calendars…",
+      "monthView": "Month view",
+      "newPlaceholder": "New event…",
+      "nextMonth": "Next month",
+      "open": "Open",
+      "prevMonth": "Previous month",
+      "refresh": "Refresh",
+      "save": "Save",
+      "saveFailed": "The event could not be saved.",
+      "settingsTitle": "Calendar selection",
+      "shownCalendars": "Shown calendars (none selected = all)",
+      "tapDay": "Tap a day for its events",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "unreachable": "Calendar unreachable",
+      "unreachableNotDeleted": "Calendar unreachable — not deleted.",
+      "unreachableNotSaved": "Calendar unreachable — not saved.",
+      "untitled": "(untitled)",
+      "weekday": {
+        "fr": "Fr",
+        "mo": "Mo",
+        "sa": "Sa",
+        "su": "Su",
+        "th": "Th",
+        "tu": "Tu",
+        "we": "We"
+      }
+    },
+    "ideaCapture": {
+      "done": "Captured — {{assistant}} is thinking along.",
+      "error": "Saving failed.",
+      "openApp": "Open the Ideas app",
+      "placeholder": "What's on your mind?",
+      "title": "Capture an idea"
+    },
+    "mail": {
+      "empty": "No emails",
+      "loading": "Loading emails…",
+      "loadingMessage": "Loading message…",
+      "noAccount": "No mail account connected.",
+      "noAccountHint": "Apps → add mail access",
+      "noSubject": "(no subject)",
+      "refresh": "Refresh",
+      "title": "Inbox",
+      "unreachable": "Mailbox unreachable"
+    },
+    "manifest": {
+      "calendar-agenda": {
+        "description": "Nextcloud calendar: agenda & month, create/edit events",
+        "name": "Calendar"
+      },
+      "clara-quick": {
+        "description": "Ask {{assistant}} right from the desktop",
+        "name": "{{assistant}} quick chat"
+      },
+      "clock-weather": {
+        "description": "Time, date and current weather at a glance",
+        "name": "Compact clock"
+      },
+      "flip-clock-weather": {
+        "description": "Flip clock with current weather and 5-day forecast",
+        "name": "Clock & weather"
+      },
+      "idea-capture": {
+        "description": "Capture an idea in one line — {{assistant}} thinks along right away",
+        "name": "Idea flash"
+      },
+      "mail-inbox": {
+        "description": "Latest emails from your family mailbox",
+        "name": "Inbox"
+      },
+      "nc-tasks": {
+        "description": "Open tasks from the {{product}} Planner — check them off, see what {{assistant}} is working on",
+        "name": "Tasks"
+      },
+      "photo-frame": {
+        "description": "Slideshow from your Immich albums — cropping, Ken Burns, clock",
+        "name": "Photo frame"
+      },
+      "sticky-note": {
+        "description": "Sticky note on the desktop — the text is saved",
+        "name": "Note"
+      },
+      "system-stats": {
+        "description": "Servers, VMs and devices — selectable targets, with history",
+        "name": "System monitor"
+      }
+    },
+    "photoFrame": {
+      "caption": "Caption (album · date)",
+      "clock": "Show the time",
+      "display": "Display",
+      "fast": "Fast",
+      "fit": "Fit",
+      "fitContain": "Whole image",
+      "fitCover": "Fill (crop)",
+      "interval": "Change every",
+      "kenBurns": "Ken Burns effect (slow zoom)",
+      "loading": "Loading photos…",
+      "loadingAlbums": "Loading albums…",
+      "noAlbums": "No albums found",
+      "noPhotos": "No photos in the selection",
+      "normal": "Normal",
+      "notConnected": "Immich not connected",
+      "random": "Random from all photos",
+      "slow": "Slow",
+      "source": "Source (Immich)",
+      "title": "Photo frame",
+      "transition": "Transition",
+      "unreachable": "Immich unreachable"
+    },
+    "settings": {
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "stickyNote": {
+      "color": {
+        "blue": "blue",
+        "green": "green",
+        "pink": "pink",
+        "yellow": "yellow"
+      },
+      "colorLabel": "Color {{color}}",
+      "placeholder": "Note…"
+    },
+    "systemLabels": {
+      "nodeGroup": "Nodes",
+      "nodeKind": "Node",
+      "tokenMissing": "Hypervisor token missing",
+      "tokenMissingHint": "Note: hypervisor API token not configured — nodes/VMs only appear after that.",
+      "tokenMissingTab": "Hypervisor API token not configured — nodes and VMs only appear after that."
+    },
+    "systemStats": {
+      "groupDevice": "Devices (SSH)",
+      "groupVm": "VMs & containers",
+      "kindDevice": "Device",
+      "loading": "Loading…",
+      "loadingTargets": "Loading targets…",
+      "minutes_one": "{{count}} minute",
+      "minutes_other": "{{count}} minutes",
+      "noTargets": "No targets selected — right-click → Settings",
+      "refresh": "Refresh",
+      "seconds_one": "{{count}} second",
+      "seconds_other": "{{count}} seconds",
+      "title": "System monitor",
+      "unreachable": "Monitor unreachable"
+    },
+    "tasks": {
+      "add": "Add task",
+      "allDone": "All done",
+      "defaultProject": "Default project",
+      "done": "Done",
+      "due": "Due on",
+      "inWorkSince": "in progress since {{since}}",
+      "loading": "Loading tasks…",
+      "loadingProjects": "Loading projects…",
+      "newPlaceholder": "New task…",
+      "noProject": "No project yet — create one in the Planner",
+      "notConnected": "Planner not connected — Settings → App connections → Planner",
+      "openPlanner": "Open Planner",
+      "prioHigh": "Priority: high",
+      "prioMedium": "Priority: medium",
+      "prioNormal": "Priority: normal",
+      "priority": "Priority",
+      "project": "Project",
+      "refresh": "Refresh",
+      "settingsTitle": "Planner projects",
+      "shownProjects": "Shown projects (none selected = all)",
+      "title": "Tasks",
+      "unreachable": "Planner unreachable",
+      "untitled": "(untitled)"
+    },
+    "weather": {
+      "loading": "Loading weather…",
+      "loadingShort": "Loading weather…",
+      "offline": "Weather offline"
+    }
+  }
+}

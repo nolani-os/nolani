@@ -6,13 +6,14 @@ import { sanitizeHtml } from "../sanitizeHtml";
 import { Avatar } from "./Avatar";
 import { XIcon, SendIcon, ThreadIcon } from "./icons";
 import styles from "./ThreadPane.module.css";
+import { regionLocale } from "@claraos/core";
 
 // Thread side pane (MS Teams 2025 threads layout / Slack pattern).
 // Deliberately exactly ONE reply mode: replies go ONLY into the thread —
 // MS's "in thread and channel" dual mode is known to be confusing.
 
 function formatTime(ts: number): string {
-  return new Date(ts).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  return new Date(ts).toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" });
 }
 
 export function ThreadPane({ roomId }: { roomId: string }) {

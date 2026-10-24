@@ -13,6 +13,7 @@ make sure Authentik gates it.
 """
 from __future__ import annotations
 
+from betriebsprofil import ASSISTANT_NAME, PRODUCT_NAME
 from domains_generated import host as _domain_host
 
 import json
@@ -26,7 +27,7 @@ import httpx
 import jsonschema
 from fastapi import APIRouter, HTTPException, Request
 
-from auth import require_caller
+from auth import is_service_call, require_caller
 from services import brain_turns
 from services.clara_tools_registry import registry
 
@@ -350,6 +351,13 @@ async def call_tool(module: str, tool: str, request: Request) -> Any:
       4. POST/GET (default POST) the body to `tool.endpoint`.
       5. Pass through the upstream response (200 / 502 on connect-fail).
     """
+    # Machine callers only (tool bridge, routines, MCP: service token; external brain:
+    # brain token). A browser request through the reverse proxy must not reach this
+    # proxy: it would hand the caller the service token for the second hop and the
+    # tool's static `X-Claraos-Actor`, i.e. machine privileges.
+    if request.headers.get("X-ClaraOS-Brain-Token") is None and not is_service_call(request):
+        raise HTTPException(status_code=403, detail="Werkzeugaufrufe nur für Dienste.")
+
     spec = _find_tool(module, tool)
 
     try:
@@ -385,7 +393,7 @@ async def call_tool(module: str, tool: str, request: Request) -> Any:
                 logger.info("[clara-tools] routine proposal %s/%s run=%s #%d",
                             module, tool, turn_meta["lauf"], idx)
                 return {"ok": True, "status": "als Vorschlag gespeichert",
-                        "hinweis": "Nicht ausgeführt: In einer Routine ändert Clara nichts "
+                        "hinweis": f"Nicht ausgeführt: In einer Routine ändert {ASSISTANT_NAME} nichts "
                                    "selbst. Der Nutzer gibt den Vorschlag in der App frei. "
                                    "Nicht erneut versuchen; in der Zusammenfassung erwähnen."}
     # Per-call audit line (INFO — silent at the default WARNING level; raise the
@@ -409,7 +417,7 @@ async def call_tool(module: str, tool: str, request: Request) -> Any:
             status_code=409,
             detail=(
                 f"Kein verbundenes {app_id}-Konto für diesen Nutzer. "
-                f"Bitte in ClaraOS unter „Dienste“ das {app_id}-Konto verbinden — "
+                f"Bitte in {PRODUCT_NAME} unter „Dienste“ das {app_id}-Konto verbinden — "
                 f"danach funktioniert dieses Werkzeug."
             ),
         )

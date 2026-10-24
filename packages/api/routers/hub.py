@@ -12,6 +12,7 @@ The user grid does NOT read here but via GET /apps (group gate there).
 """
 from __future__ import annotations
 
+from betriebsprofil import ASSISTANT_NAME
 import asyncio
 import json
 import logging
@@ -138,7 +139,7 @@ def _build_manifest(inp: ServiceInput, app_id: str) -> dict:
         "id": app_id,
         "name": inp.name.strip(),
         "icon": (inp.icon or "🌐").strip() or "🌐",
-        "description": f"{inp.name.strip()} im Clara Browser (Dienste-Hub)",
+        "description": f"{inp.name.strip()} im {ASSISTANT_NAME} Browser (Dienste-Hub)",
         "type": "selkies",
         "category": "services",
         "source": "third-party",

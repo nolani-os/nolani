@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useClipboardStore, useUIStore } from "@claraos/core";
 import styles from "./ClipboardOverlay.module.css";
+import { i18n, regionLocale, useTranslation } from "@claraos/core";
 
 /**
  * Win+V clipboard-history overlay. Shows the most recent ~20 entries from
@@ -15,6 +16,7 @@ export function ClipboardOverlay() {
   const entries = useClipboardStore((s) => s.entries);
   const remove = useClipboardStore((s) => s.remove);
   const clear = useClipboardStore((s) => s.clear);
+  const { t } = useTranslation("shell");
 
   // Toggle on global event
   useEffect(() => {
@@ -54,8 +56,8 @@ export function ClipboardOverlay() {
       useClipboardStore.getState().add(text, "history");
     } catch {
       useUIStore.getState().addNotification({
-        title: "Nicht in die Zwischenablage gelegt",
-        body: "Der Browser hat den Zugriff abgelehnt.",
+        title: i18n.t("shell:clipboard.copyFailedTitle"),
+        body: i18n.t("shell:clipboard.copyFailed"),
         icon: "⚠️",
       });
     }
@@ -67,18 +69,18 @@ export function ClipboardOverlay() {
   return (
     <>
       <div className={styles.backdrop} onClick={() => setOpen(false)} />
-      <div className={`aeroWidget ${styles.panel}`} role="dialog" aria-label="Clipboard history">
+      <div className={`aeroWidget ${styles.panel}`} role="dialog" aria-label={t("clipboard.historyLabel")}>
         <div className={styles.header}>
-          <span className={styles.title}>Zwischenablage</span>
+          <span className={styles.title}>{t("clipboard.title")}</span>
           <span className={styles.count}>{entries.length}</span>
           {entries.length > 0 && (
-            <button className={styles.clearBtn} onClick={clear}>Alle löschen</button>
+            <button className={styles.clearBtn} onClick={clear}>{t("clipboard.clearAll")}</button>
           )}
         </div>
         <div className={styles.list}>
           {entries.length === 0 && (
             <div className={styles.empty}>
-              Noch keine Einträge. Was du kopierst, landet hier.
+              {t("clipboard.empty")}
             </div>
           )}
           {entries.map((e) => (
@@ -86,19 +88,19 @@ export function ClipboardOverlay() {
               <button
                 className={styles.entryBody}
                 onClick={() => handleClick(e.text)}
-                title="Klick → in Zwischenablage zurücklegen"
+                title={t("clipboard.restore")}
               >
                 <span className={styles.entryText}>{e.text}</span>
                 <span className={styles.entryMeta}>
                   {e.source ? `${e.source} · ` : ""}
-                  {new Date(e.timestamp).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
+                  {new Date(e.timestamp).toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" })}
                 </span>
               </button>
               <button
                 className={styles.entryRemove}
                 onClick={() => remove(e.id)}
-                title="Entfernen"
-                aria-label="Remove entry"
+                title={t("clipboard.remove")}
+                aria-label={t("clipboard.removeEntry")}
               >×</button>
             </div>
           ))}

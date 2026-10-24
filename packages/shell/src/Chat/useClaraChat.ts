@@ -18,6 +18,7 @@ import {
   QUICK_CHATS_FOLDER,
   useVoiceStore,
   type ChatSurface,
+  getBrand,
 } from "@claraos/core";
 import { VoiceRecorderSession } from "./useVoiceRecorder";
 import { parseQuestionFields } from "./questionForm";
@@ -255,7 +256,7 @@ function reduceActivity(prev: ClaraActivity | undefined, ev: ClaraosStreamEvent)
       const elapsed = typeof ev.elapsed_s === "number" ? ev.elapsed_s : 0;
       return {
         ...base,
-        slowNotice: `Das dauert länger als erwartet (${elapsed}s) — Clara arbeitet noch …`,
+        slowNotice: `Das dauert länger als erwartet (${elapsed}s) — ${getBrand().assistant} arbeitet noch …`,
       };
     }
     case "final": {

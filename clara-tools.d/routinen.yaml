@@ -6,7 +6,7 @@
 tools:
   - name: list_routines
     description: |
-      List the user's routines (recurring tasks for Clara): id, titel, auftrag (the
+      List the user's routines (recurring tasks for you, the assistant): id, titel, auftrag (the
       instruction), rhythmus, uhrzeit, wochentag, aktiv, letzter_lauf. Use it to find
       the id before changing, pausing, deleting or running one.
     endpoint: "http://localhost:8090/api/claraos/routinen"
@@ -18,7 +18,7 @@ tools:
 
   - name: create_routine
     description: |
-      Create a routine: Clara will carry out `auftrag` regularly on her own and the
+      Create a routine: you will carry out `auftrag` regularly on your own and the
       result arrives as a notification in the bell. A routine only READS by itself;
       anything it would change becomes a proposal the user approves in the
       "Routinen" app — say so when you create one. rhythmus: taeglich | werktags

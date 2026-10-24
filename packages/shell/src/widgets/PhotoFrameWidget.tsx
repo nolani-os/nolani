@@ -5,7 +5,7 @@
 // (fit, Ken Burns, transition, caption, clock) live in widget.config.
 // Without a connected Immich account the frame shows the API's 409 hint.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useWorkspaceStore } from "@claraos/core";
+import { useWorkspaceStore, useTranslation, i18n } from "@claraos/core";
 import type { WidgetProps } from "./registry";
 import {
   CheckList,
@@ -16,6 +16,7 @@ import {
   useWidgetSettingsOpen,
 } from "./settingsControls";
 import s from "./PhotoFrame.module.css";
+import { regionLocale } from "@claraos/core";
 
 interface Photo {
   id: string;
@@ -63,6 +64,7 @@ const thumbUrl = (id: string) =>
   `/api/claraos/widgets/immich/thumb?id=${encodeURIComponent(id)}&size=preview`;
 
 export default function PhotoFrameWidget({ widgetId, config }: WidgetProps) {
+  const { t: tr } = useTranslation("desktop");
   const updateWidgetConfig = useWorkspaceStore((st) => st.updateWidgetConfig);
   const cfg = readConfig(config);
   // Source chosen? Old v2 configs (only `folder`) count as unconfigured.
@@ -88,7 +90,7 @@ export default function PhotoFrameWidget({ widgetId, config }: WidgetProps) {
       if (r.status === 409) {
         const d = await r.json().catch(() => ({}));
         setPhotos([]);
-        setHint(d.detail ?? "Immich nicht verbunden");
+        setHint(d.detail ?? i18n.t("desktop:widgets.photoFrame.notConnected"));
         return;
       }
       if (!r.ok) throw new Error(String(r.status));
@@ -98,7 +100,7 @@ export default function PhotoFrameWidget({ widgetId, config }: WidgetProps) {
       setIdx(0);
     } catch {
       setPhotos((prev) => prev ?? []);
-      setHint("Immich nicht erreichbar");
+      setHint(i18n.t("desktop:widgets.photoFrame.unreachable"));
     }
     // cfg parts individually, so a settings save with the same source does not reload
   }, [configured, cfg.random, cfg.albumIds.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -154,7 +156,7 @@ export default function PhotoFrameWidget({ widgetId, config }: WidgetProps) {
       .then(async (r) => {
         if (r.status === 409) {
           const d = await r.json().catch(() => ({}));
-          setHint(d.detail ?? "Immich nicht verbunden");
+          setHint(d.detail ?? i18n.t("desktop:widgets.photoFrame.notConnected"));
           return { albums: [] };
         }
         return r.ok ? r.json() : { albums: [] };
@@ -197,9 +199,9 @@ export default function PhotoFrameWidget({ widgetId, config }: WidgetProps) {
         />
       ))}
 
-      {configured && photos === null && !hint && <div className={s.hint}>Fotos laden…</div>}
+      {configured && photos === null && !hint && <div className={s.hint}>{tr("widgets.photoFrame.loading")}</div>}
       {hint && empty && <div className={s.hint}>{hint}</div>}
-      {!hint && empty && configured && <div className={s.hint}>Keine Fotos in der Auswahl</div>}
+      {!hint && empty && configured && <div className={s.hint}>{tr("widgets.photoFrame.noPhotos")}</div>}
 
       {cfg.showCaption && current && !openSettings && (
         <div className={s.caption}>
@@ -208,25 +210,25 @@ export default function PhotoFrameWidget({ widgetId, config }: WidgetProps) {
       )}
       {cfg.showClock && !openSettings && (
         <div className={s.clock}>
-          {clock.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
+          {clock.toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" })}
         </div>
       )}
 
       {openSettings && (
         <SettingsOverlay
-          title="Fotorahmen"
+          title={tr("widgets.photoFrame.title")}
           onCancel={() => setSettingsOpen(false)}
           onSave={saveSettings}
         >
-          <GroupLabel>Quelle (Immich)</GroupLabel>
+          <GroupLabel>{tr("widgets.photoFrame.source")}</GroupLabel>
           <CheckRow
-            label="Zufällig aus allen Fotos"
+            label={tr("widgets.photoFrame.random")}
             checked={draft.random}
             onChange={(v) => setDraft((d) => ({ ...d, random: v }))}
           />
           <CheckList>
-            {albums === null && <span className={s.hintInline}>Alben laden…</span>}
-            {albums?.length === 0 && <span className={s.hintInline}>Keine Alben gefunden</span>}
+            {albums === null && <span className={s.hintInline}>{tr("widgets.photoFrame.loadingAlbums")}</span>}
+            {albums?.length === 0 && <span className={s.hintInline}>{tr("widgets.photoFrame.noAlbums")}</span>}
             {albums?.map((a) => (
               <CheckRow
                 key={a.id}
@@ -245,49 +247,49 @@ export default function PhotoFrameWidget({ widgetId, config }: WidgetProps) {
             ))}
           </CheckList>
 
-          <GroupLabel>Anzeige</GroupLabel>
+          <GroupLabel>{tr("widgets.photoFrame.display")}</GroupLabel>
           <SelectRow
-            label="Wechsel alle"
+            label={tr("widgets.photoFrame.interval")}
             value={String(draft.intervalSec)}
             onChange={(v) => setDraft((d) => ({ ...d, intervalSec: parseInt(v, 10) }))}
             options={[
-              { value: "15", label: "15 Sekunden" },
-              { value: "45", label: "45 Sekunden" },
-              { value: "120", label: "2 Minuten" },
-              { value: "600", label: "10 Minuten" },
+              { value: "15", label: tr("widgets.systemStats.seconds", { count: 15 }) },
+              { value: "45", label: tr("widgets.systemStats.seconds", { count: 45 }) },
+              { value: "120", label: tr("widgets.systemStats.minutes", { count: 2 }) },
+              { value: "600", label: tr("widgets.systemStats.minutes", { count: 10 }) },
             ]}
           />
           <SelectRow
-            label="Einpassen"
+            label={tr("widgets.photoFrame.fit")}
             value={draft.fit}
             onChange={(v) => setDraft((d) => ({ ...d, fit: v as "cover" | "contain" }))}
             options={[
-              { value: "cover", label: "Füllen (Zuschnitt)" },
-              { value: "contain", label: "Ganzes Bild" },
+              { value: "cover", label: tr("widgets.photoFrame.fitCover") },
+              { value: "contain", label: tr("widgets.photoFrame.fitContain") },
             ]}
           />
           <SelectRow
-            label="Übergang"
+            label={tr("widgets.photoFrame.transition")}
             value={String(draft.fadeMs)}
             onChange={(v) => setDraft((d) => ({ ...d, fadeMs: parseInt(v, 10) }))}
             options={[
-              { value: "300", label: "Schnell" },
-              { value: "900", label: "Normal" },
-              { value: "2000", label: "Langsam" },
+              { value: "300", label: tr("widgets.photoFrame.fast") },
+              { value: "900", label: tr("widgets.photoFrame.normal") },
+              { value: "2000", label: tr("widgets.photoFrame.slow") },
             ]}
           />
           <CheckRow
-            label="Ken-Burns-Effekt (langsamer Zoom)"
+            label={tr("widgets.photoFrame.kenBurns")}
             checked={draft.kenBurns}
             onChange={(v) => setDraft((d) => ({ ...d, kenBurns: v }))}
           />
           <CheckRow
-            label="Beschriftung (Album · Datum)"
+            label={tr("widgets.photoFrame.caption")}
             checked={draft.showCaption}
             onChange={(v) => setDraft((d) => ({ ...d, showCaption: v }))}
           />
           <CheckRow
-            label="Uhrzeit einblenden"
+            label={tr("widgets.photoFrame.clock")}
             checked={draft.showClock}
             onChange={(v) => setDraft((d) => ({ ...d, showClock: v }))}
           />

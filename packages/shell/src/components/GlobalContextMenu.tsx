@@ -18,10 +18,15 @@
  * document — embedded apps keep their own menus (structural browser limit).
  */
 import { useCallback, useEffect, useState } from "react";
-import { useUIStore, useWindowsStore } from "@claraos/core";
+import { i18n, useUIStore, useWindowsStore } from "@claraos/core";
 import { PopupMenu } from "./PopupMenu";
 import type { ContextMenuItem } from "./WindowContextMenu";
 import { isFullscreen, toggleFullscreen } from "../fullscreen";
+import { regionLocale } from "@claraos/core";
+
+/** Menus are built on each right-click, so reading the catalog here follows the UI language. */
+const tm = (key: string) => i18n.t(`components:contextMenu.${key}`);
+const ctrl = (k: string) => `${tm("ctrl")}+${k}`;
 
 interface MenuState {
   x: number;
@@ -38,7 +43,7 @@ function openApp(appId: string, title: string, width = 900, height = 640) {
 function fullscreenItem(): ContextMenuItem {
   return {
     id: "fullscreen",
-    label: isFullscreen() ? "Vollbild beenden" : "Vollbild",
+    label: isFullscreen() ? tm("exitFullscreen") : tm("fullscreen"),
     icon: isFullscreen() ? "🗗" : "⛶",
     shortcut: "F11",
     onSelect: () => void toggleFullscreen(),
@@ -47,31 +52,31 @@ function fullscreenItem(): ContextMenuItem {
 
 function genericItems(): ContextMenuItem[] {
   return [
-    { id: "settings", label: "Einstellungen", icon: "⚙", onSelect: () => openApp("settings", "Einstellungen") },
-    { id: "taskman", label: "Task-Manager", icon: "📊", onSelect: () => openApp("task-manager", "Task-Manager", 760, 560) },
+    { id: "settings", label: tm("settings"), icon: "⚙", onSelect: () => openApp("settings", tm("settings")) },
+    { id: "taskman", label: tm("taskManager"), icon: "📊", onSelect: () => openApp("task-manager", tm("taskManager"), 760, 560) },
     { id: "sep", label: "---" },
     fullscreenItem(),
-    { id: "reload", label: "ClaraOS neu laden", onSelect: () => window.location.reload() },
+    { id: "reload", label: tm("reload"), onSelect: () => window.location.reload() },
   ];
 }
 
 function taskbarItems(): ContextMenuItem[] {
   return [
-    { id: "start", label: "Startmenü öffnen", icon: "✦", onSelect: () => useUIStore.getState().toggleStartMenu() },
-    { id: "taskman", label: "Task-Manager", icon: "📊", onSelect: () => openApp("task-manager", "Task-Manager", 760, 560) },
+    { id: "start", label: tm("openStartMenu"), icon: "✦", onSelect: () => useUIStore.getState().toggleStartMenu() },
+    { id: "taskman", label: tm("taskManager"), icon: "📊", onSelect: () => openApp("task-manager", tm("taskManager"), 760, 560) },
     { id: "sep", label: "---" },
     fullscreenItem(),
-    { id: "settings", label: "Einstellungen", icon: "⚙", onSelect: () => openApp("settings", "Einstellungen") },
+    { id: "settings", label: tm("settings"), icon: "⚙", onSelect: () => openApp("settings", tm("settings")) },
   ];
 }
 
 function windowItems(windowId: string): ContextMenuItem[] {
   const ws = useWindowsStore.getState();
   return [
-    { id: "min", label: "Minimieren", onSelect: () => ws.minimizeWindow(windowId) },
-    { id: "max", label: "Maximieren/Wiederherstellen", onSelect: () => ws.toggleMaximize(windowId) },
+    { id: "min", label: tm("minimize"), onSelect: () => ws.minimizeWindow(windowId) },
+    { id: "max", label: tm("maximizeRestore"), onSelect: () => ws.toggleMaximize(windowId) },
     { id: "sep", label: "---" },
-    { id: "close", label: "Schließen", shortcut: "Strg+W", variant: "destructive", onSelect: () => ws.closeWindow(windowId) },
+    { id: "close", label: tm("close"), shortcut: ctrl("W"), variant: "destructive", onSelect: () => ws.closeWindow(windowId) },
   ];
 }
 
@@ -87,8 +92,8 @@ function editItems(el: HTMLInputElement | HTMLTextAreaElement): ContextMenuItem[
   return [
     {
       id: "cut",
-      label: "Ausschneiden",
-      shortcut: "Strg+X",
+      label: tm("cut"),
+      shortcut: ctrl("X"),
       disabled: !hasSelection || readOnly,
       onSelect: () => {
         const sel = el.value.slice(start, end);
@@ -100,8 +105,8 @@ function editItems(el: HTMLInputElement | HTMLTextAreaElement): ContextMenuItem[
     },
     {
       id: "copy",
-      label: "Kopieren",
-      shortcut: "Strg+C",
+      label: tm("copy"),
+      shortcut: ctrl("C"),
       disabled: !hasSelection,
       onSelect: () => {
         navigator.clipboard?.writeText(el.value.slice(start, end)).catch(() => undefined);
@@ -110,8 +115,8 @@ function editItems(el: HTMLInputElement | HTMLTextAreaElement): ContextMenuItem[
     },
     {
       id: "paste",
-      label: "Einfügen",
-      shortcut: "Strg+V",
+      label: tm("paste"),
+      shortcut: ctrl("V"),
       disabled: readOnly,
       onSelect: async () => {
         try {
@@ -120,8 +125,8 @@ function editItems(el: HTMLInputElement | HTMLTextAreaElement): ContextMenuItem[
           fireInput();
         } catch {
           useUIStore.getState().addNotification({
-            title: "Einfügen nicht möglich",
-            body: "Bitte Strg+V benutzen — der Browser erlaubt hier keinen Zwischenablage-Zugriff.",
+            title: tm("pasteFailedTitle"),
+            body: tm("pasteFailedBody"),
             icon: "📋",
           });
         }
@@ -131,8 +136,8 @@ function editItems(el: HTMLInputElement | HTMLTextAreaElement): ContextMenuItem[
     { id: "sep", label: "---" },
     {
       id: "select-all",
-      label: "Alles auswählen",
-      shortcut: "Strg+A",
+      label: tm("selectAll"),
+      shortcut: ctrl("A"),
       disabled: !el.value,
       onSelect: () => {
         el.focus();
@@ -147,15 +152,15 @@ function ctxItems(ctxId: string): ContextMenuItem[] | null {
   switch (ctxId) {
     case "tray-bell":
       return [
-        { id: "clear", label: "Alle Benachrichtigungen löschen", onSelect: () => useUIStore.getState().clearNotifications() },
+        { id: "clear", label: tm("clearNotifications"), onSelect: () => useUIStore.getState().clearNotifications() },
       ];
     case "tray-clock":
       return [
         {
           id: "copy-date",
-          label: "Datum kopieren",
+          label: tm("copyDate"),
           onSelect: () => {
-            const d = new Date().toLocaleString("de-DE");
+            const d = new Date().toLocaleString(regionLocale());
             navigator.clipboard?.writeText(d).catch(() => undefined);
           },
         },

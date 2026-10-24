@@ -23,6 +23,7 @@ parsing, the router when writing, the UI for its selection list.
 """
 from __future__ import annotations
 
+from betriebsprofil import PRODUCT_NAME
 import re
 
 FOEDERIERT = "foederiert"
@@ -32,14 +33,14 @@ VERWEIS = "verweis"
 # id -> (display name, class, placeholder, hint)
 DIENSTE: dict[str, tuple[str, str, str, str]] = {
     "matrix":    ("Matrix", FOEDERIERT, "@name:example.org",
-                  "Nachrichten direkt aus ClaraOS möglich."),
+                  f"Nachrichten direkt aus {PRODUCT_NAME} möglich."),
     "nextcloud": ("Nextcloud", FOEDERIERT, "name@nextcloud.example.com",
                   "Ordner und Dateien teilen (föderiertes Teilen)."),
     # Talk is a channel of its own, not a side effect of the Nextcloud account:
     # `nextcloud` is for sharing files, `nctalk` for chatting and calling.
     # Kept separate so the UI does not confuse sharing with chat.
     "nctalk":    ("Nextcloud Talk", FOEDERIERT, "name",
-                  "Chat und Anruf direkt aus ClaraOS."),
+                  f"Chat und Anruf direkt aus {PRODUCT_NAME}."),
     "mastodon":  ("Mastodon", FOEDERIERT, "@name@mastodon.example.com",
                   "Folgen und erwähnen über ActivityPub."),
     "peertube":  ("PeerTube", FOEDERIERT, "@name@peertube.example.com",

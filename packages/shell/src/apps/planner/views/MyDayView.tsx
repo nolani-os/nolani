@@ -6,6 +6,7 @@ import { IconButton } from "../../../components/Button";
 import { plannerApi } from "../api";
 import type { VikTask } from "../types";
 import { TaskRow, isDueToday, isOverdue } from "../shared";
+import { regionLocale } from "@claraos/core";
 
 export function MyDayView({
   tasks, projectTitles, onToggle, onOpen, onReload,
@@ -70,7 +71,7 @@ export function MyDayView({
       <header className={styles.viewHeader}>
         <h2><Icon name="today" size={18} /> Mein Tag</h2>
         <span className={styles.viewSub}>
-          {new Date().toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}
+          {new Date().toLocaleDateString(regionLocale(), { weekday: "long", day: "numeric", month: "long" })}
         </span>
       </header>
       <div className={styles.quickAdd}>

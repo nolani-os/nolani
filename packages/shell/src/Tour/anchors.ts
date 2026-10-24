@@ -10,7 +10,7 @@
  * `ensure` establishes the UI state the anchor needs to exist (e.g. opening
  * the start menu) — runs as Joyride `before` hook ahead of the step.
  */
-import { useAppRegistryStore, useUIStore, useWindowsStore } from "@claraos/core";
+import { useAppRegistryStore, useUIStore, useWindowsStore, getBrand } from "@claraos/core";
 import { ensureFrame } from "./frameTour";
 
 export interface TourAnchor {
@@ -89,13 +89,17 @@ function ensureSettingsModule(module: string, anchorId: string): () => Promise<v
 export const TOUR_ANCHORS: Record<string, TourAnchor> = {
   "taskbar-clara": {
     id: "taskbar-clara",
-    description:
-      "Clara-Knopf links in der Taskleiste: öffnet das Startmenü mit App-Suche und Clara-Chat.",
+    get description() {
+      const a = getBrand().assistant;
+      return `${a}-Knopf links in der Taskleiste: öffnet das Startmenü mit App-Suche und ${a}-Chat.`;
+    },
     ensure: closeStartMenu,
   },
   "taskbar-voice": {
     id: "taskbar-voice",
-    description: "Mikrofon-Knopf in der Taskleiste: startet den Sprachmodus, um mit Clara zu sprechen.",
+    get description() {
+      return `Mikrofon-Knopf in der Taskleiste: startet den Sprachmodus, um mit ${getBrand().assistant} zu sprechen.`;
+    },
     ensure: closeStartMenu,
   },
   "taskbar-pinned": {
@@ -121,8 +125,9 @@ export const TOUR_ANCHORS: Record<string, TourAnchor> = {
   },
   "startmenu-input": {
     id: "startmenu-input",
-    description:
-      "Eingabefeld im Startmenü: Apps suchen und starten ODER Clara direkt eine Frage stellen.",
+    get description() {
+      return `Eingabefeld im Startmenü: Apps suchen und starten ODER ${getBrand().assistant} direkt eine Frage stellen.`;
+    },
     ensure: () => openStartMenu("startmenu-input"),
   },
   "startmenu-pinned": {
@@ -172,9 +177,10 @@ export const TOUR_ANCHORS: Record<string, TourAnchor> = {
   // ── Settings (phone push module for the device setup tour) ──
   "settings-push": {
     id: "settings-push",
-    description:
-      "Handy-Push-Bereich in den Einstellungen: QR-Code + Zugangsdaten, um ClaraOS " +
-      "und Benachrichtigungen auf dem Handy einzurichten. Öffnet sich automatisch.",
+    get description() {
+      return `Handy-Push-Bereich in den Einstellungen: QR-Code + Zugangsdaten, um ${getBrand().product} ` +
+        "und Benachrichtigungen auf dem Handy einzurichten. Öffnet sich automatisch.";
+    },
     ensure: ensureSettingsModule("mobile-push", "settings-push"),
   },
   /** Virtual anchor: centered overlay without spotlight (intro/outro). */

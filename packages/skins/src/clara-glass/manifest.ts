@@ -127,7 +127,7 @@ const effects: SkinManifest["tokens"]["effects"] = {
 
 export const claraGlassSkin: SkinManifest = {
   id: "clara-glass",
-  name: "Clara Glass",
+  name: "Glass",
   colorScheme: "dark",
   iconStyle: "brand",
   tokens: { colors, fonts, spacing, shadows, effects },

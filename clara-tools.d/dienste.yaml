@@ -3,7 +3,7 @@
 # like the tile). Adding, changing or removing services stays with a human admin.
 tools:
   - name: list_services
-    description: "The third-party services the user has as tiles in ClaraOS (Dienste): id, name, url."
+    description: "The third-party services the user has as tiles in the workspace (Dienste): id, name, url."
     endpoint: "http://localhost:8090/api/claraos/apps/dienste"
     method: GET
     auth: none

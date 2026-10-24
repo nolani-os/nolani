@@ -2,6 +2,7 @@
 // everywhere: the frame context menu fires "claraos-widget-settings" with the
 // widgetId (DesktopWidgets.tsx), and the widget listens via useWidgetSettingsOpen.
 import { useEffect, useState, type ReactNode } from "react";
+import { useTranslation } from "@claraos/core";
 import s from "./WidgetSettings.module.css";
 
 /** true as soon as the frame menu picks "Einstellungen…" (Settings) for this widget. */
@@ -30,6 +31,7 @@ export function SettingsOverlay({
   onSave: () => void;
   children: ReactNode;
 }) {
+  const { t } = useTranslation("desktop");
   return (
     <div
       className={s.overlay}
@@ -43,10 +45,10 @@ export function SettingsOverlay({
       <div className={s.body}>{children}</div>
       <div className={s.actions}>
         <button className={s.btn} onClick={onCancel}>
-          Abbrechen
+          {t("widgets.settings.cancel")}
         </button>
         <button className={`${s.btn} ${s.primary}`} onClick={onSave}>
-          Speichern
+          {t("widgets.settings.save")}
         </button>
       </div>
     </div>

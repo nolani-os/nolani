@@ -4,7 +4,7 @@
 // All writes go to nc_pim (per-user CalDAV). Known limitation: RRULE is not
 // expanded — recurring events appear only as the master event.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useWorkspaceStore } from "@claraos/core";
+import { useWorkspaceStore, useTranslation, i18n } from "@claraos/core";
 import type { WidgetProps } from "./registry";
 import {
   CheckList,
@@ -15,6 +15,7 @@ import {
 } from "./settingsControls";
 import s from "./MobileListWidgets.module.css";
 import c from "./CalendarWidget.module.css";
+import { regionLocale } from "@claraos/core";
 
 interface NcEvent {
   summary: string;
@@ -45,16 +46,16 @@ function dayLabel(dateStr: string): string {
   const tomorrow = new Date(today.getTime() + 86400000);
   const sameDay = (a: Date, b: Date) =>
     a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-  if (sameDay(d, today)) return "Heute";
-  if (sameDay(d, tomorrow)) return "Morgen";
-  const dm = d.toLocaleDateString("de-DE", { day: "numeric", month: "long" });
-  const wd = d.toLocaleDateString("de-DE", { weekday: "long" }).toUpperCase();
+  if (sameDay(d, today)) return i18n.t("desktop:widgets.calendar.today");
+  if (sameDay(d, tomorrow)) return i18n.t("desktop:widgets.calendar.tomorrow");
+  const dm = d.toLocaleDateString(regionLocale(), { day: "numeric", month: "long" });
+  const wd = d.toLocaleDateString(regionLocale(), { weekday: "long" }).toUpperCase();
   return `${dm} · ${wd}`;
 }
 
 function timeLabel(ev: NcEvent): string {
   if (isAllDay(ev)) return "24H";
-  return new Date(ev.start).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  return new Date(ev.start).toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" });
 }
 
 /** Composer/editor state */
@@ -90,6 +91,7 @@ async function meldung(r: Response, rueckfall: string): Promise<string> {
 }
 
 export default function CalendarAgendaWidget({ widgetId, config, guardRef, onOpenApp }: WidgetProps) {
+  const { t: tr } = useTranslation("desktop");
   const updateWidgetConfig = useWorkspaceStore((st) => st.updateWidgetConfig);
   const cfgCalendars: string[] = Array.isArray(config?.calendars) ? (config.calendars as string[]) : [];
 
@@ -185,17 +187,17 @@ export default function CalendarAgendaWidget({ widgetId, config, guardRef, onOpe
         setHinweis(null);
         setTimeout(load, 500);
       } else {
-        setHinweis(await meldung(r, "Termin konnte nicht gespeichert werden."));
+        setHinweis(await meldung(r, i18n.t("desktop:widgets.calendar.saveFailed")));
         load();   // on 409 the other party's version is correct — show it right away
       }
     } catch {
-      setHinweis("Kalender nicht erreichbar — nicht gespeichert.");
+      setHinweis(i18n.t("desktop:widgets.calendar.unreachableNotSaved"));
     }
   }, [draft, load]);
 
   const deleteEvent = useCallback(
     async (ev: NcEvent) => {
-      if (!window.confirm(`„${unescapeIcs(ev.summary) || "Termin"}" löschen?`)) return;
+      if (!window.confirm(i18n.t("desktop:widgets.calendar.confirmDelete", { title: unescapeIcs(ev.summary) || i18n.t("desktop:widgets.calendar.eventFallback") }))) return;
       setOpenUid(null);
       setEvents((prev) => (prev ?? []).filter((x) => x.uid !== ev.uid)); // optimistic
       try {
@@ -206,11 +208,11 @@ export default function CalendarAgendaWidget({ widgetId, config, guardRef, onOpe
         });
         // Important: the removal above was optimistic. If it fails, the row
         // must come back — otherwise the user believes the event was deleted.
-        if (!r.ok) setHinweis(await meldung(r, "Termin konnte nicht geloescht werden."));
+        if (!r.ok) setHinweis(await meldung(r, i18n.t("desktop:widgets.calendar.deleteFailed")));
         else setHinweis(null);
         setTimeout(load, 500);
       } catch {
-        setHinweis("Kalender nicht erreichbar — nicht geloescht.");
+        setHinweis(i18n.t("desktop:widgets.calendar.unreachableNotDeleted"));
         load();
       }
     },
@@ -291,26 +293,26 @@ export default function CalendarAgendaWidget({ widgetId, config, guardRef, onOpe
           title={ev.calendar}
         />
         <span className={`${s.time} ${isAllDay(ev) ? s.allday : ""}`}>{timeLabel(ev)}</span>
-        <span className={s.title}>{ev.summary ? unescapeIcs(ev.summary) : "(ohne Titel)"}</span>
+        <span className={s.title}>{ev.summary ? unescapeIcs(ev.summary) : tr("widgets.calendar.untitled")}</span>
         {ev.location && <span className={s.loc}>{unescapeIcs(ev.location)}</span>}
       </div>
       {openUid === ev.uid && !draft && (
         <div className={c.detail} onPointerDown={stop}>
           <div className={c.detailMeta}>
             {dayLabel(ev.start)}
-            {!isAllDay(ev) && ` · ${timeLabel(ev)}${ev.end ? `–${new Date(ev.end).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}` : ""}`}
+            {!isAllDay(ev) && ` · ${timeLabel(ev)}${ev.end ? `–${new Date(ev.end).toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" })}` : ""}`}
             {` · ${ev.calendar}`}
             {ev.location ? ` · ${unescapeIcs(ev.location)}` : ""}
           </div>
           <div className={c.detailActions}>
             <button className={c.dBtn} onClick={(e) => { stop(e); startEdit(ev); }}>
-              Bearbeiten
+              {tr("widgets.calendar.edit")}
             </button>
             <button className={`${c.dBtn} ${c.dDanger}`} onClick={(e) => { stop(e); deleteEvent(ev); }}>
-              Löschen
+              {tr("widgets.calendar.delete")}
             </button>
             <button className={c.dBtn} onClick={(e) => { stop(e); openApp(); }}>
-              Im Kalender
+              {tr("widgets.calendar.inCalendar")}
             </button>
           </div>
         </div>
@@ -356,7 +358,7 @@ export default function CalendarAgendaWidget({ widgetId, config, guardRef, onOpe
       <div className={s.header}>
         <span className={s.headerDay}>{today.getDate()}</span>
         <span className={s.headerMeta}>
-          {today.toLocaleDateString("de-DE", { weekday: "long", month: "long" })}
+          {today.toLocaleDateString(regionLocale(), { weekday: "long", month: "long" })}
         </span>
         {/* Important: `data-dicht="ja"` is the opt-out from the 44 px minimum
             height provided by `tokens.css`. Reason (required there): four
@@ -372,7 +374,7 @@ export default function CalendarAgendaWidget({ widgetId, config, guardRef, onOpe
               setDraft((d) => (d ? null : emptyDraft(selectedDay ?? undefined)));
               setOpenUid(null);
             }}
-            aria-label="Termin hinzufügen"
+            aria-label={tr("widgets.calendar.add")}
           >
             ＋
           </button>
@@ -380,14 +382,14 @@ export default function CalendarAgendaWidget({ widgetId, config, guardRef, onOpe
             className={s.iconBtn}
             onPointerDown={stop}
             onClick={(e) => { stop(e); toggleView(); }}
-            aria-label={view === "agenda" ? "Monatsansicht" : "Listenansicht"}
+            aria-label={view === "agenda" ? tr("widgets.calendar.monthView") : tr("widgets.calendar.listView")}
           >
             {view === "agenda" ? "▦" : "≣"}
           </button>
-          <button className={s.iconBtn} onPointerDown={stop} onClick={(e) => { stop(e); load(); }} aria-label="Aktualisieren">
+          <button className={s.iconBtn} onPointerDown={stop} onClick={(e) => { stop(e); load(); }} aria-label={tr("widgets.calendar.refresh")}>
             ⟳
           </button>
-          <button className={s.iconBtn} onPointerDown={stop} onClick={(e) => { stop(e); openApp(); }} aria-label="Öffnen">
+          <button className={s.iconBtn} onPointerDown={stop} onClick={(e) => { stop(e); openApp(); }} aria-label={tr("widgets.calendar.open")}>
             ⚙
           </button>
         </span>
@@ -399,7 +401,7 @@ export default function CalendarAgendaWidget({ widgetId, config, guardRef, onOpe
             <input
               className={c.cInput}
               autoFocus
-              placeholder={draft.uid ? "Termin bearbeiten…" : "Neuer Termin…"}
+              placeholder={draft.uid ? tr("widgets.calendar.editPlaceholder") : tr("widgets.calendar.newPlaceholder")}
               value={draft.summary}
               onChange={(e) => setDraft((d) => d && { ...d, summary: e.target.value })}
               onKeyDown={(e) => {
@@ -421,7 +423,7 @@ export default function CalendarAgendaWidget({ widgetId, config, guardRef, onOpe
                 checked={draft.allDay}
                 onChange={(e) => setDraft((d) => d && { ...d, allDay: e.target.checked })}
               />
-              ganztägig
+              {tr("widgets.calendar.allDay")}
             </label>
             {!draft.allDay && (
               <>
@@ -447,7 +449,7 @@ export default function CalendarAgendaWidget({ widgetId, config, guardRef, onOpe
                 value={draft.calendar}
                 onChange={(e) => setDraft((d) => d && { ...d, calendar: e.target.value })}
               >
-                <option value="">Standard-Kalender</option>
+                <option value="">{tr("widgets.calendar.defaultCalendar")}</option>
                 {writableCals.map((x) => (
                   <option key={x.name} value={x.name}>
                     {x.name}
@@ -456,10 +458,10 @@ export default function CalendarAgendaWidget({ widgetId, config, guardRef, onOpe
               </select>
             )}
             <button className={c.cBtn} disabled={!draft.summary.trim()} onClick={submitDraft}>
-              {draft.uid ? "Speichern" : "Anlegen"}
+              {draft.uid ? tr("widgets.calendar.save") : tr("widgets.calendar.create")}
             </button>
             <button className={c.dBtn} onClick={() => setDraft(null)}>
-              Abbrechen
+              {tr("widgets.calendar.cancel")}
             </button>
           </div>
         </div>
@@ -473,9 +475,9 @@ export default function CalendarAgendaWidget({ widgetId, config, guardRef, onOpe
 
       {view === "agenda" ? (
         <div className={s.scroll}>
-          {events === null && !error && <div className={s.empty}>Lade Termine…</div>}
-          {events === null && error && <div className={s.empty}>Kalender nicht erreichbar</div>}
-          {events !== null && agendaRows.length === 0 && <div className={s.empty}>Keine Termine</div>}
+          {events === null && !error && <div className={s.empty}>{tr("widgets.calendar.loading")}</div>}
+          {events === null && error && <div className={s.empty}>{tr("widgets.calendar.unreachable")}</div>}
+          {events !== null && agendaRows.length === 0 && <div className={s.empty}>{tr("widgets.calendar.empty")}</div>}
           {agendaRows.map((r, i) =>
             r.kind === "head" ? (
               <div key={`h-${i}`} className={s.dayHead}>
@@ -489,20 +491,20 @@ export default function CalendarAgendaWidget({ widgetId, config, guardRef, onOpe
       ) : (
         <div className={c.month} onPointerDown={stop}>
           <div className={c.monthNav}>
-            <button className={c.navBtn} onClick={() => shiftMonth(-1)} aria-label="Voriger Monat">
+            <button className={c.navBtn} onClick={() => shiftMonth(-1)} aria-label={tr("widgets.calendar.prevMonth")}>
               ‹
             </button>
             <span className={c.monthName}>
-              {monthCursor.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}
+              {monthCursor.toLocaleDateString(regionLocale(), { month: "long", year: "numeric" })}
             </span>
-            <button className={c.navBtn} onClick={() => shiftMonth(1)} aria-label="Nächster Monat">
+            <button className={c.navBtn} onClick={() => shiftMonth(1)} aria-label={tr("widgets.calendar.nextMonth")}>
               ›
             </button>
           </div>
           <div className={c.grid}>
-            {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((w) => (
+            {["mo", "tu", "we", "th", "fr", "sa", "su"].map((w) => (
               <span key={w} className={c.wd}>
-                {w}
+                {tr(`widgets.calendar.weekday.${w}`)}
               </span>
             ))}
             {monthDays.map((d) => {
@@ -526,9 +528,9 @@ export default function CalendarAgendaWidget({ widgetId, config, guardRef, onOpe
             })}
           </div>
           <div className={c.monthAgenda}>
-            {selectedDay === null && <div className={s.empty}>Tag antippen für Termine</div>}
+            {selectedDay === null && <div className={s.empty}>{tr("widgets.calendar.tapDay")}</div>}
             {selectedDay !== null && dayEvents.length === 0 && (
-              <div className={s.empty}>Keine Termine am {new Date(`${selectedDay}T12:00:00`).toLocaleDateString("de-DE")}</div>
+              <div className={s.empty}>{tr("widgets.calendar.emptyOn", { date: new Date(`${selectedDay}T12:00:00`).toLocaleDateString(regionLocale()) })}</div>
             )}
             {dayEvents.map((ev, i) => renderRow(ev, i))}
           </div>
@@ -537,13 +539,13 @@ export default function CalendarAgendaWidget({ widgetId, config, guardRef, onOpe
 
       {settingsOpen && (
         <SettingsOverlay
-          title="Kalender-Auswahl"
+          title={tr("widgets.calendar.settingsTitle")}
           onCancel={() => setSettingsOpen(false)}
           onSave={saveSettings}
         >
-          <GroupLabel>Angezeigte Kalender (keine Auswahl = alle)</GroupLabel>
+          <GroupLabel>{tr("widgets.calendar.shownCalendars")}</GroupLabel>
           <CheckList>
-            {calendars.length === 0 && <span style={{ fontSize: 11, opacity: 0.6 }}>Lade Kalender…</span>}
+            {calendars.length === 0 && <span style={{ fontSize: 11, opacity: 0.6 }}>{tr("widgets.calendar.loadingCalendars")}</span>}
             {calendars.map((x) => (
               <CheckRow
                 key={x.name}

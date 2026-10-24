@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { fileUrl } from "../../lib/downloadFile";
-import { useWindowsStore, useFileStore, useMarkerStore, buildObjectUri, type FileNode } from "@claraos/core";
+import { useWindowsStore, useFileStore, useMarkerStore, buildObjectUri, type FileNode, getBrand } from "@claraos/core";
 import { prepareItems } from "../file-browser/listTransform";
 import MarkerOverlay, { computeBboxFromState } from "../../Marker/MarkerOverlay";
 import { holen, istHtml } from "../../lib/artefakte";
@@ -136,7 +136,7 @@ export default function ImageViewerApp({ windowId }: { windowId: string }) {
       if (!a) {
         setSeiteFehler(
           "Dieses Artefakt ist nicht mehr da — die Seite wurde zwischendurch neu geladen. " +
-          "Bitte Clara noch einmal darum bitten.",
+          `Bitte ${getBrand().assistant} noch einmal darum bitten.`,
         );
         setImageUrl("");
         meldeInhalt(windowId, false,

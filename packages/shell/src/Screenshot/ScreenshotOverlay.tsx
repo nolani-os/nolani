@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useUIStore, useClipboardStore, useWindowsStore } from "@claraos/core";
+import { i18n, useUIStore, useClipboardStore, useWindowsStore, useTranslation } from "@claraos/core";
 import { captureToDataUrl, downloadBlob } from "../lib/screenshots";
 import styles from "./ScreenshotOverlay.module.css";
 
@@ -21,6 +21,7 @@ interface Rect {
  * the image-viewer app via a blob:// URL.
  */
 export function ScreenshotOverlay() {
+  const { t } = useTranslation("shell");
   const [open, setOpen] = useState(false);
   const [rect, setRect] = useState<Rect | null>(null);
   const [start, setStart] = useState<{ x: number; y: number } | null>(null);
@@ -107,8 +108,8 @@ export function ScreenshotOverlay() {
       await navigator.clipboard.writeText(captured);
       useClipboardStore.getState().add(captured, "screenshot");
       useUIStore.getState().addNotification({
-        title: "Screenshot kopiert",
-        body: "Data-URL wurde in die Zwischenablage gelegt.",
+        title: i18n.t("shell:screenshot.copiedTitle"),
+        body: i18n.t("shell:screenshot.copied"),
         icon: "📷",
       });
     } catch {
@@ -116,8 +117,8 @@ export function ScreenshotOverlay() {
       // secure origin). Previously the window simply closed — the screenshot
       // appeared to be copied but was not.
       useUIStore.getState().addNotification({
-        title: "Screenshot nicht kopiert",
-        body: "Die Zwischenablage hat den Zugriff abgelehnt.",
+        title: i18n.t("shell:screenshot.copyFailedTitle"),
+        body: i18n.t("shell:screenshot.copyFailed"),
         icon: "⚠️",
       });
     }
@@ -136,7 +137,7 @@ export function ScreenshotOverlay() {
   const handleOpenInViewer = useCallback(() => {
     if (!captured || captured === "error") return;
     useWindowsStore.getState().openWindow("image-viewer", {
-      title: "Screenshot",
+      title: i18n.t("shell:screenshot.viewerTitle"),
       width: 800,
       height: 600,
     });
@@ -164,7 +165,7 @@ export function ScreenshotOverlay() {
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
       role="dialog"
-      aria-label="Screenshot tool"
+      aria-label={t("screenshot.toolLabel")}
     >
       {!captured && (
         <>
@@ -177,26 +178,26 @@ export function ScreenshotOverlay() {
           )}
           {!rect && (
             <div className={styles.hint}>
-              Klick + Ziehen für Auswahl &nbsp;·&nbsp; Esc zum Abbrechen
+              {t("screenshot.hint")}
             </div>
           )}
         </>
       )}
       {captured === "error" && (
         <div className={`aeroWidget ${styles.result}`}>
-          <h3>Aufnahme fehlgeschlagen</h3>
-          <p>Vermutlich enthält die Seite Cross-Origin-Iframes, die html-to-image nicht erfassen kann.</p>
-          <button onClick={closeAll}>Schließen</button>
+          <h3>{t("screenshot.failedTitle")}</h3>
+          <p>{t("screenshot.failed")}</p>
+          <button onClick={closeAll}>{t("screenshot.close")}</button>
         </div>
       )}
       {captured && captured !== "error" && (
         <div className={`aeroWidget ${styles.result}`} onMouseDown={(e) => e.stopPropagation()}>
-          <img src={captured} alt="Screenshot preview" className={styles.preview} />
+          <img src={captured} alt={t("screenshot.preview")} className={styles.preview} />
           <div className={styles.actions}>
-            <button onClick={handleCopyText}>Als Text kopieren</button>
-            <button onClick={handleDownload}>Herunterladen</button>
-            <button onClick={handleOpenInViewer}>In Image-Viewer öffnen</button>
-            <button className={styles.cancel} onClick={closeAll}>Verwerfen</button>
+            <button onClick={handleCopyText}>{t("screenshot.copyAsText")}</button>
+            <button onClick={handleDownload}>{t("screenshot.download")}</button>
+            <button onClick={handleOpenInViewer}>{t("screenshot.openInViewer")}</button>
+            <button className={styles.cancel} onClick={closeAll}>{t("screenshot.discard")}</button>
           </div>
         </div>
       )}

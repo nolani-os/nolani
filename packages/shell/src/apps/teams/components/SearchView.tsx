@@ -5,6 +5,7 @@ import { personenSuchen, type Person } from "../personenApi";
 import { Avatar } from "./Avatar";
 import { ProfilKarte } from "./ProfilKarte";
 import styles from "./SearchView.module.css";
+import { regionLocale } from "@claraos/core";
 
 interface SearchResult {
   roomId: string;
@@ -115,7 +116,7 @@ export function SearchView() {
               <span className={styles.resultRoom}>#{r.roomName}</span>
               <span className={styles.resultSender}>{r.sender}</span>
               <span className={styles.resultTime}>
-                {new Date(r.ts).toLocaleDateString("de-DE")}
+                {new Date(r.ts).toLocaleDateString(regionLocale())}
               </span>
             </div>
             <div className={styles.resultBody}>{r.body}</div>

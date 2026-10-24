@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { INSTALL_TEXTS } from "../../installTexts";
 import styles from "./UserAdminApp.module.css";
+import { regionLocale } from "@claraos/core";
 
 const UA = "/api/claraos/user-admin";
 
@@ -150,7 +151,7 @@ export function CreateUserWizard({ onClose, onCreated }: Props) {
           ) : (
             <div style={{ margin: "12px 0" }}>
               <p className={styles.modalHint}>
-                Einrichtungs-Link (gültig bis {new Date(invite.expires_at).toLocaleDateString("de-DE")},
+                Einrichtungs-Link (gültig bis {new Date(invite.expires_at).toLocaleDateString(regionLocale())},
                 nur <strong>jetzt</strong> sichtbar — per Messenger schicken oder QR abscannen lassen):
               </p>
               <div className={styles.pwBox}>

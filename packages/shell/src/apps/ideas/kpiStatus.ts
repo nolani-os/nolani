@@ -6,6 +6,7 @@
  * colors. */
 import type { KpiStatus } from "./types";
 import type { IconName } from "../../components/Icon";
+import { regionLocale } from "@claraos/core";
 
 export interface StatusDef {
   key: KpiStatus;
@@ -54,7 +55,7 @@ export function fmtNum(v: number | null | undefined, unit = ""): string {
   if (v === null || v === undefined || Number.isNaN(v)) return "—";
   const abs = Math.abs(v);
   const digits = abs >= 100 ? 0 : abs >= 10 ? 1 : 2;
-  const s = v.toLocaleString("de-DE", { maximumFractionDigits: digits });
+  const s = v.toLocaleString(regionLocale(), { maximumFractionDigits: digits });
   return unit ? `${s} ${unit}` : s;
 }
 

@@ -5,6 +5,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import type { TooltipRenderProps } from "react-joyride";
+import { useTranslation, getBrand } from "@claraos/core";
 import { streamCompletion } from "../Chat/api";
 import styles from "./TourCard.module.css";
 
@@ -15,6 +16,7 @@ export function TourCard(props: TooltipRenderProps) {
   const [answer, setAnswer] = useState("");
   const [busy, setBusy] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const { t } = useTranslation("tour");
 
   // Step change => reset the question area, abort a running stream
   useEffect(() => {
@@ -35,7 +37,7 @@ export function TourCard(props: TooltipRenderProps) {
     const ctrl = new AbortController();
     abortRef.current = ctrl;
     const context =
-      `Du begleitest gerade eine geführte Tour durch ClaraOS. Der Nutzer sieht ` +
+      `Du begleitest gerade eine geführte Tour durch ${getBrand().product}. Der Nutzer sieht ` +
       `Schritt „${String(step.title ?? "")}“ mit dem Text: „${String(step.content ?? "")}“. ` +
       `Er hat dazu eine Frage. Antworte kurz (2-5 Sätze), warm und OHNE Fachjargon — ` +
       `der Nutzer ist kein Techniker. Frage:\n${q}`;
@@ -44,13 +46,13 @@ export function TourCard(props: TooltipRenderProps) {
         { messages: [{ role: "user", content: context }] },
         (c) => {
           if (c.delta) setAnswer((prev) => prev + c.delta);
-          if (c.error) setAnswer((prev) => prev || `Das hat gerade nicht geklappt (${c.error}). Versuch es gleich nochmal.`);
+          if (c.error) setAnswer((prev) => prev || t("card.failedWithError", { error: c.error }));
           if (c.finish) setBusy(false);
         },
         ctrl.signal,
       );
     } catch {
-      setAnswer((prev) => prev || "Das hat gerade nicht geklappt. Versuch es gleich nochmal.");
+      setAnswer((prev) => prev || t("card.failed"));
     } finally {
       setBusy(false);
     }
@@ -72,7 +74,7 @@ export function TourCard(props: TooltipRenderProps) {
               className={styles.askInput}
               value={question}
               rows={2}
-              placeholder="Was möchtest du dazu wissen?"
+              placeholder={t("card.askPlaceholder")}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -82,13 +84,13 @@ export function TourCard(props: TooltipRenderProps) {
               }}
             />
             <button className={styles.askSend} disabled={busy || !question.trim()} onClick={() => void ask()}>
-              {busy ? "…" : "Senden"}
+              {busy ? "…" : t("card.send")}
             </button>
           </div>
           {(answer || busy) && (
             <div className={styles.answer} data-testid="tour-answer">
-              <span className={styles.answerWho}>✦ Clara</span>
-              {answer || "denkt nach …"}
+              <span className={styles.answerWho}>✦ {getBrand().assistant}</span>
+              {answer || t("card.thinking")}
             </div>
           )}
         </div>
@@ -96,12 +98,12 @@ export function TourCard(props: TooltipRenderProps) {
 
       <div className={styles.footer}>
         <button className={styles.ghostBtn} onClick={() => setAskOpen((p) => !p)}>
-          {askOpen ? "Frage schließen" : "❓ Frage stellen"}
+          {askOpen ? t("card.closeQuestion") : t("card.askQuestion")}
         </button>
         <div className={styles.navBtns}>
-          {index > 0 && <button className={styles.navBtn} {...backProps}>Zurück</button>}
+          {index > 0 && <button className={styles.navBtn} {...backProps}>{t("card.back")}</button>}
           <button className={styles.primaryBtn} {...primaryProps}>
-            {isLastStep ? "Fertig" : "Weiter"}
+            {isLastStep ? t("card.done") : t("card.next")}
           </button>
         </div>
       </div>

@@ -23,6 +23,7 @@ Security notes:
 """
 from __future__ import annotations
 
+from betriebsprofil import PRODUCT_NAME
 import asyncio
 import logging
 import os
@@ -64,7 +65,7 @@ def _caller_token(request: Request) -> tuple[str, str]:
     if not raw.lower().startswith("token "):
         raise HTTPException(
             status_code=409,
-            detail=("Kein verbundenes paperless-Konto für diesen Nutzer. Bitte in ClaraOS "
+            detail=(f"Kein verbundenes paperless-Konto für diesen Nutzer. Bitte in {PRODUCT_NAME} "
                     "unter „Dienste“ das paperless-Konto verbinden."))
     token = raw.split(" ", 1)[1].strip()
     if not token:

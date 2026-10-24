@@ -7,6 +7,7 @@ import styles from "./IdeasApp.module.css";
 import { Icon } from "../../components/Icon";
 import { ideasApi } from "./api";
 import type { KbComment } from "./types";
+import { regionLocale, getBrand } from "@claraos/core";
 
 interface Props {
   objectId: string;
@@ -117,9 +118,9 @@ export function CommentsPanel({ objectId, currentUser, isOwner, selection, onCle
               </div>
             )}
             <div className={styles.commentHead}>
-              <b>{c.author === "clara" ? "🤖 Clara" : c.author}</b>
+              <b>{c.author === "clara" ? `🤖 ${getBrand().assistant}` : c.author}</b>
               <span className={styles.metaHint}>
-                {new Date(c.created_at).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}
+                {new Date(c.created_at).toLocaleString(regionLocale(), { dateStyle: "short", timeStyle: "short" })}
               </span>
               {c.resolved && <span className={styles.metaHint}>· erledigt</span>}
             </div>
@@ -147,9 +148,9 @@ export function CommentsPanel({ objectId, currentUser, isOwner, selection, onCle
                 {repliesOf(c.id).map((r) => (
                   <li key={r.id}>
                     <div className={styles.commentHead}>
-                      <b>{r.author === "clara" ? "🤖 Clara" : r.author}</b>
+                      <b>{r.author === "clara" ? `🤖 ${getBrand().assistant}` : r.author}</b>
                       <span className={styles.metaHint}>
-                        {new Date(r.created_at).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}
+                        {new Date(r.created_at).toLocaleString(regionLocale(), { dateStyle: "short", timeStyle: "short" })}
                       </span>
                     </div>
                     <div className={styles.commentBody}>{r.body}</div>

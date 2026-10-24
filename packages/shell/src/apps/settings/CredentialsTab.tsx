@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useUIStore } from "@claraos/core";
+import { useUIStore, useTranslation, i18n } from "@claraos/core";
 import styles from "./CredentialsTab.module.css";
 
 const toast = (title: string, body: string, icon = "\u{1F511}") =>
@@ -26,6 +26,7 @@ interface AccessInfo {
 const HEADERS = { "Content-Type": "application/json" };
 
 export function CredentialsTab() {
+  const { t } = useTranslation("settingsTabs");
   const [access, setAccess] = useState<AccessInfo | null>(null);
   const [items, setItems] = useState<VaultItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,14 +81,14 @@ export function CredentialsTab() {
         });
       }, 10_000);
     } catch (e) {
-      toast("Anzeigen fehlgeschlagen", String(e), "\u26A0");
+      toast(i18n.t("settingsTabs:credentials.revealFailed"), String(e), "\u26A0");
     }
   };
 
   const copyToClipboard = async (text: string, label: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      toast("Kopiert", `${label} ist in der Zwischenablage.`);
+      toast(i18n.t("settingsTabs:credentials.copied"), i18n.t("settingsTabs:credentials.copiedBody", { label }));
     } catch {
       // fallback: select + copy via execCommand
       const ta = document.createElement("textarea");
@@ -104,17 +105,17 @@ export function CredentialsTab() {
       const r = await fetch(`/api/claraos/vault/item/${id}`);
       const item: VaultItem = await r.json();
       const pwd = item.login?.password || "";
-      await copyToClipboard(pwd, "password");
+      await copyToClipboard(pwd, t("credentials.labelPassword"));
     } catch (e) {
-      toast("Kopieren fehlgeschlagen", String(e), "\u26A0");
+      toast(i18n.t("settingsTabs:credentials.copyFailed"), String(e), "\u26A0");
     }
   };
 
   const deleteItem = async (id: string, name: string) => {
-    if (!confirm(`Move "${name}" to trash?`)) return;
+    if (!confirm(t("credentials.confirmTrash", { name }))) return;
     const r = await fetch(`/api/claraos/vault/item/${id}`, { method: "DELETE" });
     if (!r.ok) {
-      toast("L\u00f6schen fehlgeschlagen", await r.text(), "\u26A0");
+      toast(i18n.t("settingsTabs:credentials.deleteFailed"), await r.text(), "\u26A0");
       return;
     }
     setItems((cur) => cur.filter((i) => i.id !== id));
@@ -123,17 +124,17 @@ export function CredentialsTab() {
   if (loading) {
     return (
       <div className={styles.tab}>
-        <h2 className={styles.heading}>Zugangsdaten</h2>
-        <p>Wird geladen…</p>
+        <h2 className={styles.heading}>{t("credentials.title")}</h2>
+        <p>{t("credentials.loading")}</p>
       </div>
     );
   }
   if (error) {
     return (
       <div className={styles.tab}>
-        <h2 className={styles.heading}>Zugangsdaten</h2>
-        <p className={styles.error}>Tresor konnte nicht geladen werden: {error}</p>
-        <button className={styles.btnPrimary} onClick={loadAll}>Erneut versuchen</button>
+        <h2 className={styles.heading}>{t("credentials.title")}</h2>
+        <p className={styles.error}>{t("credentials.loadError", { error })}</p>
+        <button className={styles.btnPrimary} onClick={loadAll}>{t("credentials.retry")}</button>
       </div>
     );
   }
@@ -151,17 +152,18 @@ export function CredentialsTab() {
   return (
     <div className={styles.tab}>
       <div className={styles.headerRow}>
-        <h2 className={styles.heading}>Zugangsdaten</h2>
+        <h2 className={styles.heading}>{t("credentials.title")}</h2>
         <button className={styles.btnPrimary} onClick={() => setShowCreate(true)}>
-          + Neu
+          {t("credentials.new")}
         </button>
       </div>
 
       {access && (
         <p className={styles.subtle}>
-          Angemeldet als <code>{access.username}</code> · Gruppen: {access.groups.join(", ") || "(keine)"}
+          {t("credentials.signedInAs")} <code>{access.username}</code> · {t("credentials.groups")}{" "}
+          {access.groups.join(", ") || t("credentials.noGroups")}
           <br />
-          Sichtbar: {access.personal_collection}
+          {t("credentials.visible")} {access.personal_collection}
           {access.can_see_family && " · Family-Shared"}
           {access.can_see_admin && " · Admin-Only"}
         </p>
@@ -169,7 +171,8 @@ export function CredentialsTab() {
 
       {items.length === 0 ? (
         <p className={styles.empty}>
-          Noch keine Zugangsdaten. Über <strong>+ Neu</strong> welche in {personalName} anlegen.
+          {t("credentials.emptyBefore")} <strong>{t("credentials.new")}</strong>{" "}
+          {t("credentials.emptyAfter", { collection: personalName })}
         </p>
       ) : (
         <ul className={styles.itemList}>
@@ -187,11 +190,11 @@ export function CredentialsTab() {
                     </a>
                   )}
                   <div className={styles.itemUser}>
-                    <span>👤 {username || "(no username)"}</span>
+                    <span>👤 {username || t("credentials.noUsername")}</span>
                     <button
                       className={styles.iconBtn}
-                      onClick={() => copyToClipboard(username, "username")}
-                      title="Benutzernamen kopieren"
+                      onClick={() => copyToClipboard(username, t("credentials.labelUsername"))}
+                      title={t("credentials.copyUsername")}
                     >
                       📋
                     </button>
@@ -203,14 +206,14 @@ export function CredentialsTab() {
                     <button
                       className={styles.iconBtn}
                       onClick={() => reveal(item.id)}
-                      title={revealedPwd ? "Verbergen" : "Anzeigen (10 s)"}
+                      title={revealedPwd ? t("credentials.hide") : t("credentials.reveal")}
                     >
                       {revealedPwd ? "🙈" : "👁"}
                     </button>
                     <button
                       className={styles.iconBtn}
                       onClick={() => copyPwd(item.id)}
-                      title="Passwort kopieren"
+                      title={t("credentials.copyPassword")}
                     >
                       📋
                     </button>
@@ -220,14 +223,14 @@ export function CredentialsTab() {
                   <button
                     className={styles.iconBtn}
                     onClick={() => setEditingId(item.id)}
-                    title="Bearbeiten"
+                    title={t("credentials.edit")}
                   >
                     ✎
                   </button>
                   <button
                     className={styles.iconBtn}
                     onClick={() => deleteItem(item.id, item.name)}
-                    title="In den Papierkorb"
+                    title={t("credentials.trash")}
                   >
                     🗑
                   </button>
@@ -276,6 +279,7 @@ interface ModalProps {
 }
 
 function ItemModal({ mode, itemId, access, onClose, onSaved }: ModalProps) {
+  const { t } = useTranslation("settingsTabs");
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -315,7 +319,7 @@ function ItemModal({ mode, itemId, access, onClose, onSaved }: ModalProps) {
   };
 
   const submit = async () => {
-    if (!name.trim()) return setError("Name is required");
+    if (!name.trim()) return setError(t("credentials.nameRequired"));
     setBusy(true);
     setError("");
     try {
@@ -350,40 +354,40 @@ function ItemModal({ mode, itemId, access, onClose, onSaved }: ModalProps) {
     <div className={styles.modalBackdrop} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <h3 className={styles.modalHeading}>
-          {mode === "create" ? "Neue Zugangsdaten" : "Zugangsdaten bearbeiten"}
+          {mode === "create" ? t("credentials.modalNew") : t("credentials.modalEdit")}
         </h3>
 
-        <label className={styles.label}>Name</label>
+        <label className={styles.label}>{t("credentials.fieldName")}</label>
         <input
           className={styles.input}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="z. B. Github-SSH-Schlüssel"
+          placeholder={t("credentials.namePlaceholder")}
         />
 
         {mode === "create" && (
           <>
-            <label className={styles.label}>Sammlung</label>
+            <label className={styles.label}>{t("credentials.fieldCollection")}</label>
             <select
               className={styles.input}
               value={kind}
               onChange={(e) => setKind(e.target.value as CollKind)}
             >
-              <option value="personal">Persönlich ({access?.personal_collection})</option>
+              <option value="personal">{t("credentials.personal", { collection: access?.personal_collection })}</option>
               {access?.can_see_family && <option value="family">Family-Shared</option>}
               {access?.can_see_admin && <option value="admin">Admin-Only</option>}
             </select>
           </>
         )}
 
-        <label className={styles.label}>Benutzername / E-Mail</label>
+        <label className={styles.label}>{t("credentials.fieldUsername")}</label>
         <input
           className={styles.input}
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />
 
-        <label className={styles.label}>Passwort</label>
+        <label className={styles.label}>{t("credentials.fieldPassword")}</label>
         <div className={styles.row}>
           <input
             className={styles.input}
@@ -392,7 +396,7 @@ function ItemModal({ mode, itemId, access, onClose, onSaved }: ModalProps) {
             onChange={(e) => setPassword(e.target.value)}
           />
           <button className={styles.btnSecondary} onClick={generatePwd} type="button">
-            Erzeugen
+            {t("credentials.generate")}
           </button>
         </div>
 
@@ -404,7 +408,7 @@ function ItemModal({ mode, itemId, access, onClose, onSaved }: ModalProps) {
           placeholder="https://example.com"
         />
 
-        <label className={styles.label}>Notizen</label>
+        <label className={styles.label}>{t("credentials.fieldNotes")}</label>
         <textarea
           className={styles.input}
           rows={3}
@@ -416,10 +420,10 @@ function ItemModal({ mode, itemId, access, onClose, onSaved }: ModalProps) {
 
         <div className={styles.modalActions}>
           <button className={styles.btnSecondary} onClick={onClose} disabled={busy}>
-            Abbrechen
+            {t("credentials.cancel")}
           </button>
           <button className={styles.btnPrimary} onClick={submit} disabled={busy}>
-            {busy ? "Wird gespeichert…" : "Speichern"}
+            {busy ? t("credentials.saving") : t("credentials.save")}
           </button>
         </div>
       </div>

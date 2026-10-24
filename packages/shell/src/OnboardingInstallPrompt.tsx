@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
-import { BASE_DOMAIN, useIstZelle } from "@claraos/core";
+import { BASE_DOMAIN, useIstZelle, getBrand } from "@claraos/core";
 
 /* Setup wizard completion: if the user arrives from the onboarding portal with
    ?onboarding=1, we show a PWA install hint after login.
@@ -96,7 +96,7 @@ export function OnboardingInstallPrompt() {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: 22 }}>{"\u{1F389}"}</span>
           <div>
-            <strong>Fertig!</strong> ClaraOS ist jetzt eine App auf deinem Gerät.
+            <strong>Fertig!</strong> {getBrand().product} ist jetzt eine App auf deinem Gerät.
             <button onClick={() => setVisible(false)} style={dismissStyle}>Schließen</button>
           </div>
         </div>
@@ -104,22 +104,22 @@ export function OnboardingInstallPrompt() {
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
           <span style={{ fontSize: 24 }}>{"\u{2728}"}</span>
           <div style={{ flex: 1 }}>
-            <strong>Letzter Schritt: ClaraOS als App installieren</strong>
+            <strong>Letzter Schritt: {getBrand().product} als App installieren</strong>
             <p style={{ margin: "6px 0 10px", fontSize: 13.5, color: "#9fb0d0", lineHeight: 1.5 }}>
               {IS_IOS
                 ? <>In Safari unten das <strong>Teilen-Symbol</strong> antippen → <strong>„Zum Home-Bildschirm"</strong>.</>
                 : IS_ANDROID
                   ? istZelle
-                    ? <>Empfohlen: die <strong>ClaraOS-App für Android</strong>. Nach der
+                    ? <>Empfohlen: die <strong>{getBrand().product}-App für Android</strong>. Nach der
                         Installation auf <strong>„Mit der App verbinden"</strong> tippen.</>
-                    : <>Empfohlen: die <strong>ClaraOS-App für Android</strong> — mit Foto-Sync,
+                    : <>Empfohlen: die <strong>{getBrand().product}-App für Android</strong> — mit Foto-Sync,
                         Dokumentenscanner und Push. Alternativ als Web-App installieren.</>
                   : offerDesktop
-                    ? <>Empfohlen: die <strong>ClaraOS-App für den PC</strong> — verbindet sich
+                    ? <>Empfohlen: die <strong>{getBrand().product}-App für den PC</strong> — verbindet sich
                         selbst mit deinem Zuhause (ohne VPN-Einrichtung, ohne Admin-Rechte)
                         und bringt Benachrichtigungen mit. Alternativ als Web-App installieren.</>
                     : installPromptHolder.event
-                      ? "Ein Tipp genügt — danach startet ClaraOS direkt vom Homescreen."
+                      ? `Ein Tipp genügt — danach startet ${getBrand().product} direkt vom Homescreen.`
                       : <>Im Browser-Menü <strong>„App installieren"</strong> wählen (⋮ oben rechts).</>}
             </p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

@@ -17,6 +17,7 @@ import type { KpiProgress } from "../types";
 import { Sparkline } from "../KpiChart";
 import { Icon } from "../../../components/Icon";
 import { fmtDate, fmtNum, fmtPct, statusColor, statusOf } from "../kpiStatus";
+import { regionLocale } from "@claraos/core";
 
 interface DashKpi {
   id: string;
@@ -190,7 +191,7 @@ export function DashboardView({ onOpen, reloadTick }: Props) {
 
       {stand && (
         <p className={styles.metaHint}>
-          Stand: {new Date(stand).toLocaleString("de-DE")} · Zeitraum {tage} Tage
+          Stand: {new Date(stand).toLocaleString(regionLocale())} · Zeitraum {tage} Tage
         </p>
       )}
     </div>

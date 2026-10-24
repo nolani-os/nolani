@@ -25,6 +25,7 @@ import {
 import styles from "./MobileLayout.module.css";
 import { Werkzeugleiste } from "../../../components/Werkzeugleiste";
 import { IconButton } from "../../../components/Button";
+import { regionLocale } from "@claraos/core";
 
 // "team" = the shared content of a team.
 type MobileView = "list" | "detail" | "profil" | "team";
@@ -161,7 +162,7 @@ function MobileChatView({ roomId, onBack }: { roomId: string; onBack: () => void
           // The sender name appears only above the first bubble of a run and
           // never above one's own (you know who you are).
           const eigen = msg.sender === meineId;
-          const zeit = new Date(msg.ts).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+          const zeit = new Date(msg.ts).toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" });
           return (
             <div key={msg.eventId} className={`${styles.msg} ${eigen ? styles.msgEigen : ""} ${showSender ? styles.msgErste : ""}`}>
               {showSender && !eigen && (

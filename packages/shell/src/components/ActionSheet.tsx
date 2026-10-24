@@ -4,6 +4,7 @@
  * shown as drill-in pages with a "‹ Back" header.
  */
 import { useEffect, useState } from "react";
+import { useTranslation } from "@claraos/core";
 import type { ContextMenuItem } from "./WindowContextMenu";
 import { BottomSheet } from "./BottomSheet";
 import styles from "./ActionSheet.module.css";
@@ -18,6 +19,7 @@ export interface ActionSheetProps {
 export function ActionSheet({ open, onClose, title, items }: ActionSheetProps) {
   // Drill-in stack for submenus
   const [stack, setStack] = useState<{ title: string; items: ContextMenuItem[] }[]>([]);
+  const { t } = useTranslation("components");
 
   useEffect(() => {
     if (!open) setStack([]);
@@ -30,7 +32,7 @@ export function ActionSheet({ open, onClose, title, items }: ActionSheetProps) {
       {stack.length > 0 && (
         <button className={styles.row} onClick={() => setStack((s) => s.slice(0, -1))}>
           <span className={styles.icon}>‹</span>
-          <span className={styles.label}>Zurück</span>
+          <span className={styles.label}>{t("actionSheet.back")}</span>
         </button>
       )}
       {page.items.map((item) => {

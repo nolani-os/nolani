@@ -18,6 +18,7 @@ Persistence rules (KDE model):
 
 from __future__ import annotations
 
+from betriebsprofil import ASSISTANT_NAME, PRODUCT_NAME
 import re
 from dataclasses import dataclass, field
 from typing import Any
@@ -502,11 +503,21 @@ MODULES: tuple[SettingsModule, ...] = (
             "dateigröße", "filesize", "kib", "mb",
         ),
         settings=(
-            # The UI language stays German for now — the formats axis works
-            # (as in KDE) independently of it and immediately.
+            # Two axes, as in KDE: the UI language and the region format are
+            # independent (English UI with German dates is allowed).
+            # Choices = codes in packages/core/src/i18n/languages.ts (+ "system");
+            # test_settings_schema.py fails on drift.
             SettingDef(
-                key="locale", type="enum", default="de-DE",
-                choices=("de-DE", "de-AT", "de-CH", "en-GB", "en-US", "fr-FR", "it-IT"),
+                key="uiLanguage", type="enum", default="system",
+                choices=("system", "de", "en"),
+                label="Sprache der Oberfläche:",
+                description="„Wie der Browser“ folgt der Spracheinstellung des Geräts.",
+            ),
+            SettingDef(
+                # "auto" = the browser's region — an English install should not
+                # show German dates just because nobody touched this setting.
+                key="locale", type="enum", default="auto",
+                choices=("auto", "de-DE", "de-AT", "de-CH", "en-GB", "en-US", "fr-FR", "it-IT"),
                 label="Regionsformat:",
                 description="Bestimmt Zahlen, Datum und Uhrzeit — nicht die Sprache der Oberfläche.",
             ),
@@ -607,19 +618,19 @@ MODULES: tuple[SettingsModule, ...] = (
         keywords=("federation", "partner", "instanz", "verbund"),
     ),
     SettingsModule(
-        id="clara-memory", name="Was Clara über mich weiß", icon="shield",
+        id="clara-memory", name=f"Was {ASSISTANT_NAME} über mich weiß", icon="shield",
         category="privacy", weight=20, component="ClaraMemoryTab",
-        keywords=("clara", "profil", "gedächtnis", "memory", "gelernt",
+        keywords=(ASSISTANT_NAME.lower(), "profil", "gedächtnis", "memory", "gelernt",
                   "privatsphäre", "kennenlernen", "guide"),
     ),
     SettingsModule(
-        id="clara-freigaben", name="Clara-Freigaben", icon="shield",
+        id="clara-freigaben", name=f"{ASSISTANT_NAME}-Freigaben", icon="shield",
         category="privacy", weight=30, component="FreigabenTab",
-        keywords=("freigabe", "immer", "bestätigung", "regel", "clara", "strom",
+        keywords=("freigabe", "immer", "bestätigung", "regel", ASSISTANT_NAME.lower(), "strom",
                   "löschen", "erlaubnis", "confirm"),
     ),
     SettingsModule(
-        id="about", name="Über ClaraOS", icon="info",
+        id="about", name=f"Über {PRODUCT_NAME}", icon="info",
         category="system", weight=100, component="AboutTab",
         keywords=("version", "about", "über", "info", "lizenz"),
     ),

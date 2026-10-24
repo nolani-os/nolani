@@ -11,7 +11,7 @@
 // the id is stored in every user's saved desktop/homescreen layouts
 // (workspace store); renaming it would drop existing widgets.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useWorkspaceStore } from "@claraos/core";
+import { useWorkspaceStore, useTranslation, i18n, getBrand } from "@claraos/core";
 import type { WidgetProps } from "./registry";
 import { NotConnectedError, plannerApi } from "../apps/planner/api";
 import { hasDate, type VikProject, type VikTask } from "../apps/planner/types";
@@ -24,6 +24,7 @@ import {
 } from "./settingsControls";
 import s from "./MobileListWidgets.module.css";
 import c from "./CalendarWidget.module.css";
+import { regionLocale } from "@claraos/core";
 
 const POLL_MS = 5 * 60 * 1000;
 
@@ -31,7 +32,7 @@ function dueLabel(due?: string): { label: string; overdue: boolean } {
   if (!hasDate(due)) return { label: "", overdue: false };
   const d = new Date(due as string);
   const overdue = d.getTime() < Date.now();
-  return { label: d.toLocaleDateString("de-DE", { day: "numeric", month: "numeric" }), overdue };
+  return { label: d.toLocaleDateString(regionLocale(), { day: "numeric", month: "numeric" }), overdue };
 }
 
 /** Vikunja priority: 0 = none, 1-2 low, 3 high, 4 urgent, 5 DO NOW. */
@@ -43,10 +44,12 @@ function prioMark(priority?: number): { mark: string; color: string } | null {
 
 /** "clara"/"clara-agent" are machine actors — one name for the user. */
 function actorLabel(actor: string): string {
-  return actor === "clara" || actor === "clara-agent" ? "Clara" : actor;
+  return actor === "clara" || actor === "clara-agent" ? getBrand().assistant : actor;
 }
 
 export default function TasksWidget({ widgetId, config, guardRef, onOpenApp }: WidgetProps) {
+  // `t` is the loop variable for tasks below — hence `tr`.
+  const { t: tr } = useTranslation("desktop");
   const updateWidgetConfig = useWorkspaceStore((st) => st.updateWidgetConfig);
   const cfgProjects: number[] = Array.isArray(config?.projects)
     ? (config.projects as unknown[]).map(Number).filter((n) => Number.isFinite(n))
@@ -141,7 +144,7 @@ export default function TasksWidget({ widgetId, config, guardRef, onOpenApp }: W
     }
     const projectId = targetProject();
     if (!projectId) {
-      setError("Kein Projekt vorhanden — im Planner eins anlegen");
+      setError(i18n.t("desktop:widgets.tasks.noProject"));
       return;
     }
     setDraft("");
@@ -186,12 +189,12 @@ export default function TasksWidget({ widgetId, config, guardRef, onOpenApp }: W
   return (
     <div className={s.widget}>
       <div className={s.header}>
-        <span className={s.headerTitle}>Aufgaben</span>
+        <span className={s.headerTitle}>{tr("widgets.tasks.title")}</span>
         {tasks !== null && <span className={s.badge}>{tasks.length}</span>}
         <span className={s.headerActions}>
-          <button className={s.iconBtn} onPointerDown={stop} onClick={(e) => { stop(e); setComposing((v) => !v); }} aria-label="Aufgabe hinzufügen">＋</button>
-          <button className={s.iconBtn} onPointerDown={stop} onClick={(e) => { stop(e); load(); }} aria-label="Aktualisieren">⟳</button>
-          <button className={s.iconBtn} onPointerDown={stop} onClick={(e) => { stop(e); onOpenApp?.(); }} aria-label="Planner öffnen">⚙</button>
+          <button className={s.iconBtn} onPointerDown={stop} onClick={(e) => { stop(e); setComposing((v) => !v); }} aria-label={tr("widgets.tasks.add")}>＋</button>
+          <button className={s.iconBtn} onPointerDown={stop} onClick={(e) => { stop(e); load(); }} aria-label={tr("widgets.tasks.refresh")}>⟳</button>
+          <button className={s.iconBtn} onPointerDown={stop} onClick={(e) => { stop(e); onOpenApp?.(); }} aria-label={tr("widgets.tasks.openPlanner")}>⚙</button>
         </span>
       </div>
       {composing && !notConnected && (
@@ -200,7 +203,7 @@ export default function TasksWidget({ widgetId, config, guardRef, onOpenApp }: W
             <input
               className={c.cInput}
               autoFocus
-              placeholder="Neue Aufgabe…"
+              placeholder={tr("widgets.tasks.newPlaceholder")}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
@@ -215,26 +218,26 @@ export default function TasksWidget({ widgetId, config, guardRef, onOpenApp }: W
               className={`${c.cInput} ${c.cDate}`}
               value={draftDue}
               onChange={(e) => setDraftDue(e.target.value)}
-              title="Fällig am"
+              title={tr("widgets.tasks.due")}
             />
             <select
               className={c.cInput}
               value={draftPrio}
               onChange={(e) => setDraftPrio(e.target.value)}
-              title="Priorität"
+              title={tr("widgets.tasks.priority")}
             >
-              <option value="">Prio: normal</option>
-              <option value="4">Prio: hoch</option>
-              <option value="3">Prio: mittel</option>
+              <option value="">{tr("widgets.tasks.prioNormal")}</option>
+              <option value="4">{tr("widgets.tasks.prioHigh")}</option>
+              <option value="3">{tr("widgets.tasks.prioMedium")}</option>
             </select>
             {projects.length > 1 && (
               <select
                 className={c.cInput}
                 value={draftProject}
                 onChange={(e) => setDraftProject(e.target.value)}
-                title="Projekt"
+                title={tr("widgets.tasks.project")}
               >
-                <option value="">Standard-Projekt</option>
+                <option value="">{tr("widgets.tasks.defaultProject")}</option>
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.title}
@@ -251,12 +254,12 @@ export default function TasksWidget({ widgetId, config, guardRef, onOpenApp }: W
       <div className={s.scroll}>
         {notConnected && (
           <div className={s.empty}>
-            Planner nicht verbunden — Einstellungen → App-Verbindungen → Planner
+            {tr("widgets.tasks.notConnected")}
           </div>
         )}
-        {!notConnected && tasks === null && !error && <div className={s.empty}>Lade Aufgaben…</div>}
-        {!notConnected && tasks === null && error && <div className={s.empty}>Planner nicht erreichbar</div>}
-        {!notConnected && tasks !== null && sorted.length === 0 && <div className={s.empty}>Alles erledigt 🎉</div>}
+        {!notConnected && tasks === null && !error && <div className={s.empty}>{tr("widgets.tasks.loading")}</div>}
+        {!notConnected && tasks === null && error && <div className={s.empty}>{tr("widgets.tasks.unreachable")}</div>}
+        {!notConnected && tasks !== null && sorted.length === 0 && <div className={s.empty}>{tr("widgets.tasks.allDone")} 🎉</div>}
         {!notConnected && sorted.map((t) => {
           const due = dueLabel(t.due_date);
           const prio = prioMark(t.priority);
@@ -268,7 +271,7 @@ export default function TasksWidget({ widgetId, config, guardRef, onOpenApp }: W
                 className={`${s.check} ${checking[t.id] ? s.checked : ""}`}
                 onPointerDown={stop}
                 onClick={(e) => { stop(e); toggle(t); }}
-                aria-label="Erledigt"
+                aria-label={tr("widgets.tasks.done")}
               >
                 {checking[t.id] ? "✓" : ""}
               </button>
@@ -276,11 +279,11 @@ export default function TasksWidget({ widgetId, config, guardRef, onOpenApp }: W
               {prio && (
                 <span style={{ color: prio.color, fontWeight: 700, flexShrink: 0 }}>{prio.mark}</span>
               )}
-              <span className={s.title}>{t.title || "(ohne Titel)"}</span>
+              <span className={s.title}>{t.title || tr("widgets.tasks.untitled")}</span>
               {worker && (
                 <span
                   style={{ color: "#7b9fff", fontSize: 10, flexShrink: 0 }}
-                  title={`in Arbeit seit ${t._meta?.in_work_since ?? "?"}`}
+                  title={tr("widgets.tasks.inWorkSince", { since: t._meta?.in_work_since ?? "?" })}
                 >
                   ● {actorLabel(worker)}
                 </span>
@@ -293,13 +296,13 @@ export default function TasksWidget({ widgetId, config, guardRef, onOpenApp }: W
 
       {settingsOpen && (
         <SettingsOverlay
-          title="Planner-Projekte"
+          title={tr("widgets.tasks.settingsTitle")}
           onCancel={() => setSettingsOpen(false)}
           onSave={saveSettings}
         >
-          <GroupLabel>Angezeigte Projekte (keine Auswahl = alle)</GroupLabel>
+          <GroupLabel>{tr("widgets.tasks.shownProjects")}</GroupLabel>
           <CheckList>
-            {projects.length === 0 && <span style={{ fontSize: 11, opacity: 0.6 }}>Lade Projekte…</span>}
+            {projects.length === 0 && <span style={{ fontSize: 11, opacity: 0.6 }}>{tr("widgets.tasks.loadingProjects")}</span>}
             {projects.map((p) => (
               <CheckRow
                 key={p.id}

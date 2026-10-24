@@ -9,14 +9,19 @@
  * UI never formats "empty", but with the default (German) locale.
  */
 import { useSettingsStore } from "./settings";
-import { DEFAULT_FORMAT_PREFS, type FormatPrefs } from "../format";
+import { DEFAULT_FORMAT_PREFS, localeTag, resolveRegion, type FormatPrefs } from "../format";
 
 const MODULE = "region-formats";
 
+function browserLanguages(): readonly string[] {
+  return typeof navigator !== "undefined" ? navigator.languages ?? [] : [];
+}
+
 function fromValues(values: Record<string, unknown> | undefined): FormatPrefs {
-  if (!values) return DEFAULT_FORMAT_PREFS;
+  // Not loaded yet (or a public page without settings): the default "auto".
+  if (!values) return { ...DEFAULT_FORMAT_PREFS, locale: resolveRegion("auto", browserLanguages()) };
   return {
-    locale: (values.locale as string) || DEFAULT_FORMAT_PREFS.locale,
+    locale: resolveRegion((values.locale as string) || "auto", browserLanguages()),
     timeFormat: (values.timeFormat as FormatPrefs["timeFormat"]) || "region",
     firstDayOfWeek:
       (values.firstDayOfWeek as FormatPrefs["firstDayOfWeek"]) || "region",
@@ -33,6 +38,15 @@ export function useFormatPrefs(): FormatPrefs {
 
 export function getFormatPrefs(): FormatPrefs {
   return fromValues(useSettingsStore.getState().values[MODULE]);
+}
+
+/**
+ * Locale tag for `toLocaleDateString(regionLocale(), {...})` and friends —
+ * instead of a hard-coded "de-DE". Read at call time, not reactive: a changed
+ * region shows on the next render of that component.
+ */
+export function regionLocale(): string {
+  return localeTag(getFormatPrefs());
 }
 
 /** Load once at startup — the AppearanceManager calls this too. */

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useTranslation } from "@claraos/core";
 import { ActiveAgentsPanel, useClaraWorkCount } from "../../Chat";
 import styles from "./TrayPopover.module.css";
 
@@ -11,6 +12,7 @@ import styles from "./TrayPopover.module.css";
  */
 export function ClaraWorkTray({ onClose }: { onClose: () => void }) {
   const anzahl = useClaraWorkCount();
+  const { t } = useTranslation("shell");
 
   // If nothing is running any more while the popover is open, it closes
   // itself — otherwise an empty window would remain above a button that no
@@ -22,10 +24,10 @@ export function ClaraWorkTray({ onClose }: { onClose: () => void }) {
   return (
     <>
       <div className={styles.backdrop} onClick={onClose} />
-      <div className={`aeroWidget ${styles.panel}`} role="dialog" aria-label="Clara arbeitet"
+      <div className={`aeroWidget ${styles.panel}`} role="dialog" aria-label={t("tray.claraWork.title")}
         data-tray-popover="clara-work">
         <div className={styles.header}>
-          <span className={styles.title}>Clara arbeitet</span>
+          <span className={styles.title}>{t("tray.claraWork.title")}</span>
         </div>
         <section className={styles.section}>
           <ActiveAgentsPanel hideHeader />

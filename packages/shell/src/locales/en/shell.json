@@ -1,0 +1,277 @@
+{
+  "taskbar": {
+    "clara": "{{assistant}}",
+    "voice": "Voice mode",
+    "pinned": {
+      "focus": "Focus {{app}}",
+      "open": "Open {{app}}",
+      "newInstance": "New instance",
+      "unpin": "Unpin from taskbar",
+      "openAppCenter": "Open App Center",
+      "appCenterTitle": "App Center"
+    },
+    "window": {
+      "close": "Close",
+      "minimize": "Minimize"
+    },
+    "showDesktop": "Show desktop",
+    "calendar": {
+      "weekday": {
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat",
+        "sun": "Sun"
+      }
+    },
+    "workspaces": {
+      "title": "Workspaces",
+      "empty": "Empty",
+      "delete": "Delete workspace",
+      "defaultName": "Desktop {{n}}",
+      "new": "New workspace"
+    }
+  },
+  "quickSettings": {
+    "title": "Quick Settings",
+    "close": "Close",
+    "dnd": "Do not disturb",
+    "dndActive": "Do not disturb — {{remaining}}",
+    "tour": "Tour: Get to know {{product}}",
+    "stat": {
+      "cpu": "CPU",
+      "ram": "RAM",
+      "disk": "Disk"
+    },
+    "storage": "Drives (this device)",
+    "storageFree": "{{free}} of {{total}} GB free",
+    "theme": "Theme",
+    "claraMuted": "{{assistant}} muted",
+    "claraActive": "{{assistant}} active",
+    "logout": "Log out"
+  },
+  "tray": {
+    "quickSettings": {
+      "title": "Quick settings (Win+A)"
+    },
+    "notifications": {
+      "title": "Notifications"
+    },
+    "connectivity": {
+      "title": "Connections",
+      "failed": "Connection failed",
+      "wifi": "Wi-Fi",
+      "wifiConnected": "Wi-Fi — {{ssid}}",
+      "wifiToggle": "Wi-Fi on/off",
+      "scanning": "Searching for networks…",
+      "secured": "secured",
+      "password": "Wi-Fi password",
+      "connect": "Connect",
+      "disconnect": "Disconnect",
+      "connected": "connected",
+      "bluetooth": "Bluetooth",
+      "bluetoothToggle": "Bluetooth on/off",
+      "needsCompanion": "Wi-Fi and Bluetooth control comes with the {{product}} Companion app."
+    },
+    "volume": {
+      "title": "Volume",
+      "system": "System",
+      "systemDevice": "System — {{device}}",
+      "output": "Output device",
+      "unmute": "Unmute",
+      "mute": "Mute",
+      "systemVolume": "System volume",
+      "mic": "Microphone",
+      "micDevice": "Microphone — {{device}}",
+      "input": "Input device",
+      "micOn": "Unmute microphone",
+      "micMute": "Mute microphone",
+      "inputLevel": "Input level",
+      "inUse": "Currently in use",
+      "camera": "Camera",
+      "inUseBy": {
+        "none": "{{what}} is in use",
+        "apps": "{{what}}: {{apps}}",
+        "more_one": "{{what}}: {{apps}} and {{count}} more",
+        "more_other": "{{what}}: {{apps}} and {{count}} more"
+      },
+      "browserAudio": "Browser audio",
+      "browserVolume": "Browser volume",
+      "needsCompanion": "System volume can only be controlled with the {{product}} Companion app."
+    },
+    "power": {
+      "title": "Power",
+      "remaining": "~{{time}} h left",
+      "battery": "Battery {{percent}}%",
+      "batteryCharging": "Battery {{percent}}% — charging",
+      "brightness": "Screen brightness",
+      "noData": "No power data available. Battery level and brightness come with the {{product}} Companion app."
+    },
+    "claraWork": {
+      "title": "{{assistant}} is working"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "clearAll": "Clear all",
+    "empty": "No notifications",
+    "http": {
+      "sentTitle": "✅ Sent",
+      "errorTitle": "⚠️ Error {{status}}",
+      "done": "“{{label}}” was carried out.",
+      "failed": "“{{label}}” failed.",
+      "unreachableTitle": "⚠️ Unreachable",
+      "unreachable": "“{{label}}” could not be sent."
+    }
+  },
+  "clipboard": {
+    "title": "Clipboard",
+    "historyLabel": "Clipboard history",
+    "clearAll": "Clear all",
+    "empty": "No entries yet. Whatever you copy ends up here.",
+    "restore": "Click → put back on the clipboard",
+    "remove": "Remove",
+    "removeEntry": "Remove entry",
+    "copyFailedTitle": "Not copied to the clipboard",
+    "copyFailed": "The browser denied access."
+  },
+  "screenshot": {
+    "toolLabel": "Screenshot tool",
+    "hint": "Click + drag to select  ·  Esc to cancel",
+    "copiedTitle": "Screenshot copied",
+    "copied": "The data URL was copied to the clipboard.",
+    "copyFailedTitle": "Screenshot not copied",
+    "copyFailed": "The clipboard denied access.",
+    "viewerTitle": "Screenshot",
+    "failedTitle": "Capture failed",
+    "failed": "The page probably contains cross-origin iframes that html-to-image cannot capture.",
+    "close": "Close",
+    "preview": "Screenshot preview",
+    "copyAsText": "Copy as text",
+    "download": "Download",
+    "openInViewer": "Open in image viewer",
+    "discard": "Discard"
+  },
+  "search": {
+    "placeholder": "Search apps, files, settings...",
+    "noResults": "Nothing found for “{{query}}”",
+    "hint": "Type to search — apps, settings, commands, files, or just calculate (12*8)",
+    "terminal": "Terminal",
+    "window": {
+      "files": "Files",
+      "settings": "Settings",
+      "taskManager": "Task Manager"
+    },
+    "subtitle": {
+      "webApp": "Web app",
+      "systemApp": "System app",
+      "settings": "Settings",
+      "quickCommand": "Quick command · {{group}}",
+      "calc": "Result · Enter copies"
+    },
+    "group": {
+      "calc": "Result",
+      "apps": "Apps",
+      "settings": "Settings",
+      "commands": "Commands",
+      "quickCommands": "Quick commands",
+      "files": "Files"
+    }
+  },
+  "startMenu": {
+    "category": {
+      "system": "System",
+      "productivity": "Productivity",
+      "engineering": "Engineering",
+      "developer": "Development",
+      "media": "Media",
+      "services": "Services",
+      "games": "Games",
+      "wrapps": "Wrapps",
+      "other": "Other"
+    },
+    "menu": {
+      "open": "Open",
+      "unpin": "Unpin",
+      "pin": "Pin (Start + taskbar)",
+      "showInAppCenter": "Show in App Center"
+    },
+    "appCenterTitle": "App Center",
+    "lastChat": "Last chat",
+    "leaveClaraMode": "Leave {{assistant}} mode (Backspace)",
+    "input": {
+      "reply": "Reply …",
+      "askClara": "Ask {{assistant}} …",
+      "default": "Ask {{assistant}} or search apps …",
+      "stopRecording": "Stop recording",
+      "dictate": "Dictate to {{assistant}}",
+      "stop": "Stop",
+      "send": "Send",
+      "expand": "Open full chat view"
+    },
+    "service": "Service",
+    "askClara": "“{{query}}” — ask {{assistant}}",
+    "quickAnswer": {
+      "waiting": "Wait until {{assistant}}'s answer is complete …",
+      "continue": "Continue in chat ⤢",
+      "close": "Close"
+    },
+    "pinned": "Pinned",
+    "continue": "Pick up where you left off",
+    "claraChat": "{{assistant}} chat",
+    "allApps": "All apps",
+    "footer": {
+      "settings": "Settings",
+      "feedback": "Give feedback",
+      "logout": "Log out",
+      "shutdown": "Shut down (quit {{product}} Companion)"
+    },
+    "chat": {
+      "backTitle": "Back to the start menu (Esc)",
+      "back": "‹ Start menu"
+    }
+  },
+  "window": {
+    "menu": {
+      "restore": "Restore",
+      "minimize": "Minimize",
+      "maximize": "Maximize",
+      "unmaximize": "Unmaximize",
+      "alwaysOnTop": "Always on top",
+      "moveToWorkspace": "Move to workspace…",
+      "workspaceCurrent": "{{name}} (current)",
+      "close": "Close",
+      "closeShortcut": "Ctrl+W"
+    },
+    "close": "Close",
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "restore": "Restore",
+    "clara": {
+      "label": "{{assistant}}",
+      "open": "Talk to {{assistant}} about the current object",
+      "close": "Close {{assistant}}"
+    },
+    "switchAccount": "Switch account",
+    "altTab": {
+      "label": "Window switcher",
+      "title": "Switch windows"
+    },
+    "snap": {
+      "snapTo": "Snap to {{zone}}",
+      "zone": {
+        "left": "left",
+        "right": "right",
+        "top-left": "top left",
+        "top-right": "top right",
+        "bottom-left": "bottom left",
+        "bottom-right": "bottom right",
+        "maximize": "maximize"
+      }
+    },
+    "loading": "Loading...",
+    "noComponent": "App <code>{{appId}}</code> has no registered component."
+  }
+}

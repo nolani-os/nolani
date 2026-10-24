@@ -5,6 +5,7 @@ import styles from "../../PlannerApp.module.css";
 import { Icon } from "../../../../components/Icon";
 import type { CalEventFull } from "../../api";
 import type { PlacedEvent } from "./calLayout";
+import { regionLocale } from "@claraos/core";
 
 const BUSY_CLASS: Record<string, string> = {
   free: "evFree",
@@ -27,7 +28,7 @@ export function busyClassOf(ev: CalEventFull): string {
 
 export function eventTimeLabel(ev: CalEventFull): string {
   if (ev.all_day) return "ganztägig";
-  const f = (iso: string) => new Date(iso).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  const f = (iso: string) => new Date(iso).toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" });
   return `${f(ev.start)}${ev.end ? `–${f(ev.end)}` : ""}`;
 }
 

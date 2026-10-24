@@ -11,7 +11,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChatSurface, MarkerPayload } from "@claraos/core";
-import { useAuthStore, useDragStore, useClaraChatSettings, useWindowsStore, useWrappStore, useIframeAppStore, useFileStore, useMarkerStore, useVoiceStore, useAppRegistryStore, objectShortName } from "@claraos/core";
+import { useAuthStore, useDragStore, useClaraChatSettings, useWindowsStore, useWrappStore, useIframeAppStore, useFileStore, useMarkerStore, useVoiceStore, useAppRegistryStore, objectShortName, getBrand } from "@claraos/core";
 import { berichtVomSchirm } from "./shellActionHandler";
 import { useClaraChat } from "./useClaraChat";
 import { useLiveVoice } from "./useLiveVoice";
@@ -643,7 +643,7 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
               <span className={styles.brandIcon} aria-hidden="true">
                 <ClaraMark className={styles.brandMark} />
               </span>
-              <span className={styles.brandName}>Clara</span>
+              <span className={styles.brandName}>{getBrand().assistant}</span>
               {appId && objectKey && (
                 <span className={styles.brandContext} title={objectKey}>
                   · {objectShortName(objectKey)}
@@ -728,7 +728,7 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
             ) : variant === "inline" && objectKey ? (
               <div className={styles.welcome}>
                 <p>Du arbeitest mit <code>{objectKey}</code>.</p>
-                <p>Frag Clara nach Hilfe oder lass etwas erledigen.</p>
+                <p>Frag {getBrand().assistant} nach Hilfe oder lass etwas erledigen.</p>
               </div>
             ) : variant === "full" || variant === "sidebar" ? (
               <div className={styles.welcome}>
@@ -777,8 +777,8 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
             <span className={styles.speakingDot} aria-hidden="true" />
             <span className={styles.speakingLabel}>
               {live.state === "connecting" && "Live-Gespräch: verbinde …"}
-              {live.state === "listening" && "Live-Gespräch: Clara hört zu …"}
-              {live.state === "speaking" && "Clara spricht — du darfst reinreden"}
+              {live.state === "listening" && `Live-Gespräch: ${getBrand().assistant} hört zu …`}
+              {live.state === "speaking" && `${getBrand().assistant} spricht — du darfst reinreden`}
               {live.state === "error" && `Live-Gespräch: ${live.error ?? "Fehler"}`}
             </span>
             <button
@@ -795,7 +795,7 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
         {chat.voiceState === "speaking" && (
           <div className={styles.speakingBar} data-testid="speaking-bar">
             <span className={styles.speakingDot} aria-hidden="true" />
-            <span className={styles.speakingLabel}>Clara spricht …</span>
+            <span className={styles.speakingLabel}>{getBrand().assistant} spricht …</span>
             <button
               type="button"
               className={styles.speakingStop}
@@ -808,14 +808,14 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
         )}
 
         {mobil && (
-          <div className={styles.kontextChips} aria-label="Kontext für Clara">
+          <div className={styles.kontextChips} aria-label={`Kontext für ${getBrand().assistant}`}>
             {appId && (
               <button
                 type="button"
                 className={`${styles.kontextChip} ${mitApp ? styles.kontextChipOn : ""}`}
                 aria-pressed={mitApp}
                 onClick={() => setMitApp((v) => !v)}
-                title={mitApp ? "Clara sieht diese App als Kontext" : "Ohne App-Bezug fragen"}
+                title={mitApp ? `${getBrand().assistant} sieht diese App als Kontext` : "Ohne App-Bezug fragen"}
               >
                 {mitApp ? "✓ " : ""}Zu dieser App
               </button>
@@ -908,10 +908,10 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
           autoFocus={variant !== "quick"}
           placeholder={
             variant === "quick"
-              ? "Nachricht an Clara …"
+              ? `Nachricht an ${getBrand().assistant} …`
               : appId
-                ? `Frag Clara zu ${appId} …`
-                : "Frag Clara …"
+                ? `Frag ${getBrand().assistant} zu ${appId} …`
+                : `Frag ${getBrand().assistant} …`
           }
         />
 

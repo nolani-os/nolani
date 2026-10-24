@@ -9,6 +9,13 @@
 # --mcp: switch on the MCP endpoint (https://home.<domain>/mcp) so users can connect
 #   their own AI agents. Off by default; remembered in .env (CLARAOS_MCP=on).
 #
+# Optional, set by hand in .env (never generated):
+#   CLARAOS_PRODUCT_NAME    visible product name (login page, SSO buttons, titles);
+#                           empty = NolaniOS
+#   CLARAOS_ASSISTANT_NAME  visible name of the assistant; empty = Nolani
+#   Change them before the first run — Authentik/Immich/PeerTube take the name over
+#   on every run, the shell reads them from the API at startup.
+#
 # Idempotent: existing secrets in .env are kept, missing ones are generated.
 # Important: all secrets are created HERE, on the cell, and are never printed.
 #    Whoever needs one reads it from /opt/claraos/.env (0600).
@@ -16,7 +23,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 DOM="${1:-}"
-[ -n "$DOM" ] || { echo "Aufruf: $0 <domain>   (z.B. demo.claraos.de)"; exit 1; }
+[ -n "$DOM" ] || { echo "Aufruf: $0 <domain>   (z.B. demo.example.org)"; exit 1; }
 say() { printf '\n== %s\n' "$*"; }
 
 # ── 1. .env ──────────────────────────────────────────────────────────────
@@ -100,8 +107,8 @@ if [ $SOCIAL = 1 ]; then
   echo "  Social-Zelle: an (social.$BASIS, video.$BASIS)"
 fi
 # ANTHROPIC_API_KEY is NOT generated here — the operator pipes it into .env from their
-# own password vault. Without it everything runs except the Clara chat.
-grep -q '^ANTHROPIC_API_KEY=.' .env || echo "  ⚠ ANTHROPIC_API_KEY fehlt — Clara-Chat bleibt stumm"
+# own password vault. Without it everything runs except the assistant chat.
+grep -q '^ANTHROPIC_API_KEY=.' .env || echo "  ⚠ ANTHROPIC_API_KEY fehlt — der Assistenten-Chat bleibt stumm"
 grep -q "^ZELLE_DOMAIN=$DOM$" .env || { echo "FEHLER: .env gehört zu einer anderen Domain"; exit 1; }
 echo "  $(grep -c '=' .env) Einträge, Rechte $(stat -c %a .env)"
 
@@ -197,15 +204,15 @@ t, _ = Token.objects.update_or_create(
 PY
 AUTHENTIK_API_URL=http://127.0.0.1:9000/api/v3 \
   docker compose exec -T -e AUTHENTIK_API_TOKEN -e ZELLE_DOMAIN -e AUTHENTIK_API_URL -e VW_SSO_CLIENT_SECRET \
-  -e IMMICH_OIDC_SECRET -e PAPERLESS_OIDC_SECRET \
+  -e IMMICH_OIDC_SECRET -e PAPERLESS_OIDC_SECRET -e CLARAOS_PRODUCT_NAME \
   -e SOCIAL_DOMAIN -e VIDEO_DOMAIN -e MASTODON_OIDC_SECRET -e PEERTUBE_OIDC_SECRET \
   authentik python3 - < bootstrap_authentik.py
 
-# ── 4. ClaraOS database ──────────────────────────────────────────────────
+# ── 4. Database schema ───────────────────────────────────────────────────
 # schema.sql and the migrations are not applied automatically by the API.
 # Here: in order, reporting errors per file instead of aborting —
 # some migrations depend on tables that routers only create at startup.
-say "4/12  ClaraOS-Schema"
+say "4/12  Datenbank-Schema"
 PSQL="docker compose exec -T clara-users-postgres psql -q -U clara -d clara_users -v ON_ERROR_STOP=1"
 # Record what has been applied: not every migration is written to be re-runnable
 # (037 creates a policy without IF NOT EXISTS) — otherwise a second run would report
@@ -255,8 +262,8 @@ echo "  Apps: $($OCC app:list --output=json 2>/dev/null | python3 -c 'import sys
 docker compose exec -T -e NEXTCLOUD_ADMIN_USER=ncadmin -e NEXTCLOUD_ADMIN_PASSWORD \
   claraos-api python3 - clara.bot:admin ${ZELLE_NUTZER:-${ZELLE_NC_NUTZER:-}} < provision_nc.py
 
-# ── 6. Clara (Open WebUI + LiteLLM) ──────────────────────────────────────
-say "6/12  Clara-Chat"
+# ── 6. Assistant (Open WebUI + LiteLLM) ────────────────────────────────────
+say "6/12  Assistenten-Chat"
 # The key goes straight into .env via $(…) — never into any output.
 KEY=$(docker compose exec -T -e OWUI_ADMIN_PASSWORD -e ZELLE_DOMAIN claraos-api \
       python3 - < owui_bootstrap.py | sed -n 's/^OWUI_KEY=//p')
@@ -288,7 +295,7 @@ for _ in $(seq 1 60); do   # at most 5 minutes — a broken service must not blo
 done
 if [ $vk_ok = 1 ]; then echo " ok"; else echo " ✗ Vikunja nicht bereit — docker compose logs vikunja"; fi
 NUTZER="${ZELLE_NUTZER:-${ZELLE_NC_NUTZER:-}}"
-[ -n "$NUTZER" ] && [ $vk_ok = 1 ] && docker compose exec -T -e ZELLE_DOMAIN claraos-api python3 - $NUTZER < provision_vikunja.py
+[ -n "$NUTZER" ] && [ $vk_ok = 1 ] && docker compose exec -T -e ZELLE_DOMAIN -e CLARAOS_PRODUCT_NAME claraos-api python3 - $NUTZER < provision_vikunja.py
 
 # ── 8. Mail (Stalwart) ───────────────────────────────────────────────────
 say "8/12  Post"
@@ -312,7 +319,7 @@ fi
 say "10/12  Fotos"
 # Same pattern as Open WebUI: a new key goes straight into .env via $(…), never into output.
 KEY=$(docker compose exec -T -e IMMICH_ADMIN_PASSWORD -e IMMICH_API_KEY -e IMMICH_OIDC_SECRET \
-      -e IMMICH_DEFAULT_QUOTA_GB -e ZELLE_DOMAIN claraos-api python3 - < provision_immich.py \
+      -e IMMICH_DEFAULT_QUOTA_GB -e ZELLE_DOMAIN -e CLARAOS_PRODUCT_NAME claraos-api python3 - < provision_immich.py \
       | sed -n 's/^IMMICH_KEY=//p') || echo "  ✗ Immich nicht eingerichtet — docker compose logs immich-server"
 if [ -n "${KEY:-}" ]; then
   if grep -q '^IMMICH_API_KEY=' .env; then
@@ -351,7 +358,7 @@ if [ $SOCIAL = 1 ]; then
     sleep 5
   done
   docker compose exec -T mastodon-web bin/tootctl settings registrations close >/dev/null 2>&1 \
-    && echo "  Mastodon: Selbstregistrierung zu (Konten nur über ClaraOS-Anmeldung)"
+    && echo "  Mastodon: Selbstregistrierung zu (Konten nur über ${CLARAOS_PRODUCT_NAME:-NolaniOS}-Anmeldung)"
   [ -n "${SOCIAL_OWNER:-}" ] && docker compose exec -T mastodon-web bin/tootctl accounts modify "$SOCIAL_OWNER" --role Owner >/dev/null 2>&1 \
     && echo "  Mastodon: $SOCIAL_OWNER ist Eigentümer"
   # PeerTube: OIDC plugin + instance settings (signup off, federation by approval, quota)
@@ -373,7 +380,7 @@ if [ $SOCIAL = 1 ]; then
       done
     fi
     docker compose exec -T -e PEERTUBE_ROOT_PASSWORD -e PEERTUBE_OIDC_SECRET -e PEERTUBE_VIDEO_QUOTA_GB \
-      -e ZELLE_DOMAIN -e VIDEO_DOMAIN claraos-api python3 - < provision_peertube.py
+      -e ZELLE_DOMAIN -e VIDEO_DOMAIN -e CLARAOS_PRODUCT_NAME claraos-api python3 - < provision_peertube.py
   else
     echo "  ✗ PeerTube nicht bereit — docker compose logs peertube"
   fi

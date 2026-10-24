@@ -10,6 +10,7 @@ No automatic comment on updates (only on creation).
 """
 from __future__ import annotations
 
+from betriebsprofil import ASSISTANT_NAME
 import json
 import logging
 import os
@@ -26,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 ANALYST_MODEL = os.environ.get("KB_ANALYST_MODEL", "cheap/gemini-flash")
 
-_PROMPT = """Du bist Clara, die persönliche Assistentin der Familie. Der Nutzer hat gerade \
+_PROMPT = "Du bist " + ASSISTANT_NAME + """, die persönliche Assistentin der Familie. Der Nutzer hat gerade \
 eine neue Idee festgehalten. Hilf ihm, sie weiterzuentwickeln: Stelle 1-3 kurze, \
 kluge Rückfragen oder Denkanstöße — konkret zur Idee, nicht generisch. Duze den Nutzer. Was würde \
 die Idee schärfen (Ziel? Aufwand? erster Schritt? Risiko? verwandte Ideen)?

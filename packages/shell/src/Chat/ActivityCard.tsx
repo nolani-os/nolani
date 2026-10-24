@@ -7,16 +7,18 @@
  *
  * Also tracks parallel agents and tools.
  */
+import { getBrand } from "@claraos/core";
 import { useEffect, useState } from "react";
 import type { ClaraActivity } from "./api";
 import styles from "./ActivityCard.module.css";
 import { statusFertig, statusLaeuft } from "./toolStatus";
 
+// Getters: the assistant can be renamed at runtime.
 const PHASE_LABELS: Record<ClaraActivity["phase"], string> = {
-  thinking: "Clara denkt nach …",
-  planning: "Clara plant Schritte …",
-  executing: "Clara arbeitet …",
-  finalizing: "Clara formuliert die Antwort …",
+  get thinking() { return `${getBrand().assistant} denkt nach …`; },
+  get planning() { return `${getBrand().assistant} plant Schritte …`; },
+  get executing() { return `${getBrand().assistant} arbeitet …`; },
+  get finalizing() { return `${getBrand().assistant} formuliert die Antwort …`; },
   done: "Fertig",
 };
 
@@ -41,7 +43,7 @@ export function ActivityCard({ activity }: { activity: ClaraActivity }) {
     (activity.finishedAt ?? Date.now()) - (activity.startedAt ?? Date.now());
 
   const phase = activity.phase;
-  const label = PHASE_LABELS[phase] ?? "Clara arbeitet …";
+  const label = PHASE_LABELS[phase] ?? `${getBrand().assistant} arbeitet …`;
 
   // Track parallel agents + tools (multi-intent splits).
   const agents = Object.values(activity.activeAgents ?? {});
@@ -129,7 +131,7 @@ export function ActivityCard({ activity }: { activity: ClaraActivity }) {
         </div>
       )}
       {langLaeufer && (
-        <div className={styles.slowNotice}>Clara arbeitet noch. Du kannst den Chat schließen, die Antwort wird gespeichert.</div>
+        <div className={styles.slowNotice}>{getBrand().assistant} arbeitet noch. Du kannst den Chat schließen, die Antwort wird gespeichert.</div>
       )}
       {activity.slowNotice && (
         <div className={styles.slowNotice}>{activity.slowNotice}</div>

@@ -2,7 +2,7 @@
  * LeftRail (My Day / Tasks / Projects) + content + TaskDetail drawer.
  * Data source: BFF /api/claraos/planner, backend Vikunja. */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { appHost } from "@claraos/core";
+import { appHost, getBrand } from "@claraos/core";
 import styles from "./PlannerApp.module.css";
 import { Icon, type IconName } from "../../components/Icon";
 import { plannerApi, NotConnectedError } from "./api";
@@ -157,9 +157,9 @@ export default function PlannerApp({ windowId: _windowId }: { windowId: string }
           <h2>Planner verbinden</h2>
           <p>{notConnected}</p>
           <ol>
-            <li>Planner-Backend öffnen: <code>{appHost("vikunja")}</code> → „ClaraOS Login“</li>
+            <li>Planner-Backend öffnen: <code>{appHost("vikunja")}</code> → „{getBrand().product} Login“</li>
             <li>Dort: Einstellungen → API-Tokens → Token erstellen</li>
-            <li>ClaraOS: Einstellungen → App-Verbindungen → „Planner (Vikunja)“ → Token eintragen</li>
+            <li>{getBrand().product}: Einstellungen → App-Verbindungen → „Planner (Vikunja)“ → Token eintragen</li>
           </ol>
           <button className={styles.btnPrimary} onClick={reload}>Erneut prüfen</button>
         </div>

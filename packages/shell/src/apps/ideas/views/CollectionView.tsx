@@ -26,6 +26,7 @@ import { TYP_MARKE, AGGREGATE, MIT_RUECKFRAGE, plakettenTon } from "../../wissen
 import { gruppiere } from "../../wissen/gruppieren";
 import { Leerzustand } from "../../../components/Leerzustand";
 import { SammlungTeilen } from "../../wissen/SammlungTeilen";
+import { regionLocale } from "@claraos/core";
 
 interface Props {
   collection: KbCollection;
@@ -1050,7 +1051,7 @@ function CalendarGrid({ rows, dateKey, onOpen }: {
       <div className={styles.calHead}>
         <button className={styles.btnSecondary}
                 onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}>‹</button>
-        <span>{month.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}</span>
+        <span>{month.toLocaleDateString(regionLocale(), { month: "long", year: "numeric" })}</span>
         <button className={styles.btnSecondary}
                 onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}>›</button>
       </div>
@@ -1167,7 +1168,7 @@ function TimelineView({ rows, startKey, endKey, onOpen }: {
   const min = Math.min(...parsed.map((p) => p.start));
   const max = Math.max(...parsed.map((p) => p.end));
   const span = Math.max(max - min, 86400000);
-  const fmt = (t: number) => new Date(t).toLocaleDateString("de-DE", { day: "2-digit", month: "short" });
+  const fmt = (t: number) => new Date(t).toLocaleDateString(regionLocale(), { day: "2-digit", month: "short" });
 
   return (
     <div className={styles.timeline}>

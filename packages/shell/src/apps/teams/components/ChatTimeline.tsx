@@ -17,9 +17,10 @@ import {
   PaperclipIcon, SmileIcon, SendIcon, PinIcon, ArrowDownIcon, ThreadIcon,
 } from "./icons";
 import styles from "./ChatTimeline.module.css";
+import { regionLocale } from "@claraos/core";
 
 function formatTime(ts: number): string {
-  return new Date(ts).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  return new Date(ts).toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" });
 }
 function formatDate(ts: number): string {
   const d = new Date(ts);
@@ -27,7 +28,7 @@ function formatDate(ts: number): string {
   if (d.toDateString() === today.toDateString()) return "Heute";
   const y = new Date(today); y.setDate(y.getDate() - 1);
   if (d.toDateString() === y.toDateString()) return "Gestern";
-  return d.toLocaleDateString("de-DE", { day: "numeric", month: "short", year: "numeric" });
+  return d.toLocaleDateString(regionLocale(), { day: "numeric", month: "short", year: "numeric" });
 }
 
 const EMPTY_MSGS: MatrixMessage[] = [];

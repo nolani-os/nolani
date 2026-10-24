@@ -20,6 +20,7 @@ import { Markdown } from "./Markdown";
 import { BlockRenderer } from "./blocks/BlockRenderer";
 import { DenkZeile } from "./DenkZeile";
 import styles from "./ClaraChatPanel.module.css";
+import { regionLocale, getBrand } from "@claraos/core";
 
 /**
  * Strip leading/trailing `<think>...</think>` blocks defensively. Backend
@@ -51,7 +52,7 @@ function tagLabel(ms: number): string {
     a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
   if (gleich(d, heute)) return "Heute";
   if (gleich(d, gestern)) return "Gestern";
-  return d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
+  return d.toLocaleDateString(regionLocale(), { weekday: "long", day: "numeric", month: "long" });
 }
 
 function tagKey(ms: number): string {
@@ -155,7 +156,7 @@ export function MessageList({ messages, streaming, emptyHint, onRetry, kompakt, 
         {emptyHint ?? (
           <div className={styles.welcome}>
             <div className={styles.welcomeIcon}><ClaraMark className={styles.welcomeMark} /></div>
-            <h3>Hallo! Ich bin Clara.</h3>
+            <h3>Hallo! Ich bin {getBrand().assistant}.</h3>
             <p>Wie kann ich dir helfen?</p>
           </div>
         )}
@@ -217,7 +218,7 @@ export function MessageList({ messages, streaming, emptyHint, onRetry, kompakt, 
             className={`${styles.msg} ${styles[`msg_${msg.role}`] ?? ""}`}
           >
             <div className={styles.msgRole}>
-              {msg.role === "user" ? "Du" : msg.role === "assistant" ? "Clara" : "System"}
+              {msg.role === "user" ? "Du" : msg.role === "assistant" ? getBrand().assistant : "System"}
             </div>
             <div className={`${styles.msgContent} ${msg.role === "assistant" ? styles.msgMd : ""}`}>
               {msg.role === "assistant" && cleaned ? (

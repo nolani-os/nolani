@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useRef, useState, Suspense } from "react";
 import * as ContextMenu from "@radix-ui/react-context-menu";
-import { useWindowsStore, useUIStore, useWorkspaceStore, useDragStore } from "@claraos/core";
+import { useWindowsStore, useUIStore, useWorkspaceStore, useDragStore, useTranslation } from "@claraos/core";
 import { DesktopIcons, DESKTOP_ROOT, type DesktopIconsRef } from "./DesktopIcons";
 import { DesktopWidgets } from "./DesktopWidgets";
 import { WidgetGallery } from "./WidgetGallery";
 import { widgetManifests } from "../widgets/registry";
 import { FileTypeIcon } from "../components/FileTypeIcon";
-import { NEW_FILE_TEMPLATES } from "../lib/newFileTemplates";
+import { NEW_FILE_TEMPLATES, templateLabel } from "../lib/newFileTemplates";
 import { skinScenes } from "../skinScenes";
 import styles from "./Desktop.module.css";
 
 export function Desktop() {
+  const { t } = useTranslation("desktop");
   const openWindow = useWindowsStore((s) => s.openWindow);
   const closeStartMenu = useUIStore((s) => s.closeStartMenu);
   const theme = useUIStore((s) => s.theme);
@@ -210,14 +211,14 @@ export function Desktop() {
   const handleRefresh = useCallback(() => iconsRef.current?.refresh(), []);
   const handleSort = useCallback((mode: "name" | "type" | "modified") => iconsRef.current?.sortBy(mode), []);
   const handlePersonalize = useCallback(() => {
-    openWindow("settings", { title: "Einstellungen", width: 680, height: 520 });
+    openWindow("settings", { title: t("desktop.menu.settings"), width: 680, height: 520 });
     // SettingsApp listens for this event to focus the personalization tab
     setTimeout(() => {
       window.dispatchEvent(
         new CustomEvent("claraos-settings-tab", { detail: { tab: "personalization" } }),
       );
     }, 50);
-  }, [openWindow]);
+  }, [openWindow, t]);
 
   // F5 globally refreshes the desktop file tree
   useEffect(() => {
@@ -260,13 +261,13 @@ export function Desktop() {
         <ContextMenu.Content className={styles.contextMenu}>
           <ContextMenu.Sub>
             <ContextMenu.SubTrigger className={styles.contextItem}>
-              Neu
+              {t("desktop.menu.new")}
               <span style={{ marginLeft: "auto" }}>›</span>
             </ContextMenu.SubTrigger>
             <ContextMenu.Portal>
               <ContextMenu.SubContent className={styles.contextMenu}>
                 <ContextMenu.Item className={styles.contextItem} onSelect={handleNewFolder}>
-                  <FileTypeIcon isDir px={15} /> Ordner
+                  <FileTypeIcon isDir px={15} /> {t("desktop.menu.folder")}
                 </ContextMenu.Item>
                 <ContextMenu.Separator className={styles.contextSeparator} />
                 {NEW_FILE_TEMPLATES.map((tpl) => (
@@ -275,7 +276,7 @@ export function Desktop() {
                     className={styles.contextItem}
                     onSelect={() => handleNewFile(tpl.ext)}
                   >
-                    <FileTypeIcon name={`neu${tpl.ext}`} px={15} /> {tpl.label} ({tpl.ext})
+                    <FileTypeIcon name={`neu${tpl.ext}`} px={15} /> {templateLabel(tpl)} ({tpl.ext})
                   </ContextMenu.Item>
                 ))}
               </ContextMenu.SubContent>
@@ -283,43 +284,43 @@ export function Desktop() {
           </ContextMenu.Sub>
           <ContextMenu.Sub>
             <ContextMenu.SubTrigger className={styles.contextItem}>
-              Sortieren nach
+              {t("desktop.menu.sortBy")}
               <span style={{ marginLeft: "auto" }}>›</span>
             </ContextMenu.SubTrigger>
             <ContextMenu.Portal>
               <ContextMenu.SubContent className={styles.contextMenu}>
                 <ContextMenu.Item className={styles.contextItem} onSelect={() => handleSort("name")}>
-                  Name
+                  {t("desktop.menu.sortName")}
                 </ContextMenu.Item>
                 <ContextMenu.Item className={styles.contextItem} onSelect={() => handleSort("type")}>
-                  Typ
+                  {t("desktop.menu.sortType")}
                 </ContextMenu.Item>
                 <ContextMenu.Item className={styles.contextItem} onSelect={() => handleSort("modified")}>
-                  Änderungsdatum
+                  {t("desktop.menu.sortModified")}
                 </ContextMenu.Item>
               </ContextMenu.SubContent>
             </ContextMenu.Portal>
           </ContextMenu.Sub>
           <ContextMenu.Item className={styles.contextItem} onSelect={handleRefresh}>
-            Aktualisieren
+            {t("desktop.menu.refresh")}
             <span style={{ marginLeft: "auto", color: "var(--text-secondary)", fontSize: 11 }}>F5</span>
           </ContextMenu.Item>
           <ContextMenu.Separator className={styles.contextSeparator} />
-          <ContextMenu.Item className={styles.contextItem} onSelect={() => openWindow("settings", { title: "Einstellungen", width: 680, height: 520 })}>
-            Einstellungen
+          <ContextMenu.Item className={styles.contextItem} onSelect={() => openWindow("settings", { title: t("desktop.menu.settings"), width: 680, height: 520 })}>
+            {t("desktop.menu.settings")}
           </ContextMenu.Item>
           <ContextMenu.Item className={styles.contextItem} onSelect={handlePersonalize}>
-            Personalisieren
+            {t("desktop.menu.personalize")}
           </ContextMenu.Item>
           <ContextMenu.Separator className={styles.contextSeparator} />
           <ContextMenu.Item className={styles.contextItem} onSelect={handleToggleTheme}>
-            {theme === "dark" ? "Helles Design" : "Dunkles Design"}
+            {theme === "dark" ? t("desktop.menu.lightTheme") : t("desktop.menu.darkTheme")}
           </ContextMenu.Item>
           <ContextMenu.Item
             className={styles.contextItem}
             onSelect={() => setWidgetGalleryOpen(true)}
           >
-            Widgets…
+            {t("desktop.menu.widgets")}
           </ContextMenu.Item>
         </ContextMenu.Content>
       </ContextMenu.Portal>

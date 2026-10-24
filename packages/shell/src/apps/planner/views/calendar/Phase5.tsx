@@ -4,15 +4,16 @@ import { useCallback, useEffect, useState } from "react";
 import styles from "../../PlannerApp.module.css";
 import { Icon } from "../../../../components/Icon";
 import { kalenderApi, plannerApi, type FreeBusyResult, type KalenderFreigabe, type Person } from "../../api";
+import { regionLocale } from "@claraos/core";
 
 const H0 = 7;   // grid 07:00–21:00
 const H1 = 21;
 
 function fmtT(iso: string): string {
-  return new Date(iso).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" });
 }
 function fmtD(iso: string): string {
-  return new Date(iso).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
+  return new Date(iso).toLocaleDateString(regionLocale(), { weekday: "short", day: "2-digit", month: "2-digit" });
 }
 
 /** Free/busy grid for the event's day plus suggestions for free slots. */
@@ -57,7 +58,7 @@ export function FreiGebucht({
     <div className={styles.fbWrap}>
       <div className={styles.fbHead}>
         <button className={styles.btn} onClick={() => setDay(new Date(day.getTime() - 86400_000))}>‹</button>
-        <span className={styles.calMonthLabel}>{day.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</span>
+        <span className={styles.calMonthLabel}>{day.toLocaleDateString(regionLocale(), { weekday: "long", day: "numeric", month: "long" })}</span>
         <button className={styles.btn} onClick={() => setDay(new Date(day.getTime() + 86400_000))}>›</button>
         <span style={{ flex: 1 }} />
         <button className={styles.btn} onClick={load} disabled={loading} title="Neu laden"><Icon name="reload" size={14} /></button>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { useUIStore, appUrl } from "@claraos/core";
+import { useUIStore, appUrl, useTranslation, Trans, i18n } from "@claraos/core";
 import { INSTALL_TEXTS } from "../../installTexts";
 import styles from "./MobilePushTab.module.css";
 
@@ -18,7 +18,7 @@ interface TokenResp {
 
 function copy(text: string, label: string) {
   const done = () =>
-    useUIStore.getState().addNotification({ title: "Kopiert", body: label, icon: "📋" });
+    useUIStore.getState().addNotification({ title: i18n.t("settingsTabs:mobilePush.copied"), body: label, icon: "📋" });
   navigator.clipboard?.writeText(text).then(done).catch(() => {
     // Fallback for contexts without the Clipboard API
     const ta = document.createElement("textarea");
@@ -32,8 +32,8 @@ function copy(text: string, label: string) {
       done();
     } catch {
       useUIStore.getState().addNotification({
-        title: "Kopieren nicht möglich",
-        body: `${label} bitte von Hand markieren und kopieren.`,
+        title: i18n.t("settingsTabs:mobilePush.copyFailed"),
+        body: i18n.t("settingsTabs:mobilePush.copyManually", { label }),
         icon: "⚠️",
       });
     }
@@ -42,18 +42,20 @@ function copy(text: string, label: string) {
 }
 
 function Field({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  const { t } = useTranslation("settingsTabs");
   return (
     <div className={styles.field}>
       <span className={styles.fieldLabel}>{label}</span>
       <div className={styles.fieldRow}>
         <code className={`${styles.fieldValue} ${mono ? styles.mono : ""}`}>{value}</code>
-        <button className={styles.copyBtn} onClick={() => copy(value, label)} title="Kopieren">📋</button>
+        <button className={styles.copyBtn} onClick={() => copy(value, label)} title={t("mobilePush.copy")}>📋</button>
       </div>
     </div>
   );
 }
 
 export function MobilePushTab() {
+  const { t } = useTranslation("settingsTabs");
   const [data, setData] = useState<TokenResp | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,20 +82,18 @@ export function MobilePushTab() {
     <div className={styles.wrap} data-tour="settings-push">
       <div className={styles.hero}>
         <span className={styles.heroIcon}>📲</span>
-        <h1 className={styles.title}>Benachrichtigungen aufs Handy</h1>
+        <h1 className={styles.title}>{t("mobilePush.title")}</h1>
         <p className={styles.tagline}>
-          Damit Einladungen (z.&nbsp;B. zu Spielrunden) und Hinweise auch dann ankommen,
-          wenn ClaraOS gerade nicht geöffnet ist — als echte Push-Nachricht über die
-          <strong> ntfy</strong>-App.
+          <Trans t={t} i18nKey="mobilePush.tagline" components={{ b: <strong /> }} />
           {INSTALL_TEXTS.pushNetworkHint && <> <em>{INSTALL_TEXTS.pushNetworkHint}</em></>}
         </p>
       </div>
 
-      {loading && <div className={styles.muted}>Lade deinen Zugang …</div>}
+      {loading && <div className={styles.muted}>{t("mobilePush.loading")}</div>}
       {error && (
         <div className={styles.error}>
-          Konnte den Push-Zugang nicht laden ({error}).
-          <button className={styles.linkBtn} onClick={load}>Erneut versuchen</button>
+          {t("mobilePush.loadError", { error })}
+          <button className={styles.linkBtn} onClick={load}>{t("mobilePush.retry")}</button>
         </div>
       )}
 
@@ -103,41 +103,41 @@ export function MobilePushTab() {
             <div className={styles.qrCard}>
               <QRCodeSVG value={data.app_password} size={168} level="M" includeMargin
                 bgColor="#ffffff" fgColor="#0b1020" />
-              <span className={styles.qrHint}>App-Passwort als QR — zum Abscannen &amp; Einfügen</span>
+              <span className={styles.qrHint}>{t("mobilePush.qrHint")}</span>
             </div>
             <div className={styles.fields}>
               <Field label="Server" value={PUSH_SERVER} mono />
-              <Field label="Thema (Topic) = Benutzername" value={data.ntfy_username} mono />
+              <Field label={t("mobilePush.topicLabel")} value={data.ntfy_username} mono />
               <div className={styles.field}>
-                <span className={styles.fieldLabel}>App-Passwort</span>
+                <span className={styles.fieldLabel}>{t("mobilePush.appPassword")}</span>
                 <div className={styles.fieldRow}>
                   <code className={`${styles.fieldValue} ${styles.mono}`}>
                     {reveal ? data.app_password : masked}
                   </code>
                   <button className={styles.copyBtn} onClick={() => setReveal((v) => !v)}
-                    title={reveal ? "Verbergen" : "Anzeigen"}>{reveal ? "🙈" : "👁️"}</button>
-                  <button className={styles.copyBtn} onClick={() => copy(data.app_password, "App-Passwort")}
-                    title="Kopieren">📋</button>
+                    title={reveal ? t("mobilePush.hide") : t("mobilePush.show")}>{reveal ? "🙈" : "👁️"}</button>
+                  <button className={styles.copyBtn} onClick={() => copy(data.app_password, t("mobilePush.appPassword"))}
+                    title={t("mobilePush.copy")}>📋</button>
                 </div>
-                <span className={styles.tokenNote}>
-                  Persönlich &amp; geheim halten. Wird automatisch verwaltet —
-                  kein extra ClaraOS-Passwort nötig, nichts zu merken.
-                </span>
+                <span className={styles.tokenNote}>{t("mobilePush.tokenNote")}</span>
               </div>
             </div>
           </div>
 
           <ol className={styles.steps}>
-            <li><strong>ntfy</strong>-App aus dem Play Store installieren.</li>
-            <li>In der App: <strong>⋮ → Benutzer verwalten → Benutzer hinzufügen</strong> →
-              Server <code>{PUSH_SERVER}</code>, Benutzername <code>{data.ntfy_username}</code>,
-              als Passwort das <strong>App-Passwort</strong> oben einfügen.</li>
-            <li><strong>+ → Thema abonnieren</strong> → Thema <code>{data.ntfy_username}</code>,
-              Server <code>{PUSH_SERVER}</code>.</li>
-            <li>Fertig — ein Tipp auf eine Nachricht öffnet ClaraOS.</li>
+            <li><Trans t={t} i18nKey="mobilePush.step1" components={{ b: <strong /> }} /></li>
+            <li>
+              <Trans t={t} i18nKey="mobilePush.step2" values={{ server: PUSH_SERVER, user: data.ntfy_username }}
+                components={{ b: <strong />, c: <code /> }} />
+            </li>
+            <li>
+              <Trans t={t} i18nKey="mobilePush.step3" values={{ server: PUSH_SERVER, user: data.ntfy_username }}
+                components={{ b: <strong />, c: <code /> }} />
+            </li>
+            <li>{t("mobilePush.step4")}</li>
           </ol>
 
-          <button className={styles.linkBtn} onClick={load}>Token neu laden</button>
+          <button className={styles.linkBtn} onClick={load}>{t("mobilePush.reloadToken")}</button>
         </>
       )}
     </div>

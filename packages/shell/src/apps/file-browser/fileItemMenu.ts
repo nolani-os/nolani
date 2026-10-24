@@ -6,6 +6,7 @@
  * Grouped and with icons. Rarely used entries (archive, encrypt, versions,
  * print, shortcut) live under "More actions"; everyday actions stay on top.
  */
+import { getBrand } from "@claraos/core";
 import type { ReactNode } from "react";
 import type { FileNode } from "@claraos/core";
 import type { ContextMenuItem } from "../../components/WindowContextMenu";
@@ -163,7 +164,7 @@ export function buildFileItemMenu(node: FileNode, ctx: FileMenuCtx): ContextMenu
         }]
       : []),
     ...(ctx.onClaraAnalyze
-      ? [{ id: "clara", label: "Mit Clara analysieren", icon: sym("sparkle"), onSelect: () => ctx.onClaraAnalyze!(node) }]
+      ? [{ id: "clara", label: `Mit ${getBrand().assistant} analysieren`, icon: sym("sparkle"), onSelect: () => ctx.onClaraAnalyze!(node) }]
       : []),
     { id: "more", label: "Weitere Aktionen", icon: sym("more"), submenu: weitere },
     { id: "sep3", label: "---" },

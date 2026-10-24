@@ -3,7 +3,7 @@ import { Rnd } from "react-rnd";
 import { motion, AnimatePresence } from "motion/react";
 import type { DraggableEventHandler } from "react-draggable";
 import type { RndResizeCallback } from "react-rnd";
-import { useWindowsStore, useCredentialsStore, useWorkspaceStore, useWrappStore, requestCloseWindow } from "@claraos/core";
+import { useWindowsStore, useCredentialsStore, useWorkspaceStore, useWrappStore, requestCloseWindow, useTranslation } from "@claraos/core";
 import type { WindowInstance } from "@claraos/core";
 import { RND_DEFAULTS, RESIZING_ENABLED, RESIZING_DISABLED, TASKBAR_HEIGHT } from "@claraos/core/wm/rndDefaults";
 import { clampPosition } from "@claraos/core/wm/functions";
@@ -51,6 +51,7 @@ interface WindowProps {
 }
 
 export function Window({ window: win, zIndex, isFocused, children }: WindowProps) {
+  const { t } = useTranslation("shell");
   const focusWindow = useWindowsStore((s) => s.focusWindow);
   const minimizeWindow = useWindowsStore((s) => s.minimizeWindow);
   const toggleMaximize = useWindowsStore((s) => s.toggleMaximize);
@@ -203,32 +204,34 @@ export function Window({ window: win, zIndex, isFocused, children }: WindowProps
   const ctxItems: ContextMenuItem[] = [
     {
       id: "restore",
-      label: "Wiederherstellen",
+      label: t("window.menu.restore"),
       onSelect: () => restoreWindow(win.id),
       disabled: !win.maximized,
     },
     {
       id: "minimize",
-      label: "Minimieren",
+      label: t("window.menu.minimize"),
       onSelect: () => minimizeWindow(win.id),
     },
     {
       id: "maximize",
-      label: win.maximized ? "Verkleinern" : "Maximieren",
+      label: win.maximized ? t("window.menu.unmaximize") : t("window.menu.maximize"),
       onSelect: () => toggleMaximize(win.id),
     },
     { id: "sep1", label: "---" },
     {
       id: "always-on-top",
-      label: win.alwaysOnTop ? "✓ Immer im Vordergrund" : "Immer im Vordergrund",
+      label: win.alwaysOnTop ? `✓ ${t("window.menu.alwaysOnTop")}` : t("window.menu.alwaysOnTop"),
       onSelect: () => setAlwaysOnTop(win.id, !win.alwaysOnTop),
     },
     {
       id: "send-to-workspace",
-      label: "Auf Workspace verschieben…",
+      label: t("window.menu.moveToWorkspace"),
       submenu: workspaces.map((w) => ({
         id: `ws-${w.id}`,
-        label: `${w.icon} ${w.name}${w.id === win.workspaceId ? " (aktuell)" : ""}`,
+        label: w.id === win.workspaceId
+          ? t("window.menu.workspaceCurrent", { name: `${w.icon} ${w.name}` })
+          : `${w.icon} ${w.name}`,
         onSelect: () => {
           // Move window to selected workspace by setting workspaceId via store
           useWindowsStore.setState((s) => ({
@@ -245,8 +248,8 @@ export function Window({ window: win, zIndex, isFocused, children }: WindowProps
     { id: "sep2", label: "---" },
     {
       id: "close",
-      label: "Schließen",
-      shortcut: "Strg+W",
+      label: t("window.menu.close"),
+      shortcut: t("window.menu.closeShortcut"),
       variant: "destructive",
       onSelect: () => { void requestCloseWindow(win.id); },
     },
@@ -391,6 +394,7 @@ function Titlebar({
   onToggleClara?: () => void;
   buttonsLeft?: boolean;
 }) {
+  const { t } = useTranslation("shell");
   const accountsRaw = useCredentialsStore((s) => s.accounts[appId]);
   const accounts = accountsRaw || EMPTY_ACCOUNTS;
   const activateAccount = useCredentialsStore((s) => s.activateAccount);
@@ -400,23 +404,23 @@ function Titlebar({
     <div className={`${styles.controls} cancel`} style={buttonsLeft ? { flexDirection: "row-reverse" } : undefined}>
       {buttonsLeft ? (
         <>
-          <button onClick={onClose} className={`${styles.controlBtn} ${styles.closeBtnMac}`} title="Close">●</button>
-          <button onClick={onMinimize} className={`${styles.controlBtn} ${styles.minBtnMac}`} title="Minimize">●</button>
-          <button onClick={onToggleMaximize} className={`${styles.controlBtn} ${styles.maxBtnMac}`} title={isMaximized ? "Restore" : "Maximize"}>●</button>
+          <button onClick={onClose} className={`${styles.controlBtn} ${styles.closeBtnMac}`} title={t("window.close")}>●</button>
+          <button onClick={onMinimize} className={`${styles.controlBtn} ${styles.minBtnMac}`} title={t("window.minimize")}>●</button>
+          <button onClick={onToggleMaximize} className={`${styles.controlBtn} ${styles.maxBtnMac}`} title={isMaximized ? t("window.restore") : t("window.maximize")}>●</button>
         </>
       ) : (
         <>
-          <button onClick={onMinimize} className={styles.controlBtn} title="Minimieren" aria-label="Minimieren">
+          <button onClick={onMinimize} className={styles.controlBtn} title={t("window.minimize")} aria-label={t("window.minimize")}>
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5h10" /></svg>
           </button>
           <SnapLayoutPicker onPick={onSnapZone}>
-            <button onClick={onToggleMaximize} className={styles.controlBtn} title={isMaximized ? "Wiederherstellen" : "Maximieren"} aria-label={isMaximized ? "Wiederherstellen" : "Maximieren"}>
+            <button onClick={onToggleMaximize} className={styles.controlBtn} title={isMaximized ? t("window.restore") : t("window.maximize")} aria-label={isMaximized ? t("window.restore") : t("window.maximize")}>
               {isMaximized
                 ? <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="5" width="8" height="8" rx="1.5" /><path d="M6 5V4a1.5 1.5 0 0 1 1.5-1.5h4A1.5 1.5 0 0 1 13 4v4a1.5 1.5 0 0 1-1.5 1.5H11" /></svg>
                 : <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="3" width="10" height="10" rx="1.5" /></svg>}
             </button>
           </SnapLayoutPicker>
-          <button onClick={onClose} className={`${styles.controlBtn} ${styles.closeBtn}`} title="Schließen" aria-label="Schließen">
+          <button onClick={onClose} className={`${styles.controlBtn} ${styles.closeBtn}`} title={t("window.close")} aria-label={t("window.close")}>
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" /></svg>
           </button>
         </>
@@ -437,13 +441,13 @@ function Titlebar({
           type="button"
           className={`cancel ${styles.claraToggle} ${inlineClaraOpen ? styles.claraToggleActive : ""}`}
           onClick={(e) => { e.stopPropagation(); onToggleClara(); }}
-          title={inlineClaraOpen ? "Clara schließen" : "Mit Clara reden über das aktuelle Objekt"}
+          title={inlineClaraOpen ? t("window.clara.close") : t("window.clara.open")}
           aria-pressed={inlineClaraOpen}
         >
           <span className={styles.claraToggleIcon}>
             <SparklesIcon size={13} />
           </span>
-          <span className={styles.claraToggleLabel}>Clara</span>
+          <span className={styles.claraToggleLabel}>{t("window.clara.label")}</span>
         </button>
       )}
       {hasMultipleAccounts && (
@@ -457,7 +461,7 @@ function Titlebar({
             borderRadius: "3px", background: "var(--bg-subtle)", color: "var(--text-primary)",
             cursor: "pointer", maxWidth: "120px", marginLeft: "4px",
           }}
-          title="Switch account"
+          title={t("window.switchAccount")}
         >
           {accounts.map((a) => (
             <option key={a.accountName} value={a.accountName}>{a.accountName}</option>

@@ -42,7 +42,7 @@ ziel = z.oidc_rueckweg(BROWSER + "/")
 r = z.get(ziel)
 seite = r.read().decode(errors="ignore")
 assert r.geturl().startswith(BROWSER), f"nicht beim Browser gelandet: {r.geturl().split('?')[0]}"
-assert "claraos-bridge.js" in seite, "keine ClaraOS-Stream-Seite ausgeliefert"
+assert "claraos-bridge.js" in seite, "keine Stream-Seite mit claraos-bridge ausgeliefert"
 # The relay starts only once Chromium has opened its CDP port — on a fresh profile
 # that takes a while after the stream page is already up.
 for _ in range(45):

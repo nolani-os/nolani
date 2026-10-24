@@ -24,6 +24,7 @@ import {
   type Block, type Dienst, type Freigabe, type MeineTeams, type ProjektionStatus,
   type RegelStatus, type Vorschlag,
 } from "./api";
+import { regionLocale, getBrand } from "@claraos/core";
 
 type Ansicht = "detail" | "bearbeiten" | "verlauf" | "quellen" | "vorschlaege";
 
@@ -269,7 +270,7 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
 
   const googleTrennen = useCallback(async () => {
     if (!window.confirm(
-      "Google-Zugang lösen?\n\nDeine Kontakte bleiben vollständig in ClaraOS — "
+      `Google-Zugang lösen?\n\nDeine Kontakte bleiben vollständig in ${getBrand().product} — `
       + "gelöst wird nur die Verbindung.")) return;
     try {
       const r = await kontakteApi.googleTrennen();
@@ -324,10 +325,10 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
       const r = await kontakteApi.handleSetzen(gewaehlt.id, service, handle);
       setMeldung({
         text: r.klasse === "foederiert"
-          ? `${service} hinzugefügt — dort kann ClaraOS wirklich etwas tun.`
+          ? `${service} hinzugefügt — dort kann ${getBrand().product} wirklich etwas tun.`
           : r.klasse === "bridge"
             ? `${service} hinzugefügt — erreichbar erst, wenn die Brücke läuft.`
-            : `${service} hinzugefügt — ClaraOS kann dort nur das Profil öffnen.`,
+            : `${service} hinzugefügt — ${getBrand().product} kann dort nur das Profil öffnen.`,
       });
       await oeffnen(gewaehlt.id);
     } catch (e) {
@@ -730,7 +731,7 @@ function Anzeigen({ kontakt, teams, onLinkLoesen, dienste, onHandleSetzen, onHan
 
       {!!kontakt.links?.length && (
         <div className={styles.block}>
-          <div className={styles.blockTitel}>ClaraOS-Nutzer</div>
+          <div className={styles.blockTitel}>{getBrand().product}-Nutzer</div>
           {kontakt.links.map((l, i) => (
             <div className={styles.handle} key={i}>
               <span className={`${styles.marke} ${l.confidence === "bestaetigt" ? styles.markeEcht : ""}`}>
@@ -814,7 +815,7 @@ function Anzeigen({ kontakt, teams, onLinkLoesen, dienste, onHandleSetzen, onHan
             </div>
           ))}
           <div className={styles.fussnote}>
-            Felder, die ClaraOS aufhebt, obwohl vCard sie nicht kennt. Beim Export
+            Felder, die {getBrand().product} aufhebt, obwohl vCard sie nicht kennt. Beim Export
             fehlen sie — dort passt nur, was das Format vorsieht.
           </div>
         </div>
@@ -902,7 +903,7 @@ function Handles({ handles, dienste, onSetzen, onWeg }: {
                 {gewaehlt.klasse === "foederiert" ? "föderiert"
                   : gewaehlt.klasse === "bridge" ? "Brücke" : "Verweis"}
               </span>{" "}
-              {gewaehlt.hinweis || "ClaraOS speichert die Kennung."}
+              {gewaehlt.hinweis || `${getBrand().product} speichert die Kennung.`}
             </div>
           )}
           <div className={styles.feldReihe}>
@@ -916,7 +917,7 @@ function Handles({ handles, dienste, onSetzen, onWeg }: {
 
       {handles.length > 0 && (
         <div className={styles.fussnote}>
-          <strong>Föderiert</strong> heißt: ClaraOS kann dort wirklich etwas tun
+          <strong>Föderiert</strong> heißt: {getBrand().product} kann dort wirklich etwas tun
           (schreiben, teilen, folgen). <strong>Verweis</strong> heißt: wir speichern
           die Kennung und öffnen das Profil — mehr lassen diese Dienste nicht zu.
           <strong> Brücke</strong> heißt: erreichbar erst, wenn die Matrix-Brücke läuft.
@@ -1072,7 +1073,7 @@ function Verlauf({ kontakt, fassungen, onZurueck, onHolen }: {
       {fassungen?.map((f) => (
         <div className={styles.fassung} key={f.id}>
           <span className={styles.fassungZeit}>
-            {new Date(f.changed_at).toLocaleString("de-DE")}
+            {new Date(f.changed_at).toLocaleString(regionLocale())}
           </span>
           <span className={styles.zeileWert}>
             {f.anzeigename}
@@ -1146,7 +1147,7 @@ function Quellen({ google, projektion, laeuft, regel, onRegel, onCarddav, onVerb
               Mit Google verbinden
             </button>
             <div className={styles.fussnote}>
-              🔒 ClaraOS fragt <strong>nur Lesezugriff</strong> auf deine Kontakte an
+              🔒 {getBrand().product} fragt <strong>nur Lesezugriff</strong> auf deine Kontakte an
               (<code>contacts.readonly</code>). Es <strong>kann</strong> bei Google
               nichts ändern oder löschen — nicht weil wir es lassen, sondern weil
               Google uns die Berechtigung dafür gar nicht gibt.
@@ -1164,7 +1165,7 @@ function Quellen({ google, projektion, laeuft, regel, onRegel, onCarddav, onVerb
               <div className={styles.zeile} key={i}>
                 <span className={styles.zeileLabel}>Zuletzt</span>
                 <span className={styles.zeileWert}>
-                  {z.last_run ? new Date(z.last_run).toLocaleString("de-DE") : "noch nie"}
+                  {z.last_run ? new Date(z.last_run).toLocaleString(regionLocale()) : "noch nie"}
                   {z.inkrementell ? " · holt nur noch Änderungen" : " · beim nächsten Mal alles"}
                 </span>
               </div>
@@ -1189,11 +1190,11 @@ function Quellen({ google, projektion, laeuft, regel, onRegel, onCarddav, onVerb
       </div>
 
       <div className={styles.block}>
-        <div className={styles.blockTitel}>Wer darf dich in ClaraOS erreichen</div>
+        <div className={styles.blockTitel}>Wer darf dich in {getBrand().product} erreichen</div>
         {regel && (
           <>
             {([
-              ["alle", "Alle", "Jeder in ClaraOS darf dir etwas zustellen."],
+              ["alle", "Alle", `Jeder in ${getBrand().product} darf dir etwas zustellen.`],
               ["team", "Nur mein Team", "Nur Leute aus einem Team, in dem du auch bist."],
               ["team_und_kontakte", "Team und Kontakte",
                "Zusätzlich alle, die du selbst als Kontakt führst und verknüpft hast."],
@@ -1213,14 +1214,14 @@ function Quellen({ google, projektion, laeuft, regel, onRegel, onCarddav, onVerb
               <br />
               🔴 Greift <strong>nicht</strong> in: {regel.greift_nicht_in.join(", ")}.
               Diese Einstellung schaltet weder dein Telefon noch WhatsApp ab — sie
-              gilt nur dort, wo ClaraOS beide Enden kontrolliert.
+              gilt nur dort, wo {getBrand().product} beide Enden kontrolliert.
             </div>
           </>
         )}
       </div>
 
       <div className={styles.block}>
-        <div className={styles.blockTitel}>Aufs Handy — ClaraOS-Adressbuch in Nextcloud</div>
+        <div className={styles.blockTitel}>Aufs Handy — {getBrand().product}-Adressbuch in Nextcloud</div>
 
         {projektion === null && <div className={styles.zeile}>Wird geprüft…</div>}
 
@@ -1242,7 +1243,7 @@ function Quellen({ google, projektion, laeuft, regel, onRegel, onCarddav, onVerb
                 {projektion.draussen} von {projektion.kontakte} übertragen
                 {projektion.mit_fehler ? ` · ${projektion.mit_fehler} mit Fehler` : ""}
                 {projektion.zuletzt
-                  ? ` · zuletzt ${new Date(projektion.zuletzt).toLocaleString("de-DE")}`
+                  ? ` · zuletzt ${new Date(projektion.zuletzt).toLocaleString(regionLocale())}`
                   : " · noch nie"}
               </span>
             </div>
@@ -1254,7 +1255,7 @@ function Quellen({ google, projektion, laeuft, regel, onRegel, onCarddav, onVerb
         )}
 
         <div className={styles.fussnote}>
-          ClaraOS legt in Nextcloud ein <strong>eigenes</strong> Adressbuch an und ist
+          {getBrand().product} legt in Nextcloud ein <strong>eigenes</strong> Adressbuch an und ist
           dessen einziger Schreiber. Dein bestehendes Adressbuch wird
           <strong> nicht angefasst</strong>.
           <br />
@@ -1272,9 +1273,9 @@ function Quellen({ google, projektion, laeuft, regel, onRegel, onCarddav, onVerb
         </button>
         <div className={styles.fussnote}>
           Liest deine <em>eigenen</em> Adressbücher in Nextcloud — nützlich, wenn dein
-          Handy per DAVx5 dorthin synchronisiert. Das von ClaraOS geschriebene
+          Handy per DAVx5 dorthin synchronisiert. Das von {getBrand().product} geschriebene
           Adressbuch und Nextclouds Nutzerverzeichnis werden dabei
-          <strong> übersprungen</strong>: Sonst läse ClaraOS seine eigene Ausgabe
+          <strong> übersprungen</strong>: Sonst läse {getBrand().product} seine eigene Ausgabe
           wieder ein, und die Wahrheit wäre ihr eigenes Abbild.
         </div>
       </div>
@@ -1283,7 +1284,7 @@ function Quellen({ google, projektion, laeuft, regel, onRegel, onCarddav, onVerb
         <div className={styles.blockTitel}>vCard-Datei</div>
         <div className={styles.fussnote}>
           Über „Import .vcf" oben. Dieselbe Datei mehrfach hochzuladen ist
-          folgenlos — ClaraOS merkt sich je Quelle, was sie zuletzt gezeigt hat,
+          folgenlos — {getBrand().product} merkt sich je Quelle, was sie zuletzt gezeigt hat,
           und legt nichts doppelt an. Ein Kontakt, den du entfernt hast, kommt
           durch einen erneuten Import <strong>nicht</strong> zurück.
         </div>
@@ -1303,7 +1304,7 @@ function Vorschlaege({ liste, teams, onEntscheiden, onZurueck }: {
   return (
     <>
       <div className={styles.detailKopf}>
-        <div className={styles.detailName}>Abgleich mit ClaraOS-Nutzern</div>
+        <div className={styles.detailName}>Abgleich mit {getBrand().product}-Nutzern</div>
         <button className={styles.knopf} onClick={onZurueck}>Zurück</button>
       </div>
 
@@ -1343,7 +1344,7 @@ function Vorschlaege({ liste, teams, onEntscheiden, onZurueck }: {
         🔒 Verglichen wird <strong>nur</strong> mit Leuten, mit denen du ein Team
         teilst — sonst würde diese Liste verraten, wer hier überhaupt ein Konto hat.
         <br />
-        <strong>ClaraOS verknüpft nie von selbst.</strong> Eine falsche Verknüpfung
+        <strong>{getBrand().product} verknüpft nie von selbst.</strong> Eine falsche Verknüpfung
         hiesse nicht „falscher Name", sondern: jemand bekommt Sichtbarkeit auf
         Teaminhalte. Deshalb entscheidest du.
         <br />
@@ -1377,7 +1378,7 @@ function TeilenUndBlocken({ kontakt, teams, dienste, daten,
 
   // Anything attached to the contact can be blocked — plus ClaraOS itself.
   const blockbar = [
-    { id: "claraos", label: "ClaraOS (Kontakte, Wissen)" },
+    { id: "claraos", label: `${getBrand().product} (Kontakte, Wissen)` },
     ...(kontakt.handles ?? []).map((h) => ({
       id: h.service,
       label: dienste.find((d) => d.id === h.service)?.label ?? h.service,
@@ -1442,8 +1443,8 @@ function TeilenUndBlocken({ kontakt, teams, dienste, daten,
       </div>
       {/* Warning: the most honest sentence in the whole app: what a block CANNOT do. */}
       <div className={styles.fussnote}>
-        <strong>Durchgesetzt</strong> heißt: ClaraOS hat dort wirklich etwas getan
-        (ClaraOS-Kanäle, Matrix-Ignorierliste). <strong>Nur ausgeblendet</strong> heißt:
+        <strong>Durchgesetzt</strong> heißt: {getBrand().product} hat dort wirklich etwas getan
+        ({getBrand().product}-Kanäle, Matrix-Ignorierliste). <strong>Nur ausgeblendet</strong> heißt:
         der Dienst kennt keinen Block, den wir setzen könnten — LinkedIn, X, Facebook.
         Dort verschwindet der Kontakt bei uns aus der Liste, und mehr ist ehrlicherweise
         nicht drin. Ein Block hier hindert niemanden daran, dich anzurufen.

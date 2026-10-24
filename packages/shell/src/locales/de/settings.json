@@ -1,0 +1,226 @@
+{
+  "shell": {
+    "title": "Einstellungen",
+    "role": {
+      "admin": "Admin",
+      "power-user": "Power-User",
+      "guest": "Gast",
+      "user": "Nutzer"
+    },
+    "searchPlaceholder": "Einstellungen durchsuchen…",
+    "searchLabel": "Einstellungen durchsuchen",
+    "quick": "Schnelleinstellungen",
+    "noResults": "Nichts gefunden.",
+    "changedCount_one": "{{count}} geändert",
+    "changedCount_other": "{{count}} geändert",
+    "highlightChanged": "Geänderte hervorheben",
+    "loading": "Einstellungen werden geladen…",
+    "noModules": "Für dieses Konto sind keine Einstellungen freigegeben. Bitte an die Administration wenden.",
+    "backToList": "Zurück zur Liste",
+    "unsaved": "Ungespeicherte Änderungen",
+    "discard": "Verwerfen",
+    "apply": "Übernehmen",
+    "cancel": "Abbrechen",
+    "guardQuestion": "Es gibt ungespeicherte Änderungen. Was soll damit passieren?",
+    "unknownModule": "Unbekanntes Modul: {{component}}"
+  },
+  "row": {
+    "changed": "Weicht vom Standard ab",
+    "reset": "{{label}} auf Standard zurücksetzen",
+    "color": "Farbe {{value}}",
+    "customColor": "Eigene Farbe wählen"
+  },
+  "enum": {
+    "uiLanguage": {
+      "system": "Wie der Browser"
+    },
+    "clickBehavior": {
+      "single": "Öffnet sie",
+      "double": "Wählt sie aus (Doppelklick öffnet)"
+    },
+    "animationSpeed": {
+      "instant": "Sofort (aus)",
+      "fast": "Schnell",
+      "normal": "Normal",
+      "slow": "Langsam"
+    },
+    "viewMode": {
+      "icons-large": "Große Symbole",
+      "icons-small": "Kleine Symbole",
+      "list": "Liste",
+      "details": "Details"
+    },
+    "sortKey": {
+      "name": "Name",
+      "modified": "Geändert",
+      "size": "Größe",
+      "type": "Typ"
+    },
+    "sortDir": {
+      "asc": "Aufsteigend",
+      "desc": "Absteigend"
+    },
+    "groupBy": {
+      "none": "Nicht gruppieren",
+      "type": "Nach Typ",
+      "date": "Nach Datum"
+    },
+    "closeSplitViewChoice": {
+      "active": "Die aktive Seite",
+      "inactive": "Die inaktive Seite",
+      "right": "Immer die rechte Seite"
+    },
+    "themeMode": {
+      "skin": "Skin",
+      "light": "Hell",
+      "dark": "Dunkel",
+      "auto": "Automatisch"
+    },
+    "accentSource": {
+      "skin": "Design",
+      "custom": "Eigene"
+    },
+    "fontUi": {
+      "system": "System"
+    },
+    "fontMono": {
+      "system": "System"
+    },
+    "cursorStyle": {
+      "block": "Block",
+      "bar": "Strich",
+      "underline": "Unterstrich"
+    },
+    "locale": {
+      "auto": "Automatisch (Browser)"
+    },
+    "timeFormat": {
+      "region": "Wie die Region",
+      "24h": "24 Stunden",
+      "12h": "12 Stunden (AM/PM)"
+    },
+    "firstDayOfWeek": {
+      "region": "Wie die Region",
+      "monday": "Montag",
+      "sunday": "Sonntag"
+    },
+    "binaryDialect": {
+      "iec": "IEC (KiB, MiB)",
+      "metric": "Metrisch (kB, MB)",
+      "jedec": "JEDEC (KB, MB)"
+    }
+  },
+  "quick": {
+    "mode": {
+      "title": "Hell oder dunkel",
+      "skin": "Wie das Design",
+      "light": "Immer hell",
+      "dark": "Immer dunkel",
+      "auto": "Nach Tageszeit",
+      "autoHint": "Wechselt um {{sunrise}} und {{sunset}} Uhr — Zeiten unter „{{module}}“."
+    },
+    "accent": {
+      "title": "Akzentfarbe",
+      "skin": "Farbe des Designs",
+      "useSkin": "Farbe des Designs verwenden",
+      "preset": "Akzentfarbe {{color}}"
+    },
+    "scale": "Oberflächengröße",
+    "recent": "Zuletzt benutzt"
+  },
+  "personalization": {
+    "heading": "Personalisierung",
+    "theme": "Design",
+    "claraGlassHint": "Glass — die {{product}}-Designsprache",
+    "dark": "Dunkel",
+    "light": "Hell",
+    "aeroGlassHint": "Aero Glass — Premium-Skin für Laptops",
+    "skin": "Skin",
+    "liveWallpaper": "Live-Wallpaper",
+    "liveWallpaperDesc": "Animierte Mesh-Gradients + Bokeh-Drift",
+    "on": "An",
+    "off": "Aus",
+    "pausesOn": "Pausiert automatisch bei",
+    "avatar": "Profilbild",
+    "avatarInitials": "Profilbild aus Initialen",
+    "chooseImage": "Bild wählen …",
+    "resetToInitials": "Auf Initialen zurücksetzen",
+    "wallpaper": "Hintergrundbild",
+    "removeImage": "Bild entfernen",
+    "removeNamed": "{{name}} entfernen",
+    "ownImage": "Eigenes Bild …",
+    "uploadFailed": "Hochladen fehlgeschlagen ({{status}})"
+  },
+  "about": {
+    "version": "Version {{version}}",
+    "tagline": "Desktop-Umgebung im Browser",
+    "platform": "Plattform",
+    "windowManager": "Fenster-Manager",
+    "state": "Zustand",
+    "skin": "Skin",
+    "openWindows": "Offene Fenster",
+    "deployed": "Deployt",
+    "license": "Freie Software (AGPL-3.0-or-later)",
+    "source": "Quellcode",
+    "weatherData": "Wetterdaten"
+  },
+  "defaultApps": {
+    "openWithTitle": "Womit Dateien geöffnet werden",
+    "kind": {
+      "pdf": "PDF-Dokumente",
+      "png": "Bilder",
+      "mp4": "Videos",
+      "mp3": "Musik",
+      "docx": "Textdokumente",
+      "xlsx": "Tabellen",
+      "md": "Markdown und Text",
+      "stl": "3D-Modelle"
+    },
+    "app": {
+      "pdf-viewer": "PDF-Betrachter",
+      "image-viewer": "Bildbetrachter",
+      "video-player": "Videoplayer",
+      "office-viewer": "Office (Collabora)",
+      "text-editor": "Texteditor",
+      "model-viewer": "3D-Betrachter",
+      "files": "Dateien"
+    },
+    "reset": "Auf Standard zurücksetzen",
+    "autostartTitle": "Beim Anmelden öffnen",
+    "autostartDesc": "Diese Apps starten nach der Anmeldung von selbst. Das ist etwas anderes als das Wiederherstellen der letzten Sitzung — es gilt auch, wenn zuvor nichts offen war.",
+    "none": "Noch nichts ausgewählt.",
+    "unavailable": "App nicht mehr verfügbar",
+    "remove": "Entfernen",
+    "add": "App hinzufügen",
+    "choose": "Auswählen …"
+  },
+  "shortcuts": {
+    "taken": "„{{binding}}“ ist schon mit „{{command}}“ belegt.",
+    "duplicate": "Doppelt belegt mit „{{command}}“",
+    "change": "Kürzel für {{command}} ändern",
+    "pressKey": "Taste drücken… (Esc bricht ab)",
+    "reset": "Auf Standard zurücksetzen",
+    "category": {
+      "Apps": "Apps",
+      "Fenster": "Fenster",
+      "Shell": "Shell",
+      "Sitzung": "Sitzung"
+    },
+    "command": {
+      "open-files": "Dateien öffnen",
+      "open-settings": "Einstellungen öffnen",
+      "open-search": "Suche öffnen",
+      "quick-settings": "Schnelleinstellungen",
+      "open-clipboard": "Zwischenablage-Chronik",
+      "screenshot": "Bildschirmfoto",
+      "show-desktop": "Desktop anzeigen",
+      "task-manager": "Task-Manager",
+      "logout": "Abmelden",
+      "close-window": "Fenster schließen",
+      "snap-left": "Fenster links andocken",
+      "snap-right": "Fenster rechts andocken",
+      "maximize": "Fenster maximieren",
+      "minimize": "Fenster minimieren"
+    }
+  }
+}

@@ -11,6 +11,7 @@ tools into clara-agent's LangGraph tool-set.
 """
 from __future__ import annotations
 
+from betriebsprofil import PRODUCT_NAME
 import logging
 import os
 from pathlib import Path
@@ -187,10 +188,10 @@ class ToolsRegistry:
         return {
             "openapi": "3.1.0",
             "info": {
-                "title": "ClaraOS Module Tools",
+                "title": f"{PRODUCT_NAME} Module Tools",
                 "description": (
                     "Dynamic OpenAPI spec generated from /opt/claraos/clara-tools.d/. "
-                    "Each installed ClaraOS module that ships clara-tools.yaml appears here."
+                    f"Each installed {PRODUCT_NAME} module that ships clara-tools.yaml appears here."
                 ),
                 "version": "1.0.0",
             },

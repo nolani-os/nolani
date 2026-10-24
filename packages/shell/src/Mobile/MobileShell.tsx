@@ -1,6 +1,6 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { useWindowsStore, useUIStore, useAppRegistryStore, useMobilePrefs, useDeviceStore, type AppManifest } from "@claraos/core";
+import { useWindowsStore, useUIStore, useAppRegistryStore, useMobilePrefs, useDeviceStore, useTranslation, type AppManifest } from "@claraos/core";
 import { usePageVolume } from "../usePageVolume";
 import { appComponents, getAppManifest } from "../apps/registry";
 import { IframeApp } from "../apps/IframeApp";
@@ -34,10 +34,11 @@ import {
   type HomeLayout, type MobileWidget,
 } from "./homeLayout";
 import {
-  widgetComponents, widgetManifests, MOBILE_WIDGET_EMOJI, MOBILE_WIDGET_OPEN_APP,
+  widgetComponents, widgetManifests, widgetName, MOBILE_WIDGET_EMOJI, MOBILE_WIDGET_OPEN_APP,
 } from "../widgets/registry";
 import { WidgetPicker } from "./WidgetPicker";
 import styles from "./MobileShell.module.css";
+import { regionLocale } from "@claraos/core";
 
 type MobileView = "home" | "drawer" | "app" | "recents" | "notifications" | "quicksettings";
 
@@ -67,6 +68,7 @@ type MenuState =
   | { kind: "home"; page: number; cell: number; x: number; y: number };
 
 export function MobileShell() {
+  const { t } = useTranslation("mobile");
   const windows = useWindowsStore((s) => s.windows);
   const windowOrder = useWindowsStore((s) => s.windowOrder);
   const openWindow = useWindowsStore((s) => s.openWindow);
@@ -214,8 +216,8 @@ export function MobileShell() {
   }, [installEvent]);
 
   useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 30_000);
-    return () => clearInterval(t);
+    const timer = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(timer);
   }, []);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -422,8 +424,8 @@ export function MobileShell() {
   const bgHandlers = {
     ...bgLongPress,
     onPointerDown: (e: React.PointerEvent) => {
-      const t = e.target as HTMLElement;
-      const isBg = [styles.gridViewport, styles.gridPage, styles.grid].some((c) => t.classList.contains(c));
+      const target = e.target as HTMLElement;
+      const isBg = [styles.gridViewport, styles.gridPage, styles.grid].some((c) => target.classList.contains(c));
       if (isBg) bgLongPress.onPointerDown(e);
     },
   };
@@ -455,8 +457,8 @@ export function MobileShell() {
     const onTouchMove = (e: TouchEvent) => {
       if (!dragRef.current) return;
       if (e.cancelable) e.preventDefault();
-      const t = e.touches[0];
-      if (t) trackMove(t.clientX, t.clientY);
+      const touch = e.touches[0];
+      if (touch) trackMove(touch.clientX, touch.clientY);
     };
     const onUp = () => {
       if (!dragRef.current) return; // pointerup + touchend both fire — run once
@@ -538,25 +540,25 @@ export function MobileShell() {
 
   const menuActions: ContextAction[] = useMemo(() => {
     if (menu?.kind === "widget") return [
-      { key: "pin-top", label: "Oben auf Screen 1", icon: "📌" },
-      { key: "remove", label: "Widget entfernen", icon: "🗑️", danger: true },
+      { key: "pin-top", label: t("menu.pinTop"), icon: "📌" },
+      { key: "remove", label: t("menu.removeWidget"), icon: "🗑️", danger: true },
     ];
     if (menu?.kind === "home") return [
-      { key: "widgets", label: "Widgets", icon: "🧩" },
+      { key: "widgets", label: t("menu.widgets"), icon: "🧩" },
     ];
     return [
-      { key: "open", label: "Öffnen", icon: "▶️" },
-      { key: "remove", label: "Vom Home entfernen", icon: "🗑️", danger: true },
-      { key: "info", label: "App-Info", icon: "ⓘ" },
+      { key: "open", label: t("menu.open"), icon: "▶️" },
+      { key: "remove", label: t("menu.removeFromHome"), icon: "🗑️", danger: true },
+      { key: "info", label: t("menu.appInfo"), icon: "ⓘ" },
     ];
-  }, [menu?.kind]);
+  }, [menu?.kind, t]);
 
   const menuTitle = useMemo(() => {
     if (!menu) return "";
-    if (menu.kind === "widget") return widgetManifests[menu.widgetType]?.name ?? "Widget";
-    if (menu.kind === "home") return "Startbildschirm";
+    if (menu.kind === "widget") { const wm = widgetManifests[menu.widgetType]; return wm ? widgetName(wm) : t("menu.widget"); }
+    if (menu.kind === "home") return t("menu.homeScreen");
     return getApp(menu.appId)?.name ?? menu.appId;
-  }, [menu, getApp]);
+  }, [menu, getApp, t]);
 
   const onMenuAction = useCallback((key: string) => {
     const m = menu;
@@ -998,7 +1000,7 @@ export function MobileShell() {
         onPointerCancel={onStatusEnd}
       >
         <span className={styles.statusTime}>
-          {now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
+          {now.toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" })}
         </span>
         <span className={styles.statusRight}>
           {unreadCount > 0 && <span className={styles.statusBadge}>{unreadCount}</span>}
@@ -1068,13 +1070,13 @@ export function MobileShell() {
             })}
           </div>
           {surfacesMode === "recents" && windowOrder.length === 0 && (
-            <p className={styles.emptyMsg}>Keine offenen Apps</p>
+            <p className={styles.emptyMsg}>{t("recents.empty")}</p>
           )}
           {surfacesMode === "recents" && windowOrder.length > 0 && (
-            <button className={styles.clearAllPill} onClick={closeAllRecents}>Alle schließen</button>
+            <button className={styles.clearAllPill} onClick={closeAllRecents}>{t("recents.closeAll")}</button>
           )}
           {surfacesMode === "app" && !activeWindow && (
-            <p className={styles.emptyMsg}>Keine App geöffnet</p>
+            <p className={styles.emptyMsg}>{t("recents.noApp")}</p>
           )}
         </div>
         <AnimatePresence>
@@ -1093,10 +1095,10 @@ export function MobileShell() {
               {!layout.widgets.some((w) => w.type === "flip-clock-weather") && (
                 <>
                   <div className={styles.clockBig}>
-                    {now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
+                    {now.toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" })}
                   </div>
                   <div className={styles.clockDate}>
-                    {now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}
+                    {now.toLocaleDateString(regionLocale(), { weekday: "long", day: "numeric", month: "long" })}
                   </div>
                 </>
               )}
@@ -1174,7 +1176,7 @@ export function MobileShell() {
                     key={i}
                     className={`${styles.pageDot} ${i === clampedPage ? styles.pageDotActive : ""}`}
                     onClick={() => setPageIdx(i)}
-                    aria-label={`Seite ${i + 1}`}
+                    aria-label={t("home.page", { number: i + 1 })}
                   />
                 ))}
               </div>
@@ -1211,7 +1213,7 @@ export function MobileShell() {
                       <button
                         className={styles.homeIcon}
                         onClick={() => { vibrate(15); claraOeffnen(); }}
-                        aria-label="Clara fragen"
+                        aria-label={t("home.askClara")}
                       >
                         <span className={`${styles.iconSquircle} ${styles.claraDockOrb}`}>
                           <span className={styles.claraDockGlow} />
@@ -1245,7 +1247,7 @@ export function MobileShell() {
                 <input
                   className={styles.drawerSearch}
                   type="search"
-                  placeholder="Apps suchen…"
+                  placeholder={t("drawer.searchPlaceholder")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -1254,8 +1256,8 @@ export function MobileShell() {
                 )}
               </div>
               <div className={styles.drawerGrid} ref={drawerScrollRef}>
-                {!appsLoaded && <div className={styles.emptyMsg}>Apps werden geladen…</div>}
-                {appsLoaded && filteredApps.length === 0 && <div className={styles.emptyMsg}>Keine Treffer</div>}
+                {!appsLoaded && <div className={styles.emptyMsg}>{t("drawer.loading")}</div>}
+                {appsLoaded && filteredApps.length === 0 && <div className={styles.emptyMsg}>{t("drawer.noResults")}</div>}
                 {filteredApps.map((app) => (
                   <DrawerTile
                     key={app.id}
@@ -1266,7 +1268,7 @@ export function MobileShell() {
                   />
                 ))}
               </div>
-              <div className={styles.drawerFooterHint}>Tipp: App lange halten → auf den Home-Screen ziehen</div>
+              <div className={styles.drawerFooterHint}>{t("drawer.hint")}</div>
             </motion.div>
           )}
 
@@ -1311,7 +1313,7 @@ export function MobileShell() {
       {drag && drag.kind === "widget" && (
         <div className={`${styles.dragGhost} ${styles.widgetGhost}`} style={{ left: drag.x, top: drag.y }}>
           <span className={styles.widgetGhostEmoji}>{MOBILE_WIDGET_EMOJI[drag.widgetType] ?? "🧩"}</span>
-          <span className={styles.widgetGhostName}>{widgetManifests[drag.widgetType]?.name ?? drag.widgetType}</span>
+          <span className={styles.widgetGhostName}>{widgetManifests[drag.widgetType] ? widgetName(widgetManifests[drag.widgetType]) : drag.widgetType}</span>
         </div>
       )}
 
@@ -1349,7 +1351,7 @@ export function MobileShell() {
         <EckenGriff
           seite="links"
           signal={claraArbeitet && !claraOpen ? "arbeitet" : claraUngelesen && !claraOpen ? "fertig" : null}
-          label="Clara öffnen — antippen oder zur Mitte wischen"
+          label={t("grip.clara")}
           icon={<ClaraC className={styles.eckenIcon} />}
           onAusloesen={(art) => {
             // Inside a running app Clara gets it as context
@@ -1377,19 +1379,19 @@ export function MobileShell() {
           />
         ) : (
           <>
-            <button className={`${styles.navBtn} ${view === "recents" ? styles.navActive : ""}`} onClick={handleRecents} aria-label="Übersicht"><Icon name="recents" size={20} /></button>
+            <button className={`${styles.navBtn} ${view === "recents" ? styles.navActive : ""}`} onClick={handleRecents} aria-label={t("nav.recents")}><Icon name="recents" size={20} /></button>
             <HomeButton
               active={view === "home"}
               onTap={handleHome}
               onLongPress={() => { vibrate(20); claraOeffnen(); }}
             />
-            <button className={styles.navBtn} onClick={handleBack} aria-label="Zurück"><Icon name="back" size={22} /></button>
+            <button className={styles.navBtn} onClick={handleBack} aria-label={t("nav.back")}><Icon name="back" size={22} /></button>
           </>
         )}
 
         <EckenGriff
           seite="rechts"
-          label="Kamera öffnen — antippen oder zur Mitte wischen"
+          label={t("grip.camera")}
           icon={<CameraGlyph />}
           onAusloesen={() => handleLaunch("kamera")}
         />
@@ -1546,10 +1548,11 @@ function HomeButton({ active, pille, onTap, onLongPress }: { active: boolean; pi
   const timer = useRef<number | null>(null);
   const longPressed = useRef(false);
   const clear = () => { if (timer.current) { clearTimeout(timer.current); timer.current = null; } };
+  const { t } = useTranslation("mobile");
   return (
     <button
       className={pille ? styles.gestenPille : `${styles.navBtn} ${styles.homeBtn} ${active ? styles.navActive : ""}`}
-      aria-label={pille ? "Start — lange halten für die Übersicht" : "Start"}
+      aria-label={pille ? t("nav.homePill") : t("nav.homeButton")}
       onPointerDown={() => {
         longPressed.current = false;
         clear();
@@ -1583,8 +1586,9 @@ function AppContent(props: { appId: string; windowId: string; forceInline?: bool
 function AppContentInner({ appId, windowId, forceInline }: { appId: string; windowId: string; forceInline?: boolean }) {
   const Component = appComponents[appId];
   const manifest = getAppManifest(appId);
+  const { t } = useTranslation("mobile");
   if (Component) {
-    return <Suspense fallback={<div className={styles.loading}>Loading...</div>}><Component windowId={windowId} /></Suspense>;
+    return <Suspense fallback={<div className={styles.loading}>{t("app.loading")}</div>}><Component windowId={windowId} /></Suspense>;
   }
   if (manifest?.type === "selkies") {
     // Mobile streams the mobile-tuned browser twin (SelkiesApp picks the

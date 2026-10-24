@@ -22,6 +22,7 @@ whole model would be broken — in the way you only notice when data is missing.
 """
 from __future__ import annotations
 
+from betriebsprofil import PRODUCT_NAME
 import logging
 from typing import Any
 from urllib.parse import quote as urlquote
@@ -37,7 +38,7 @@ logger = logging.getLogger(__name__)
 # that is Nextcloud's default address book, and that is exactly what we do not
 # want to touch.
 BUCH = "claraos"
-BUCH_TITEL = "ClaraOS"
+BUCH_TITEL = PRODUCT_NAME
 ZIEL = "nextcloud"
 _TIMEOUT_HINWEIS = "Nextcloud antwortet nicht."
 
@@ -98,7 +99,7 @@ def _pruefe_ziel(url: str, nc_user: str) -> None:
     basis = posixpath.normpath(e.path)
     if pfad != basis and not pfad.startswith(basis + "/"):
         raise ZielVerboten(
-            f"Schreibversuch ausserhalb des ClaraOS-Adressbuchs abgewiesen. "
+            f"Schreibversuch ausserhalb des {PRODUCT_NAME}-Adressbuchs abgewiesen. "
             f"Erlaubt ist nur {erlaubt}")
 
 
@@ -184,8 +185,8 @@ async def schreiben(owner: str, kontakt: dict[str, Any],
                        content_type="text/vcard; charset=utf-8", if_match=jetzt)
         if r.status_code == 412:
             raise RuntimeError(
-                "Die Karte im ClaraOS-Adressbuch wurde von aussen geändert. "
-                "Dieses Adressbuch beschreibt nur ClaraOS — bitte dort nicht "
+                f"Die Karte im {PRODUCT_NAME}-Adressbuch wurde von aussen geändert. "
+                f"Dieses Adressbuch beschreibt nur {PRODUCT_NAME} — bitte dort nicht "
                 "von Hand bearbeiten.")
 
     if r.status_code not in (200, 201, 204):

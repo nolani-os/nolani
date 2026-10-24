@@ -21,6 +21,7 @@ could bypass it with a direct API call (a tile is not a permission).
 """
 from __future__ import annotations
 
+from betriebsprofil import PRODUCT_NAME
 import logging
 from typing import Any
 
@@ -194,11 +195,11 @@ async def blocken(owner: str, contact_id: str, service: str) -> dict[str, Any]:
                       if l.get("confidence") == "bestaetigt"]
         if verknuepft:
             zustand = DURCHGESETZT
-            hinweis = (f"{verknuepft[0]['username']} kann dir in ClaraOS nichts mehr "
+            hinweis = (f"{verknuepft[0]['username']} kann dir in {PRODUCT_NAME} nichts mehr "
                        "zustellen (Kontakte, Wissen).")
         else:
             # Without a link to a ClaraOS user there is nobody to block.
-            hinweis = ("Dieser Kontakt ist mit keinem ClaraOS-Nutzer verknüpft — "
+            hinweis = (f"Dieser Kontakt ist mit keinem {PRODUCT_NAME}-Nutzer verknüpft — "
                        "es gibt hier niemanden zu sperren. Der Kontakt wird nur "
                        "ausgeblendet.")
 
@@ -213,7 +214,7 @@ async def blocken(owner: str, contact_id: str, service: str) -> dict[str, Any]:
                        if ok else
                        "Matrix konnte nicht erreicht werden. Der Block ist NICHT aktiv.")
     else:
-        hinweis = (f"{service} kennt keinen Block, den ClaraOS setzen könnte. "
+        hinweis = (f"{service} kennt keinen Block, den {PRODUCT_NAME} setzen könnte. "
                    "Der Kontakt wird hier ausgeblendet — mehr ist ehrlicherweise "
                    "nicht drin.")
 

@@ -1,4 +1,4 @@
-import { useUIStore } from "@claraos/core";
+import { useUIStore, useTranslation } from "@claraos/core";
 import type { TrayItemDef } from "./registry";
 import styles from "../Taskbar.module.css";
 
@@ -10,6 +10,7 @@ import styles from "../Taskbar.module.css";
 export function TrayButton({ item }: { item: TrayItemDef }) {
   const active = useUIStore((s) => s.trayPopover === item.id);
   const setTrayPopover = useUIStore((s) => s.setTrayPopover);
+  const { t } = useTranslation("shell");
   const badge = item.useBadge ? item.useBadge() : 0;
   // Visibility from live data: `visibleWhen` in Taskbar.tsx cannot call a
   // hook, so the button decides about itself here.
@@ -21,7 +22,7 @@ export function TrayButton({ item }: { item: TrayItemDef }) {
     <button
       className={styles.trayBtn}
       onClick={() => setTrayPopover(item.id)}
-      title={item.title}
+      title={t(item.titleKey)}
       aria-expanded={active}
       data-tray-item={item.id}
       data-ctx={item.ctxId}

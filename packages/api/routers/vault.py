@@ -15,6 +15,7 @@ Endpoints:
 """
 from __future__ import annotations
 
+from betriebsprofil import ASSISTANT_NAME
 import logging
 from typing import Optional
 
@@ -252,7 +253,7 @@ def _match_login_item(username: str, name: str) -> dict:
         return candidates[0]
     if not candidates:
         raise HTTPException(
-            404, f"kein Eintrag {name!r} in deinen mit Clara geteilten Passwörtern — "
+            404, f"kein Eintrag {name!r} in deinen mit {ASSISTANT_NAME} geteilten Passwörtern — "
                  "vault_list_credentials zeigt die exakten Namen")
     raise HTTPException(409, {
         "error": "ambiguous_name",

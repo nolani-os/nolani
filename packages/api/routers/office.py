@@ -19,7 +19,7 @@ documents (live editing would need WOPI).
 """
 from __future__ import annotations
 
-from betriebsprofil import heim_default  # external deployment: no silent home-server fallback
+from betriebsprofil import PRODUCT_NAME, heim_default  # external deployment: no silent home-server fallback
 import logging
 import os
 import re
@@ -102,7 +102,7 @@ async def _per_user_creds(username: str) -> tuple[str, str]:
             status_code=409,
             detail=(
                 "Keine Nextcloud-Zugangsdaten hinterlegt — bitte in den "
-                "ClaraOS-Einstellungen unter App-Verbindungen speichern."
+                f"{PRODUCT_NAME}-Einstellungen unter App-Verbindungen speichern."
             ),
         )
     return await _nc_credentials(username)

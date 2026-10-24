@@ -10,8 +10,8 @@
  * Rule: anything that displays a value calls in here. Nothing formats on its
  * own, and no input field doubles as a display.
  */
+import { regionLocale } from "@claraos/core";
 
-const DE = "de-DE";
 
 /** Date as "20. Juli 2026". Unparseable input is returned unchanged. */
 export function formatDatum(wert: unknown, lang = true): string {
@@ -19,7 +19,7 @@ export function formatDatum(wert: unknown, lang = true): string {
   if (!s) return "";
   const d = new Date(s.length <= 10 ? `${s}T00:00:00` : s);
   if (Number.isNaN(d.getTime())) return s;      // raw is better than wrong
-  return d.toLocaleDateString(DE, lang
+  return d.toLocaleDateString(regionLocale(), lang
     ? { day: "numeric", month: "long", year: "numeric" }
     : { day: "2-digit", month: "2-digit", year: "numeric" });
 }
@@ -33,7 +33,7 @@ export function formatDatumKurz(wert: unknown): string {
 export function formatZahl(wert: unknown, einheit?: string): string {
   const n = typeof wert === "number" ? wert : Number(String(wert ?? "").replace(",", "."));
   if (!Number.isFinite(n)) return String(wert ?? "");
-  const txt = n.toLocaleString(DE, {
+  const txt = n.toLocaleString(regionLocale(), {
     minimumFractionDigits: 0,
     maximumFractionDigits: Number.isInteger(n) ? 0 : 2,
   });

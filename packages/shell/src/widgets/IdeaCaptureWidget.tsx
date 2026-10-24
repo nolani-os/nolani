@@ -3,10 +3,12 @@
 // Clara's automatic analysis (kb_analyst) then attaches follow-up questions. No
 // state of its own in the widget — ideas live in the "Ideas" app (onOpenApp opens it).
 import { useCallback, useRef, useState } from "react";
+import { useTranslation } from "@claraos/core";
 import type { WidgetProps } from "./registry";
 import s from "./IdeaCapture.module.css";
 
 export default function IdeaCaptureWidget({ guardRef, onOpenApp }: WidgetProps) {
+  const { t: tr } = useTranslation("desktop");
   const [title, setTitle] = useState("");
   const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
   const doneTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -35,11 +37,11 @@ export default function IdeaCaptureWidget({ guardRef, onOpenApp }: WidgetProps) 
   return (
     <div className={s.root}>
       <div className={s.head}>
-        <span>💡 Idee festhalten</span>
+        <span>💡 {tr("widgets.ideaCapture.title")}</span>
         {onOpenApp && (
           <button
             className={s.openBtn}
-            title="Ideen-App öffnen"
+            title={tr("widgets.ideaCapture.openApp")}
             onClick={() => { if (!guardRef?.current) onOpenApp(); }}
           >↗</button>
         )}
@@ -47,7 +49,7 @@ export default function IdeaCaptureWidget({ guardRef, onOpenApp }: WidgetProps) 
       <div className={s.row}>
         <input
           className={s.input}
-          placeholder="Was geht dir durch den Kopf?"
+          placeholder={tr("widgets.ideaCapture.placeholder")}
           value={title}
           disabled={state === "busy"}
           onChange={(e) => { setTitle(e.target.value); if (state === "error") setState("idle"); }}
@@ -59,8 +61,8 @@ export default function IdeaCaptureWidget({ guardRef, onOpenApp }: WidgetProps) 
           {state === "busy" ? "…" : "＋"}
         </button>
       </div>
-      {state === "done" && <div className={s.hint}>✓ Erfasst — Clara denkt mit.</div>}
-      {state === "error" && <div className={s.hintErr}>Speichern fehlgeschlagen.</div>}
+      {state === "done" && <div className={s.hint}>✓ {tr("widgets.ideaCapture.done")}</div>}
+      {state === "error" && <div className={s.hintErr}>{tr("widgets.ideaCapture.error")}</div>}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { Suspense, useMemo } from "react";
-import { useWindowsStore, useWorkspaceStore } from "@claraos/core";
+import { useWindowsStore, useWorkspaceStore, useTranslation, Trans } from "@claraos/core";
 import { Window } from "./Window";
 import { appComponents, getAppManifest } from "../apps/registry";
 import { IframeApp } from "../apps/IframeApp";
@@ -62,9 +62,10 @@ export function WindowsView() {
 }
 
 function LoadingFallback() {
+  const { t } = useTranslation("shell");
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--text-disabled)" }}>
-      Loading...
+      {t("window.loading")}
     </div>
   );
 }
@@ -74,7 +75,14 @@ function DefaultContent({ appId, title }: { appId: string; title: string }) {
     <div style={{ padding: "var(--gap-lg)" }}>
       <h2 style={{ margin: "0 0 8px", fontSize: "var(--font-size-lg)" }}>{title}</h2>
       <p style={{ color: "var(--text-secondary)", fontSize: "var(--font-size-sm)" }}>
-        App <code style={{ fontFamily: "var(--font-mono)", background: "var(--bg-subtle)", padding: "2px 6px", borderRadius: "4px" }}>{appId}</code> has no registered component.
+        <Trans
+          ns="shell"
+          i18nKey="window.noComponent"
+          values={{ appId }}
+          components={{
+            code: <code style={{ fontFamily: "var(--font-mono)", background: "var(--bg-subtle)", padding: "2px 6px", borderRadius: "4px" }} />,
+          }}
+        />
       </p>
     </div>
   );

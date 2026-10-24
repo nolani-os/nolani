@@ -28,6 +28,7 @@ replaced here with `JMAP_PUBLIC_HOST` until the Stalwart setting is changed.
 """
 from __future__ import annotations
 
+from betriebsprofil import PRODUCT_NAME
 from domains_generated import BASE_DOMAIN  # setting: CLARAOS_BASE_DOMAIN
 import asyncio
 import base64
@@ -117,7 +118,7 @@ async def _user_from_token(token: str | None) -> str:
             "UPDATE claraos_post_bridge_tokens SET last_used_at = NOW(), uses = uses + 1 "
             "WHERE token_hash = $1 RETURNING username", _hash(token))
     if not row:
-        raise HTTPException(status_code=401, detail="Brücken-Token unbekannt — in ClaraOS neu erzeugen")
+        raise HTTPException(status_code=401, detail=f"Brücken-Token unbekannt — in {PRODUCT_NAME} neu erzeugen")
     return row["username"]
 
 
@@ -133,7 +134,7 @@ async def _mail_credentials(user: str) -> tuple[str, str]:
             ORDER BY updated_at DESC NULLS LAST LIMIT 1
         """, user)
     if not row:
-        raise HTTPException(status_code=409, detail=f"Kein Mail-Konto für {user!r} in ClaraOS verbunden")
+        raise HTTPException(status_code=409, detail=f"Kein Mail-Konto für {user!r} in {PRODUCT_NAME} verbunden")
     creds = decrypt_credentials(row["credentials"])
     addr, pw = creds.get("username", ""), creds.get("password", "")
     if not addr or not pw:
@@ -512,8 +513,8 @@ ol li{{margin:.4rem 0}}</style>
 <span class="tok">{esc(token)}</span>
 <h2>So hinterlegst du ihn</h2>
 <ol>
-<li>Mail-App öffnen → Einstellungen → <strong>Plugins</strong> → „ClaraOS-Brücke“ aktivieren (Berechtigungen bestätigen).</li>
-<li>Bei den Plugin-Einstellungen im Feld <strong>ClaraOS-Token</strong> den Wert oben einfügen. Die ClaraOS-Adresse ist vorausgefüllt.</li>
+<li>Mail-App öffnen → Einstellungen → <strong>Plugins</strong> → „{PRODUCT_NAME}-Brücke“ aktivieren (Berechtigungen bestätigen).</li>
+<li>Bei den Plugin-Einstellungen im Feld <strong>{PRODUCT_NAME}-Token</strong> den Wert oben einfügen. Die {PRODUCT_NAME}-Adresse ist vorausgefüllt.</li>
 <li>Eine E-Mail öffnen: über dem Text erscheint die Leiste mit den vier Knöpfen.</li>
 </ol>"""
     else:
@@ -1647,7 +1648,7 @@ def _rules_to_sieve(rules: list[Rule], roles: dict[str, str]) -> str:
         if any(x.type in ("move", "delete", "junk") for x in r.actions) and "stop;" not in acts:
             body += "\n    stop;"
         blocks.append(f"# {r.name.replace(chr(10), ' ')}\nif {test} {{\n{body}\n}}")
-    head = 'require ["fileinto", "imap4flags", "mailboxid", "body", "copy", "envelope"];\n# Erzeugt von ClaraOS Post — bitte in der Post-App bearbeiten, nicht hier.\n'
+    head = 'require ["fileinto", "imap4flags", "mailboxid", "body", "copy", "envelope"];\n# Erzeugt von ' + PRODUCT_NAME + ' Post — bitte in der Post-App bearbeiten, nicht hier.\n'
     return head + "\n".join(blocks) + ("\n" if blocks else "")
 
 

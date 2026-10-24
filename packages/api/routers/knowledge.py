@@ -26,7 +26,7 @@ unavailable it falls back to tsvector full-text search.
 from __future__ import annotations
 
 from domains_generated import BASE_DOMAIN  # setting: CLARAOS_BASE_DOMAIN
-from betriebsprofil import heim_default, heim_struktur
+from betriebsprofil import ASSISTANT_NAME, PRODUCT_NAME, heim_default, heim_struktur
 import asyncio
 import datetime as dt
 import json
@@ -3217,7 +3217,7 @@ async def clip_bookmarklet(request: Request):
         "body:JSON.stringify({url:location.href,selection:s,note:n,title:document.title})"
         "}).then(function(r){return r.json()}).then(function(d){"
         "alert(d.object?('Gespeichert: '+d.object.title):'Fehler beim Speichern')"
-        "}).catch(function(){alert('ClaraOS nicht erreichbar')});"
+        "}).catch(function(){alert('" + PRODUCT_NAME + " nicht erreichbar')});"
         "})();"
     )
     return {"bookmarklet": js,
@@ -4739,7 +4739,7 @@ async def fetch_object_context(object_id: str, user: str) -> str | None:
     if body:
         lines.append("object body (markdown):\n" + body[:1800] + ("…" if len(body) > 1800 else ""))
     if questions:
-        lines.append("offene Clara-Rückfragen: " + " | ".join(q["content"] for q in reversed(questions)))
+        lines.append(f"offene {ASSISTANT_NAME}-Rückfragen: " + " | ".join(q["content"] for q in reversed(questions)))
     return "\n".join(lines)
 
 

@@ -6,6 +6,7 @@ tool or the brain (auth.require_browser_user).
 """
 from __future__ import annotations
 
+from betriebsprofil import ASSISTANT_NAME
 import asyncio
 import json
 from typing import Literal
@@ -135,7 +136,7 @@ async def jetzt(rid: str, request: Request) -> dict:
     """Run now (in the background) — the result arrives as a notification."""
     user = require_caller(request)
     if not brain_turns.enabled():
-        raise HTTPException(424, "Clara-Gehirn ist nicht angebunden — Routinen können nicht laufen.")
+        raise HTTPException(424, f"{ASSISTANT_NAME}-Gehirn ist nicht angebunden — Routinen können nicht laufen.")
     async with user_tx(user) as conn:
         r = await conn.fetchrow("SELECT * FROM claraos_routinen WHERE id = $1::uuid", rid)
         laeuft = await conn.fetchval(

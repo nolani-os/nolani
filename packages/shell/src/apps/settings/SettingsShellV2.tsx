@@ -22,7 +22,7 @@ import { useIsMobile } from "../../Mobile/useIsMobile";
 import { Button, IconButton } from "../../components/Button";
 import { Icon } from "../../components/Icon";
 import { modulPlaettchen } from "./modulSymbole";
-import { useAuthStore } from "@claraos/core";
+import { useAuthStore, useTranslation, settingsModuleName, settingsCategoryName } from "@claraos/core";
 import { useSettingsStore } from "@claraos/core";
 import { SettingRow } from "./SettingRow";
 import { AboutTab } from "./AboutTab";
@@ -72,6 +72,10 @@ export default function SettingsShellV2() {
   // settings), not two stacked columns.
   const isMobile = useIsMobile();
   const user = useAuthStore((s) => s.user);
+  // Subscribes to language changes — the name helpers below read the same instance.
+  const { t } = useTranslation("settings");
+  const modName = (m: { id: string; name: string }) => settingsModuleName(m.id, m.name);
+  const catName = (c: { id: string; name: string }) => settingsCategoryName(c.id, c.name);
   const Plaettchen = ({ id, cat }: { id: string; cat?: string }) => {
     const p = modulPlaettchen(id, cat);
     return <span className={styles.plaettchen} style={{ background: p.farbe }} aria-hidden="true"><Icon name={p.icon} size={15} /></span>;
@@ -161,18 +165,18 @@ export default function SettingsShellV2() {
          data-ansicht={isMobile ? (detailOffen ? "detail" : "liste") : undefined}>
       <nav className={styles.sidebar}>
         <div className={styles.sidebarHeader}>
-          {isMobile && <h2 className={styles.mobilTitel}>Einstellungen</h2>}
+          {isMobile && <h2 className={styles.mobilTitel}>{t("shell.title")}</h2>}
           {!isMobile && user && (
             <div className={styles.konto}>
               <span className={styles.kontoAvatar} aria-hidden="true">{(user.name || user.username).slice(0, 2).toUpperCase()}</span>
-              <span className={styles.kontoText}><b>{user.name || user.username}</b><span>{user.role === "admin" ? "Admin" : user.role === "power-user" ? "Power-User" : user.role === "guest" ? "Gast" : "Nutzer"} · {user.email}</span></span>
+              <span className={styles.kontoText}><b>{user.name || user.username}</b><span>{t(`shell.role.${user.role === "admin" || user.role === "power-user" || user.role === "guest" ? user.role : "user"}`)} · {user.email}</span></span>
             </div>
           )}
           <input
             className={styles.searchField}
             type="search"
-            placeholder="Einstellungen durchsuchen…"
-            aria-label="Einstellungen durchsuchen"
+            placeholder={t("shell.searchPlaceholder")}
+            aria-label={t("shell.searchLabel")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             autoFocus={!isMobile}
@@ -186,13 +190,13 @@ export default function SettingsShellV2() {
               onClick={() => navigate(QUICK)}
             >
               {!isMobile && <Plaettchen id={QUICK} />}
-              <span>Schnelleinstellungen</span>
+              <span>{t("shell.quick")}</span>
               {isMobile && <Icon name="chevronRight" size={18} className={styles.navPfeil} />}
             </button>
           )}
           {searching ? (
             results.length === 0 ? (
-              <p className={styles.emptyHint}>Nichts gefunden.</p>
+              <p className={styles.emptyHint}>{t("shell.noResults")}</p>
             ) : (
               results.map((m) => (
                 <button
@@ -200,9 +204,12 @@ export default function SettingsShellV2() {
                   className={`${styles.navItem} ${activeId === m.id ? styles.navActive : ""}`}
                   onClick={() => navigate(m.id)}
                 >
-                  <span>{m.name}</span>
+                  <span>{modName(m)}</span>
                   <span className={styles.navHint}>
-                    {categories.find((c) => c.id === m.category)?.name}
+                    {(() => {
+                      const c = categories.find((x) => x.id === m.category);
+                      return c ? catName(c) : null;
+                    })()}
                   </span>
                 </button>
               ))
@@ -215,9 +222,9 @@ export default function SettingsShellV2() {
               return (
                 <div key={cat.id} className={styles.navGroup}>
                   <div className={styles.navGroupTitle}>
-                    {cat.name}
+                    {catName(cat)}
                     {highlight && count > 0 && (
-                      <span className={styles.badge} title={`${count} geändert`}>
+                      <span className={styles.badge} title={t("shell.changedCount", { count })}>
                         {count}
                       </span>
                     )}
@@ -229,7 +236,7 @@ export default function SettingsShellV2() {
                       onClick={() => navigate(m.id)}
                     >
                       {!isMobile && <Plaettchen id={m.id} cat={m.category} />}
-                      <span>{m.name}</span>
+                      <span>{modName(m)}</span>
                       {highlight && (changed[m.id]?.length ?? 0) > 0 && (
                         <span className={styles.dot} aria-hidden />
                       )}
@@ -245,7 +252,7 @@ export default function SettingsShellV2() {
         <div className={styles.sidebarFooter}>
           <label className={styles.highlightToggle}>
             <input type="checkbox" checked={highlight} onChange={toggleHighlight} />
-            Geänderte hervorheben
+            {t("shell.highlightChanged")}
           </label>
         </div>
       </nav>
@@ -253,20 +260,17 @@ export default function SettingsShellV2() {
       <main className={styles.content}>
         {error && <div className={styles.inlineError}>{error}</div>}
 
-        {!loaded && <p className={styles.emptyHint}>Einstellungen werden geladen…</p>}
+        {!loaded && <p className={styles.emptyHint}>{t("shell.loading")}</p>}
 
         {loaded && modules.length === 0 && !error && (
-          <p className={styles.emptyHint}>
-            Für dieses Konto sind keine Einstellungen freigegeben. Bitte an die
-            Administration wenden.
-          </p>
+          <p className={styles.emptyHint}>{t("shell.noModules")}</p>
         )}
 
         {loaded && activeId === QUICK && (
           <>
             <header className={styles.contentHeader}>
-              {isMobile && <IconButton label="Zurück zur Liste" icon="back" onClick={() => navigate(LISTE)} />}
-              <h2>Schnelleinstellungen</h2>
+              {isMobile && <IconButton label={t("shell.backToList")} icon="back" onClick={() => navigate(LISTE)} />}
+              <h2>{t("shell.quick")}</h2>
             </header>
             <QuickSettingsPage onOpen={(id) => navigate(id)} />
           </>
@@ -275,8 +279,8 @@ export default function SettingsShellV2() {
         {loaded && activeModule && (
           <>
             <header className={styles.contentHeader}>
-              {isMobile && <IconButton label="Zurück zur Liste" icon="back" onClick={() => navigate(LISTE)} />}
-              <h2>{activeModule.name}</h2>
+              {isMobile && <IconButton label={t("shell.backToList")} icon="back" onClick={() => navigate(LISTE)} />}
+              <h2>{modName(activeModule)}</h2>
             </header>
 
             {activeModule.component ? (
@@ -296,10 +300,10 @@ export default function SettingsShellV2() {
 
             {dirty && (
               <div className={styles.applyBar} role="status">
-                <span>Ungespeicherte Änderungen</span>
-                <Button stufe="text" groesse="s" className={styles.applyErster} onClick={() => discard(activeId)}>Verwerfen</Button>
+                <span>{t("shell.unsaved")}</span>
+                <Button stufe="text" groesse="s" className={styles.applyErster} onClick={() => discard(activeId)}>{t("shell.discard")}</Button>
                 <Button stufe="filled" groesse="s" onClick={() => void apply(activeId)}>
-                  Übernehmen
+                  {t("shell.apply")}
                 </Button>
               </div>
             )}
@@ -310,9 +314,9 @@ export default function SettingsShellV2() {
       {guard && (
         <div className={styles.guardOverlay} role="dialog" aria-modal="true">
           <div className={styles.guardBox}>
-            <p>Es gibt ungespeicherte Änderungen. Was soll damit passieren?</p>
+            <p>{t("shell.guardQuestion")}</p>
             <div className={styles.guardActions}>
-              <Button stufe="text" groesse="s" onClick={() => setGuard(null)}>Abbrechen</Button>
+              <Button stufe="text" groesse="s" onClick={() => setGuard(null)}>{t("shell.cancel")}</Button>
               <Button
                 stufe="outlined" groesse="s"
                 onClick={() => {
@@ -321,7 +325,7 @@ export default function SettingsShellV2() {
                   setGuard(null);
                 }}
               >
-                Verwerfen
+                {t("shell.discard")}
               </Button>
               <Button
                 stufe="filled" groesse="s"
@@ -331,7 +335,7 @@ export default function SettingsShellV2() {
                   setGuard(null);
                 }}
               >
-                Übernehmen
+                {t("shell.apply")}
               </Button>
             </div>
           </div>
@@ -343,7 +347,12 @@ export default function SettingsShellV2() {
 
 function renderCustom(component: string) {
   const C = CUSTOM[component];
-  return C ? <C /> : <p className={styles.emptyHint}>Unbekanntes Modul: {component}</p>;
+  return C ? <C /> : <UnknownModule component={component} />;
+}
+
+function UnknownModule({ component }: { component: string }) {
+  const { t } = useTranslation("settings");
+  return <p className={styles.emptyHint}>{t("shell.unknownModule", { component })}</p>;
 }
 
 /** Keep serving old tab ids from existing callers. */

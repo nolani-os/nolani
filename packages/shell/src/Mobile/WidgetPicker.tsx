@@ -1,7 +1,8 @@
 // Android-style widget picker: a bottom sheet listing the mobile widget
 // manifests. Opened via long-press on an empty home cell → "Widgets".
 import { motion } from "motion/react";
-import { MOBILE_WIDGET_TYPES, MOBILE_WIDGET_EMOJI, widgetManifests } from "../widgets/registry";
+import { MOBILE_WIDGET_TYPES, MOBILE_WIDGET_EMOJI, widgetManifests, widgetName, widgetDescription } from "../widgets/registry";
+import { useTranslation } from "@claraos/core";
 import styles from "./WidgetPicker.module.css";
 
 export function WidgetPicker({
@@ -10,6 +11,7 @@ export function WidgetPicker({
   onSelect: (type: string, w: number, h: number) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("mobile");
   return (
     <div className={styles.backdrop} onClick={onClose}>
       <motion.div
@@ -21,7 +23,7 @@ export function WidgetPicker({
         onClick={(e) => e.stopPropagation()}
       >
         <div className={styles.handle} />
-        <div className={styles.title}>Widgets</div>
+        <div className={styles.title}>{t("widgetPicker.title")}</div>
         <div className={styles.list}>
           {MOBILE_WIDGET_TYPES.map((type) => {
             const m = widgetManifests[type];
@@ -34,8 +36,8 @@ export function WidgetPicker({
               >
                 <span className={styles.preview}>{MOBILE_WIDGET_EMOJI[type] ?? "🧩"}</span>
                 <span className={styles.meta}>
-                  <span className={styles.name}>{m.name}</span>
-                  <span className={styles.desc}>{m.description}</span>
+                  <span className={styles.name}>{widgetName(m)}</span>
+                  <span className={styles.desc}>{widgetDescription(m)}</span>
                 </span>
                 <span className={styles.size}>{m.defaultSize.w}×{m.defaultSize.h}</span>
               </button>

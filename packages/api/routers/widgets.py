@@ -8,7 +8,7 @@ Auth: the route lives under /api/claraos/ and is therefore gated by the
 Caddy/Authentik forward-auth like every other API route. Weather is not
 user-specific, so no per-user resolution is needed here.
 """
-from betriebsprofil import heim_default  # external deployments: no silent home-server fallback
+from betriebsprofil import PRODUCT_NAME, heim_default  # external deployments: no silent home-server fallback
 import logging
 import os
 import random
@@ -261,7 +261,7 @@ IMMICH_URL = heim_default("IMMICH_INTERNAL_URL")
 
 _IMMICH_CONNECT_HINT = (
     "Kein Immich-Konto verbunden — in Immich unter Kontoeinstellungen → "
-    "API-Schlüssel einen Key erzeugen und in ClaraOS hinterlegen "
+    f"API-Schlüssel einen Key erzeugen und in {PRODUCT_NAME} hinterlegen "
     "(App-Zugang 'immich', Feld 'api_token')."
 )
 

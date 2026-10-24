@@ -24,7 +24,7 @@ import {
   SendIcon,
   PinIcon,
 } from "./icons";
-import { useVoiceStore } from "@claraos/core";
+import { useVoiceStore, getBrand } from "@claraos/core";
 import { KameraSheet, sucherMoeglich } from "./KameraSheet";
 import styles from "./ClaraChatPanel.module.css";
 
@@ -119,7 +119,7 @@ export function Composer({
   pinnedMarkerLabel,
   pinnedMarkerThumb,
   onClearPin,
-  placeholder = "Frag Clara …",
+  placeholder = `Frag ${getBrand().assistant} …`,
   compact,
   autoFocus,
   mobil,
@@ -320,7 +320,7 @@ export function Composer({
       )}
       {queuedText && (
         <div className={styles.queuedHint} title={queuedText}>
-          ⏳ Wird gesendet, sobald Clara fertig ist: „{queuedText.length > 60 ? `${queuedText.slice(0, 57)}…` : queuedText}“
+          ⏳ Wird gesendet, sobald {getBrand().assistant} fertig ist: „{queuedText.length > 60 ? `${queuedText.slice(0, 57)}…` : queuedText}“
         </div>
       )}
       {mobil && voiceMode ? (
@@ -334,11 +334,11 @@ export function Composer({
               : arming ? "Mikrofon wird geöffnet …"
                 : recording ? "Ich höre zu — sprich einfach."
                   : transcribing ? "Verstehe …"
-                    : speaking ? "Clara spricht — reinreden erlaubt."
+                    : speaking ? `${getBrand().assistant} spricht — reinreden erlaubt.`
                       : "Sprachmodus — tippe auf die Wellen zum Sprechen."}
         </div>
         <div className={styles.livePille}>
-          <button type="button" className={styles.pilleBtn} aria-label="Foto aufnehmen" title="Foto an Clara" onClick={kameraOeffnen}>📷</button>
+          <button type="button" className={styles.pilleBtn} aria-label="Foto aufnehmen" title={`Foto an ${getBrand().assistant}`} onClick={kameraOeffnen}>📷</button>
           <button
             type="button"
             className={styles.liveWellen}
@@ -377,7 +377,7 @@ export function Composer({
             arming ? "Mikrofon wird geöffnet …"
               : recording ? "Sprich — ich schreibe mit …"
                 : transcribing ? "Verstehe …"
-                  : speaking ? "Clara antwortet …"
+                  : speaking ? `${getBrand().assistant} antwortet …`
                     : voiceMode ? "Sprachmodus aktiv — sprich …"
                       : placeholder
           }
@@ -437,7 +437,7 @@ export function Composer({
                 </button>
                 {onPickFromClaraOS && (
                   <button type="button" role="menuitem" className={styles.plusTile} onClick={() => { setPlusOffen(false); onPickFromClaraOS(); }}>
-                    <span aria-hidden="true">🗂️</span>ClaraOS-Dateien
+                    <span aria-hidden="true">🗂️</span>{getBrand().product}-Dateien
                   </button>
                 )}
               </div>
@@ -451,7 +451,7 @@ export function Composer({
                 {toggleLiveMode && (
                   <button type="button" role="menuitem" className={styles.plusZeile} onClick={() => { setPlusOffen(false); toggleLiveMode(); }} disabled={voiceMode || recording || transcribing}>
                     <span><LiveVoiceIcon size={16} /></span>
-                    <span><b>{liveMode ? "Live-Gespräch beenden" : "Live-Gespräch"}</b><small>Clara hört zu, Reinreden erlaubt.</small></span>
+                    <span><b>{liveMode ? "Live-Gespräch beenden" : "Live-Gespräch"}</b><small>{getBrand().assistant} hört zu, Reinreden erlaubt.</small></span>
                   </button>
                 )}
               </div>
@@ -470,7 +470,7 @@ export function Composer({
             arming ? "Mikrofon wird geöffnet …"
               : recording ? "Sprich — ich schreibe mit …"
                 : transcribing ? "Verstehe …"
-                  : speaking ? "Clara antwortet …"
+                  : speaking ? `${getBrand().assistant} antwortet …`
                     : voiceMode ? "Sprachmodus aktiv — sprich …"
                       : placeholder
           }
@@ -548,7 +548,7 @@ export function Composer({
                         onPickFromClaraOS();
                       }}
                     >
-                      Aus ClaraOS-Dateien …
+                      Aus {getBrand().product}-Dateien …
                     </button>
                   )}
                 </div>
@@ -596,7 +596,7 @@ export function Composer({
                 title={
                   liveMode
                     ? "Live-Gespräch beenden"
-                    : "Live-Gespräch starten (Clara hört zu, Reinreden erlaubt)"
+                    : `Live-Gespräch starten (${getBrand().assistant} hört zu, Reinreden erlaubt)`
                 }
                 onClick={toggleLiveMode}
                 disabled={voiceMode || recording || transcribing}

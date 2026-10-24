@@ -4,6 +4,7 @@
  * distribution would be show without substance: the data for it simply does
  * not exist in the system. This is a structured questionnaire with a
  * calculator, and it is labeled exactly as such. */
+import { getBrand } from "@claraos/core";
 import { useState } from "react";
 import styles from "./IdeasApp.module.css";
 import { Icon } from "../../components/Icon";
@@ -38,7 +39,7 @@ export function ParetoModal({ goal, onClose, onDone }: Props) {
       if (r.unit) setUnit(r.unit);
       setRows(r.causes.map((c) => ({ cause: c, value: "" })));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Clara antwortet gerade nicht");
+      setError(e instanceof Error ? e.message : `${getBrand().assistant} antwortet gerade nicht`);
     } finally {
       setBusy(false);
     }
@@ -78,7 +79,7 @@ export function ParetoModal({ goal, onClose, onDone }: Props) {
         {!preview ? (
           <>
             <p className={styles.metaHint}>
-              Welche Ursachen tragen wie viel bei? Clara schlägt dir zählbare Ursachen vor,
+              Welche Ursachen tragen wie viel bei? {getBrand().assistant} schlägt dir zählbare Ursachen vor,
               die <strong>Zahlen trägst du ein</strong> — schätzen ist erlaubt, erfinden nicht.
             </p>
             <input className={styles.input} value={problem} autoFocus

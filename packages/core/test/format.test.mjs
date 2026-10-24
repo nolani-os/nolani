@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 export function runFormatTests(mod) {
   const {
     formatNumber, formatCurrency, formatDate, formatTime, formatBytes,
-    firstDayOfWeek, formatRelative, DEFAULT_FORMAT_PREFS,
+    firstDayOfWeek, formatRelative, DEFAULT_FORMAT_PREFS, resolveRegion, localeTag,
   } = mod;
 
   const results = [];
@@ -71,6 +71,21 @@ export function runFormatTests(mod) {
     // Far in the past => date instead of relative time
     const old = formatRelative(new Date(2026, 0, 1), P(), now);
     assert.match(old, /2026/);
+  });
+
+  t("Region 'auto' nimmt die Browsersprache", () => {
+    assert.equal(resolveRegion("auto", ["en-US", "de-DE"]), "en-US");
+    assert.equal(resolveRegion("auto", ["en-GB-u-ca-gregory"]), "en-GB");
+    assert.equal(resolveRegion("auto", []), "de-DE");
+    assert.equal(resolveRegion("auto", ["!!"]), "de-DE");
+    assert.equal(resolveRegion("fr-FR", ["en-US"]), "fr-FR");
+  });
+  t("localeTag trägt die 12h/24h-Wahl mit", () => {
+    const d = new Date(2026, 0, 1, 13, 5);
+    assert.equal(localeTag(P()), "de-DE");
+    assert.equal(localeTag(P({ locale: "en-US", timeFormat: "24h" })), "en-US-u-hc-h23");
+    assert.match(d.toLocaleTimeString(localeTag(P({ locale: "en-US", timeFormat: "24h" }))), /^13:05/);
+    assert.match(d.toLocaleTimeString(localeTag(P({ timeFormat: "12h" })), { hour: "numeric", minute: "2-digit" }), /1:05/);
   });
 
   return results;

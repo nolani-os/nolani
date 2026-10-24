@@ -7,6 +7,7 @@ import { Icon } from "../../../../components/Icon";
 import type { CalEventFull, CalTask } from "../../api";
 import { MS_DAY, ymdOf } from "./calLayout";
 import { busyClassOf } from "./EventBlock";
+import { regionLocale } from "@claraos/core";
 
 export function MonthGrid({
   month, events, tasks, onEventClick, onTaskClick, onTaskDueMoved, onDayCreate, onDayTap,
@@ -86,7 +87,7 @@ export function MonthGrid({
                    title={`${ev.summary} (${ev.calendar})`}
                    onClick={() => (ev.task_id != null ? onTaskClick(ev.task_id) : onEventClick(ev))}>
                 {ev.task_id != null ? <Icon name="collections" size={11} /> : null}{ev.is_recurring ? <Icon name="repeat" size={11} /> : null}
-                {!ev.all_day && ev.start.length > 10 ? new Date(ev.start).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " " : ""}
+                {!ev.all_day && ev.start.length > 10 ? new Date(ev.start).toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" }) + " " : ""}
                 {ev.summary}
               </div>
             ))}

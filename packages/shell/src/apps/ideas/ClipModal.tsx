@@ -2,6 +2,7 @@
  * The fetch happens SERVER-SIDE (services/kb_clip.py); the browser only sends
  * the URL. The server rejects internal addresses; its message is shown here
  * unchanged instead of being swallowed. */
+import { getBrand } from "@claraos/core";
 import { useEffect, useState } from "react";
 import styles from "./IdeasApp.module.css";
 import { Icon } from "../../components/Icon";
@@ -84,7 +85,7 @@ export function ClipModal({ onClipped, onClose }: Props) {
                className={styles.propLink}
                onClick={(e) => e.preventDefault()}
                draggable
-               title="In die Lesezeichenleiste ziehen — sichert dann die offene Seite samt Markierung"><Icon name="attachment" size={14} className={styles.inlineIcon} />In ClaraOS sichern
+               title="In die Lesezeichenleiste ziehen — sichert dann die offene Seite samt Markierung"><Icon name="attachment" size={14} className={styles.inlineIcon} />In {getBrand().product} sichern
             </a>{" "}
             in die Lesezeichenleiste ziehen.
           </p>

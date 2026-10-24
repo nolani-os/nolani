@@ -5,7 +5,7 @@
 // Without a target selection the widget falls back to the classic container
 // view (/system/stats), which the quick settings panel also uses.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useWorkspaceStore } from "@claraos/core";
+import { useWorkspaceStore, useTranslation } from "@claraos/core";
 import type { WidgetProps } from "./registry";
 import {
   CheckList,
@@ -65,6 +65,8 @@ const sparkCls = styles.sysSpark;
 
 export default function SystemStatsWidget({ widgetId, config }: WidgetProps) {
   const updateWidgetConfig = useWorkspaceStore((st) => st.updateWidgetConfig);
+  // `t` is the loop variable for targets below — hence `tr`.
+  const { t: tr } = useTranslation("desktop");
   const cfgIds: string[] = Array.isArray(config?.targets) ? (config.targets as string[]) : DEFAULT_IDS;
   const pollSec =
     typeof config?.pollSec === "number" && config.pollSec >= 5 ? (config.pollSec as number) : 10;
@@ -148,13 +150,13 @@ export default function SystemStatsWidget({ widgetId, config }: WidgetProps) {
 
   return (
     <div className={styles.sys}>
-      <div className={styles.sysTitle}>System-Monitor</div>
+      <div className={styles.sysTitle}>{tr("widgets.systemStats.title")}</div>
       <div className={styles.sysScroll} data-no-drag>
-        {stats === null && !error && <div className={styles.sysEmpty}>Lade…</div>}
-        {error && <div className={styles.sysEmpty}>Monitor nicht erreichbar</div>}
+        {stats === null && !error && <div className={styles.sysEmpty}>{tr("widgets.systemStats.loading")}</div>}
+        {error && <div className={styles.sysEmpty}>{tr("widgets.systemStats.unreachable")}</div>}
         {stats !== null && !error && stats.length === 0 && (
           <div className={styles.sysEmpty}>
-            {pveConfigured ? "Keine Ziele gewählt — Rechtsklick → Einstellungen" : SYSTEM_LABELS.tokenMissing}
+            {pveConfigured ? tr("widgets.systemStats.noTargets") : SYSTEM_LABELS.tokenMissing}
           </div>
         )}
         {(stats ?? []).map((t) => {
@@ -170,7 +172,7 @@ export default function SystemStatsWidget({ widgetId, config }: WidgetProps) {
                 />
                 <span className={styles.sysTargetName}>{t.name}</span>
                 <span className={styles.sysKind}>
-                  {t.kind === "node" ? "Node" : t.kind === "vm" ? "VM" : "Gerät"}
+                  {t.kind === "node" ? SYSTEM_LABELS.nodeKind : t.kind === "vm" ? "VM" : tr("widgets.systemStats.kindDevice")}
                 </span>
                 <Sparkline points={historyRef.current.get(t.id) ?? []} />
               </div>
@@ -195,7 +197,7 @@ export default function SystemStatsWidget({ widgetId, config }: WidgetProps) {
 
       {settingsOpen && (
         <SettingsOverlay
-          title="System-Monitor"
+          title={tr("widgets.systemStats.title")}
           onCancel={() => setSettingsOpen(false)}
           onSave={saveSettings}
         >
@@ -208,7 +210,7 @@ export default function SystemStatsWidget({ widgetId, config }: WidgetProps) {
             grouped[kind].length ? (
               <div key={kind}>
                 <GroupLabel>
-                  {kind === "node" ? SYSTEM_LABELS.nodeGroup : kind === "vm" ? "VMs & Container" : "Geräte (SSH)"}
+                  {kind === "node" ? SYSTEM_LABELS.nodeGroup : kind === "vm" ? tr("widgets.systemStats.groupVm") : tr("widgets.systemStats.groupDevice")}
                 </GroupLabel>
                 <CheckList>
                   {grouped[kind].map((t) => (
@@ -225,16 +227,16 @@ export default function SystemStatsWidget({ widgetId, config }: WidgetProps) {
               </div>
             ) : null,
           )}
-          {available === null && <span style={{ fontSize: 11, opacity: 0.6 }}>Lade Ziele…</span>}
+          {available === null && <span style={{ fontSize: 11, opacity: 0.6 }}>{tr("widgets.systemStats.loadingTargets")}</span>}
           <SelectRow
-            label="Aktualisierung"
+            label={tr("widgets.systemStats.refresh")}
             value={draftPoll}
             onChange={setDraftPoll}
             options={[
-              { value: "5", label: "5 Sekunden" },
-              { value: "10", label: "10 Sekunden" },
-              { value: "30", label: "30 Sekunden" },
-              { value: "60", label: "1 Minute" },
+              { value: "5", label: tr("widgets.systemStats.seconds", { count: 5 }) },
+              { value: "10", label: tr("widgets.systemStats.seconds", { count: 10 }) },
+              { value: "30", label: tr("widgets.systemStats.seconds", { count: 30 }) },
+              { value: "60", label: tr("widgets.systemStats.minutes", { count: 1 }) },
             ]}
           />
         </SettingsOverlay>

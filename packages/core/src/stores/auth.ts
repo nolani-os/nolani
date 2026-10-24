@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { User } from "../types";
 import { hasPermission as checkPerm } from "../permissions";
+import { setBrand } from "../brand";
 
 interface AuthStore {
   user: User | null;
@@ -24,6 +25,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
       const res = await fetch("/api/claraos/me");
       if (res.ok) {
         const data = await res.json();
+        setBrand(data.brand);
         set({
           user: data,
           loading: false,

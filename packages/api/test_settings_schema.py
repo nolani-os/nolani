@@ -134,6 +134,21 @@ def test_files_module_validation():
         pass
 
 
+def test_ui_language_choices_match_frontend_list():
+    # The language list lives in core (languages.ts) — the schema must offer
+    # exactly those codes plus "system". Skipped where only the API is checked out.
+    import pathlib, re
+    ts = pathlib.Path(__file__).resolve().parent.parent / "core/src/i18n/languages.ts"
+    if not ts.exists():
+        return
+    block = ts.read_text(encoding="utf-8").split("export const LANGUAGES", 1)[1].split("] as const", 1)[0]
+    codes = re.findall(r'code:\s*"([a-z]{2,3})"', block)
+    choices = ss.get_module("region-formats")
+    (setting,) = [s for s in choices.settings if s.key == "uiLanguage"]
+    assert setting.choices == ("system", *codes), f"{setting.choices} != system + {codes}"
+    assert setting.default == "system"
+
+
 if __name__ == "__main__":
     import sys, inspect
     failed = 0

@@ -23,6 +23,7 @@ VIDEO = os.environ["VIDEO_DOMAIN"]
 HOST = {"Host": VIDEO, "X-Forwarded-Proto": "https"}
 QUOTA = int(os.environ.get("PEERTUBE_VIDEO_QUOTA_GB") or 2) * 1024 ** 3
 PLUGIN = "peertube-plugin-auth-openid-connect"
+PRODUCT = os.environ.get("CLARAOS_PRODUCT_NAME") or "NolaniOS"  # visible name only
 
 with httpx.Client(base_url=BASE, headers=HOST, timeout=60) as c:
     cl = c.get("/api/v1/oauth-clients/local")
@@ -43,7 +44,7 @@ with httpx.Client(base_url=BASE, headers=HOST, timeout=60) as c:
             break
         time.sleep(5)
     r = c.put(f"/api/v1/plugins/{PLUGIN}/settings", headers=h, json={"settings": {
-        "auth-display-name": "Mit ClaraOS anmelden",
+        "auth-display-name": f"Mit {PRODUCT} anmelden",
         "discover-url": f"https://auth.{DOM}/application/o/peertube/.well-known/openid-configuration",
         "client-id": "peertube",
         "client-secret": os.environ["PEERTUBE_OIDC_SECRET"],
@@ -56,7 +57,7 @@ with httpx.Client(base_url=BASE, headers=HOST, timeout=60) as c:
     print(f"  PeerTube: OIDC-Plugin {'eingerichtet' if r.status_code in (200, 204) else f'NICHT eingerichtet (HTTP {r.status_code})'}")
 
     cfg = c.get("/api/v1/config/custom", headers=h).json()
-    cfg["instance"]["name"] = "ClaraOS Videos"
+    cfg["instance"]["name"] = f"{PRODUCT} Videos"
     cfg["signup"]["enabled"] = False
     cfg["user"]["videoQuota"] = QUOTA
     cfg["user"]["videoQuotaDaily"] = -1
@@ -65,7 +66,7 @@ with httpx.Client(base_url=BASE, headers=HOST, timeout=60) as c:
     cfg["followings"]["instance"]["autoFollowBack"]["enabled"] = False
     cfg["followings"]["instance"]["autoFollowIndex"]["enabled"] = False
     cfg["contactForm"]["enabled"] = False
-    # Users have no PeerTube password — go straight to the ClaraOS login.
+    # Users have no PeerTube password — go straight to the single sign-on login.
     # (root still logs in locally via /login?externalRedirect=false)
     cfg["client"]["menu"]["login"]["redirectOnSingleExternalAuth"] = True
     tc = cfg["transcoding"]

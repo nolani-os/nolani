@@ -9,6 +9,7 @@ import { Chip } from "../../components/Chip";
 import { hasDate, type VikTask } from "./types";
 import { checklistProgress, parseChecklist } from "./checklist";
 import { datumInWorten } from "../../lib/datumsWorte";
+import { regionLocale, getBrand } from "@claraos/core";
 
 export function ymd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -40,13 +41,13 @@ export function isDueToday(t: VikTask): boolean {
 export function fmtEur(v: number | null | undefined): string {
   if (v == null) return "—";
   const stellen = v !== 0 && Math.abs(v) < 0.01 ? 4 : 2;
-  return v.toLocaleString("de-DE", {
+  return v.toLocaleString(regionLocale(), {
     style: "currency", currency: "EUR",
     minimumFractionDigits: stellen, maximumFractionDigits: stellen,
   });
 }
 export function fmtTokens(v: number | null | undefined): string {
-  return v == null ? "—" : v.toLocaleString("de-DE");
+  return v == null ? "—" : v.toLocaleString(regionLocale());
 }
 export function fmtMins(v: number | null | undefined): string {
   if (v == null) return "—";
@@ -98,7 +99,7 @@ export function InWorkBadge({ task }: { task: VikTask }) {
   if (!task._meta?.in_work_by) return null;
   return (
     <span className={styles.inWorkBadge} title={`in Arbeit seit ${task._meta.in_work_since ?? "?"}`}>
-      ● {task._meta.in_work_by === "clara" || task._meta.in_work_by === "clara-agent" ? "Clara arbeitet" : task._meta.in_work_by}
+      ● {task._meta.in_work_by === "clara" || task._meta.in_work_by === "clara-agent" ? `${getBrand().assistant} arbeitet` : task._meta.in_work_by}
     </span>
   );
 }

@@ -3,7 +3,7 @@
  * Binds the window to the object (setCurrentObjectUri), so "Develop with
  * Clara" opens the inline Clara panel with the object as context. */
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
-import { buildObjectUri, useWindowsStore } from "@claraos/core";
+import { buildObjectUri, useWindowsStore, getBrand } from "@claraos/core";
 import styles from "./IdeasApp.module.css";
 import leiste from "../wissen/Wissen.module.css";
 import { Icon } from "../../components/Icon";
@@ -16,6 +16,7 @@ import { SammlungsFelder } from "../wissen/SammlungsFelder";
 import { ClaraSection } from "./ClaraSection";
 import { CommentsPanel } from "./CommentsPanel";
 import { HistoryPanel } from "./HistoryPanel";
+import { regionLocale } from "@claraos/core";
 
 const IdeaEditor = lazy(() => import("./IdeaEditor"));
 
@@ -316,7 +317,7 @@ export function IdeaDetail({
           className={styles.btnPrimary}
           title="Inline-Chat zu genau diesem Objekt öffnen"
           onClick={() => toggleClaraInline(windowId)}
-        ><Icon name="comment" size={14} className={styles.inlineIcon} />Mit Clara entwickeln
+        ><Icon name="comment" size={14} className={styles.inlineIcon} />Mit {getBrand().assistant} entwickeln
         </button>
         {/* Versions, duplicate, shopping and especially trash live behind ⋯
             rather than as equal-ranked buttons, so delete is not one misclick
@@ -497,8 +498,8 @@ export function IdeaDetail({
               {obj.activity.map((a) => (
                 <li key={a.id} className={a.actor === "clara" ? styles.activityClara : ""}>
                   <span className={styles.activityHead}>
-                    {a.actor === "clara" ? "🤖 Clara" : a.actor} · {KIND_LABEL[a.kind] ?? a.kind} ·{" "}
-                    {new Date(a.created_at).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}
+                    {a.actor === "clara" ? `🤖 ${getBrand().assistant}` : a.actor} · {KIND_LABEL[a.kind] ?? a.kind} ·{" "}
+                    {new Date(a.created_at).toLocaleString(regionLocale(), { dateStyle: "short", timeStyle: "short" })}
                   </span>
                   {a.kind === "stage_change" ? (
                     <span className={styles.metaHint}>

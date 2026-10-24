@@ -13,6 +13,7 @@ Security: two rules that must NEVER be broken in this router:
 """
 from __future__ import annotations
 
+from betriebsprofil import PRODUCT_NAME
 from domains_generated import BASE_DOMAIN  # cell: CLARAOS_BASE_DOMAIN
 import hashlib
 import logging
@@ -134,7 +135,7 @@ async def regel_lesen(request: Request) -> dict:
         # to be stated.
         "greift_in": ["Kontakte teilen", "Wissen teilen"],
         "greift_nicht_in": ["Telefon", "E-Mail", "WhatsApp", "SMS",
-                            "alles ausserhalb von ClaraOS"],
+                            f"alles ausserhalb von {PRODUCT_NAME}"],
     }
 
 
@@ -205,7 +206,7 @@ async def google_trennen(request: Request) -> dict:
             "UPDATE claraos_app_credentials SET is_active = FALSE "
             "WHERE username = $1 AND app_id = $2", ich, GOOGLE_APP_ID)
     return {"verbunden": False,
-            "hinweis": "Zugang geloest. Deine Kontakte bleiben in ClaraOS."}
+            "hinweis": f"Zugang geloest. Deine Kontakte bleiben in {PRODUCT_NAME}."}
 
 
 @router.delete("/{contact_id}")
@@ -446,7 +447,7 @@ async def google_start(request: Request) -> dict:
     # authenticated identity — a foreign `state` must never cause a token to
     # end up with the wrong user.
     return {"url": google.anmelde_url(cid, redirect, state=ich),
-            "hinweis": "ClaraOS fragt nur Lesezugriff auf deine Kontakte an."}
+            "hinweis": f"{PRODUCT_NAME} fragt nur Lesezugriff auf deine Kontakte an."}
 
 
 @router.get("/google/callback")

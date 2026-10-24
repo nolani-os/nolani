@@ -1,4 +1,5 @@
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useTranslation } from "@claraos/core";
 import styles from "./EckenGriff.module.css";
 
 /**
@@ -39,6 +40,7 @@ export function EckenGriff({
 }) {
   // 0 = at rest, 1 = trigger threshold reached. Drives the bloom animation.
   const [zug, setZug] = useState(0);
+  const { t } = useTranslation("mobile");
   const start = useRef<{ x: number; y: number } | null>(null);
   const gezogen = useRef(false);
 
@@ -85,7 +87,7 @@ export function EckenGriff({
     <button
       className={`${styles.griff} ${seite === "links" ? styles.links : styles.rechts}`}
       style={{ ["--zug" as string]: zug }}
-      aria-label={signal === "arbeitet" ? `${label} — Clara arbeitet` : signal === "fertig" ? `${label} — Antwort bereit` : label}
+      aria-label={signal === "arbeitet" ? t("grip.working", { label }) : signal === "fertig" ? t("grip.ready", { label }) : label}
       title={label}
       data-signal={signal ?? undefined}
       onPointerDown={runter}

@@ -34,7 +34,8 @@ import L_video_player from "./video-player.svg?react";
 
 export type BrandLogoComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
-/** Brand logos (dashboard-icons, MIT) + white mono glyphs for generic apps. */
+/** Brand logos (dashboard-icons, Apache-2.0; the logos are trademarks of their owners —
+ *  see THIRD_PARTY_NOTICES.md) + white mono glyphs for generic apps. */
 export const brandLogos: Record<string, BrandLogoComponent> = {
   "authentik": L_authentik,
   "element": L_element,

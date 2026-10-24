@@ -1,0 +1,159 @@
+{
+  "app": {
+    "loading": "Wird geladen …"
+  },
+  "cobrowse": {
+    "done": "✓ Fertig",
+    "tool": "{{assistant}}: {{action}}",
+    "phase": {
+      "thinking": "{{assistant}} denkt nach …",
+      "planning": "{{assistant}} plant Schritte …",
+      "executing": "{{assistant}} arbeitet …",
+      "finalizing": "{{assistant}} formuliert die Antwort …"
+    }
+  },
+  "drawer": {
+    "hint": "Tipp: App lange halten → auf den Home-Screen ziehen",
+    "loading": "Apps werden geladen…",
+    "noResults": "Keine Treffer",
+    "searchPlaceholder": "Apps suchen…"
+  },
+  "grip": {
+    "camera": "Kamera öffnen — antippen oder zur Mitte wischen",
+    "clara": "{{assistant}} öffnen — antippen oder zur Mitte wischen",
+    "ready": "{{label}} — Antwort bereit",
+    "working": "{{label}} — {{assistant}} arbeitet"
+  },
+  "history": {
+    "back": "Zurück zum Chat",
+    "delete": "Löschen",
+    "deleteLabel": "Chat löschen",
+    "deleteQuestion": "Chat löschen?",
+    "empty": "Noch keine Chats.",
+    "group": {
+      "earlier": "Früher",
+      "pinned": "Angeheftet",
+      "thisWeek": "Diese Woche",
+      "today": "Heute",
+      "yesterday": "Gestern"
+    },
+    "keep": "Behalten",
+    "label": "Chat-Verlauf",
+    "new": "+ Neu",
+    "noResults": "Nichts gefunden.",
+    "searchLabel": "Chats durchsuchen",
+    "searchPlaceholder": "Chats durchsuchen …",
+    "untitled": "(ohne Titel)"
+  },
+  "home": {
+    "askClara": "{{assistant}} fragen",
+    "page": "Seite {{number}}"
+  },
+  "menu": {
+    "appInfo": "App-Info",
+    "homeScreen": "Startbildschirm",
+    "open": "Öffnen",
+    "pinTop": "Oben auf Screen 1",
+    "removeFromHome": "Vom Home entfernen",
+    "removeWidget": "Widget entfernen",
+    "widget": "Widget",
+    "widgets": "Widgets"
+  },
+  "nav": {
+    "back": "Zurück",
+    "homePill": "Start — lange halten für die Übersicht",
+    "recents": "Übersicht",
+    "homeButton": "Start"
+  },
+  "overlay": {
+    "close": "Schließen",
+    "fullscreenChat": "Vollbild-Chat",
+    "gripHint": "Ziehen · Doppeltippen = groß/klein",
+    "history": "Verlauf",
+    "interrupt": "Unterbrechen",
+    "newChat": "Neuer Chat",
+    "openHistory": "Verlauf öffnen",
+    "resizeChat": "Chat-Höhe ändern",
+    "send": "Senden",
+    "speak": "Sprechen",
+    "live": {
+      "idle": "Tippen für ein Live-Gespräch",
+      "arming": "Verbinde …",
+      "recording": "Ich höre zu — tippen zum Beenden",
+      "speaking": "{{assistant}} spricht — einfach reinreden oder tippen zum Beenden"
+    },
+    "status": {
+      "idle": "Tippen zum Sprechen",
+      "arming": "Mikrofon wird geöffnet …",
+      "recording": "Ich höre zu — tippen zum Senden",
+      "transcribing": "Verstehe …",
+      "thinking": "{{assistant}} denkt nach …",
+      "speaking": "{{assistant}} spricht — tippen zum Unterbrechen"
+    }
+  },
+  "quickSettings": {
+    "allowBrightness": "Helligkeitssteuerung erlauben",
+    "battery": "Akku",
+    "batteryCharging": "{{percent}} % · lädt",
+    "batteryLevel": "{{percent}} %",
+    "bluetooth": "Bluetooth",
+    "brightness": "Helligkeit",
+    "camera": "Kamera",
+    "dark": "Dunkel",
+    "darkTheme": "Dunkles Design",
+    "devices": "Geräte-Hub",
+    "devicesSub": "Zuhause",
+    "dnd": "Nicht stören",
+    "dndUntil": "Nicht stören · {{remaining}}",
+    "editLayout": "Aufbau der Shade ändern",
+    "feedback": "Feedback",
+    "feedbackSub": "An den Admin",
+    "fontLarger": "Schrift größer",
+    "fontSize": "Schrift {{value}} %",
+    "fontSmaller": "Schrift kleiner",
+    "fullscreen": "Vollbild",
+    "fullscreenFailed": {
+      "title": "Vollbild nicht möglich",
+      "body": "Der Browser hat den Wechsel abgelehnt."
+    },
+    "getAndroidApp": "Android-App laden",
+    "haptics": "Haptik",
+    "hotspot": "Hotspot",
+    "hotspotSub": "System",
+    "layoutCombined": "Kombiniert — alles in einem Panel",
+    "layoutSeparate": "Getrennt — links Benachrichtigungen, rechts Einstellungen",
+    "layoutTitle": "Aufbau der Shade",
+    "light": "Hell",
+    "lightTheme": "Helles Design",
+    "mediaVolume": "Medien-Lautstärke",
+    "mic": "Mikrofon",
+    "micMuted": "Mikrofon stumm",
+    "off": "Aus",
+    "on": "An",
+    "openSettings": "Einstellungen öffnen",
+    "reload": "{{product}} neu laden",
+    "resetDock": "Dock zurücksetzen",
+    "voice": "{{assistant}}-Stimme",
+    "voiceMuted": "{{assistant}}-Stimme stumm",
+    "volume": "Lautstärke",
+    "wifi": "WLAN"
+  },
+  "recents": {
+    "closeAll": "Alle schließen",
+    "empty": "Keine offenen Apps",
+    "noApp": "Keine App geöffnet"
+  },
+  "shade": {
+    "clearAll": "Alle löschen",
+    "clearRead": "Gelesene entfernen",
+    "close": "Schließen",
+    "empty": "Keine Benachrichtigungen",
+    "groupNew": "Neu",
+    "groupSilent": "Still",
+    "quickSettings": "Schnelleinstellungen",
+    "settings": "Einstellungen"
+  },
+  "widgetPicker": {
+    "title": "Widgets"
+  }
+}

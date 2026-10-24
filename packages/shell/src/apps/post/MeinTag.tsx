@@ -17,6 +17,7 @@ import { useCallback, useEffect, useState } from "react";
 import styles from "./PostApp.module.css";
 import { Icon } from "../../components/Icon";
 import { postApi, type BrueckenErgebnis } from "./api";
+import { regionLocale } from "@claraos/core";
 
 export interface TagTermin {
   uid: string; summary: string; start: string; end: string;
@@ -39,7 +40,7 @@ function tagesgrenzen(tage: number): [string, string] {
 
 function uhrzeit(iso: string): string {
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" });
 }
 
 function tagName(iso: string): string {
@@ -49,7 +50,7 @@ function tagName(iso: string): string {
   const morgen = new Date(heute); morgen.setDate(morgen.getDate() + 1);
   if (gleich) return "Heute";
   if (d.toDateString() === morgen.toDateString()) return "Morgen";
-  return d.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
+  return d.toLocaleDateString(regionLocale(), { weekday: "short", day: "2-digit", month: "2-digit" });
 }
 
 /** Is this task overdue? (empty date = no due date, so never overdue) */
@@ -128,7 +129,7 @@ export function MeinTag({ tage, melde, onOeffnePlanner }: {
     <aside className={styles.meinTag}>
       <div className={styles.tagKopf}>
         <b>Mein Tag</b>
-        <span className={styles.hinweis}>{new Date().toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long" })}</span>
+        <span className={styles.hinweis}>{new Date().toLocaleDateString(regionLocale(), { weekday: "long", day: "2-digit", month: "long" })}</span>
         <span style={{ flex: 1 }} />
         <button className={styles.iconKnopf} title="Aktualisieren" onClick={() => void laden()}>
           <Icon name="reload" size={13} />

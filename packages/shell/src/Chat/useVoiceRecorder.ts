@@ -13,6 +13,7 @@
  *     decodable as a prefix-complete concatenation, so always from chunk 0)
  *   * distinguishable mic errors (permission / no device) → onError
  */
+import { getBrand } from "@claraos/core";
 import { transcribe as transcribeApi } from "./api";
 
 export interface VoiceRecorderCallbacks {
@@ -104,7 +105,7 @@ export class VoiceRecorderSession {
     this.cb.onState("arming");
     if (!navigator.mediaDevices?.getUserMedia) {
       // mediaDevices exists only in secure contexts (HTTPS / localhost)
-      this.cb.onError("Mikrofon hier nicht verfügbar — ClaraOS über HTTPS öffnen.");
+      this.cb.onError(`Mikrofon hier nicht verfügbar — ${getBrand().product} über HTTPS öffnen.`);
       return;
     }
     let stream: MediaStream;

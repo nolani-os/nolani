@@ -10,6 +10,7 @@
  *  disappear underneath.
  */
 import type { ReactNode } from "react";
+import { useTranslation } from "@claraos/core";
 import { Icon, type IconName } from "./Icon";
 import { Fab } from "./Button";
 import styles from "./Werkzeugleiste.module.css";
@@ -31,9 +32,10 @@ interface Props {
 }
 
 export function Werkzeugleiste({ eintraege, fab, className = "" }: Props) {
+  const { t } = useTranslation("components");
   return (
     <div className={`${styles.rand} ${className}`}>
-      <nav className={styles.leiste} aria-label="Bereiche">
+      <nav className={styles.leiste} aria-label={t("toolbar.areas")}>
         {eintraege.map((e) => (
           <button
             key={e.key}

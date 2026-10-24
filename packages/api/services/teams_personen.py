@@ -23,6 +23,7 @@ guessing itself.
 """
 from __future__ import annotations
 
+from betriebsprofil import PRODUCT_NAME
 import logging
 from typing import Any
 
@@ -175,7 +176,7 @@ async def talk_gespraech(caller: str, ziel: str) -> dict[str, Any]:
     except Exception as exc:
         raise RuntimeError(
             f"Für {caller} sind keine Nextcloud-Zugangsdaten hinterlegt — "
-            "ohne sie kann ClaraOS kein Talk-Gespräch in seinem Namen öffnen."
+            f"ohne sie kann {PRODUCT_NAME} kein Talk-Gespräch in seinem Namen öffnen."
         ) from exc
 
     kopf = {"OCS-APIRequest": "true", "Accept": "application/json"}

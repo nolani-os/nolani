@@ -21,7 +21,10 @@ import {
   useAppRegistryStore,
   useAuthStore,
   useSettingsStore,
+  useTranslation,
   type AppManifest,
+  type TFunction,
+  getBrand,
 } from "@claraos/core";
 import { AppIcon } from "../components/AppIcon";
 import { WindowContextMenu, type ContextMenuItem } from "../components/WindowContextMenu";
@@ -51,20 +54,15 @@ const CATEGORY_ORDER = [
   "other",
 ];
 
-const CATEGORY_LABELS: Record<string, string> = {
-  system: "System",
-  productivity: "Produktivität",
-  engineering: "Engineering",
-  developer: "Entwicklung",
-  media: "Medien",
-  services: "Dienste",
-  games: "Spiele",
-  wrapps: "Wrapps",
-  other: "Sonstige",
-};
+/** Categories with a label in the "shell" catalog (`startMenu.category.<id>`). */
+const KNOWN_CATEGORIES = new Set([
+  "system", "productivity", "engineering", "developer", "media", "services", "games", "wrapps", "other",
+]);
 
-function categoryLabel(cat: string): string {
-  return CATEGORY_LABELS[cat] ?? cat.charAt(0).toUpperCase() + cat.slice(1);
+function categoryLabel(t: TFunction, cat: string): string {
+  return KNOWN_CATEGORIES.has(cat)
+    ? t(`startMenu.category.${cat}`)
+    : cat.charAt(0).toUpperCase() + cat.slice(1);
 }
 
 /** Does the shell keep "recently used"? Settings -> History. */
@@ -112,6 +110,7 @@ export function StartMenu() {
   const apps = useAppRegistryStore((s) => s.apps);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const { t } = useTranslation("shell");
 
   // The auth store is lazy — nothing else on the desktop loads /me, so the
   // footer would show "?" forever without this.
@@ -238,10 +237,10 @@ export function StartMenu() {
     (app: AppManifest): ContextMenuItem[] => {
       const pinned = pinnedAppIds.includes(app.id);
       return [
-        { id: "open", label: "Öffnen", onSelect: () => handleLaunch(app) },
+        { id: "open", label: t("startMenu.menu.open"), onSelect: () => handleLaunch(app) },
         {
           id: "pin",
-          label: pinned ? "Von „Angepinnt“ lösen" : "Anpinnen (Start + Taskbar)",
+          label: pinned ? t("startMenu.menu.unpin") : t("startMenu.menu.pin"),
           onSelect: () => {
             const store = useAppCenterStore.getState();
             if (pinned) store.unpinApp(app.id);
@@ -251,15 +250,15 @@ export function StartMenu() {
         { id: "sep", label: "---" },
         {
           id: "appcenter",
-          label: "Im App-Center anzeigen",
+          label: t("startMenu.menu.showInAppCenter"),
           onSelect: () => {
             closeStartMenu();
-            openWindow("app-center", { title: "App-Center", width: 900, height: 640 });
+            openWindow("app-center", { title: t("startMenu.appCenterTitle"), width: 900, height: 640 });
           },
         },
       ];
     },
-    [pinnedAppIds, handleLaunch, closeStartMenu, openWindow],
+    [pinnedAppIds, handleLaunch, closeStartMenu, openWindow, t],
   );
 
   // ── universal search over the full registry (apps + wrapps) ──
@@ -304,11 +303,11 @@ export function StartMenu() {
       const firstUser = chat.messages.find((m) => m.role === "user");
       return {
         id: chat.chatId,
-        title: (firstUser?.content ?? "").slice(0, 60) || "Letzter Chat",
+        title: (firstUser?.content ?? "").slice(0, 60) || t("startMenu.lastChat"),
       };
     }
     return chat.chatList[0] ?? null;
-  }, [chat.chatId, chat.messages, chat.chatList]);
+  }, [chat.chatId, chat.messages, chat.chatList, t]);
 
   const categories = useMemo(() => {
     const cats: Record<string, AppManifest[]> = {};
@@ -427,9 +426,9 @@ export function StartMenu() {
                       type="button"
                       className={styles.claraChip}
                       onClick={resetClara}
-                      title="Clara-Modus verlassen (Backspace)"
+                      title={t("startMenu.leaveClaraMode")}
                     >
-                      ✦ Clara
+                      ✦ {getBrand().assistant}
                     </button>
                   )}
                   <textarea
@@ -439,10 +438,10 @@ export function StartMenu() {
                     rows={1}
                     placeholder={
                       conversationActive
-                        ? "Antworten …"
+                        ? t("startMenu.input.reply")
                         : claraMode
-                          ? "Frag Clara …"
-                          : "Frag Clara oder suche Apps …"
+                          ? t("startMenu.input.askClara")
+                          : t("startMenu.input.default")
                     }
                     value={query}
                     onChange={(e) => setQuery(e.target.value.replace(/\n/g, ""))}
@@ -452,7 +451,7 @@ export function StartMenu() {
                     <button
                       type="button"
                       className={`${styles.inputBtn} ${recording ? styles.inputBtnActive : ""}`}
-                      title={recording ? "Aufnahme stoppen" : "Clara diktieren"}
+                      title={recording ? t("startMenu.input.stopRecording") : t("startMenu.input.dictate")}
                       onClick={() => {
                         setClaraMode(true);
                         if (recording) chat.stopRecording();
@@ -466,7 +465,7 @@ export function StartMenu() {
                         type="button"
                         className={styles.stopBtn}
                         onClick={chat.abort}
-                        title="Stoppen"
+                        title={t("startMenu.input.stop")}
                       >
                         <StopIcon size={13} />
                       </button>
@@ -475,7 +474,7 @@ export function StartMenu() {
                         type="button"
                         className={styles.sendBtn}
                         onClick={askClara}
-                        title="Senden"
+                        title={t("startMenu.input.send")}
                       >
                         <SendIcon size={15} />
                       </button>
@@ -484,7 +483,7 @@ export function StartMenu() {
                       type="button"
                       className={styles.inputBtn}
                       data-testid="start-expand"
-                      title="Chat-Vollansicht öffnen"
+                      title={t("startMenu.input.expand")}
                       onClick={() => expandToChat()}
                     >
                       ⤢
@@ -506,7 +505,7 @@ export function StartMenu() {
                             <AppIcon appId={app.id} fallback={app.icon} iconUrl={app.config?.iconUrl} size="taskbar" className={styles.resultIcon} title={app.name} />
                             <span className={styles.resultName}>{app.name}</span>
                             <span className={styles.resultCat}>
-                              {app.hubService ? "Dienst" : categoryLabel(app.category || "other")}
+                              {app.hubService ? t("startMenu.service") : categoryLabel(t, app.category || "other")}
                             </span>
                             {i === 0 && <kbd className={styles.kbd}>⏎</kbd>}
                           </button>
@@ -520,7 +519,9 @@ export function StartMenu() {
                       >
                         <span className={styles.claraRowIcon}>✦</span>
                         <span className={styles.resultName}>
-                          „{query.trim().length > 40 ? `${query.trim().slice(0, 37)}…` : query.trim()}“ — Clara fragen
+                          {t("startMenu.askClara", {
+                            query: query.trim().length > 40 ? `${query.trim().slice(0, 37)}…` : query.trim(),
+                          })}
                         </span>
                         <kbd className={styles.kbd}>{results.length > 0 ? "Tab" : "⏎"}</kbd>
                       </button>
@@ -537,12 +538,12 @@ export function StartMenu() {
                           className={styles.quickAnswerBtn}
                           onClick={() => expandToChat()}
                           disabled={chat.streaming}
-                          title={chat.streaming ? "Warte bis Claras Antwort fertig ist …" : undefined}
+                          title={chat.streaming ? t("startMenu.quickAnswer.waiting") : undefined}
                         >
-                          Im Chat fortsetzen ⤢
+                          {t("startMenu.quickAnswer.continue")}
                         </button>
                         <button type="button" className={styles.quickAnswerBtnGhost} onClick={resetClara}>
-                          Schließen
+                          {t("startMenu.quickAnswer.close")}
                         </button>
                       </div>
                     </div>
@@ -553,7 +554,7 @@ export function StartMenu() {
                     <>
                       {pinnedApps.length > 0 && (
                         <section className={styles.section} data-tour="startmenu-pinned">
-                          <div className={styles.sectionTitle}>Angepinnt</div>
+                          <div className={styles.sectionTitle}>{t("startMenu.pinned")}</div>
                           <div className={styles.pinnedGrid}>
                             {pinnedApps.map((app) => (
                               <WindowContextMenu key={app.id} items={appTileMenu(app)}>
@@ -569,7 +570,7 @@ export function StartMenu() {
 
                       {(continueChat || recentApps.length > 0) && (
                         <section className={styles.section}>
-                          <div className={styles.sectionTitle}>Weiter machen</div>
+                          <div className={styles.sectionTitle}>{t("startMenu.continue")}</div>
                           {continueChat && (
                             <button
                               type="button"
@@ -578,8 +579,8 @@ export function StartMenu() {
                               onClick={() => expandToChat({ chatId: continueChat.id })}
                             >
                               <span className={styles.claraRowIcon}>✦</span>
-                              <span className={styles.resultName}>{continueChat.title || "Letzter Chat"}</span>
-                              <span className={styles.resultCat}>Clara-Chat</span>
+                              <span className={styles.resultName}>{continueChat.title || t("startMenu.lastChat")}</span>
+                              <span className={styles.resultCat}>{t("startMenu.claraChat")}</span>
                             </button>
                           )}
                           {recentApps.length > 0 && (
@@ -604,13 +605,13 @@ export function StartMenu() {
                           data-testid="all-apps-toggle"
                           onClick={() => setAllAppsOpen((v) => !v)}
                         >
-                          <span>Alle Apps</span>
+                          <span>{t("startMenu.allApps")}</span>
                           <span className={styles.allAppsChevron}>{allAppsOpen ? "▾" : "▸"}</span>
                         </button>
                         {allAppsOpen &&
                           categories.map(([cat, catApps]) => (
                             <div key={cat} className={styles.categoryBlock}>
-                              <div className={styles.sectionTitle}>{categoryLabel(cat)}</div>
+                              <div className={styles.sectionTitle}>{categoryLabel(t, cat)}</div>
                               <div className={styles.appsGrid}>
                                 {catApps.map((app) => (
                                   <WindowContextMenu key={app.id} items={appTileMenu(app)}>
@@ -656,7 +657,7 @@ export function StartMenu() {
                     <button
                       type="button"
                       className={styles.footerBtn}
-                      title="Einstellungen"
+                      title={t("startMenu.footer.settings")}
                       onClick={() => {
                         const app = apps["settings"];
                         if (app) handleLaunch(app);
@@ -667,7 +668,7 @@ export function StartMenu() {
                     <button
                       type="button"
                       className={styles.footerBtn}
-                      title="Feedback geben"
+                      title={t("startMenu.footer.feedback")}
                       data-testid="start-feedback"
                       onClick={() => {
                         closeStartMenu();
@@ -683,7 +684,7 @@ export function StartMenu() {
                     <button
                       type="button"
                       className={styles.footerBtn}
-                      title="Abmelden"
+                      title={t("startMenu.footer.logout")}
                       data-testid="start-logout"
                       onClick={logout}
                     >
@@ -694,7 +695,7 @@ export function StartMenu() {
                       <button
                         type="button"
                         className={styles.footerBtn}
-                        title="Herunterfahren (ClaraOS Companion beenden)"
+                        title={t("startMenu.footer.shutdown")}
                         data-testid="start-shutdown"
                         onClick={() => {
                           // The bridge is injected by the desktop Companion
@@ -722,11 +723,11 @@ export function StartMenu() {
                     className={styles.backBtn}
                     data-testid="start-back"
                     onClick={() => setMode("launcher")}
-                    title="Zurück zum Startmenü (Esc)"
+                    title={t("startMenu.chat.backTitle")}
                   >
-                    ‹ Startmenü
+                    {t("startMenu.chat.back")}
                   </button>
-                  <span className={styles.chatHeaderBrand}>✦ Clara</span>
+                  <span className={styles.chatHeaderBrand}>✦ {getBrand().assistant}</span>
                 </div>
                 <div className={styles.chatBody}>
                   <ClaraChatPanel

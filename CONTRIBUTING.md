@@ -1,14 +1,19 @@
-# Contributing to ClaraOS
+# Contributing to NolaniOS
 
-Thanks for your interest in ClaraOS! This document explains how to propose changes.
+Thanks for your interest in NolaniOS! This document explains how to propose changes. Please
+also read the [Code of Conduct](CODE_OF_CONDUCT.md).
 
-> ClaraOS is in early preview. Interfaces and layout still change; please open an issue to
+> NolaniOS is in early preview. Interfaces and layout still change; please open an issue to
 > discuss larger changes before you start working on them.
 
 ## Ground rules
 
-- **English** for code, comments, commit messages and documentation. (The user interface is
-  currently German; translations are welcome as a separate effort.)
+- **English** for code, comments, commit messages and documentation. User-facing texts live in
+  the translation catalogs (`packages/shell/src/locales/<language>/*.json`); German and
+  English are maintained, more languages are welcome.
+- **Names come from the brand.** Never hard-code the product or assistant name in user-facing
+  text: use `{{product}}` / `{{assistant}}` in catalogs, `getBrand()` / `useBrand()` in the
+  shell and `PRODUCT_NAME` / `ASSISTANT_NAME` (`betriebsprofil.py`) in the API.
 - **No personal data, no secrets.** Never commit API keys, passwords, tokens, real e-mail
   addresses, names of real people, or addresses of a private network. Use `example.com`,
   `alice`/`bob` and documentation IP ranges (`192.0.2.0/24`, `203.0.113.0/24`) in examples
@@ -24,15 +29,15 @@ Thanks for your interest in ClaraOS! This document explains how to propose chang
 
 Repository layout: see [README.md](README.md).
 
-**API** (Python 3.11, FastAPI):
+**API** (Python 3.14, FastAPI):
 
 ```bash
 cd packages/api
-pip install -r requirements.txt pytest respx
+pip install -r requirements.txt pytest respx pytest-asyncio
 python -m pytest -q
 ```
 
-**Frontend** (Node 20, pnpm): the images are the reference build.
+**Frontend** (Node 26, pnpm): the images are the reference build.
 
 ```bash
 docker build -f docker/Dockerfile.api .
@@ -54,7 +59,7 @@ test account).
    ```
 
    The sign-off certifies that you wrote the change or have the right to submit it under the
-   project's license (AGPL-3.0).
+   project's license (AGPL-3.0-or-later).
 
 ## Security issues
 

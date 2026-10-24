@@ -12,7 +12,7 @@
  * Also handles a generic `app_id="files"` action `refresh_tree` so that the
  * file-browser reloads after a Clara file mutation.
  */
-import { useFileStore, useUIStore, useWrappStore, useIframeAppStore, type SharedObjectNode } from "@claraos/core";
+import { useFileStore, useUIStore, useWrappStore, useIframeAppStore, type SharedObjectNode, getBrand } from "@claraos/core";
 import { meldeErgebnis, registerActionHandler, registerFallbackActionHandler, type ActionPayload } from "./actionBus";
 import { dispatchToIframe } from "./iframeBridge";
 import { ausfuehrenLokal, installShellActionHandler, type Ergebnis } from "./shellActionHandler";
@@ -47,7 +47,7 @@ function wrappAction(action: string, args: Record<string, unknown>): void {
   // store without requiring a wrapp-instance.
   if (action === "notify") {
     const message = String(args.message ?? "");
-    const title = String(args.title ?? "Clara");
+    const title = String(args.title ?? getBrand().assistant);
     if (!message) return;
     useUIStore.getState().addNotification({ title, body: message, icon: "🤖" });
     return;

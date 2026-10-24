@@ -1,4 +1,4 @@
-import { useAppRegistryStore, useUIStore, useWindowsStore } from "@claraos/core";
+import { i18n, useAppRegistryStore, useUIStore, useWindowsStore } from "@claraos/core";
 import type { Notification, NotificationAction } from "@claraos/core";
 import { dispatchWhenReady } from "../Chat/actionBus";
 import { openClaraChat, parseChatDeepLink, parseShellDeepLink } from "../useBootDeepLink";
@@ -144,15 +144,19 @@ export const notificationActions: Record<string, NotificationActionHandler> = {
     fetch(url, { method })
       .then((r) => {
         useUIStore.getState().addNotification({
-          title: r.ok ? "✅ Übermittelt" : `⚠️ Fehler ${r.status}`,
-          body: `„${action.label}" ${r.ok ? "wurde ausgeführt." : "ist fehlgeschlagen."}`,
+          title: r.ok
+            ? i18n.t("shell:notifications.http.sentTitle")
+            : i18n.t("shell:notifications.http.errorTitle", { status: r.status }),
+          body: r.ok
+            ? i18n.t("shell:notifications.http.done", { label: action.label })
+            : i18n.t("shell:notifications.http.failed", { label: action.label }),
           icon: r.ok ? "✅" : "⚠️",
         });
       })
       .catch(() => {
         useUIStore.getState().addNotification({
-          title: "⚠️ Nicht erreichbar",
-          body: `„${action.label}" konnte nicht übermittelt werden.`,
+          title: i18n.t("shell:notifications.http.unreachableTitle"),
+          body: i18n.t("shell:notifications.http.unreachable", { label: action.label }),
           icon: "⚠️",
         });
       });

@@ -19,6 +19,7 @@ import {
   useUIStore,
   useWindowsStore,
   useAppRegistryStore,
+  applyUiLanguage,
 } from "@claraos/core";
 import { accentTokens } from "@claraos/skins";
 
@@ -70,6 +71,7 @@ export function isDaytime(hour: number, sunrise: number, sunset: number): boolea
 
 export function AppearanceManager() {
   const values = useSettingsStore((s) => s.values["appearance"]);
+  const uiLanguage = useSettingsStore((s) => s.values["region-formats"]?.uiLanguage);
   const behavior = useSettingsStore((s) => s.values["workspace-behavior"]);
   const session = useSettingsStore((s) => s.values["session"]);
   const loadModule = useSettingsStore((s) => s.loadModule);
@@ -94,6 +96,13 @@ export function AppearanceManager() {
     void loadModule("terminal");
     return connectWs();
   }, [loadSchema, loadModule, connectWs]);
+
+  // ── UI language ───────────────────────────────────────────────────────
+  // Only once the setting has arrived: until then the remembered start
+  // language stays, otherwise a reload would flash the browser language.
+  useEffect(() => {
+    if (uiLanguage !== undefined) applyUiLanguage(uiLanguage);
+  }, [uiLanguage]);
 
   // ── Apply tokens ───────────────────────────────────────────────────────
   useEffect(() => {

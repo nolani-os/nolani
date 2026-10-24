@@ -15,7 +15,7 @@ import { Button, IconButton } from "../../components/Button";
 import { Icon, type IconName } from "../../components/Icon";
 import { getViewerSize, resolveFileApp, fileExt, sniffIsText } from "../../lib/fileTypeRouter";
 import { downloadFile, downloadMany } from "../../lib/downloadFile";
-import { NEW_FILE_TEMPLATES } from "../../lib/newFileTemplates";
+import { NEW_FILE_TEMPLATES, templateLabel } from "../../lib/newFileTemplates";
 import { useDialogs } from "../../Chat/Dialogs";
 import { useFileBrowserCore } from "./useFileBrowserCore";
 import { useArchiveOps } from "./useArchiveOps";
@@ -1129,7 +1129,7 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
                           className={styles.ctxItem}
                           onSelect={() => { void createFromTemplate(tpl.ext); }}
                         >
-                          <FileTypeIcon name={`neu${tpl.ext}`} px={15} /> {tpl.label} ({tpl.ext})
+                          <FileTypeIcon name={`neu${tpl.ext}`} px={15} /> {templateLabel(tpl)} ({tpl.ext})
                         </ContextMenu.Item>
                       ))}
                     </ContextMenu.SubContent>

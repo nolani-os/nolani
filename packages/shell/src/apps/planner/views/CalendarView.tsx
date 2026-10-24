@@ -17,6 +17,7 @@ import { TaskSidebar } from "./calendar/TaskSidebar";
 import { BottomSheet } from "../../../components/BottomSheet";
 import { useIsMobile } from "../../../Mobile/useIsMobile";
 import { busyClassOf, eventTimeLabel } from "./calendar/EventBlock";
+import { regionLocale } from "@claraos/core";
 
 type ViewMode = "month" | "week" | "workweek" | "day" | "agenda";
 const LS_VIEW = "claraos.planner.calView";
@@ -137,14 +138,14 @@ export function CalendarView({
   };
 
   const rangeLabel = useMemo(() => {
-    if (viewMode === "month") return anchor.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
-    if (viewMode === "day") return anchor.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
+    if (viewMode === "month") return anchor.toLocaleDateString(regionLocale(), { month: "long", year: "numeric" });
+    if (viewMode === "day") return anchor.toLocaleDateString(regionLocale(), { weekday: "long", day: "numeric", month: "long" });
     if (viewMode === "week" || viewMode === "workweek") {
       const s = startOfWeek(anchor);
       const e = addDays(s, viewMode === "workweek" ? 4 : 6);
-      return `${s.toLocaleDateString("de-DE", { day: "numeric", month: "short" })} – ${e.toLocaleDateString("de-DE", { day: "numeric", month: "short", year: "numeric" })}`;
+      return `${s.toLocaleDateString(regionLocale(), { day: "numeric", month: "short" })} – ${e.toLocaleDateString(regionLocale(), { day: "numeric", month: "short", year: "numeric" })}`;
     }
-    return `ab ${anchor.toLocaleDateString("de-DE", { day: "numeric", month: "long" })}`;
+    return `ab ${anchor.toLocaleDateString(regionLocale(), { day: "numeric", month: "long" })}`;
   }, [viewMode, anchor]);
 
   const openTaskById = useCallback((taskId: number) => {
@@ -323,7 +324,7 @@ export function CalendarView({
           is anyway. */}
       {isMobile && (
         <BottomSheet open={daySheet != null} onClose={() => setDaySheet(null)}
-                     title={daySheet?.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}>
+                     title={daySheet?.toLocaleDateString(regionLocale(), { weekday: "long", day: "numeric", month: "long" })}>
           {daySheet && (
             <div className={styles.daySheetList}>
               {dayItems(daySheet).map((item) =>
@@ -346,7 +347,7 @@ export function CalendarView({
                        className={`${styles.agendaRow} ${styles.agendaTask} ${item.task.done ? styles.taskDone : ""}`}
                        onClick={() => { setDaySheet(null); openTaskById(item.task.id); }}>
                     <span className={styles.agendaTime}>
-                      {new Date(item.task.due_date).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
+                      {new Date(item.task.due_date).toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" })}
                     </span>
                     <span className={styles.agendaTitle}><Icon name={item.task.done ? "done" : "blind"} size={13} /> {item.task.title}</span>
                   </div>

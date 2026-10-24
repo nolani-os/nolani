@@ -6,9 +6,9 @@
 tools:
   - name: open_in_browser
     description: |
-      Open an EXTERNAL web page (https only) in the user's own browser in ClaraOS — the
+      Open an EXTERNAL web page (https only) in the user's own browser in the workspace — the
       right tool whenever the user wants to SEE a website ("open the page", "show me
-      the site"). NOT for ClaraOS apps and their content (an Immich album, a Paperless
+      the site"). NOT for the workspace apps and their content (an Immich album, a Paperless
       document, …): those open in their app tile with claraos_action_navigate_to /
       open_window, which signs the user in — this browser would show their login page.
       The browser is brought to the front for the user automatically.
@@ -37,7 +37,7 @@ tools:
       required: [url]
   - name: look_at_browser
     description: |
-      Look at the user's own browser in ClaraOS: address and title of the tab in front,
+      Look at the user's own browser in the workspace: address and title of the tab in front,
       plus a description of a screenshot of it (text on the page, what is shown).
       Use it whenever you need to know what the user actually sees in their browser —
       after opening a page when in doubt, or when the user says something is wrong.

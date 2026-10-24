@@ -1,5 +1,5 @@
 [Unit]
-Description=ClaraOS-Zelle: Sicherung täglich 21:30 UTC (Hetzner-Backup-Fenster 22–02 UTC)
+Description=Zelle: Sicherung täglich 21:30 UTC (Hetzner-Backup-Fenster 22–02 UTC)
 
 [Timer]
 OnCalendar=*-*-* 21:30:00 UTC

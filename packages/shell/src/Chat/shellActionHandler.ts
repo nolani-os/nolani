@@ -24,7 +24,7 @@
  * Every action returns a result (`Ergebnis`) that goes back over the bus as
  * an `ack` — so Clara learns whether something was really displayed.
  */
-import { useAppRegistryStore, useWindowsStore, useUIStore } from "@claraos/core";
+import { useAppRegistryStore, useWindowsStore, useUIStore, getBrand } from "@claraos/core";
 import { registerActionHandler, meldeErgebnis, type ActionPayload } from "./actionBus";
 import { navigateIframe } from "../apps/iframeNavigator";
 import { merken, istHtml } from "../lib/artefakte";
@@ -156,7 +156,7 @@ async function shellOpenWindow(args: OpenWindowArgs): Promise<Ergebnis> {
     const vorschlaege = passendeApps(targetAppId);
     return {
       ok: false,
-      detail: `Es gibt in ClaraOS keine App "${targetAppId}". Fenster NICHT geoeffnet. `
+      detail: `Es gibt in ${getBrand().product} keine App "${targetAppId}". Fenster NICHT geoeffnet. `
         + (vorschlaege.length
           ? `Passende Apps dieses Nutzers (id — Name): ${vorschlaege.join("; ")}. `
             + "Mit der richtigen id erneut aufrufen. "
@@ -318,7 +318,7 @@ async function shellShowArtifact(args: ShowArtifactArgs): Promise<Ergebnis> {
   }
   const mime = args.mime ?? "";
   const html = kind === "html" || istHtml(content, mime);
-  const title = args.title || (html ? "Seite von Clara" : `${kind[0].toUpperCase()}${kind.slice(1)} von Clara`);
+  const title = args.title || (html ? `Seite von ${getBrand().assistant}` : `${kind[0].toUpperCase()}${kind.slice(1)} von ${getBrand().assistant}`);
 
   // Keep the content in volatile memory (not in the persisted window store!)
   // and open it in the viewer: HTML runs there, everything else is shown as source.

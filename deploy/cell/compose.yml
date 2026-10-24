@@ -176,6 +176,9 @@ services:
       # Shared social cell: tiles appear only when these are set (betriebsprofil._SOZIAL)
       SOCIAL_DOMAIN: ${SOCIAL_DOMAIN:-}
       VIDEO_DOMAIN: ${VIDEO_DOMAIN:-}
+      # Visible names (setup.sh / .env). Empty = API defaults (NolaniOS / Nolani).
+      CLARAOS_PRODUCT_NAME: ${CLARAOS_PRODUCT_NAME:-}
+      CLARAOS_ASSISTANT_NAME: ${CLARAOS_ASSISTANT_NAME:-}
     depends_on:
       clara-users-postgres: {condition: service_healthy}
     # Tool definitions (clara-tools.d) the cell offers Clara.
@@ -251,7 +254,7 @@ services:
 
   collabora:
     <<: *restart
-    image: collabora/code:latest
+    image: collabora/code@sha256:4e983196eb9878f339cc506c38c21f1cc3473bca3d6de883c5de08f9c0cc3a6c  # tested 10/2026
     environment:
       # Only this WOPI host (the ClaraOS API) may have documents opened.
       aliasgroup1: https://home.${ZELLE_DOMAIN}:443
@@ -288,7 +291,7 @@ services:
 
   litellm:
     <<: *restart
-    image: ghcr.io/berriai/litellm:main-stable
+    image: ghcr.io/berriai/litellm@sha256:bd089afdcd35b894b14a93f9743cdc8b591f82da1a38dd43a010a7b0c9de5fd7  # main-stable, tested 10/2026
     command: ["--config", "/app/config.yaml", "--port", "4000"]
     environment:
       # litellm.brain.yaml: clara/everyday goes to an external brain.
@@ -387,7 +390,7 @@ services:
   # encrypted, SSO only authenticates. No admin page (no ADMIN_TOKEN).
   vaultwarden:
     <<: *restart
-    image: vaultwarden/server:latest
+    image: vaultwarden/server:1.37.3
     environment:
       DOMAIN: https://vault.${ZELLE_DOMAIN}
       SSO_ENABLED: "true"
@@ -473,7 +476,7 @@ services:
 
   lk-jwt:
     <<: *restart
-    image: ghcr.io/element-hq/lk-jwt-service:latest
+    image: ghcr.io/element-hq/lk-jwt-service@sha256:e0c7cecfa74e2342a3e79d47e1d4ab4bd228fe05b1a4dc4ba7f807686b0c214b  # tested 10/2026
     environment:
       LIVEKIT_URL: wss://matrix.${ZELLE_DOMAIN}/livekit/ws
       LIVEKIT_KEY: ${LIVEKIT_API_KEY}
@@ -484,7 +487,7 @@ services:
 
   element-call:
     <<: *restart
-    image: ghcr.io/element-hq/element-call:latest
+    image: ghcr.io/element-hq/element-call:v0.26.1
     volumes: [./element-call/config.json:/app/config.json:ro]
     networks: [zelle]
     mem_limit: 64m
@@ -514,7 +517,7 @@ services:
 
   immich-redis:
     <<: *restart
-    image: redis:7-alpine
+    image: valkey/valkey:8.1-alpine   # Redis-compatible, BSD-3 (Redis >= 7.4 is not open source)
     networks: [zelle]
     mem_limit: 128m
 
@@ -572,7 +575,7 @@ services:
 
   paperless-redis:
     <<: *restart
-    image: redis:7-alpine
+    image: valkey/valkey:8.1-alpine
     networks: [zelle]
     mem_limit: 64m
 
@@ -601,7 +604,7 @@ services:
       PAPERLESS_APPS: allauth.socialaccount.providers.openid_connect
       PAPERLESS_SOCIALACCOUNT_PROVIDERS: >-
         {"openid_connect":{"SCOPE":["openid","profile","email"],"OAUTH_PKCE_ENABLED":true,
-        "APPS":[{"provider_id":"authentik","name":"ClaraOS","client_id":"paperless",
+        "APPS":[{"provider_id":"authentik","name":"${CLARAOS_PRODUCT_NAME:-NolaniOS}","client_id":"paperless",
         "secret":"${PAPERLESS_OIDC_SECRET}","settings":{"server_url":
         "https://auth.${ZELLE_DOMAIN}/application/o/paperless/.well-known/openid-configuration"}}]}}
       PAPERLESS_SOCIAL_AUTO_SIGNUP: "true"
@@ -681,7 +684,7 @@ services:
   mastodon-redis:
     <<: *restart
     profiles: [social]           # only on the cell that hosts the social cell
-    image: redis:7-alpine
+    image: valkey/valkey:8.1-alpine
     networks: [zelle]
     mem_limit: 128m
 
@@ -716,7 +719,7 @@ services:
       OMNIAUTH_ONLY: "true"
       ONE_CLICK_SSO_LOGIN: "true"
       OIDC_ENABLED: "true"
-      OIDC_DISPLAY_NAME: ClaraOS
+      OIDC_DISPLAY_NAME: ${CLARAOS_PRODUCT_NAME:-NolaniOS}
       OIDC_DISCOVERY: "true"
       OIDC_ISSUER: https://auth.${ZELLE_DOMAIN}/application/o/mastodon/
       OIDC_SCOPE: openid,profile,email
@@ -774,7 +777,7 @@ services:
   peertube-redis:
     <<: *restart
     profiles: [social]           # only on the cell that hosts the social cell
-    image: redis:7-alpine
+    image: valkey/valkey:8.1-alpine
     networks: [zelle]
     mem_limit: 128m
 

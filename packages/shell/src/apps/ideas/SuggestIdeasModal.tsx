@@ -3,6 +3,7 @@
  * Suggestions are NOT saved automatically. The person accepts them one by
  * one: an idea space that fills up with unrequested objects quickly becomes
  * worthless, and an off-target suggestion must leave no trace. */
+import { getBrand } from "@claraos/core";
 import { useState } from "react";
 import styles from "./IdeasApp.module.css";
 import { Icon } from "../../components/Icon";
@@ -28,7 +29,7 @@ export function SuggestIdeasModal({ goalId, goalTitle, onClose, onAccepted }: Pr
     try {
       setIdeas(await ideasApi.suggestIdeas(goalId, n));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Clara antwortet gerade nicht");
+      setError(e instanceof Error ? e.message : `${getBrand().assistant} antwortet gerade nicht`);
     } finally {
       setBusy(false);
     }
@@ -57,12 +58,12 @@ export function SuggestIdeasModal({ goalId, goalTitle, onClose, onAccepted }: Pr
 
         {ideas === null && !busy && (
           <p className={styles.metaHint}>
-            Clara schaut sich Vision, Unterziele, den Stand deiner Kennzahlen und die bereits
+            {getBrand().assistant} schaut sich Vision, Unterziele, den Stand deiner Kennzahlen und die bereits
             vorhandenen Ideen an — und schlägt dann Neues vor, das wirklich auf dieses Ziel
             einzahlt. Nichts wird gespeichert, bis du übernimmst.
           </p>
         )}
-        {busy && <p className={styles.metaHint}>Clara denkt nach…</p>}
+        {busy && <p className={styles.metaHint}>{getBrand().assistant} denkt nach…</p>}
         {error && <div className={styles.error}>{error}</div>}
 
         {ideas && (
@@ -73,7 +74,7 @@ export function SuggestIdeasModal({ goalId, goalTitle, onClose, onAccepted }: Pr
                   <strong>{p.title}</strong>
                   <p className={styles.metaHint}>{p.why}</p>
                   <span className={styles.metaHint}>
-                    Wirkung {p.impact}/5 · Aufwand {p.effort}/5 (Claras Einschätzung)
+                    Wirkung {p.impact}/5 · Aufwand {p.effort}/5 ({getBrand().assistant}s Einschätzung)
                   </span>
                 </div>
                 <button className={styles.btnPrimary} disabled={busy || taken.has(p.title)}

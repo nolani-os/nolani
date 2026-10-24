@@ -26,6 +26,37 @@ export const DEFAULT_FORMAT_PREFS: FormatPrefs = {
   binaryDialect: "iec",
 };
 
+/**
+ * Resolve the region setting to a concrete tag. "auto" (the schema default)
+ * takes the browser's first language tag Intl understands, else de-DE.
+ */
+export function resolveRegion(locale: string, browserLanguages: readonly string[] = []): string {
+  if (locale && locale !== "auto") return locale;
+  for (const tag of browserLanguages) {
+    try {
+      return new Intl.Locale(tag).baseName;
+    } catch {
+      /* not a valid tag — try the next one */
+    }
+  }
+  return DEFAULT_FORMAT_PREFS.locale;
+}
+
+/**
+ * Tag for direct `toLocale*String()` / `Intl` calls with their own options:
+ * the region plus a forced 12h/24h clock as Unicode hour-cycle extension, so
+ * call sites keep their options and still follow both settings.
+ */
+export function localeTag(p: FormatPrefs): string {
+  const hourCycle = p.timeFormat === "24h" ? "h23" : p.timeFormat === "12h" ? "h12" : undefined;
+  if (!hourCycle) return p.locale;
+  try {
+    return new Intl.Locale(p.locale, { hourCycle }).toString();
+  } catch {
+    return p.locale;
+  }
+}
+
 export function formatNumber(value: number, p: FormatPrefs, digits?: number): string {
   return new Intl.NumberFormat(p.locale, {
     minimumFractionDigits: digits,

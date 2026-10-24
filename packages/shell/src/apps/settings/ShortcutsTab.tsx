@@ -13,8 +13,10 @@ import {
   bindingFromEvent,
   displayBinding,
   findConflicts,
-  commandById,
   type BindingMap,
+  useTranslation,
+  commandLabel,
+  commandCategory,
 } from "@claraos/core";
 import styles from "./SettingsApp.module.css";
 
@@ -27,6 +29,7 @@ export function ShortcutsTab() {
   const apply = useSettingsStore((s) => s.apply);
   const [capturing, setCapturing] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const { t } = useTranslation("settings");
 
   useEffect(() => {
     void loadModule(MODULE);
@@ -65,7 +68,7 @@ export function ShortcutsTab() {
       if (clash) {
         const other = clash.commandIds.find((i) => i !== capturing);
         setError(
-          `„${displayBinding(binding)}“ ist schon mit „${commandById(other ?? "")?.label ?? other}“ belegt.`,
+          t("shortcuts.taken", { binding: displayBinding(binding), command: commandLabel(other ?? "") }),
         );
         setCapturing(null);
         return;
@@ -94,18 +97,19 @@ export function ShortcutsTab() {
 
       {categories.map(([category, cmds]) => (
         <div key={category}>
-          <div className={styles.navGroupTitle}>{category}</div>
+          <div className={styles.navGroupTitle}>{commandCategory(category)}</div>
           {cmds.map((cmd) => {
             const clash = conflictFor(cmd.id);
             const isCustom = overrides[cmd.id] !== undefined;
             return (
               <div key={cmd.id} className={styles.row}>
                 <div className={styles.rowLabel}>
-                  <label>{cmd.label}</label>
+                  <label>{commandLabel(cmd.id)}</label>
                   {clash && (
                     <p className={styles.rowDesc} style={{ color: "var(--accent)" }}>
-                      Doppelt belegt mit „
-                      {commandById(clash.commandIds.find((i) => i !== cmd.id) ?? "")?.label}“
+                      {t("shortcuts.duplicate", {
+                        command: commandLabel(clash.commandIds.find((i) => i !== cmd.id) ?? ""),
+                      })}
                     </p>
                   )}
                 </div>
@@ -117,17 +121,17 @@ export function ShortcutsTab() {
                       setError("");
                       setCapturing(cmd.id);
                     }}
-                    aria-label={`Kürzel für ${cmd.label} ändern`}
+                    aria-label={t("shortcuts.change", { command: commandLabel(cmd.id) })}
                   >
                     {capturing === cmd.id
-                      ? "Taste drücken… (Esc bricht ab)"
+                      ? t("shortcuts.pressKey")
                       : displayBinding(bindings[cmd.id])}
                   </button>
                   {isCustom && (
                     <button
                       type="button"
                       className={styles.resetBtn}
-                      title="Auf Standard zurücksetzen"
+                      title={t("shortcuts.reset")}
                       onClick={() => {
                         const next = { ...overrides };
                         delete next[cmd.id];

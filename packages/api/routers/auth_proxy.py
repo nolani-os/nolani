@@ -1,6 +1,6 @@
 """Auth Proxy – service-specific login handlers for auto-login in iframe apps."""
 
-from betriebsprofil import heim_default  # external cell: no silent home-server fallback
+from betriebsprofil import PRODUCT_NAME, heim_default  # external cell: no silent home-server fallback
 import os
 import json
 import logging
@@ -137,7 +137,7 @@ async def login_mastodon(url: str, creds: dict) -> dict:
     async with httpx.AsyncClient(timeout=10, verify=False) as c:
         # Step 1: Create app
         r1 = await c.post(f"{url}/api/v1/apps", json={
-            "client_name": "ClaraOS", "redirect_uris": "urn:ietf:wg:oauth:2.0:oob", "scopes": "read write"})
+            "client_name": PRODUCT_NAME, "redirect_uris": "urn:ietf:wg:oauth:2.0:oob", "scopes": "read write"})
         if r1.status_code not in (200, 201):
             return {"error": f"Mastodon app create failed: {r1.status_code}"}
         app = r1.json()
@@ -338,7 +338,7 @@ async def nc_editor(doctype: str, request: Request):
         creds = await _get_active_credentials(user["username"], "nextcloud-writer")
     if not creds:
         return HTMLResponse(
-            "<html><body>No Nextcloud credentials stored. Open the Nextcloud app in ClaraOS and configure credentials.</body></html>",
+            f"<html><body>No Nextcloud credentials stored. Open the Nextcloud app in {PRODUCT_NAME} and configure credentials.</body></html>",
             status_code=401,
         )
 

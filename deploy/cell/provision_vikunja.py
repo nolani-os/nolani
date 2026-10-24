@@ -24,6 +24,7 @@ from encryption import encrypt_credentials  # noqa: E402
 
 VK = os.environ.get("VIKUNJA_INTERNAL_URL", "http://vikunja:3456").rstrip("/") + "/api/v1"
 DOM = os.environ["ZELLE_DOMAIN"]
+PRODUCT = os.environ.get("CLARAOS_PRODUCT_NAME") or "NolaniOS"  # visible name only
 
 
 async def vorhanden(user: str) -> bool:
@@ -45,7 +46,7 @@ async def einrichten(c: httpx.AsyncClient, user: str) -> None:
     routes = (await c.get(f"{VK}/routes", headers=h)).json()
     rechte = {gruppe: list(r2.keys()) for gruppe, r2 in routes.items()}
     r = await c.put(f"{VK}/tokens", headers=h, json={
-        "title": "ClaraOS", "expires_at": "2099-12-31T23:59:59Z", "permissions": rechte})
+        "title": PRODUCT, "expires_at": "2099-12-31T23:59:59Z", "permissions": rechte})
     if r.status_code not in (200, 201):
         raise RuntimeError(f"{user}: Token nicht erzeugt (HTTP {r.status_code}: {r.text[:120]})")
     token = r.json()["token"]

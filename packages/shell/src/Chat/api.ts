@@ -2,6 +2,7 @@
  * Thin client for /api/claraos/chat/v2/* — Open WebUI proxy.
  * No state, no caching, no React. Pure fetch wrappers.
  */
+import { getBrand } from "@claraos/core";
 import type { ChatSurface } from "@claraos/core";
 
 const BASE = "/api/claraos/chat/v2";
@@ -383,7 +384,7 @@ export async function streamCompletion(
       detail = typeof j?.detail === "string" ? j.detail : JSON.stringify(j).slice(0, 200);
     } catch { /* empty body */ }
     onChunk({ error: detail === "Model not found"
-      ? "Clara ist für dieses Konto nicht freigeschaltet (Modell nicht sichtbar)."
+      ? `${getBrand().assistant} ist für dieses Konto nicht freigeschaltet (Modell nicht sichtbar).`
       : detail });
     return;
   }
@@ -450,7 +451,7 @@ export async function streamCompletion(
         if (typeof j?.detail === "string") detail = j.detail;
       } catch { /* not JSON */ }
       onChunk({ error: detail === "Model not found"
-        ? "Clara ist für dieses Konto nicht freigeschaltet (Modell nicht sichtbar)."
+        ? `${getBrand().assistant} ist für dieses Konto nicht freigeschaltet (Modell nicht sichtbar).`
         : detail });
       return;
     }

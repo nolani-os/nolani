@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import styles from "./CredentialsTab.module.css";
+import { useTranslation, Trans } from "@claraos/core";
 
 /**
  * Settings → "App-Verbindungen".
@@ -36,6 +37,7 @@ const HEADERS = { "Content-Type": "application/json" };
 const ACCOUNT = "Default"; // one per-user account per app for lookup tokens
 
 export function AppConnectionsTab() {
+  const { t } = useTranslation("settingsTabs");
   const [apps, setApps] = useState<ConnectableApp[]>([]);
   const [connected, setConnected] = useState<Record<string, boolean>>({});
   const [drafts, setDrafts] = useState<Record<string, Record<string, string>>>({});
@@ -81,7 +83,7 @@ export function AppConnectionsTab() {
     // required = non-optional fields; optional fields may stay empty
     const missing = app.fields.find((f) => !f.optional && !(draft[f.key] || "").trim());
     if (missing) {
-      setError(`${app.label}: Bitte "${missing.label}" ausfüllen`);
+      setError(t("appConnections.fillField", { app: app.label, field: missing.label }));
       return;
     }
     // only send filled fields — with merge:true the server keeps the rest,
@@ -92,7 +94,7 @@ export function AppConnectionsTab() {
         .filter(([, v]) => v !== ""),
     );
     if (Object.keys(creds).length === 0) {
-      setError(`${app.label}: Bitte mindestens ein Feld ausfüllen`);
+      setError(t("appConnections.fillOne", { app: app.label }));
       return;
     }
     setBusy(app.app_id);
@@ -114,7 +116,7 @@ export function AppConnectionsTab() {
       if (!r.ok) throw new Error(await r.text());
       setDrafts((d) => ({ ...d, [app.app_id]: {} }));
       setConnected((c) => ({ ...c, [app.app_id]: true }));
-      setNotice(`${app.label} verbunden ✓`);
+      setNotice(t("appConnections.connectedNotice", { app: app.label }));
     } catch (e) {
       setError(`${app.label}: ${e}`);
     } finally {
@@ -123,7 +125,7 @@ export function AppConnectionsTab() {
   };
 
   const disconnect = async (app: ConnectableApp) => {
-    if (!confirm(`Verbindung zu ${app.label} trennen?`)) return;
+    if (!confirm(t("appConnections.confirmDisconnect", { app: app.label }))) return;
     setBusy(app.app_id);
     setError("");
     setNotice("");
@@ -131,7 +133,7 @@ export function AppConnectionsTab() {
       const r = await fetch(`/api/claraos/credentials/${app.app_id}/${ACCOUNT}`, { method: "DELETE" });
       if (!r.ok && r.status !== 404) throw new Error(await r.text());
       setConnected((c) => ({ ...c, [app.app_id]: false }));
-      setNotice(`${app.label} getrennt`);
+      setNotice(t("appConnections.disconnectedNotice", { app: app.label }));
     } catch (e) {
       setError(`${app.label}: ${e}`);
     } finally {
@@ -142,26 +144,24 @@ export function AppConnectionsTab() {
   if (loading) {
     return (
       <div className={styles.tab}>
-        <h2 className={styles.heading}>App-Verbindungen</h2>
-        <p>Lädt…</p>
+        <h2 className={styles.heading}>{t("appConnections.title")}</h2>
+        <p>{t("appConnections.loading")}</p>
       </div>
     );
   }
 
   return (
     <div className={styles.tab}>
-      <h2 className={styles.heading}>App-Verbindungen</h2>
+      <h2 className={styles.heading}>{t("appConnections.title")}</h2>
       <p className={styles.subtle}>
-        Hinterlege dein persönliches API-Token pro App. Clara nutzt dann <strong>dein</strong> Token
-        für Suchen in dieser App — du siehst nur deine eigenen Daten. Ohne Verbindung verwendet Clara
-        das geteilte Service-Token.
+        <Trans t={t} i18nKey="appConnections.intro" components={{ b: <strong /> }} />
       </p>
 
       {error && <p className={styles.error}>{error}</p>}
       {notice && <p className={styles.subtle}>{notice}</p>}
 
       {apps.length === 0 ? (
-        <p className={styles.empty}>Keine verbindbaren Apps installiert.</p>
+        <p className={styles.empty}>{t("appConnections.empty")}</p>
       ) : (
         <ul className={styles.itemList}>
           {apps.map((app) => {
@@ -171,17 +171,17 @@ export function AppConnectionsTab() {
               <li key={app.app_id} className={styles.itemCard}>
                 <div className={styles.itemMain}>
                   <div className={styles.itemTitle}>
-                    {app.label} {isConn ? "🟢 verbunden" : "⚪ nicht verbunden"}
+                    {app.label} {isConn ? t("appConnections.connected") : t("appConnections.notConnected")}
                   </div>
                   {app.hint && <p className={styles.subtle}>{app.hint}</p>}
                   {app.fields.map((f) => (
                     <div key={f.key} style={{ marginTop: 6 }}>
-                      <label className={styles.label}>{f.label}{f.optional ? " (optional)" : ""}</label>
+                      <label className={styles.label}>{f.label}{f.optional ? t("appConnections.optional") : ""}</label>
                       <input
                         className={styles.input}
                         type={f.secret ? "password" : "text"}
                         value={draft[f.key] || ""}
-                        placeholder={isConn ? "•••• (überschreiben zum Ändern)" : ""}
+                        placeholder={isConn ? t("appConnections.overwritePlaceholder") : ""}
                         autoComplete="off"
                         onChange={(e) => setField(app.app_id, f.key, e.target.value)}
                       />
@@ -194,7 +194,7 @@ export function AppConnectionsTab() {
                     disabled={busy === app.app_id}
                     onClick={() => save(app)}
                   >
-                    {busy === app.app_id ? "…" : isConn ? "Aktualisieren" : "Verbinden"}
+                    {busy === app.app_id ? "…" : isConn ? t("appConnections.update") : t("appConnections.connect")}
                   </button>
                   {isConn && (
                     <button
@@ -202,7 +202,7 @@ export function AppConnectionsTab() {
                       disabled={busy === app.app_id}
                       onClick={() => disconnect(app)}
                     >
-                      Trennen
+                      {t("appConnections.disconnect")}
                     </button>
                   )}
                 </div>

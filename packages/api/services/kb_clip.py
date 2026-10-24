@@ -12,9 +12,10 @@ protection this would be a server-side request forgery cannon. Therefore:
     again — otherwise the first harmless hop leads into the internal network
   * hard limits for time (10 s) and size (2 MB), text/HTML responses only
   * no environment proxies, no cookies, no forwarding of credentials
-Residual risk (documented): between the check and the connection a DNS
-rebinding could change the address. Accepted for a private household
-deployment; if exposed publicly, an IP-pinned connection would be the next step.
+  * the connection goes to the address that was checked (IP-pinned, TLS still
+    verified against the host name) — no DNS rebinding between check and fetch
+  * every address must be globally routable (`is_global`), which also rejects
+    carrier-grade NAT (shared address space) and other special ranges
 
 Extraction without third-party libraries (no BeautifulSoup/readability in the
 image): noise (script/style/nav/footer/aside) is dropped, then the container
@@ -27,7 +28,7 @@ import ipaddress
 import re
 import socket
 from html.parser import HTMLParser
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, urlunparse
 
 import httpx
 
@@ -48,8 +49,8 @@ class ClipError(ValueError):
     """Fetch rejected or failed — the message is shown to the user."""
 
 
-def _check_host(url: str) -> str:
-    """Check scheme and target addresses. -> hostname (for error messages)."""
+def _check_host(url: str) -> tuple[str, str]:
+    """Check scheme and target addresses. -> (hostname, the checked address to connect to)."""
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
         raise ClipError("Nur http- und https-Adressen werden geladen")
@@ -63,14 +64,28 @@ def _check_host(url: str) -> str:
                                    proto=socket.IPPROTO_TCP)
     except socket.gaierror:
         raise ClipError(f"Adresse nicht auflösbar: {host}")
+    addrs = []
     for info in infos:
         ip = ipaddress.ip_address(info[4][0])
-        if (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved
-                or ip.is_multicast or ip.is_unspecified):
+        if ip.version == 6 and ip.ipv4_mapped:
+            ip = ip.ipv4_mapped
+        if not ip.is_global or ip.is_multicast:
             raise ClipError(
                 f"Diese Adresse zeigt ins interne Netz ({ip}) — aus Sicherheitsgründen "
                 "werden nur öffentliche Seiten geladen")
-    return host
+        addrs.append(ip)
+    if not addrs:
+        raise ClipError(f"Adresse nicht auflösbar: {host}")
+    return host, str(addrs[0])
+
+
+def _pinned(url: str, ip: str) -> str:
+    """The same URL, but pointing at the checked address instead of the host name."""
+    parsed = urlparse(url)
+    netloc = f"[{ip}]" if ":" in ip else ip
+    if parsed.port:
+        netloc += f":{parsed.port}"
+    return urlunparse(parsed._replace(netloc=netloc))
 
 
 async def fetch(url: str) -> tuple[str, str]:
@@ -79,28 +94,36 @@ async def fetch(url: str) -> tuple[str, str]:
     async with httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=False,
                                  trust_env=False) as client:
         for _ in range(MAX_REDIRECTS + 1):
-            _check_host(current)
-            r = await client.get(current, headers={
+            host, ip = _check_host(current)
+            port = urlparse(current).port
+            req = client.build_request("GET", _pinned(current, ip), headers={
+                "Host": host if not port else f"{host}:{port}",
                 "User-Agent": USER_AGENT,
                 "Accept": "text/html,application/xhtml+xml,text/plain;q=0.9",
                 "Accept-Language": "de,en;q=0.8",
-            })
-            if r.status_code in (301, 302, 303, 307, 308):
-                loc = r.headers.get("location")
-                if not loc:
-                    raise ClipError("Weiterleitung ohne Ziel")
-                current = urljoin(current, loc)
-                continue
-            if r.status_code >= 400:
-                raise ClipError(f"Seite nicht abrufbar (HTTP {r.status_code})")
-            ctype = r.headers.get("content-type", "").split(";")[0].strip().lower()
-            if ctype and not (ctype.startswith("text/") or ctype in
-                              ("application/xhtml+xml", "application/xml")):
-                raise ClipError(f"Kein Text-Inhalt ({ctype})")
-            content = r.content[:MAX_BYTES]
-            if len(r.content) > MAX_BYTES:
-                raise ClipError("Seite zu groß (über 2 MB)")
-            return current, content.decode(r.encoding or "utf-8", errors="replace")
+            }, extensions={"sni_hostname": host})   # TLS is verified against the host name
+            r = await client.send(req, stream=True)
+            try:
+                if r.status_code in (301, 302, 303, 307, 308):
+                    loc = r.headers.get("location")
+                    if not loc:
+                        raise ClipError("Weiterleitung ohne Ziel")
+                    current = urljoin(current, loc)
+                    continue
+                if r.status_code >= 400:
+                    raise ClipError(f"Seite nicht abrufbar (HTTP {r.status_code})")
+                ctype = r.headers.get("content-type", "").split(";")[0].strip().lower()
+                if ctype and not (ctype.startswith("text/") or ctype in
+                                  ("application/xhtml+xml", "application/xml")):
+                    raise ClipError(f"Kein Text-Inhalt ({ctype})")
+                content = b""
+                async for chunk in r.aiter_bytes():
+                    content += chunk
+                    if len(content) > MAX_BYTES:
+                        raise ClipError("Seite zu groß (über 2 MB)")
+                return current, content.decode(r.encoding or "utf-8", errors="replace")
+            finally:
+                await r.aclose()
     raise ClipError("Zu viele Weiterleitungen")
 
 

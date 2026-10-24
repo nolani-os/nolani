@@ -7,8 +7,13 @@ import {
   useSettingsStore,
   useAuthStore,
   COMMANDS,
+  commandLabel,
+  commandCategory,
   effectiveBindings,
   displayBinding,
+  i18n,
+  useTranslation,
+  settingsModuleName,
 } from "@claraos/core";
 import styles from "./SearchOverlay.module.css";
 
@@ -28,13 +33,13 @@ function runShellCommand(
 ): void {
   switch (id) {
     case "open-files":
-      openWindow("files", { title: "Dateien", width: 900, height: 600 });
+      openWindow("files", { title: i18n.t("shell:search.window.files"), width: 900, height: 600 });
       break;
     case "open-settings":
-      openWindow("settings", { title: "Einstellungen", width: 900, height: 640 });
+      openWindow("settings", { title: i18n.t("shell:search.window.settings"), width: 900, height: 640 });
       break;
     case "task-manager":
-      openWindow("task-manager", { title: "Task-Manager", width: 720, height: 480 });
+      openWindow("task-manager", { title: i18n.t("shell:search.window.taskManager"), width: 720, height: 480 });
       break;
     case "screenshot":
       window.dispatchEvent(new CustomEvent("claraos-screenshot"));
@@ -64,6 +69,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
   const [fileResults, setFileResults] = useState<SearchResult[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const openWindow = useWindowsStore((s) => s.openWindow);
+  const { t } = useTranslation("shell");
 
   // Reset on open
   useEffect(() => {
@@ -86,7 +92,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
         type: "app" as const,
         icon: app.icon,
         title: app.name,
-        subtitle: app.type === "iframe" ? "Web App" : "System App",
+        subtitle: app.type === "iframe" ? t("search.subtitle.webApp") : t("search.subtitle.systemApp"),
         action: () => {
           openWindow(app.id, {
             title: app.name,
@@ -96,7 +102,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
           onClose();
         },
       }));
-  }, [query, openWindow, onClose]);
+  }, [query, openWindow, onClose, t]);
 
   // Settings come from the schema, not from a list in code — otherwise search
   // only finds what someone thought of while typing, and every new module is
@@ -125,10 +131,10 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
         id: `setting-${m.id}`,
         type: "setting" as const,
         icon: "⚙️",
-        title: m.name,
-        subtitle: "Einstellungen",
+        title: settingsModuleName(m.id, m.name),
+        subtitle: t("search.subtitle.settings"),
         action: () => {
-          openWindow("settings", { title: "Einstellungen", width: 900, height: 640 });
+          openWindow("settings", { title: t("search.window.settings"), width: 900, height: 640 });
           // The settings app listens for this event and jumps into the module.
           setTimeout(
             () => window.dispatchEvent(
@@ -139,7 +145,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
           onClose();
         },
       }));
-  }, [query, openWindow, onClose, settingsModules]);
+  }, [query, openWindow, onClose, settingsModules, t]);
 
   // Shell commands (KRunner idea): whatever a keyboard shortcut can do should
   // also be typeable — including the currently active binding as a hint.
@@ -149,16 +155,18 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
     const overrides =
       (useSettingsStore.getState().values["shortcuts"]?.bindings as Record<string, string>) ?? {};
     const bindings = effectiveBindings(overrides);
-    return COMMANDS.filter(
-      (c) => c.label.toLowerCase().includes(q) || c.category.toLowerCase().includes(q),
+    // Match the translated AND the registry label, so both languages find a command.
+    return COMMANDS.filter((c) =>
+      [commandLabel(c.id), commandCategory(c.category), c.label, c.category]
+        .some((s) => s.toLowerCase().includes(q)),
     )
       .slice(0, 5)
       .map((c) => ({
         id: `cmd-${c.id}`,
         type: "command" as const,
         icon: "⌘",
-        title: c.label,
-        subtitle: `${c.category} · ${displayBinding(bindings[c.id])}`,
+        title: commandLabel(c.id),
+        subtitle: `${commandCategory(c.category)} · ${displayBinding(bindings[c.id])}`,
         action: () => {
           runShellCommand(c.id, openWindow);
           onClose();
@@ -188,7 +196,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
         type: "command" as const,
         icon: ">_",
         title: c.name as string,
-        subtitle: `Quick Command · ${c.group || "Terminal"}`,
+        subtitle: t("search.subtitle.quickCommand", { group: c.group || t("search.terminal") }),
         action: () => {
           // FOCUS an existing terminal instead of opening a new one: a second
           // window would grab the same tmux session with -D, and the first
@@ -199,7 +207,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
             W.restoreWindow(existing.id);
             W.focusWindow(existing.id);
           } else {
-            openWindow("terminal", { title: "Terminal", width: 1100, height: 640 });
+            openWindow("terminal", { title: t("search.terminal"), width: 1100, height: 640 });
           }
           window.dispatchEvent(
             new CustomEvent("claraos-terminal-quickcmd", { detail: { ...c } }),
@@ -207,7 +215,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
           onClose();
         },
       }));
-  }, [query, openWindow, onClose]);
+  }, [query, openWindow, onClose, t]);
 
   // Calculate without detouring through an app — the KRunner classic.
   const calcResult = useMemo((): SearchResult[] => {
@@ -224,7 +232,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
         type: "calc" as const,
         icon: "=",
         title: text,
-        subtitle: "Ergebnis · Enter kopiert",
+        subtitle: t("search.subtitle.calc"),
         action: () => {
           void navigator.clipboard?.writeText(text).catch(() => undefined);
           onClose();
@@ -233,7 +241,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
     } catch {
       return [];
     }
-  }, [query, onClose]);
+  }, [query, onClose, t]);
 
   // Search files (debounced API call)
   useEffect(() => {
@@ -260,7 +268,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
               title: n.name,
               subtitle: n.path,
               action: () => {
-                openWindow("files", { title: "Dateien", width: 900, height: 600 });
+                openWindow("files", { title: t("search.window.files"), width: 900, height: 600 });
                 onClose();
               },
             }),
@@ -271,7 +279,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [query, openWindow, onClose]);
+  }, [query, openWindow, onClose, t]);
 
   const allResults = useMemo(
     () => [
@@ -316,7 +324,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
               <input
                 ref={inputRef}
                 className={styles.searchInput}
-                placeholder="Search apps, files, settings..."
+                placeholder={t("search.placeholder")}
                 value={query}
                 onChange={(e) => { setQuery(e.target.value); setSelectedIndex(0); }}
                 onKeyDown={handleKeyDown}
@@ -326,35 +334,35 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
             {query.trim() && (
               <div className={styles.results}>
                 {allResults.length === 0 && (
-                  <div className={styles.noResults}>Nichts gefunden für „{query}“</div>
+                  <div className={styles.noResults}>{t("search.noResults", { query })}</div>
                 )}
 
                 {/* Order and offsets must match allResults —
                     otherwise Enter selects something other than what is highlighted. */}
                 {calcResult.length > 0 && (
-                  <ResultGroup label="Ergebnis" results={calcResult} selectedIndex={selectedIndex} offset={0} />
+                  <ResultGroup label={t("search.group.calc")} results={calcResult} selectedIndex={selectedIndex} offset={0} />
                 )}
                 {appResults.length > 0 && (
-                  <ResultGroup label="Apps" results={appResults} selectedIndex={selectedIndex} offset={calcResult.length} />
+                  <ResultGroup label={t("search.group.apps")} results={appResults} selectedIndex={selectedIndex} offset={calcResult.length} />
                 )}
                 {settingResults.length > 0 && (
-                  <ResultGroup label="Einstellungen" results={settingResults} selectedIndex={selectedIndex} offset={calcResult.length + appResults.length} />
+                  <ResultGroup label={t("search.group.settings")} results={settingResults} selectedIndex={selectedIndex} offset={calcResult.length + appResults.length} />
                 )}
                 {commandResults.length > 0 && (
-                  <ResultGroup label="Kommandos" results={commandResults} selectedIndex={selectedIndex} offset={calcResult.length + appResults.length + settingResults.length} />
+                  <ResultGroup label={t("search.group.commands")} results={commandResults} selectedIndex={selectedIndex} offset={calcResult.length + appResults.length + settingResults.length} />
                 )}
                 {quickCmdResults.length > 0 && (
-                  <ResultGroup label="Quick Commands" results={quickCmdResults} selectedIndex={selectedIndex} offset={calcResult.length + appResults.length + settingResults.length + commandResults.length} />
+                  <ResultGroup label={t("search.group.quickCommands")} results={quickCmdResults} selectedIndex={selectedIndex} offset={calcResult.length + appResults.length + settingResults.length + commandResults.length} />
                 )}
                 {fileResults.length > 0 && (
-                  <ResultGroup label="Dateien" results={fileResults} selectedIndex={selectedIndex} offset={calcResult.length + appResults.length + settingResults.length + commandResults.length + quickCmdResults.length} />
+                  <ResultGroup label={t("search.group.files")} results={fileResults} selectedIndex={selectedIndex} offset={calcResult.length + appResults.length + settingResults.length + commandResults.length + quickCmdResults.length} />
                 )}
               </div>
             )}
 
             {!query.trim() && (
               <div className={styles.quickActions}>
-                <span className={styles.hint}>Tippen zum Suchen — Apps, Einstellungen, Kommandos, Dateien, oder einfach rechnen (12*8)</span>
+                <span className={styles.hint}>{t("search.hint")}</span>
               </div>
             )}
           </motion.div>

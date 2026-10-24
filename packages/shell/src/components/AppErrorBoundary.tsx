@@ -7,6 +7,11 @@
  * error card with a reload action instead.
  */
 import { Component, type ReactNode } from "react";
+import { i18n } from "@claraos/core";
+
+// Class component: no hooks, so texts are read from the shared instance at render.
+const te = (key: string, opts?: Record<string, unknown>) =>
+  i18n.t(`components:errorBoundary.${key}`, opts);
 
 interface Props {
   /** Window/app label for the error card. */
@@ -53,7 +58,7 @@ export class AppErrorBoundary extends Component<Props, State> {
         >
           <span style={{ fontSize: 30 }} aria-hidden="true">⚠️</span>
           <strong style={{ color: "var(--text-primary, #e7e7eb)" }}>
-            {this.props.appName ?? "Diese App"} ist abgestürzt
+            {te("crashed", { app: this.props.appName ?? te("thisApp") })}
           </strong>
           <code style={{ fontSize: 11, opacity: 0.7, maxWidth: 380, overflow: "hidden", textOverflow: "ellipsis" }}>
             {String(this.state.error.message ?? this.state.error).slice(0, 160)}
@@ -72,7 +77,7 @@ export class AppErrorBoundary extends Component<Props, State> {
                 cursor: "pointer",
               }}
             >
-              Neu laden
+              {te("reload")}
             </button>
             {this.props.onClose && (
               <button
@@ -88,7 +93,7 @@ export class AppErrorBoundary extends Component<Props, State> {
                   cursor: "pointer",
                 }}
               >
-                App schließen
+                {te("closeApp")}
               </button>
             )}
           </div>

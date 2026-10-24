@@ -16,6 +16,7 @@ import {
   businessApi, personenApi, BelegtError,
   type Belegung, type Buchungsseite, type Ressource, type Umfrage, type UmfrageDetail,
 } from "./businessApi";
+import { regionLocale } from "@claraos/core";
 
 type Register = "ressourcen" | "umfragen" | "buchung" | "besprechung";
 
@@ -33,7 +34,7 @@ function zeitKurz(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? iso
-    : d.toLocaleString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+    : d.toLocaleString(regionLocale(), { weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
 export default function BusinessView() {
@@ -495,7 +496,7 @@ function Terminbuchung({ melde }: { melde: (t: string, f?: boolean) => void }) {
         <div key={z.von} className={styles.card}>
           <div className={styles.cardTitle}>{zeitKurz(z.von)}</div>
           <div className={styles.cardMeta}>
-            <span>bis {new Date(z.bis).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}</span>
+            <span>bis {new Date(z.bis).toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" })}</span>
             <button className={styles.btnPrimary} disabled={laeuft} onClick={() => void buchen(z.von)}>Buchen</button>
           </div>
         </div>

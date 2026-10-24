@@ -5,15 +5,12 @@
  * this is deliberately a featherweight strip (no todos, timers, sub-agents).
  */
 import { useEffect, useState } from "react";
+import { useTranslation } from "@claraos/core";
 import type { ClaraActivity } from "../Chat/api";
 import styles from "./ClaraOverlay.module.css";
 
-const PHASE_LABEL: Record<string, string> = {
-  thinking: "Clara denkt nach …",
-  planning: "Clara plant Schritte …",
-  executing: "Clara arbeitet …",
-  finalizing: "Clara formuliert die Antwort …",
-};
+// Phases with their own label in the "mobile" catalog (cobrowse.phase.*).
+const PHASES = new Set(["thinking", "planning", "executing", "finalizing"]);
 
 function shortToolName(name: string): string {
   // claraos_modules_media_immich__search → search; immich_create_album → create_album
@@ -23,6 +20,7 @@ function shortToolName(name: string): string {
 }
 
 export function CobrowseStatusStrip({ activity }: { activity: ClaraActivity | null }) {
+  const { t } = useTranslation("mobile");
   const done = !activity || activity.phase === "done";
   // keep the pill visible for a beat after done, then fade (CSS transition)
   const [hidden, setHidden] = useState(done);
@@ -31,8 +29,8 @@ export function CobrowseStatusStrip({ activity }: { activity: ClaraActivity | nu
       setHidden(false);
       return;
     }
-    const t = window.setTimeout(() => setHidden(true), 3000);
-    return () => window.clearTimeout(t);
+    const timer = window.setTimeout(() => setHidden(true), 3000);
+    return () => window.clearTimeout(timer);
   }, [done]);
 
   if (hidden) return null;
@@ -40,18 +38,18 @@ export function CobrowseStatusStrip({ activity }: { activity: ClaraActivity | nu
   let text: string;
   let icon: string | undefined;
   if (done) {
-    text = "✓ Fertig";
+    text = t("cobrowse.done");
   } else {
     const tools = Object.values(activity.activeTools);
     const newest = tools.reduce<(typeof tools)[number] | null>(
-      (a, t) => (!a || t.startedAt > a.startedAt ? t : a),
+      (a, tool) => (!a || tool.startedAt > a.startedAt ? tool : a),
       null,
     );
     if (newest) {
       icon = newest.icon;
-      text = `Clara: ${newest.argsSummary || shortToolName(newest.name)}`;
+      text = t("cobrowse.tool", { action: newest.argsSummary || shortToolName(newest.name) });
     } else {
-      text = PHASE_LABEL[activity.phase] ?? "Clara arbeitet …";
+      text = t(PHASES.has(activity.phase) ? `cobrowse.phase.${activity.phase}` : "cobrowse.phase.executing");
     }
   }
 

@@ -22,6 +22,7 @@ Kept in its own module, separate from `planner_kalender.py`.
 """
 from __future__ import annotations
 
+from betriebsprofil import PRODUCT_NAME
 import os
 from domains_generated import BASE_DOMAIN  # per deployment: CLARAOS_BASE_DOMAIN
 import json
@@ -321,11 +322,21 @@ def _esc(t: str) -> str:
 @router.delete("/ressourcen/{rid}/buchung/{uid}")
 async def ressource_stornieren(rid: str, uid: str, request: Request):
     user = require_caller(request)
+    if not re.fullmatch(r"[A-Za-z0-9@._-]{1,200}", uid) or ".." in uid:
+        raise HTTPException(status_code=400, detail="Ungültige Buchungskennung")
     res = await _ressource(rid)
     from routers.teams_admin import NEXTCLOUD_URL, _nc_admin_auth
     auth = await _nc_admin_auth()
+    url = f"{NEXTCLOUD_URL}{res['kalender_uri']}{uid}.ics"
     async with httpx.AsyncClient(verify=False, timeout=20) as c:
-        r = await c.delete(f"{NEXTCLOUD_URL}{res['kalender_uri']}{uid}.ics", auth=auth)
+        # Only the person who booked (ORGANIZER) or an administrator may cancel —
+        # booking ids are visible to everyone in the occupancy view.
+        cur = await c.get(url, auth=auth)
+        if cur.status_code == 200:
+            m = re.search(r"^ORGANIZER[^:\r\n]*:(?:mailto:)?([^@\r\n]+)", cur.text, re.M | re.I)
+            if (m.group(1).strip() if m else "") != user:
+                _admin_pflicht(request)
+        r = await c.delete(url, auth=auth)
     if r.status_code not in (200, 204, 404):
         raise HTTPException(status_code=502, detail=f"Stornierung abgelehnt: {r.status_code}")
     logger.info("Ressource %s: Buchung %s storniert von %s", rid, uid, user)
@@ -780,4 +791,4 @@ async def besprechung_anlegen(body: BesprechungIn, request: Request):
             "matrix_to": f"https://matrix.to/#/{room_id}?via={MATRIX_DOMAIN}",
             "eingeladen": sorted(eingeladen), "ohne_matrix_konto": sorted(ohne_konto),
             "hinweis": "Der Link öffnet die Teams-App auf diesem Raum; der Anruf startet dort. "
-                       "Gäste ohne ClaraOS-Konto können nicht teilnehmen."}
+                       f"Gäste ohne {PRODUCT_NAME}-Konto können nicht teilnehmen."}

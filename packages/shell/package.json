@@ -1,5 +1,6 @@
 {
   "name": "@claraos/shell",
+  "license": "AGPL-3.0-or-later",
   "version": "0.1.0",
   "type": "module",
   "scripts": {
@@ -30,7 +31,7 @@
     "jspdf": "^2.5.2",
     "markerjs2": "^2.32.7",
     "matrix-js-sdk": "^42.4.0",
-    "matrix-widget-api": "^1.17.0",
+    "matrix-widget-api": "^1.19.0",
     "motion": "^12.0.0",
     "plotly.js-gl3d-dist-min": "^2.35.2",
     "plyr-react": "^6.0.0",

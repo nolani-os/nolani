@@ -9,6 +9,7 @@ cd "$(dirname "$0")"
 set -a; . ./.env; set +a
 DOM="$ZELLE_DOMAIN"
 ZELLE_PW=$(openssl rand -hex 16); export ZELLE_PW
+ZELLE_MAIL="zelle-test+$(date +%s)@invalid.example"; export ZELLE_MAIL   # see testkonto.py
 
 aufraeumen() {
   # A connected brain forgets the test account too (memories, chat sessions).
@@ -51,7 +52,7 @@ aufraeumen() {
 }
 trap aufraeumen EXIT
 
-docker compose exec -T -e ZELLE_PW authentik ak shell < testkonto.py 2>/dev/null | grep ^TEST_
+docker compose exec -T -e ZELLE_PW -e ZELLE_MAIL authentik ak shell < testkonto.py 2>/dev/null | grep ^TEST_
 docker compose exec -T -e NEXTCLOUD_ADMIN_USER=ncadmin -e NEXTCLOUD_ADMIN_PASSWORD \
   claraos-api python3 - zelle-test < provision_nc.py
 docker compose exec -T -e ZELLE_DOMAIN claraos-api python3 - zelle-test < provision_vikunja.py
@@ -72,6 +73,12 @@ for t in ${1:-login files planner post teams chat medien browser routinen social
     docker run --rm -e ZELLE_TEST_PW="$ZELLE_PW" -v "$PWD:/w" -w /w \
       mcr.microsoft.com/playwright/python:v1.52.0-noble \
       sh -c "pip install -q playwright==1.52.0 >/dev/null 2>&1; playwright install --with-deps chrome >/dev/null 2>&1; python3 sicht_test.py $DOM zelle-test /w/sicht" || rc=1
+  elif [ "$t" = bedien ]; then
+    # Operation check: click through every app like a user — screenshots to ./bedien/
+    rm -rf bedien && mkdir -p bedien
+    docker run --rm -e ZELLE_TEST_PW="$ZELLE_PW" -e ZELLE_MAIL -v "$PWD:/w" -w /w \
+      mcr.microsoft.com/playwright/python:v1.52.0-noble \
+      sh -c "pip install -q playwright==1.52.0 >/dev/null 2>&1; playwright install --with-deps chrome >/dev/null 2>&1; python3 bedien_test.py $DOM zelle-test /w/bedien" || rc=1
   else
     ZELLE_TEST_PW=$ZELLE_PW python3 "${t}_test.py" "$DOM" zelle-test || rc=1
   fi

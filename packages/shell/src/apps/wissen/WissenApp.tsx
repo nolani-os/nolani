@@ -20,7 +20,7 @@
  * active section + "More".
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useAuthStore, useWindowsStore } from "@claraos/core";
+import { useAuthStore, useWindowsStore, getBrand } from "@claraos/core";
 import styles from "../ideas/IdeasApp.module.css";
 import leiste from "./Wissen.module.css";
 import { Icon, iconFuerEmoji, type IconName } from "../../components/Icon";
@@ -496,7 +496,7 @@ export default function WissenApp({ windowId, start = "wissen" }: {
               them "just say it" is the shortest path. */}
           <button className={styles.btnSecondary}
                   onClick={() => useWindowsStore.getState().toggleClaraInline(windowId)}>
-            <Icon name="comment" size={14} className={styles.inlineIcon} />Clara machen lassen
+            <Icon name="comment" size={14} className={styles.inlineIcon} />{getBrand().assistant} machen lassen
           </button>
         </div>
       )}

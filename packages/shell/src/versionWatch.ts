@@ -1,3 +1,4 @@
+import { getBrand } from "@claraos/core";
 // Version watch — the shell notices by itself when a new build has been
 // deployed, and fetches it.
 //
@@ -90,7 +91,7 @@ function gefahrlos(): { ok: true } | { ok: false; grund: string } {
   // mobile sheet its `data-streamt`. Both indicators exist anyway — so this
   // watcher needs no direct wiring into the chat.
   if (document.querySelector('[data-claraos-activity-card]:not([data-phase="done"])'))
-    return { ok: false, grund: "Clara arbeitet" };
+    return { ok: false, grund: `${getBrand().assistant} arbeitet` };
   if (document.querySelector('[data-streamt="true"]')) return { ok: false, grund: "Antwort läuft" };
 
   // Ongoing playback (video, music, text-to-speech).

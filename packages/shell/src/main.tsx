@@ -11,6 +11,7 @@ import {
   useSettingsStore,
   useClipboardStore,
   useDeviceStore,
+  loadFormatPrefs,
 } from "@claraos/core";
 import { installMarkerBridge } from "./Marker/markerBridge";
 import { Shell } from "./Shell";
@@ -23,6 +24,7 @@ import { OnboardingInstallPrompt, captureInstallPrompt } from "./OnboardingInsta
 import { installFullscreenHotkey, installFullscreenRestore } from "./fullscreen";
 import { installVersionWatch } from "./versionWatch";
 import { heimBoot } from "./extensions";
+import { startI18n } from "./i18n";
 import "./tokens.css";
 import "./global.css";
 
@@ -133,7 +135,21 @@ function App() {
   );
 }
 
-createRoot(document.getElementById("root")!).render(
+// Render only once the region/language settings and the start catalogs are
+// in: dates are formatted at render time (regionLocale() is not reactive) and
+// the first frame should already be in the user's language. Neither may block
+// the shell — a slow or failing settings API falls back after 1.5 s, a public
+// share page has no settings at all.
+const settingsReady = IS_PUBLIC_SHARE
+  ? Promise.resolve()
+  : Promise.race([
+      loadFormatPrefs().catch(() => undefined),
+      new Promise<void>((resolve) => setTimeout(resolve, 1500)),
+    ]);
+void settingsReady
+  .then(() => startI18n(useSettingsStore.getState().values["region-formats"]?.uiLanguage))
+  .catch(() => undefined)
+  .finally(() => createRoot(document.getElementById("root")!).render(
   <StrictMode>
     {IS_PUBLIC_SHARE && PublicPage ? (
       <PublicPage />
@@ -147,4 +163,4 @@ createRoot(document.getElementById("root")!).render(
       </>
     )}
   </StrictMode>,
-);
+));

@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { useWorkspaceStore, useWindowsStore } from "@claraos/core";
+import { useWorkspaceStore, useWindowsStore, useTranslation } from "@claraos/core";
 import styles from "./WorkspaceSwitcher.module.css";
 
 export function WorkspaceSwitcher() {
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation("shell");
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const activeId = useWorkspaceStore((s) => s.activeId);
   const setActive = useWorkspaceStore((s) => s.setActive);
@@ -27,7 +28,7 @@ export function WorkspaceSwitcher() {
       <button
         className={styles.triggerBtn}
         onClick={() => setOpen((o) => !o)}
-        title="Workspaces"
+        title={t("taskbar.workspaces.title")}
         aria-expanded={open}
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -49,7 +50,7 @@ export function WorkspaceSwitcher() {
             exit={{ opacity: 0, y: 10, scale: 0.96 }}
             transition={{ duration: 0.14 }}
           >
-            <div className={styles.header}>Workspaces</div>
+            <div className={styles.header}>{t("taskbar.workspaces.title")}</div>
             <div className={styles.grid}>
               {workspaces.map((ws) => {
                 const wsWindows = windowsByWorkspace(ws.id);
@@ -65,7 +66,7 @@ export function WorkspaceSwitcher() {
                   >
                     <div className={styles.cardPreview}>
                       {wsWindows.length === 0 ? (
-                        <span className={styles.cardEmpty}>Empty</span>
+                        <span className={styles.cardEmpty}>{t("taskbar.workspaces.empty")}</span>
                       ) : (
                         <div className={styles.cardIcons}>
                           {wsWindows.slice(0, 6).map((w) => (
@@ -86,7 +87,7 @@ export function WorkspaceSwitcher() {
                         <button
                           className={styles.deleteBtn}
                           onClick={(e) => { e.stopPropagation(); deleteWorkspace(ws.id); }}
-                          title="Delete workspace"
+                          title={t("taskbar.workspaces.delete")}
                         >
                           ✕
                         </button>
@@ -98,10 +99,10 @@ export function WorkspaceSwitcher() {
 
               <button
                 className={styles.addCard}
-                onClick={() => { createWorkspace(`Desktop ${workspaces.length + 1}`); }}
+                onClick={() => { createWorkspace(t("taskbar.workspaces.defaultName", { n: workspaces.length + 1 })); }}
               >
                 <span className={styles.addIcon}>+</span>
-                <span className={styles.addLabel}>New Workspace</span>
+                <span className={styles.addLabel}>{t("taskbar.workspaces.new")}</span>
               </button>
             </div>
           </motion.div>

@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from domains_generated import BASE_DOMAIN  # cell: CLARAOS_BASE_DOMAIN
 import betriebsprofil
-from betriebsprofil import heim_default  # external cell: no silent home-server fallback
+from betriebsprofil import ASSISTANT_NAME, PRODUCT_NAME, heim_default  # external cell: no silent home-server fallback
 from services import brain_turns, chat_lauf, identitaet
 import asyncio
 import hashlib
@@ -1022,6 +1022,10 @@ async def get_agent_response(request_id: str, request: Request) -> JSONResponse:
     from routers.clara_tools import _trusted_caller
     if not _trusted_caller(request):
         raise HTTPException(status_code=401, detail="trusted caller required")
+    # Only the agent polls (service token): a browser user must not consume — and
+    # thereby swallow — another user's answer.
+    if not is_service_call(request):
+        raise HTTPException(status_code=403, detail="Nur für den Agenten.")
     from services.agent_response_service import consume_response
     try:
         val = await consume_response(request_id)
@@ -1253,7 +1257,7 @@ async def chat_completions(request: Request):
         # browser — and then opened an Immich album in the browser, where it
         # had no login. A line here outweighs any tool description.
         parts.append(
-            "showing something to the user: inside a ClaraOS app (an Immich album, a "
+            f"showing something to the user: inside a {PRODUCT_NAME} app (an Immich album, a "
             "Paperless document, …) use claraos_action_navigate_to / open_window — the "
             "app tile signs the user in; an app address in the browser lands on its "
             "login page. External websites: open_in_browser (the user's own browser; "
@@ -1384,7 +1388,7 @@ async def chat_completions(request: Request):
             # to send everyday questions (calendar, tasks) to a compute platform.
             parts.append(
                 "preferred actions: claraos_action_open_in_viewer / claraos_action_open_window "
-                "to render results in ClaraOS apps; a generated HTML page "
+                f"to render results in {PRODUCT_NAME} apps; a generated HTML page "
                 "(game, chart, mini-app) belongs in claraos_action_show_artifact "
                 "— it RUNS there."
             )
@@ -1478,7 +1482,7 @@ async def chat_completions(request: Request):
                     + json.dumps(_profil, ensure_ascii=False)[:1500]
                     + ". Änderungen NUR nach Bestätigung des Users via "
                     "guide_update_profile; er kann alles in Einstellungen → "
-                    "'Was Clara über mich weiß' einsehen und ändern."
+                    f"'Was {ASSISTANT_NAME} über mich weiß' einsehen und ändern."
                 )
             else:
                 parts.append(
@@ -1721,7 +1725,7 @@ async def _lauf_ausfuehren(lauf: _ServerLauf, body: dict, token: str) -> None:
     except asyncio.CancelledError:
         if lauf.unterbrochen:
             # Shutdown deadline passed: keep what is there and say why it ends here.
-            hinweis = "\n\n_(Antwort unterbrochen: ClaraOS wurde neu gestartet. Frag gern noch einmal nach.)_"
+            hinweis = f"\n\n_(Antwort unterbrochen: {PRODUCT_NAME} wurde neu gestartet. Frag gern noch einmal nach.)_"
             lauf.antwort.content += hinweis
             lauf.senden(("data: " + json.dumps({"choices": [{"delta": {"content": hinweis}}]})
                          + "\n\n").encode())

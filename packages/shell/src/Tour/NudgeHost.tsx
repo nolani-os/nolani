@@ -12,6 +12,7 @@
  * (tour flags are localStorage).
  */
 import { useEffect, useState } from "react";
+import { useTranslation } from "@claraos/core";
 import { tourDoneKey } from "./TourProvider";
 import styles from "./NudgeHost.module.css";
 
@@ -35,14 +36,13 @@ interface Facts {
   tourDone: (id: string) => boolean;
 }
 
+/** Texts live in the "tour" catalog: `nudges.<id>.title|text|primary|secondary`. */
 interface NudgeDef {
   id: string;
   testId: string;
-  title: string;
-  text: string;
   eligible: (f: Facts) => boolean;
-  primary: { label: string; run: () => void };
-  secondary?: { label: string; run: () => void };
+  primary: { run: () => void };
+  secondary?: { run: () => void };
 }
 
 const startTour = (tourId: string) => () =>
@@ -53,43 +53,29 @@ const NUDGES: NudgeDef[] = [
   {
     id: "welcome",
     testId: "welcome-card",
-    title: "👋 Hallo, ich bin Clara!",
-    text:
-      "Schön, dass du da bist. Soll ich dir kurz zeigen, wie hier alles " +
-      "funktioniert — oder magst du mir erst erzählen, wofür du ClaraOS " +
-      "nutzen möchtest?",
     eligible: (f) => !f.profileExists && !f.tourDone("claraos-basics"),
-    primary: { label: "Zeig mir ClaraOS", run: startTour("claraos-basics") },
+    primary: { run: startTour("claraos-basics") },
     secondary: {
-      label: "Mit Clara reden",
       run: () => window.dispatchEvent(new CustomEvent("claraos-open-clara-chat")),
     },
   },
   {
     id: "device-setup",
     testId: "nudge-device-setup",
-    title: "📱 Clara für unterwegs",
-    text:
-      "Soll ich dir zeigen, wie du ClaraOS auf dein Handy bekommst? Dann " +
-      "erreichen dich meine Nachrichten auch, wenn du nicht am Rechner sitzt.",
     eligible: (f) => f.tourDone("claraos-basics") && !f.tourDone("geraete-setup"),
-    primary: { label: "Zeig mir die Einrichtung", run: startTour("geraete-setup") },
+    primary: { run: startTour("geraete-setup") },
   },
   {
     id: "files-tour",
     testId: "nudge-files-tour",
-    title: "📁 Deine Dateien",
-    text: "Magst du als Nächstes die Files-App kennenlernen? Dauert eine Minute.",
     eligible: (f) => f.tourDone("claraos-basics") && !f.tourDone("files-basics"),
-    primary: { label: "Zeig mir Files", run: startTour("files-basics") },
+    primary: { run: startTour("files-basics") },
   },
   {
     id: "fotos-tour",
     testId: "nudge-fotos-tour",
-    title: "📸 Eure Fotos",
-    text: "Soll ich dir die Fotos-App zeigen — inklusive dem Trick, wie ich Alben für dich baue?",
     eligible: (f) => f.tourDone("claraos-basics") && !f.tourDone("fotos-basics"),
-    primary: { label: "Zeig mir Fotos", run: startTour("fotos-basics") },
+    primary: { run: startTour("fotos-basics") },
   },
   {
     // Satisfaction nudge — applies as soon as at least one tour has been
@@ -98,16 +84,11 @@ const NUDGES: NudgeDef[] = [
     // POST /api/claraos/feedback into the configured feedback inbox.
     id: "feedback-after-tour",
     testId: "nudge-feedback",
-    title: "💬 Wie läuft's mit ClaraOS?",
-    text:
-      "Magst du kurz sagen, was gut funktioniert und was besser sein könnte? " +
-      "Dein Feedback landet direkt bei uns.",
     eligible: (f) =>
       ["claraos-basics", "geraete-setup", "files-basics", "fotos-basics"].some((t) =>
         f.tourDone(t),
       ),
     primary: {
-      label: "Feedback geben",
       run: () =>
         window.dispatchEvent(
           new CustomEvent("claraos-open-feedback", { detail: { source: "nudge" } }),
@@ -147,6 +128,7 @@ function pickNudge(server: ServerState, facts: Facts): NudgeDef | null {
 
 export function NudgeHost() {
   const [nudge, setNudge] = useState<NudgeDef | null>(null);
+  const { t } = useTranslation("tour");
 
   // Evaluation lives in a function instead of the mount effect so it can also
   // run after a tour ends (claraos-tour-done) — otherwise a tour-dependent
@@ -188,6 +170,7 @@ export function NudgeHost() {
   }, []);
 
   if (!nudge) return null;
+  const key = `nudges.${nudge.id}`;
 
   const act = (outcome: "accepted" | "dismissed", run?: () => void) => {
     void report(nudge.id, outcome);
@@ -197,23 +180,23 @@ export function NudgeHost() {
 
   return (
     <div className={styles.card} data-testid={nudge.testId} data-nudge={nudge.id}>
-      <button className={styles.close} title="Später"
+      <button className={styles.close} title={t("nudge.later")}
               onClick={() => act("dismissed")}>✕</button>
-      <div className={styles.title}>{nudge.title}</div>
-      <div className={styles.text}>{nudge.text}</div>
+      <div className={styles.title}>{t(`${key}.title`)}</div>
+      <div className={styles.text}>{t(`${key}.text`)}</div>
       <div className={styles.btns}>
         <button className={styles.primary}
                 onClick={() => act("accepted", nudge.primary.run)}>
-          {nudge.primary.label}
+          {t(`${key}.primary`)}
         </button>
         {nudge.secondary && (
           <button className={styles.secondary}
                   onClick={() => act("accepted", nudge.secondary!.run)}>
-            {nudge.secondary.label}
+            {t(`${key}.secondary`)}
           </button>
         )}
         <button className={styles.ghost} onClick={() => act("dismissed")}>
-          Später
+          {t("nudge.later")}
         </button>
       </div>
     </div>

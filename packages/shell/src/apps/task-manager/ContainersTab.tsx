@@ -1,3 +1,4 @@
+import { getBrand } from "@claraos/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./TaskManagerApp.module.css";
 
@@ -154,7 +155,7 @@ export function ContainersTab({ isAdmin }: { isAdmin: boolean }) {
                 <td className={styles.titleCell}>
                   <span className={c.state === "running" ? styles.dotUp : styles.dotDown}>●</span>{" "}
                   {c.name}
-                  {c.protected && <span className={styles.protectedBadge} title="Neustart gesperrt — würde ClaraOS selbst treffen">geschützt</span>}
+                  {c.protected && <span className={styles.protectedBadge} title={`Neustart gesperrt — würde ${getBrand().product} selbst treffen`}>geschützt</span>}
                 </td>
                 <td className={styles.subCell} title={c.image}>{c.image.length > 42 ? c.image.slice(0, 40) + "…" : c.image}</td>
                 <td className={styles.subCell}>{c.status}</td>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import styles from "./UserAdminApp.module.css";
+import { regionLocale, getBrand } from "@claraos/core";
 
 const UA = "/api/claraos/user-admin";
 
@@ -220,7 +221,7 @@ export function UserDetail({ user, onBack, onImpersonate, onFullView, onChanged 
         {!user.is_active && <span className={styles.inactiveBadge}>inaktiv</span>}
         <span style={{ marginLeft: "auto" }} />
         <button className={styles.btn} onClick={() => onImpersonate(user.username)} disabled={!user.is_active}
-          title="Zeigt nur die ClaraOS-Oberfläche des Users">ClaraOS-Ansicht →</button>
+          title={`Zeigt nur die ${getBrand().product}-Oberfläche des Users`}>{getBrand().product}-Ansicht →</button>
         <button className={styles.btn} onClick={() => onFullView(user.username)} disabled={!user.is_active}
           title="Voll-Ansicht inkl. Fremd-Apps (Nextcloud, Immich …) im Browser-Stream">🔎 Voll-Ansicht →</button>
       </div>
@@ -249,15 +250,15 @@ export function UserDetail({ user, onBack, onImpersonate, onFullView, onChanged 
       {/* Guide: Clara companion — rollout progress + parent view for children */}
       {guide && (
         <section className={styles.section} data-testid="guide-status">
-          <h3>✦ Clara-Begleitung
+          <h3>✦ {getBrand().assistant}-Begleitung
             {guide.kid && <span className={styles.hint}> (Kind — Leitplanken aktiv)</span>}
           </h3>
           <p className={styles.hint}>
             {guide.profil_felder > 0
               ? `Profil: ${guide.profil_felder} Felder, zuletzt ${guide.updated_at
-                  ? new Date(guide.updated_at).toLocaleDateString("de-DE") : "?"} ` +
-                (guide.updated_by === "clara" ? "(von Clara gelernt)" : "(vom User gepflegt)")
-              : "Profil: noch keins — Clara kennt diesen User noch nicht."}
+                  ? new Date(guide.updated_at).toLocaleDateString(regionLocale()) : "?"} ` +
+                (guide.updated_by === "clara" ? `(von ${getBrand().assistant} gelernt)` : "(vom User gepflegt)")
+              : `Profil: noch keins — ${getBrand().assistant} kennt diesen User noch nicht.`}
             {guide.optout && " · 🔕 Vorschläge abgeschaltet"}
           </p>
           <p className={styles.hint}>
@@ -288,7 +289,7 @@ export function UserDetail({ user, onBack, onImpersonate, onFullView, onChanged 
         {invite ? (
           <div>
             <span className={styles.hint}>
-              Link nur JETZT sichtbar (gültig bis {new Date(invite.expires_at).toLocaleDateString("de-DE")}):
+              Link nur JETZT sichtbar (gültig bis {new Date(invite.expires_at).toLocaleDateString(regionLocale())}):
             </span>
             <div className={styles.pwBox}>
               <code className={styles.pwValue} style={{ fontSize: 11, wordBreak: "break-all" }}>{invite.invite_url}</code>
@@ -318,7 +319,7 @@ export function UserDetail({ user, onBack, onImpersonate, onFullView, onChanged 
 
       {/* Budget */}
       <section className={styles.section}>
-        <h3>Clara-Budget <span className={styles.hint}>(Token-Kosten pro Monat)</span></h3>
+        <h3>{getBrand().assistant}-Budget <span className={styles.hint}>(Token-Kosten pro Monat)</span></h3>
         {budget === null ? (
           <span className={styles.hint}>lädt…</span>
         ) : budget.available === false ? (

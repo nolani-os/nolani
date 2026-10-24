@@ -10,6 +10,7 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import styles from "./ClaraMemoryTab.module.css";
+import { regionLocale, useTranslation } from "@claraos/core";
 
 interface Regel {
   id: number;
@@ -30,10 +31,11 @@ function werkzeugName(tool: string): string {
 function datum(iso?: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("de-DE", { day: "numeric", month: "short", year: "numeric" });
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString(regionLocale(), { day: "numeric", month: "short", year: "numeric" });
 }
 
 export function FreigabenTab() {
+  const { t } = useTranslation("settingsTabs");
   const [regeln, setRegeln] = useState<Regel[]>([]);
   const [status, setStatus] = useState<"laden" | "bereit" | "fehler">("laden");
   const [loescheId, setLoescheId] = useState<number | null>(null);
@@ -63,15 +65,11 @@ export function FreigabenTab() {
 
   return (
     <div className={styles.wrap} data-settings-tab="freigaben">
-      <p className={styles.hint}>
-        Fragt Clara vor einer kritischen Aktion (Strom, Löschen, Nachricht an Dritte, Geld),
-        kannst du in der Karte „Immer" antworten. Jede so entstandene Regel steht hier.
-        Ohne Regel fragt Clara jedes Mal; ohne Antwort führt sie nichts aus.
-      </p>
-      {status === "laden" && <p className={styles.meta}>Lade …</p>}
-      {status === "fehler" && <p className={styles.error}>Regeln konnten nicht geladen werden.</p>}
+      <p className={styles.hint}>{t("permissions.intro")}</p>
+      {status === "laden" && <p className={styles.meta}>{t("permissions.loading")}</p>}
+      {status === "fehler" && <p className={styles.error}>{t("permissions.loadError")}</p>}
       {status === "bereit" && regeln.length === 0 && (
-        <div className={styles.empty}>Keine dauerhaften Freigaben. Clara fragt bei kritischen Aktionen jedes Mal.</div>
+        <div className={styles.empty}>{t("permissions.empty")}</div>
       )}
       {regeln.length > 0 && (
         <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8 }}>
@@ -81,7 +79,8 @@ export function FreigabenTab() {
                 <div>
                   <div className={styles.label}>{werkzeugName(r.tool)}</div>
                   <p className={styles.meta}>
-                    Ziel: {r.ziel === "*" ? "alle" : r.ziel}{datum(r.created_at) ? ` · seit ${datum(r.created_at)}` : ""}
+                    {t("permissions.target", { target: r.ziel === "*" ? t("permissions.all") : r.ziel })}
+                    {datum(r.created_at) ? ` · ${t("permissions.since", { date: datum(r.created_at) })}` : ""}
                   </p>
                 </div>
                 <button
@@ -89,16 +88,16 @@ export function FreigabenTab() {
                   className={styles.danger}
                   disabled={loescheId === r.id}
                   onClick={() => void loeschen(r.id)}
-                  aria-label={`Regel für ${werkzeugName(r.tool)} löschen`}
+                  aria-label={t("permissions.deleteLabel", { tool: werkzeugName(r.tool) })}
                 >
-                  {loescheId === r.id ? "…" : "Löschen"}
+                  {loescheId === r.id ? "…" : t("permissions.delete")}
                 </button>
               </div>
             </li>
           ))}
         </ul>
       )}
-      <p className={styles.meta}>Gilt nur für dein Konto. Der Push aufs Handy bleibt der zweite Weg, wenn keine Regel greift.</p>
+      <p className={styles.meta}>{t("permissions.footer")}</p>
     </div>
   );
 }

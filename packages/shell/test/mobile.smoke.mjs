@@ -31,6 +31,9 @@ const src = (rel) => resolve(here, "..", "src", rel);
 // optional extension files) is resolved like Vite does: the file is loaded when
 // it exists, otherwise the glob is empty.
 globalThis.__smokeGlobs = {};
+const CORE_STUB = "data:text/javascript;base64," + Buffer.from(
+  'export const getBrand = () => ({ product: "NolaniOS", assistant: "Nolani" });',
+).toString("base64");
 let globCount = 0;
 async function loadTs(relPath) {
   const code = readFileSync(src(relPath), "utf8");
@@ -42,6 +45,9 @@ async function loadTs(relPath) {
     globalThis.__smokeGlobs[key] = existsSync(target) ? { [m[1]]: await loadTs(relative(src(""), target)) } : {};
     js = js.replace(m[0], `globalThis.__smokeGlobs[${JSON.stringify(key)}]`);
   }
+  // A data: URL cannot resolve bare package names; the brand getter is the only
+  // runtime import from @claraos/core these modules use.
+  js = js.replaceAll(/(["'])@claraos\/core\1/g, JSON.stringify(CORE_STUB));
   const url = "data:text/javascript;base64," + Buffer.from(js).toString("base64");
   return import(url);
 }

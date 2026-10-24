@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Editor from "@monaco-editor/react";
 import { useWindowsStore, useFileStore, buildObjectUri } from "@claraos/core";
+import SpeichernUnter from "./SpeichernUnter";
 
 const LANG_MAP: Record<string, string> = {
   ".js": "javascript", ".ts": "typescript", ".tsx": "typescript",
@@ -22,6 +23,10 @@ export default function TextEditorApp({ windowId }: { windowId: string }) {
   const [fileSource, setFileSource] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [status, setStatus] = useState("Bereit");
+  const [speichernUnter, setSpeichernUnter] = useState(false);
+  // Path we just wrote ourselves: the window store echoes it back as winPath,
+  // and re-reading it from the server would only reset status and cursor.
+  const selbstGeschrieben = useRef<string | null>(null);
 
   // Auto-load when the window was opened with a path/source
   const winPath = useWindowsStore((s) => s.windows[windowId]?.path);
@@ -38,6 +43,7 @@ export default function TextEditorApp({ windowId }: { windowId: string }) {
   }, [windowId, winPath, winSource, setCurrentObjectUri]);
   useEffect(() => {
     if (!winPath || !winSource) return;
+    if (selbstGeschrieben.current === `${winSource}:${winPath}`) return;
     let cancelled = false;
     (async () => {
       setStatus("Loading...");
@@ -62,10 +68,10 @@ export default function TextEditorApp({ windowId }: { windowId: string }) {
     return () => { cancelled = true; };
   }, [winPath, winSource]);
 
-  // Save file via the v2 endpoint, falling back to legacy
+  // Save file via the v2 endpoint; a file without a path goes through "save as".
   const saveFile = useCallback(async () => {
     if (!filePath || !fileSource) {
-      setStatus("Speichern fehlgeschlagen — kein Pfad. „Speichern unter\u201c gibt es noch nicht.");
+      setSpeichernUnter(true);
       return;
     }
     setStatus("Saving...");
@@ -78,29 +84,69 @@ export default function TextEditorApp({ windowId }: { windowId: string }) {
     }
   }, [filePath, fileSource, content, filename]);
 
-  // Keyboard shortcut Ctrl+S
+  const speichernAls = useCallback(async (source: string, pfad: string) => {
+    const ok = await useFileStore.getState().writeFile(source, pfad, content);
+    if (!ok) return false;
+    const name = pfad.split("/").pop() || pfad;
+    selbstGeschrieben.current = `${source}:${pfad}`;
+    setFilePath(pfad);
+    setFileSource(source);
+    setFilename(name);
+    setDirty(false);
+    setSpeichernUnter(false);
+    setStatus(`Gespeichert: ${pfad}`);
+    // The window now belongs to this file: title, inline chat and session restore.
+    useWindowsStore.getState().setWindowFile(windowId, source, pfad, name);
+    return true;
+  }, [content, windowId]);
+
+  // "New" must also forget the previous file — otherwise the next save
+  // overwrote the file that was open before with the new text.
+  const neu = () => {
+    setContent("");
+    setFilename("untitled.txt");
+    setFilePath(null);
+    setFileSource(null);
+    setDirty(false);
+    setStatus("Bereit");
+    selbstGeschrieben.current = null;
+    useWindowsStore.getState().setWindowFile(windowId, "", "", "Texteditor");
+  };
+
+  // Ctrl+S / Ctrl+Shift+S — only for the focused window; the listener is global,
+  // and every open editor window would otherwise save (or open its dialog) at once.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-        e.preventDefault();
-        saveFile();
-      }
+      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== "s") return;
+      if (useWindowsStore.getState().focusedWindowId !== windowId) return;
+      e.preventDefault();
+      if (e.shiftKey) setSpeichernUnter(true);
+      else saveFile();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [saveFile]);
+  }, [saveFile, windowId]);
+
+  // Start folder of the dialog: the open file's folder, otherwise where the Files app is.
+  const dateien = useFileStore.getState();
+  const dialogQuelle = fileSource || dateien.activeSource || "nextcloud";
+  const dialogOrdner = filePath
+    ? filePath.slice(0, filePath.lastIndexOf("/")) || "/"
+    : (dialogQuelle === dateien.activeSource ? dateien.currentPath : "/");
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#1e1e1e" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#1e1e1e", position: "relative" }}>
       {/* Toolbar */}
       <div style={{
         display: "flex", alignItems: "center", gap: 8, padding: "4px 8px",
         background: "#252526", borderBottom: "1px solid #3c3c3c", fontSize: 13,
       }}>
-        <button onClick={() => { setContent(""); setFilename("untitled.txt"); setDirty(false); }}
-          style={btnStyle}>Neu</button>
-        <button onClick={saveFile} disabled={!dirty} style={btnStyle}>
+        <button onClick={neu} style={btnStyle}>Neu</button>
+        <button onClick={saveFile} disabled={!dirty} style={btnStyle} title="Speichern (Strg+S)">
           Speichern {dirty ? "●" : ""}
+        </button>
+        <button onClick={() => setSpeichernUnter(true)} style={btnStyle} title="Speichern unter (Strg+Umschalt+S)">
+          Speichern unter…
         </button>
         <span style={{ flex: 1 }} />
         <span style={{ color: "#888", fontSize: 12 }}>
@@ -137,6 +183,16 @@ export default function TextEditorApp({ windowId }: { windowId: string }) {
         <span>{status}</span>
         <span>{content.split("\n").length} lines</span>
       </div>
+
+      {speichernUnter && (
+        <SpeichernUnter
+          source={dialogQuelle}
+          startPfad={dialogOrdner}
+          dateiname={filename}
+          onSpeichern={speichernAls}
+          onAbbrechen={() => setSpeichernUnter(false)}
+        />
+      )}
     </div>
   );
 }

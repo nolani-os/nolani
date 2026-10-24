@@ -7,6 +7,7 @@ import styles from "./IdeasApp.module.css";
 import { Icon } from "../../components/Icon";
 import { ideasApi } from "./api";
 import type { KbDiffOp, KbHistoryEntry } from "./types";
+import { regionLocale, getBrand } from "@claraos/core";
 
 interface Props {
   objectId: string;
@@ -55,8 +56,8 @@ export function HistoryPanel({ objectId, isOwner, onRestored, onClose }: Props) 
                   <b>v{h.version}</b>
                   {h.name && <span className={styles.versionName}>{h.name}</span>}
                   <span className={styles.metaHint}>
-                    {h.actor === "clara" ? "🤖 Clara" : h.actor} ·{" "}
-                    {new Date(h.created_at).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}
+                    {h.actor === "clara" ? `🤖 ${getBrand().assistant}` : h.actor} ·{" "}
+                    {new Date(h.created_at).toLocaleString(regionLocale(), { dateStyle: "short", timeStyle: "short" })}
                   </span>
                 </button>
                 {isOwner && (

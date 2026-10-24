@@ -15,7 +15,7 @@
  * planner.
  */
 import { useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { useUIStore, useWindowsStore, useWrappStore } from "@claraos/core";
+import { useUIStore, useWindowsStore, useWrappStore, getBrand } from "@claraos/core";
 import { navigateIframe } from "../apps/iframeNavigator";
 import { SparklesIcon } from "./icons";
 import { useClaraWork, type ActiveStream, type PlannerWork } from "./claraWork";
@@ -133,7 +133,7 @@ export function ActiveAgentsPanel({ excludeSurface, excludeAppId, hideHeader, ko
                 🗂️ {taskTitles[w.task_id] ?? `#${w.task_id}`}
               </span>
               <span className={styles.itemSub}>
-                {w.in_work_by === "clara" || w.in_work_by === "clara-agent" ? "Clara" : w.in_work_by}
+                {w.in_work_by === "clara" || w.in_work_by === "clara-agent" ? getBrand().assistant : w.in_work_by}
                 {w.stale ? " · ⚠ hängt (>6h)" : ""}
               </span>
             </span>
@@ -160,7 +160,7 @@ export function ActiveAgentsPanel({ excludeSurface, excludeAppId, hideHeader, ko
   );
 
   return (
-    <div className={styles.panel} role="region" aria-label="Aktive Clara-Aufgaben" data-kompakt={kompakt ? "true" : undefined}>
+    <div className={styles.panel} role="region" aria-label={`Aktive ${getBrand().assistant}-Aufgaben`} data-kompakt={kompakt ? "true" : undefined}>
       <header
         className={`${styles.header} ${kompakt ? styles.headerTippbar : ""}`}
         {...(kompakt
@@ -173,7 +173,7 @@ export function ActiveAgentsPanel({ excludeSurface, excludeAppId, hideHeader, ko
           : {})}
       >
         <span className={styles.brandIcon}><SparklesIcon size={12} /></span>
-        <span className={styles.title}>Clara arbeitet</span>
+        <span className={styles.title}>{getBrand().assistant} arbeitet</span>
         {/* The counter names what is running NOW. Stale entries are in the
             footer — otherwise the number claims work nobody is doing. */}
         <span className={styles.count}>{anzahl}</span>

@@ -22,7 +22,7 @@ What does NOT happen here:
 """
 from __future__ import annotations
 
-from betriebsprofil import heim_default  # external deployment: no silent home-network fallback
+from betriebsprofil import PRODUCT_NAME, heim_default  # external deployment: no silent home-network fallback
 from betriebsprofil import OWNER_USER  # owner/admin account of this installation
 import asyncio
 import logging
@@ -159,7 +159,7 @@ async def ensure_immich(username: str, email: str = "", ak_uid: str = "",
 
         r = await client.post(f"{IMMICH_URL}/api/api-keys",
                               headers={"Authorization": f"Bearer {access}"},
-                              json={"name": "ClaraOS", "permissions": ["all"]})
+                              json={"name": PRODUCT_NAME, "permissions": ["all"]})
         if r.status_code not in (200, 201):
             raise RuntimeError(f"Immich: Schluessel anlegen fehlgeschlagen ({r.status_code})")
         api_token = (r.json().get("secret") or "")

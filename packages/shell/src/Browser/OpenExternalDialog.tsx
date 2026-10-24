@@ -13,7 +13,7 @@
  * company no longer shows it.
  */
 import { useCallback, useEffect, useState } from "react";
-import { useSettingsStore, useWindowsStore, windowCloseGuards } from "@claraos/core";
+import { useSettingsStore, useWindowsStore, windowCloseGuards, getBrand } from "@claraos/core";
 import styles from "./OpenExternalDialog.module.css";
 
 interface Anfrage {
@@ -57,7 +57,7 @@ async function oeffne(url: string, mode: "private" | "session", from: string) {
     store.focusWindow(winId);
   } else {
     winId = store.openWindow("selkies-browser", {
-      title: mode === "private" ? "Clara Browser — Privat 🕶️" : "Clara Browser",
+      title: mode === "private" ? `${getBrand().assistant} Browser — Privat 🕶️` : `${getBrand().assistant} Browser`,
       width: 1400,
       height: 900,
     });

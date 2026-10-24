@@ -15,30 +15,22 @@ import {
   useFileStore,
   useAppRegistryStore,
   useSettingsStore,
+  useTranslation,
 } from "@claraos/core";
 import styles from "./SettingsApp.module.css";
 
 /** What a default application can be set for. */
-const FILE_KINDS: { ext: string; label: string; apps: string[] }[] = [
-  { ext: "pdf", label: "PDF-Dokumente", apps: ["pdf-viewer", "office-viewer", "files"] },
-  { ext: "png", label: "Bilder", apps: ["image-viewer", "files"] },
-  { ext: "mp4", label: "Videos", apps: ["video-player", "files"] },
-  { ext: "mp3", label: "Musik", apps: ["video-player", "files"] },
-  { ext: "docx", label: "Textdokumente", apps: ["office-viewer", "text-editor", "files"] },
-  { ext: "xlsx", label: "Tabellen", apps: ["office-viewer", "files"] },
-  { ext: "md", label: "Markdown und Text", apps: ["text-editor", "files"] },
-  { ext: "stl", label: "3D-Modelle", apps: ["model-viewer", "files"] },
+// Labels live in the "settings" catalog: defaultApps.kind.<ext>, defaultApps.app.<id>.
+const FILE_KINDS: { ext: string; apps: string[] }[] = [
+  { ext: "pdf", apps: ["pdf-viewer", "office-viewer", "files"] },
+  { ext: "png", apps: ["image-viewer", "files"] },
+  { ext: "mp4", apps: ["video-player", "files"] },
+  { ext: "mp3", apps: ["video-player", "files"] },
+  { ext: "docx", apps: ["office-viewer", "text-editor", "files"] },
+  { ext: "xlsx", apps: ["office-viewer", "files"] },
+  { ext: "md", apps: ["text-editor", "files"] },
+  { ext: "stl", apps: ["model-viewer", "files"] },
 ];
-
-const APP_LABELS: Record<string, string> = {
-  "pdf-viewer": "PDF-Betrachter",
-  "image-viewer": "Bildbetrachter",
-  "video-player": "Videoplayer",
-  "office-viewer": "Office (Collabora)",
-  "text-editor": "Texteditor",
-  "model-viewer": "3D-Betrachter",
-  files: "Dateien",
-};
 
 export function DefaultAppsTab() {
   const overrides = useFileStore((s) => s.openWithOverrides);
@@ -47,6 +39,7 @@ export function DefaultAppsTab() {
   const store = useSettingsStore();
   const values = store.values["session"] ?? {};
   const [busy, setBusy] = useState(false);
+  const { t } = useTranslation("settings");
 
   useEffect(() => {
     void store.loadModule("session");
@@ -76,14 +69,14 @@ export function DefaultAppsTab() {
 
   return (
     <div className={styles.form}>
-      <div className={styles.navGroupTitle}>Womit Dateien geöffnet werden</div>
+      <div className={styles.navGroupTitle}>{t("defaultApps.openWithTitle")}</div>
       {FILE_KINDS.map((kind) => {
         const current = overrides[kind.ext] ?? kind.apps[0];
         const isCustom = Boolean(overrides[kind.ext]);
         return (
           <div key={kind.ext} className={styles.row}>
             <div className={styles.rowLabel}>
-              <label htmlFor={`default-${kind.ext}`}>{kind.label}</label>
+              <label htmlFor={`default-${kind.ext}`}>{t(`defaultApps.kind.${kind.ext}`)}</label>
               <p className={styles.rowDesc}>.{kind.ext}</p>
             </div>
             <div className={styles.rowControl}>
@@ -94,7 +87,7 @@ export function DefaultAppsTab() {
               >
                 {kind.apps.map((a) => (
                   <option key={a} value={a}>
-                    {APP_LABELS[a] ?? a}
+                    {t(`defaultApps.app.${a}`, { defaultValue: a })}
                   </option>
                 ))}
               </select>
@@ -102,7 +95,7 @@ export function DefaultAppsTab() {
                 <button
                   type="button"
                   className={styles.resetBtn}
-                  title="Auf Standard zurücksetzen"
+                  title={t("defaultApps.reset")}
                   onClick={() => setOpenWith(kind.ext, null)}
                 >
                   ↺
@@ -114,15 +107,13 @@ export function DefaultAppsTab() {
       })}
 
       <div className={styles.navGroupTitle} style={{ marginTop: 18 }}>
-        Beim Anmelden öffnen
+        {t("defaultApps.autostartTitle")}
       </div>
       <p className={styles.rowDesc} style={{ margin: "0 0 8px" }}>
-        Diese Apps starten nach der Anmeldung von selbst. Das ist etwas anderes
-        als das Wiederherstellen der letzten Sitzung — es gilt auch, wenn zuvor
-        nichts offen war.
+        {t("defaultApps.autostartDesc")}
       </p>
       {autostart.length === 0 && (
-        <p className={styles.rowDesc}>Noch nichts ausgewählt.</p>
+        <p className={styles.rowDesc}>{t("defaultApps.none")}</p>
       )}
       {autostart.map((id) => {
         const app = apps.find((a) => a.id === id);
@@ -130,7 +121,7 @@ export function DefaultAppsTab() {
           <div key={id} className={styles.row}>
             <div className={styles.rowLabel}>
               <label>{app?.name ?? id}</label>
-              {!app && <p className={styles.rowDesc}>App nicht mehr verfügbar</p>}
+              {!app && <p className={styles.rowDesc}>{t("defaultApps.unavailable")}</p>}
             </div>
             <div className={styles.rowControl}>
               <button
@@ -138,7 +129,7 @@ export function DefaultAppsTab() {
                 disabled={busy}
                 onClick={() => void saveAutostart(autostart.filter((x) => x !== id))}
               >
-                Entfernen
+                {t("defaultApps.remove")}
               </button>
             </div>
           </div>
@@ -146,7 +137,7 @@ export function DefaultAppsTab() {
       })}
       <div className={styles.row}>
         <div className={styles.rowLabel}>
-          <label htmlFor="autostart-add">App hinzufügen</label>
+          <label htmlFor="autostart-add">{t("defaultApps.add")}</label>
         </div>
         <div className={styles.rowControl}>
           <select
@@ -157,7 +148,7 @@ export function DefaultAppsTab() {
               if (e.target.value) void saveAutostart([...autostart, e.target.value]);
             }}
           >
-            <option value="">Auswählen …</option>
+            <option value="">{t("defaultApps.choose")}</option>
             {apps
               .filter((a) => !autostart.includes(a.id))
               .map((a) => (

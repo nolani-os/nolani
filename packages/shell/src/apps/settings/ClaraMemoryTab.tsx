@@ -5,20 +5,17 @@
  */
 import { useEffect, useState } from "react";
 import styles from "./ClaraMemoryTab.module.css";
+import { regionLocale, useTranslation } from "@claraos/core";
 
 const API = "/api/claraos/guide/profile";
 
-const FIELD_LABELS: Record<string, string> = {
-  rolle: "Meine Rolle",
-  ziele: "Meine Ziele",
-  technik_komfort: "Technik-Komfort",
-  vorlieben: "Vorlieben",
-  notizen: "Notizen",
-};
+// Profile keys with a catalog label (clara.fields.<key>); others show raw.
+const FIELD_LABELS = ["rolle", "ziele", "technik_komfort", "vorlieben", "notizen"];
 
 type Profile = Record<string, string | string[]>;
 
 export function ClaraMemoryTab() {
+  const { t } = useTranslation("settingsTabs");
   const [profil, setProfil] = useState<Profile>({});
   const [exists, setExists] = useState(false);
   const [meta, setMeta] = useState<{ by?: string; at?: string }>({});
@@ -90,23 +87,16 @@ export function ClaraMemoryTab() {
     setDirty(true);
   };
 
-  if (status === "laden") return <p className={styles.hint}>Lade…</p>;
+  if (status === "laden") return <p className={styles.hint}>{t("claraMemory.loading")}</p>;
 
   const keys = Object.keys(profil);
   return (
     <div className={styles.wrap} data-testid="clara-memory">
-      <h2 className={styles.title}>Was Clara über mich weiß</h2>
-      <p className={styles.hint}>
-        Clara merkt sich hier — nur mit deiner Zustimmung im Gespräch — wer du
-        bist und was dir wichtig ist, um dir besser zu helfen. Du kannst alles
-        ändern oder löschen; Clara nutzt danach sofort den neuen Stand.
-      </p>
+      <h2 className={styles.title}>{t("claraMemory.title")}</h2>
+      <p className={styles.hint}>{t("claraMemory.intro")}</p>
 
       {keys.length === 0 && (
-        <p className={styles.empty}>
-          Clara kennt dich noch nicht. Sag ihr im Chat einfach Hallo — sie
-          stellt sich vor und fragt, was du dir merken lassen möchtest.
-        </p>
+        <p className={styles.empty}>{t("claraMemory.empty")}</p>
       )}
 
       {keys.map((key) => {
@@ -115,9 +105,9 @@ export function ClaraMemoryTab() {
         return (
           <div className={styles.field} key={key}>
             <div className={styles.fieldHead}>
-              <label className={styles.label}>{FIELD_LABELS[key] ?? key}</label>
+              <label className={styles.label}>{FIELD_LABELS.includes(key) ? t(`claraMemory.fields.${key}`) : key}</label>
               <button className={styles.ghost} onClick={() => removeField(key)}
-                      title="Feld entfernen">✕</button>
+                      title={t("claraMemory.removeField")}>✕</button>
             </div>
             <textarea
               className={styles.input}
@@ -132,12 +122,12 @@ export function ClaraMemoryTab() {
       <div className={styles.actions}>
         <button className={styles.primary} disabled={!dirty || status === "speichert"}
                 onClick={() => void save(profil)}>
-          {status === "speichert" ? "Speichert…" : "Speichern"}
+          {status === "speichert" ? t("claraMemory.saving") : t("claraMemory.save")}
         </button>
         {exists && (
           <button className={styles.danger}
-                  onClick={() => { if (window.confirm("Wirklich alles löschen, was Clara über dich weiß?")) void save({}); }}>
-            Alles löschen
+                  onClick={() => { if (window.confirm(t("claraMemory.confirmDeleteAll"))) void save({}); }}>
+            {t("claraMemory.deleteAll")}
           </button>
         )}
       </div>
@@ -146,20 +136,18 @@ export function ClaraMemoryTab() {
         <label className={styles.toggleRow} data-testid="nudge-optout">
           <input type="checkbox" checked={nudgesOn}
                  onChange={(e) => void toggleNudges(e.target.checked)} />
-          <span>
-            Clara darf mir Vorschläge machen (Touren, Tipps zum Einstieg).
-            Ausgeschaltet meldet sie sich nur, wenn du sie ansprichst.
-          </span>
+          <span>{t("claraMemory.nudges")}</span>
         </label>
       )}
 
       {meta.at && (
         <p className={styles.meta}>
-          Zuletzt geändert {meta.by === "clara" ? "von Clara (mit deiner Zustimmung)" : "von dir"}
-          {" am "}{new Date(meta.at).toLocaleString("de-DE")}
+          {t(meta.by === "clara" ? "claraMemory.changedByClara" : "claraMemory.changedByYou", {
+            time: new Date(meta.at).toLocaleString(regionLocale()),
+          })}
         </p>
       )}
-      {status === "fehler" && <p className={styles.error}>Speichern/Laden fehlgeschlagen — bitte nochmal versuchen.</p>}
+      {status === "fehler" && <p className={styles.error}>{t("claraMemory.error")}</p>}
     </div>
   );
 }

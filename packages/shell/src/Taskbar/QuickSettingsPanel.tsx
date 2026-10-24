@@ -7,9 +7,11 @@ import {
   useSettingsStore,
   useDeviceStore,
   isDndActive,
-  dndRemainingLabel,
+  dndRemainingText,
+  dndPresetLabel,
   dndUntilFor,
   DND_PRESETS,
+  useTranslation,
 } from "@claraos/core";
 import { availableSkins } from "@claraos/skins";
 import { heimSlots } from "../extensions";
@@ -41,6 +43,7 @@ export function QuickSettingsPanel({ open, onClose }: QuickSettingsPanelProps) {
   const logout = useAuthStore((s) => s.logout);
   const istZelle = useIstZelle();
   const HeimStatus = heimSlots.QuickSettingsStatus;
+  const { t } = useTranslation("shell");
 
   // "Do not disturb" — the state is a timestamp, not a switch, so it expires
   // by itself instead of staying active for weeks after a movie night.
@@ -101,10 +104,10 @@ export function QuickSettingsPanel({ open, onClose }: QuickSettingsPanelProps) {
   return (
     <>
       <div className={styles.backdrop} onClick={onClose} />
-      <div className={`aeroWidget ${styles.panel}`} role="dialog" aria-label="Quick Settings">
+      <div className={`aeroWidget ${styles.panel}`} role="dialog" aria-label={t("quickSettings.title")}>
         <div className={styles.header}>
-          <span className={styles.title}>Quick Settings</span>
-          <button className={styles.closeBtn} onClick={onClose} aria-label="Close">×</button>
+          <span className={styles.title}>{t("quickSettings.title")}</span>
+          <button className={styles.closeBtn} onClick={onClose} aria-label={t("quickSettings.close")}>×</button>
         </div>
 
         {/* Do not disturb */}
@@ -116,14 +119,16 @@ export function QuickSettingsPanel({ open, onClose }: QuickSettingsPanelProps) {
               aria-pressed={dndOn}
               onClick={() => (dndOn ? void setDnd(null) : setDndMenuOpen((v) => !v))}
             >
-              {dndOn ? `Nicht stören — ${dndRemainingLabel(dndPolicy)}` : "Nicht stören"}
+              {dndOn
+                ? t("quickSettings.dndActive", { remaining: dndRemainingText(dndPolicy) })
+                : t("quickSettings.dnd")}
             </button>
           </div>
           {dndMenuOpen && !dndOn && (
             <div className={styles.dndMenu}>
               {DND_PRESETS.map((p) => (
-                <button key={p.label} onClick={() => void setDnd(p.minutes)}>
-                  {p.label}
+                <button key={p.id} onClick={() => void setDnd(p.minutes)}>
+                  {dndPresetLabel(p)}
                 </button>
               ))}
             </div>
@@ -143,7 +148,7 @@ export function QuickSettingsPanel({ open, onClose }: QuickSettingsPanelProps) {
                 }));
               }}
             >
-              Tour: ClaraOS kennenlernen
+              {t("quickSettings.tour")}
             </button>
           </div>
         </section>
@@ -151,9 +156,9 @@ export function QuickSettingsPanel({ open, onClose }: QuickSettingsPanelProps) {
         {/* System / Network */}
         <section className={styles.section}>
           <div className={styles.statRow}>
-            <Stat label="CPU" value={stats.cpu} />
-            <Stat label="RAM" value={stats.ram} />
-            <Stat label="Disk" value={stats.disk} />
+            <Stat label={t("quickSettings.stat.cpu")} value={stats.cpu} />
+            <Stat label={t("quickSettings.stat.ram")} value={stats.ram} />
+            <Stat label={t("quickSettings.stat.disk")} value={stats.disk} />
           </div>
           {!istZelle && HeimStatus && <HeimStatus />}
         </section>
@@ -161,7 +166,7 @@ export function QuickSettingsPanel({ open, onClose }: QuickSettingsPanelProps) {
         {/* Disks of THIS device (only with the Companion bridge) */}
         {storage && storage.length > 0 && (
           <section className={styles.section} data-qs-section="storage">
-            <div className={styles.sectionLabel}>Datenträger (dieses Gerät)</div>
+            <div className={styles.sectionLabel}>{t("quickSettings.storage")}</div>
             {storage.map((m) => {
               const usedPct = m.totalGb > 0
                 ? Math.min(100, Math.round(((m.totalGb - m.freeGb) / m.totalGb) * 100))
@@ -174,7 +179,7 @@ export function QuickSettingsPanel({ open, onClose }: QuickSettingsPanelProps) {
                       {m.label}
                     </span>
                     <span className={styles.value} style={{ width: "auto" }}>
-                      {m.freeGb.toFixed(0)} von {m.totalGb.toFixed(0)} GB frei
+                      {t("quickSettings.storageFree", { free: m.freeGb.toFixed(0), total: m.totalGb.toFixed(0) })}
                     </span>
                   </div>
                   <div style={{ height: 5, borderRadius: 3, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
@@ -191,7 +196,7 @@ export function QuickSettingsPanel({ open, onClose }: QuickSettingsPanelProps) {
 
         {/* Theme / Skin */}
         <section className={styles.section}>
-          <div className={styles.sectionLabel}>Theme</div>
+          <div className={styles.sectionLabel}>{t("quickSettings.theme")}</div>
           <div className={styles.skinGrid}>
             {availableSkins.map((skin) => (
               <button
@@ -215,11 +220,11 @@ export function QuickSettingsPanel({ open, onClose }: QuickSettingsPanelProps) {
           <div className={styles.actions}>
             <button className={styles.actionBtn} onClick={toggleMute}>
               <span>{muted ? "🔇" : "🎤"}</span>
-              <span>Clara {muted ? "stumm" : "aktiv"}</span>
+              <span>{muted ? t("quickSettings.claraMuted") : t("quickSettings.claraActive")}</span>
             </button>
             <button className={`${styles.actionBtn} ${styles.logoutBtn}`} onClick={logout}>
               <span>↪</span>
-              <span>Abmelden</span>
+              <span>{t("quickSettings.logout")}</span>
             </button>
           </div>
         </section>

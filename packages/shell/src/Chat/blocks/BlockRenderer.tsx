@@ -13,6 +13,7 @@ import { dispatchWhenReady } from "../actionBus";
 import { Markdown } from "../Markdown";
 import { oeffneShellZiel } from "../../Notifications/notificationActions";
 import styles from "./blocks.module.css";
+import { regionLocale } from "@claraos/core";
 
 type Props = Record<string, unknown>;
 const str = (v: unknown, fallback = ""): string => (typeof v === "string" ? v : typeof v === "number" ? String(v) : fallback);
@@ -24,8 +25,8 @@ function datumKurz(iso: string): string {
   if (Number.isNaN(d.getTime())) return iso;
   const heute = new Date();
   const gleich = d.toDateString() === heute.toDateString();
-  const zeit = d.getHours() || d.getMinutes() ? ` ${d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}` : "";
-  return (gleich ? "Heute" : d.toLocaleDateString("de-DE", { day: "numeric", month: "short" })) + zeit;
+  const zeit = d.getHours() || d.getMinutes() ? ` ${d.toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" })}` : "";
+  return (gleich ? "Heute" : d.toLocaleDateString(regionLocale(), { day: "numeric", month: "short" })) + zeit;
 }
 
 /** "Open": replay the same shell action that Clara had triggered. */

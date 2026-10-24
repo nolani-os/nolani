@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useDeviceStore } from "@claraos/core";
+import { useDeviceStore, useTranslation } from "@claraos/core";
 import { WifiGlyph, BluetoothGlyph } from "./icons";
 import styles from "./TrayPopover.module.css";
 
@@ -25,6 +25,7 @@ export function ConnectivityTray({ onClose }: { onClose: () => void }) {
   const setBluetoothEnabled = useDeviceStore((s) => s.setBluetoothEnabled);
   const connectBt = useDeviceStore((s) => s.connectBt);
   const loadBtDevices = useDeviceStore((s) => s.loadBtDevices);
+  const { t } = useTranslation("shell");
 
   const hasWifi = caps.includes("wifi");
   const hasBt = caps.includes("bluetooth");
@@ -50,7 +51,7 @@ export function ConnectivityTray({ onClose }: { onClose: () => void }) {
     setBusy(true);
     const res = await connectWifi(ssid);
     setBusy(false);
-    if (!res.ok) setError(res.error ?? "Verbindung fehlgeschlagen");
+    if (!res.ok) setError(res.error ?? t("tray.connectivity.failed"));
   };
 
   const submitPsk = async () => {
@@ -62,17 +63,17 @@ export function ConnectivityTray({ onClose }: { onClose: () => void }) {
       setPskFor(null);
       setPsk("");
     } else {
-      setError(res.error ?? "Verbindung fehlgeschlagen");
+      setError(res.error ?? t("tray.connectivity.failed"));
     }
   };
 
   return (
     <>
       <div className={styles.backdrop} onClick={onClose} />
-      <div className={`aeroWidget ${styles.panel}`} role="dialog" aria-label="Verbindungen"
+      <div className={`aeroWidget ${styles.panel}`} role="dialog" aria-label={t("tray.connectivity.title")}
         data-tray-popover="connectivity">
         <div className={styles.header}>
-          <span className={styles.title}>Verbindungen</span>
+          <span className={styles.title}>{t("tray.connectivity.title")}</span>
         </div>
 
         {hasWifi && wifi && (
@@ -80,20 +81,22 @@ export function ConnectivityTray({ onClose }: { onClose: () => void }) {
             <div className={styles.row}>
               <WifiGlyph signal={wifi.signal} off={!wifi.enabled} />
               <span className={styles.rowGrow}>
-                WLAN{wifi.connected ? ` — ${wifi.connected}` : ""}
+                {wifi.connected
+                  ? t("tray.connectivity.wifiConnected", { ssid: wifi.connected })
+                  : t("tray.connectivity.wifi")}
               </span>
               {caps.includes("wifi.set") && (
                 <button
                   className={`${styles.toggle} ${wifi.enabled ? styles.toggleOn : ""}`}
                   onClick={() => setWifiEnabled(!wifi.enabled)}
-                  role="switch" aria-checked={wifi.enabled} aria-label="WLAN an/aus"
+                  role="switch" aria-checked={wifi.enabled} aria-label={t("tray.connectivity.wifiToggle")}
                 />
               )}
             </div>
             {wifi.enabled && (
               <>
                 {scanning && wifiNetworks.length === 0 && (
-                  <div className={styles.muted}>Suche Netzwerke…</div>
+                  <div className={styles.muted}>{t("tray.connectivity.scanning")}</div>
                 )}
                 {wifiNetworks.map((n) => (
                   <div key={n.ssid}>
@@ -104,7 +107,7 @@ export function ConnectivityTray({ onClose }: { onClose: () => void }) {
                     >
                       <WifiGlyph signal={n.signal} />
                       <span className={styles.rowGrow}>{n.ssid}</span>
-                      {n.secured && <span aria-label="gesichert">🔒</span>}
+                      {n.secured && <span aria-label={t("tray.connectivity.secured")}>🔒</span>}
                     </button>
                     {pskFor === n.ssid && (
                       <div className={styles.pskForm}>
@@ -112,10 +115,10 @@ export function ConnectivityTray({ onClose }: { onClose: () => void }) {
                           type="password" className={styles.pskInput} value={psk}
                           onChange={(e) => setPsk(e.target.value)}
                           onKeyDown={(e) => { if (e.key === "Enter") void submitPsk(); }}
-                          placeholder="WLAN-Passwort" autoFocus
+                          placeholder={t("tray.connectivity.password")} autoFocus
                         />
                         <button className={styles.pskBtn} onClick={() => void submitPsk()} disabled={busy || !psk}>
-                          Verbinden
+                          {t("tray.connectivity.connect")}
                         </button>
                       </div>
                     )}
@@ -130,12 +133,12 @@ export function ConnectivityTray({ onClose }: { onClose: () => void }) {
           <section className={styles.section}>
             <div className={styles.row}>
               <BluetoothGlyph off={!bluetooth.enabled} />
-              <span className={styles.rowGrow}>Bluetooth</span>
+              <span className={styles.rowGrow}>{t("tray.connectivity.bluetooth")}</span>
               {caps.includes("bluetooth.set") && (
                 <button
                   className={`${styles.toggle} ${bluetooth.enabled ? styles.toggleOn : ""}`}
                   onClick={() => setBluetoothEnabled(!bluetooth.enabled)}
-                  role="switch" aria-checked={bluetooth.enabled} aria-label="Bluetooth an/aus"
+                  role="switch" aria-checked={bluetooth.enabled} aria-label={t("tray.connectivity.bluetoothToggle")}
                 />
               )}
             </div>
@@ -145,11 +148,11 @@ export function ConnectivityTray({ onClose }: { onClose: () => void }) {
                 className={`${styles.listBtn} ${d.connected ? styles.listBtnActive : ""}`}
                 onClick={() => void connectBt(d.address, d.connected)}
                 disabled={busy || !caps.includes("bluetooth.connect")}
-                title={d.connected ? "Trennen" : "Verbinden"}
+                title={d.connected ? t("tray.connectivity.disconnect") : t("tray.connectivity.connect")}
               >
                 <BluetoothGlyph />
                 <span className={styles.rowGrow}>{d.name}</span>
-                {d.connected && <span className={styles.muted}>verbunden</span>}
+                {d.connected && <span className={styles.muted}>{t("tray.connectivity.connected")}</span>}
               </button>
             ))}
           </section>
@@ -160,7 +163,7 @@ export function ConnectivityTray({ onClose }: { onClose: () => void }) {
         {!hasWifi && !hasBt && (
           <section className={styles.section}>
             <div className={styles.muted}>
-              WLAN- und Bluetooth-Steuerung liefert die ClaraOS-Companion-App.
+              {t("tray.connectivity.needsCompanion")}
             </div>
           </section>
         )}

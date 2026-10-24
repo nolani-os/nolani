@@ -7,7 +7,7 @@ and left for the sync-daemon to retry — no half-rollback of Authentik state.
 """
 from __future__ import annotations
 
-from betriebsprofil import heim_default  # external deployments: no silent home-server fallback
+from betriebsprofil import PRODUCT_NAME, heim_default  # external deployments: no silent home-server fallback
 from betriebsprofil import OWNER_USER  # owner/admin account of this installation
 import asyncio
 import json
@@ -106,7 +106,7 @@ async def _get_synapse_admin_token() -> str:
             "type": "m.login.password",
             "identifier": {"type": "m.id.user", "user": creds["username"]},
             "password": creds["password"],
-            "initial_device_display_name": "ClaraOS Admin (clara.bot)",
+            "initial_device_display_name": f"{PRODUCT_NAME} Admin (clara.bot)",
             # Fixed device_id: otherwise EVERY login creates a new device and
             # Synapse accumulates them without limit (~48/day with a 30-minute
             # cache). With a fixed ID there is exactly one.

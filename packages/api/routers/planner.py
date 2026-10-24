@@ -14,7 +14,7 @@ tracking. Task list/detail GETs get the sidecar rows attached as `_meta`.
 """
 from __future__ import annotations
 
-from betriebsprofil import heim_default  # external deployment: no silent home-network fallback
+from betriebsprofil import ASSISTANT_NAME, heim_default  # external deployment: no silent home-network fallback
 import asyncio
 import datetime as dt
 import json
@@ -1593,6 +1593,18 @@ async def _write_candidates(user: str, request: Request) -> list[tuple[str, str]
     return out
 
 
+async def _assert_visible(path: str, user_token: str, what: str) -> None:
+    """The caller must see the target with their OWN token before Clara's token writes.
+
+    Writes run as clara first (she may be shared into projects the user can see),
+    so without this check any user could write into every project shared with
+    clara — including other users' projects.
+    """
+    resp = await _upstream("GET", path, user_token)
+    if resp.status_code != 200:
+        raise HTTPException(status_code=404, detail=f"{what} nicht gefunden oder nicht freigegeben")
+
+
 async def _write_upstream(method: str, path: str, candidates: list[tuple[str, str]],
                           body: bytes | None = None) -> tuple[httpx.Response, str]:
     """Write as clara first; on 403/404 (project not shared) → as the user."""
@@ -2047,6 +2059,7 @@ async def clara_create_task(body: ClaraCreateTask, request: Request):
     await _ensure_tables()
     user = _caller(request)
     cands = await _write_candidates(user, request)
+    await _assert_visible(f"projects/{body.project_id}", cands[-1][1], f"Projekt {body.project_id}")
     payload: dict = {"title": body.title}
     if body.description:
         payload["description"] = body.description
@@ -2079,13 +2092,16 @@ async def clara_undo_task(body: ClaraUndoTask, request: Request):
     30 minutes ago. Anything older has to be handled in the app.
     """
     await _ensure_tables()
-    _caller(request)  # logged-in user, otherwise 401
+    user = _caller(request)  # logged-in user, otherwise 401
+    # Only a task this user can see (a member without an own Vikunja account sees
+    # nothing and cannot undo — the app is the place for that).
+    await _assert_visible(f"tasks/{body.task_id}", await _vikunja_token(user), f"Aufgabe {body.task_id}")
     cands: list[tuple[str, str]] = []
     t = await _clara_token()
     if t:
         cands.append(("clara", t))
     if not cands:
-        raise HTTPException(status_code=503, detail="Clara hat kein Planner-Token")
+        raise HTTPException(status_code=503, detail=f"{ASSISTANT_NAME} hat kein Planner-Token")
     resp = await _upstream("GET", f"tasks/{body.task_id}", cands[0][1])
     if resp.status_code != 200:
         raise _fail(resp, "Aufgabe lesen")
@@ -2169,6 +2185,8 @@ async def clara_set_dependency(body: ClaraSetDependency, request: Request):
     await _ensure_tables()
     user = _caller(request)
     cands = await _write_candidates(user, request)
+    for tid in (body.task_id, body.depends_on_task_id):
+        await _assert_visible(f"tasks/{tid}", cands[-1][1], f"Aufgabe {tid}")
     payload = {"task_id": body.task_id, "other_task_id": body.depends_on_task_id,
                "relation_kind": "blocked"}
     resp, label = await _write_upstream("PUT", f"tasks/{body.task_id}/relations",
@@ -2209,6 +2227,7 @@ async def clara_move_card(body: ClaraMoveCard, request: Request):
             status_code=404,
             detail=f"Bucket '{body.bucket}' nicht gefunden. Vorhanden: "
                    f"{', '.join(str(b.get('title')) for b in buckets)}")
+    await _assert_visible(f"tasks/{body.task_id}", token, f"Aufgabe {body.task_id}")
     cands = await _write_candidates(user, request)
     resp, label = await _write_upstream(
         "POST", f"projects/{body.project_id}/views/{kanban['id']}/buckets/{target['id']}/tasks",
@@ -2228,6 +2247,7 @@ async def clara_add_comment(body: ClaraAddComment, request: Request):
     await _ensure_tables()
     user = _caller(request)
     cands = await _write_candidates(user, request)
+    await _assert_visible(f"tasks/{body.task_id}", cands[-1][1], f"Aufgabe {body.task_id}")
     resp, label = await _write_upstream("PUT", f"tasks/{body.task_id}/comments", cands,
                                         body=json.dumps({"comment": body.comment}).encode())
     if resp.status_code not in (200, 201):
@@ -2322,7 +2342,7 @@ async def clara_create_project_from_plan(body: ClaraProjectPlan, request: Reques
 # entry point the model would have to get three calls right in sequence (find
 # project → create task → work/start); each one is a chance to get it wrong.
 
-ADHOC_PROJECT_TITLE = "Clara"
+ADHOC_PROJECT_TITLE = ASSISTANT_NAME
 
 
 async def _find_or_create_project(token: str, title: str) -> int:

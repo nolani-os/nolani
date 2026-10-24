@@ -55,6 +55,7 @@ const SUITES = [
   ["src/format.ts", "format.test.mjs", "runFormatTests"],
   ["src/notifications/policy.ts", "policy.test.mjs", "runPolicyTests"],
   ["src/shortcuts/registry.ts", "shortcuts.test.mjs", "runShortcutTests"],
+  ["src/i18n/languages.ts", "languages.test.mjs", "runLanguageTests"],
 ];
 
 let failed = 0;

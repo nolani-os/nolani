@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { WidgetProps } from "./registry";
 import s from "./MailInbox.module.css";
+import { regionLocale, useTranslation } from "@claraos/core";
 
 interface MailMsg {
   uid: string;
@@ -33,11 +34,12 @@ function shortDate(rfc: string): string {
     d.getMonth() === today.getMonth() &&
     d.getDate() === today.getDate();
   return sameDay
-    ? d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
-    : d.toLocaleDateString("de-DE", { day: "numeric", month: "numeric" });
+    ? d.toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" })
+    : d.toLocaleDateString(regionLocale(), { day: "numeric", month: "numeric" });
 }
 
 export default function MailInboxWidget(_: WidgetProps) {
+  const { t } = useTranslation("desktop");
   const [messages, setMessages] = useState<MailMsg[] | null>(null);
   const [state, setState] = useState<"ok" | "noaccount" | "error">("ok");
   const [account, setAccount] = useState("");
@@ -126,29 +128,29 @@ export default function MailInboxWidget(_: WidgetProps) {
   return (
     <div className={s.widget}>
       <div className={s.header}>
-        <span className={s.title}>Posteingang</span>
+        <span className={s.title}>{t("widgets.mail.title")}</span>
         {unread > 0 && <span className={s.badge}>{unread}</span>}
         <span className={s.account}>{account}</span>
         <button
           className={s.iconBtn}
           data-no-drag
           onClick={load}
-          aria-label="Aktualisieren"
+          aria-label={t("widgets.mail.refresh")}
         >
           ⟳
         </button>
       </div>
       <div className={s.scroll} data-no-drag>
-        {messages === null && state === "ok" && <div className={s.empty}>Lade E-Mails…</div>}
+        {messages === null && state === "ok" && <div className={s.empty}>{t("widgets.mail.loading")}</div>}
         {state === "noaccount" && (
           <div className={s.empty}>
-            Kein Mail-Konto verbunden.
-            <span className={s.emptySub}>Apps → Mail-Zugang hinterlegen</span>
+            {t("widgets.mail.noAccount")}
+            <span className={s.emptySub}>{t("widgets.mail.noAccountHint")}</span>
           </div>
         )}
-        {state === "error" && <div className={s.empty}>Postfach nicht erreichbar</div>}
+        {state === "error" && <div className={s.empty}>{t("widgets.mail.unreachable")}</div>}
         {state === "ok" && messages !== null && messages.length === 0 && (
-          <div className={s.empty}>Keine E-Mails</div>
+          <div className={s.empty}>{t("widgets.mail.empty")}</div>
         )}
         {state === "ok" &&
           (messages ?? []).map((m) => (
@@ -160,12 +162,12 @@ export default function MailInboxWidget(_: WidgetProps) {
                 <span className={s.dot} aria-hidden />
                 <span className={s.rowMain}>
                   <span className={s.from}>{fromName(m.from)}</span>
-                  <span className={s.subject}>{m.subject || "(kein Betreff)"}</span>
+                  <span className={s.subject}>{m.subject || t("widgets.mail.noSubject")}</span>
                 </span>
                 <span className={s.date}>{shortDate(m.date)}</span>
               </div>
               {openUid === m.uid && (
-                <div className={s.body}>{bodies[m.uid] ?? "Lade Nachricht…"}</div>
+                <div className={s.body}>{bodies[m.uid] ?? t("widgets.mail.loadingMessage")}</div>
               )}
             </div>
           ))}

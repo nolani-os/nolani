@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-"""Wire up a cell's Authentik for ClaraOS — idempotent.
+"""Wire up a cell's Authentik for the workspace — idempotent.
 
 Creates or verifies:
 - Proxy provider `claraos-shell` (forward_single, external_host = https://home.<domain>)
-- Application `ClaraOS` (slug `claraos`)
+- Application named after CLARAOS_PRODUCT_NAME (default NolaniOS; slug `claraos`)
 - Binding to the embedded outpost (otherwise /outpost.goauthentik.io/auth/caddy returns 404)
 - Group `clara-admins` containing the bootstrap admin `akadmin` (the API only opens admin
   paths to this group — without it even the admin would be locked out)
 - OAuth2 providers + applications for Vaultwarden, Immich and Paperless (each only if
   its client secret is set)
+- Users can no longer change their own username or email in the user settings, and
+  Vaultwarden (only Vaultwarden) gets the email as verified — see `email_fest()`
 
 Runs on the cell (setup.sh) and talks to Authentik on its internal port.
-Env: AUTHENTIK_API_TOKEN, ZELLE_DOMAIN, optional AUTHENTIK_API_URL.
+Env: AUTHENTIK_API_TOKEN, ZELLE_DOMAIN, optional AUTHENTIK_API_URL, CLARAOS_PRODUCT_NAME.
 Never prints tokens or passwords.
 """
 import json
@@ -25,6 +27,8 @@ API = os.environ.get("AUTHENTIK_API_URL", "http://127.0.0.1:9000/api/v3").rstrip
 TOKEN = os.environ["AUTHENTIK_API_TOKEN"]
 DOM = os.environ["ZELLE_DOMAIN"]
 EXT_HOST = f"https://home.{DOM}"
+# Visible product name on the login page / app list (slugs and ids stay "claraos").
+PRODUCT = os.environ.get("CLARAOS_PRODUCT_NAME") or "NolaniOS"
 HDR = {"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"}
 
 
@@ -82,7 +86,7 @@ def main():
     # 1+2. Proxy providers (forward auth) + applications: the shell and the two
     # host names of the personal browsers (browser/ctl.py, Caddyfile `user_browser`).
     prov_pks = [
-        proxy_app("claraos-shell", "claraos", "ClaraOS", EXT_HOST),
+        proxy_app("claraos-shell", "claraos", PRODUCT, EXT_HOST),
         proxy_app("claraos-browser", "claraos-browser", "Browser", f"https://browser.{DOM}"),
         proxy_app("claraos-browser-m", "claraos-browser-m", "Browser (mobil)", f"https://browser-m.{DOM}"),
     ]
@@ -120,11 +124,16 @@ def main():
         else:
             print("akadmin ist in clara-admins")
 
-    # 5. OAuth2 providers (SSO). Issuer = /application/o/<slug>/
-    # Vaultwarden
+    # 5. Username + email are set by the admin, not by the user (before any provider
+    # is told that the email is verified).
+    email_fest()
+
+    # 6. OAuth2 providers (SSO). Issuer = /application/o/<slug>/
+    # Vaultwarden refuses SSO unless `email_verified` is true — Authentik's default
+    # mapping always says false, so the vault was unusable for every account.
     oidc_app("vaultwarden", "Bitwarden", os.environ.get("VW_SSO_CLIENT_SECRET"),
              [f"https://vault.{DOM}/identity/connect/oidc-signin"],
-             {"openid", "email", "profile", "offline_access"})
+             {"openid", "email", "profile", "offline_access"}, email_verified=True)
     # Immich: web login, account linking in the settings, and the mobile app
     oidc_app("immich", "Fotos", os.environ.get("IMMICH_OIDC_SECRET"),
              [f"https://immich.{DOM}/auth/login", f"https://immich.{DOM}/user-settings",
@@ -168,6 +177,11 @@ def proxy_app(name, slug, title, ext_host):
         })["pk"]
         print(f"provider '{name}' angelegt (pk={pk})")
     if app_exists(slug):
+        # Keep the visible title in step with the configured name (renamed product).
+        app = req("GET", f"/core/applications/{slug}/")
+        if app.get("name") != title:
+            req("PATCH", f"/core/applications/{slug}/", {"name": title})
+            print(f"application '{slug}': Titel -> {title}")
         print(f"application '{slug}' vorhanden")
     else:
         req("POST", "/core/applications/", {"name": title, "slug": slug, "provider": pk})
@@ -175,15 +189,64 @@ def proxy_app(name, slug, title, ext_host):
     return pk
 
 
-def oidc_app(slug, title, secret, redirects, want):
+VERIFIED_EMAIL_MAPPING = "claraos-cell: email (verified)"
+
+
+def email_fest():
+    """Remove `username` and `email` from the user settings prompt.
+
+    Why: a provider that trusts the email (Vaultwarden links accounts by it) turns a
+    self-editable email into an account takeover; and ClaraOS identifies users by
+    username, so renaming oneself to a deleted account's name would inherit its data.
+    In a cell the admin manages accounts. The stage belongs to Authentik's default
+    blueprint and may come back after an Authentik update — this runs on every setup.
+    """
+    stufe = [st for st in req("GET", "/stages/prompt/stages/?page_size=500")["results"]
+             if st.get("name") == "default-user-settings"]
+    if not stufe:
+        print("user-settings: Stage nicht gefunden — übersprungen")
+        return
+    st = stufe[0]
+    prompts = {p["pk"]: p for p in req("GET", "/stages/prompt/prompts/?page_size=500")["results"]}
+    bleiben = [pk for pk in st["fields"] if prompts.get(pk, {}).get("field_key") not in ("username", "email")]
+    if len(bleiben) != len(st["fields"]):
+        req("PATCH", f"/stages/prompt/stages/{st['pk']}/", {"fields": bleiben})
+        print("user-settings: Benutzername + E-Mail nicht mehr selbst änderbar")
+    else:
+        print("user-settings: Benutzername + E-Mail bereits gesperrt")
+
+
+def verified_email_mapping():
+    """Own `email` scope mapping with email_verified=true; returns its pk."""
+    feld = {
+        "name": VERIFIED_EMAIL_MAPPING, "scope_name": "email",
+        "description": "Email as set by the cell admin (users cannot change it)",
+        "expression": 'return {"email": request.user.email, "email_verified": True}',
+    }
+    hit = [m for m in req("GET", "/propertymappings/provider/scope/?page_size=500")["results"]
+           if m.get("name") == VERIFIED_EMAIL_MAPPING]
+    if hit:
+        if hit[0].get("expression") != feld["expression"]:
+            req("PATCH", f"/propertymappings/provider/scope/{hit[0]['pk']}/", feld)
+        return hit[0]["pk"]
+    return req("POST", "/propertymappings/provider/scope/", feld)["pk"]
+
+
+def oidc_app(slug, title, secret, redirects, want, email_verified=False):
     """Create or update a confidential OAuth2 provider + application `slug`.
-    Skipped without a secret (the cell then simply has no such app)."""
+    Skipped without a secret (the cell then simply has no such app).
+    email_verified: use the cell's own email mapping instead of Authentik's default."""
     if not secret:
         print(f"provider '{slug}': kein Secret — übersprungen")
         return
     redirect = [{"matching_mode": "strict", "url": u} for u in redirects]
     scopes = req("GET", "/propertymappings/provider/scope/?managed__startswith=goauthentik.io/providers/oauth2/scope-")["results"]
-    mappings = [m["pk"] for m in scopes if m["managed"].rsplit("scope-", 1)[-1] in want]
+    # `or ""`: should the managed filter ever be ignored too, our own mapping has none.
+    mappings = [m["pk"] for m in scopes if (m.get("managed") or "").startswith("goauthentik.io/providers/oauth2/scope-")
+                and m["managed"].rsplit("scope-", 1)[-1] in want
+                and not (email_verified and m["managed"].endswith("scope-email"))]
+    if email_verified and "email" in want:
+        mappings.append(verified_email_mapping())
     keys = req("GET", "/crypto/certificatekeypairs/?has_key=true")["results"]
     felder = {
         "name": slug,

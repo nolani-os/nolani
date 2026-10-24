@@ -3,6 +3,7 @@ import {
   getFormatPrefs,
   formatBytesLocale,
   formatDateTimeLocale,
+  useTranslation,
 } from "@claraos/core";
 import styles from "./PropertiesDialog.module.css";
 
@@ -25,6 +26,7 @@ export interface PropertiesDialogProps {
  * skin stylesheet (see `[data-skin-id="aero-glass"] .panel`).
  */
 export function PropertiesDialog({ open, title, rows, onClose }: PropertiesDialogProps) {
+  const { t } = useTranslation("components");
   if (!open) return null;
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -37,7 +39,7 @@ export function PropertiesDialog({ open, title, rows, onClose }: PropertiesDialo
       >
         <div className={styles.header}>
           <h2 className={styles.title}>{title}</h2>
-          <button className={styles.closeBtn} onClick={onClose} aria-label="Close">
+          <button className={styles.closeBtn} onClick={onClose} aria-label={t("propertiesDialog.close")}>
             ×
           </button>
         </div>

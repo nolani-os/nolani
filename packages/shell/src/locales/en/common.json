@@ -1,0 +1,31 @@
+{
+  "dnd": {
+    "remaining": {
+      "unlimited": "indefinitely",
+      "tomorrow": "until tomorrow",
+      "days": "{{count}} days left",
+      "hoursMinutes": "{{h}} h {{m}} min left",
+      "hours": "{{h}} h left",
+      "minutes": "{{count}} min left"
+    },
+    "preset": {
+      "30m": "30 minutes",
+      "1h": "1 hour",
+      "tomorrow": "Until tomorrow morning",
+      "off": "Until I turn it off"
+    }
+  },
+  "newFile": {
+    "txt": "Text file",
+    "md": "Markdown",
+    "json": "JSON",
+    "sh": "Shell script",
+    "csv": "CSV spreadsheet",
+    "docx": "Word document",
+    "xlsx": "Excel spreadsheet",
+    "pptx": "Presentation",
+    "svg": "Vector graphic",
+    "png": "Raster image",
+    "stl": "3D model"
+  }
+}

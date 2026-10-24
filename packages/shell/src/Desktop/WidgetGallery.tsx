@@ -1,7 +1,8 @@
 // Widget gallery: card grid over all widget manifests. Opened from the
 // desktop context menu ("Widgets…"). A card click adds the widget at the
 // first free desktop spot (Desktop.tsx computes that) and closes the dialog.
-import { widgetManifests } from "../widgets/registry";
+import { useTranslation } from "@claraos/core";
+import { widgetManifests, widgetName, widgetDescription } from "../widgets/registry";
 import styles from "./WidgetGallery.module.css";
 
 export interface WidgetGalleryProps {
@@ -11,6 +12,7 @@ export interface WidgetGalleryProps {
 }
 
 export function WidgetGallery({ open, onAdd, onClose }: WidgetGalleryProps) {
+  const { t } = useTranslation("desktop");
   if (!open) return null;
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -18,12 +20,12 @@ export function WidgetGallery({ open, onAdd, onClose }: WidgetGalleryProps) {
         className={`aeroWidget ${styles.panel}`}
         role="dialog"
         aria-modal="true"
-        aria-label="Widgets"
+        aria-label={t("gallery.title")}
         onClick={(e) => e.stopPropagation()}
       >
         <div className={styles.header}>
-          <h2 className={styles.title}>Widgets</h2>
-          <button className={styles.closeBtn} onClick={onClose} aria-label="Schließen">
+          <h2 className={styles.title}>{t("gallery.title")}</h2>
+          <button className={styles.closeBtn} onClick={onClose} aria-label={t("gallery.close")}>
             ×
           </button>
         </div>
@@ -40,9 +42,9 @@ export function WidgetGallery({ open, onAdd, onClose }: WidgetGalleryProps) {
               <span className={styles.cardIcon} aria-hidden>
                 {m.icon ?? "🧩"}
               </span>
-              <span className={styles.cardName}>{m.name}</span>
-              <span className={styles.cardDesc}>{m.description}</span>
-              <span className={styles.cardAdd}>＋ Hinzufügen</span>
+              <span className={styles.cardName}>{widgetName(m)}</span>
+              <span className={styles.cardDesc}>{widgetDescription(m)}</span>
+              <span className={styles.cardAdd}>＋ {t("gallery.add")}</span>
             </button>
           ))}
         </div>

@@ -1,0 +1,277 @@
+{
+  "taskbar": {
+    "clara": "{{assistant}}",
+    "voice": "Voice Mode",
+    "pinned": {
+      "focus": "{{app}} fokussieren",
+      "open": "{{app}} öffnen",
+      "newInstance": "Neue Instanz",
+      "unpin": "Vom Taskbar lösen",
+      "openAppCenter": "App-Center öffnen",
+      "appCenterTitle": "App-Center"
+    },
+    "window": {
+      "close": "Schließen",
+      "minimize": "Minimieren"
+    },
+    "showDesktop": "Desktop anzeigen",
+    "calendar": {
+      "weekday": {
+        "mon": "Mo",
+        "tue": "Di",
+        "wed": "Mi",
+        "thu": "Do",
+        "fri": "Fr",
+        "sat": "Sa",
+        "sun": "So"
+      }
+    },
+    "workspaces": {
+      "title": "Arbeitsflächen",
+      "empty": "Leer",
+      "delete": "Arbeitsfläche löschen",
+      "defaultName": "Desktop {{n}}",
+      "new": "Neue Arbeitsfläche"
+    }
+  },
+  "quickSettings": {
+    "title": "Schnelleinstellungen",
+    "close": "Close",
+    "dnd": "Nicht stören",
+    "dndActive": "Nicht stören — {{remaining}}",
+    "tour": "Tour: {{product}} kennenlernen",
+    "stat": {
+      "cpu": "CPU",
+      "ram": "RAM",
+      "disk": "Disk"
+    },
+    "storage": "Datenträger (dieses Gerät)",
+    "storageFree": "{{free}} von {{total}} GB frei",
+    "theme": "Theme",
+    "claraMuted": "{{assistant}} stumm",
+    "claraActive": "{{assistant}} aktiv",
+    "logout": "Abmelden"
+  },
+  "tray": {
+    "quickSettings": {
+      "title": "Schnelleinstellungen (Win+A)"
+    },
+    "notifications": {
+      "title": "Benachrichtigungen"
+    },
+    "connectivity": {
+      "title": "Verbindungen",
+      "failed": "Verbindung fehlgeschlagen",
+      "wifi": "WLAN",
+      "wifiConnected": "WLAN — {{ssid}}",
+      "wifiToggle": "WLAN an/aus",
+      "scanning": "Suche Netzwerke…",
+      "secured": "gesichert",
+      "password": "WLAN-Passwort",
+      "connect": "Verbinden",
+      "disconnect": "Trennen",
+      "connected": "verbunden",
+      "bluetooth": "Bluetooth",
+      "bluetoothToggle": "Bluetooth an/aus",
+      "needsCompanion": "WLAN- und Bluetooth-Steuerung liefert die {{product}}-Companion-App."
+    },
+    "volume": {
+      "title": "Lautstärke",
+      "system": "System",
+      "systemDevice": "System — {{device}}",
+      "output": "Ausgabegerät",
+      "unmute": "Ton an",
+      "mute": "Stumm",
+      "systemVolume": "Systemlautstärke",
+      "mic": "Mikrofon",
+      "micDevice": "Mikrofon — {{device}}",
+      "input": "Aufnahmegerät",
+      "micOn": "Mikrofon an",
+      "micMute": "Mikrofon stumm",
+      "inputLevel": "Aufnahmepegel",
+      "inUse": "Zugriff gerade",
+      "camera": "Kamera",
+      "inUseBy": {
+        "none": "{{what}} wird gerade benutzt",
+        "apps": "{{what}}: {{apps}}",
+        "more_one": "{{what}}: {{apps}} und {{count}} weitere",
+        "more_other": "{{what}}: {{apps}} und {{count}} weitere"
+      },
+      "browserAudio": "Browser-Audio",
+      "browserVolume": "Browser-Lautstärke",
+      "needsCompanion": "Systemlautstärke ist nur mit der {{product}}-Companion-App steuerbar."
+    },
+    "power": {
+      "title": "Energie",
+      "remaining": "noch ~{{time}} h",
+      "battery": "Akku {{percent}}%",
+      "batteryCharging": "Akku {{percent}}% — lädt",
+      "brightness": "Bildschirmhelligkeit",
+      "noData": "Keine Energie-Daten verfügbar. Akku-Anzeige und Helligkeit liefert die {{product}}-Companion-App."
+    },
+    "claraWork": {
+      "title": "{{assistant}} arbeitet"
+    }
+  },
+  "notifications": {
+    "title": "Benachrichtigungen",
+    "clearAll": "Alle löschen",
+    "empty": "Keine Benachrichtigungen",
+    "http": {
+      "sentTitle": "✅ Übermittelt",
+      "errorTitle": "⚠️ Fehler {{status}}",
+      "done": "„{{label}}\" wurde ausgeführt.",
+      "failed": "„{{label}}\" ist fehlgeschlagen.",
+      "unreachableTitle": "⚠️ Nicht erreichbar",
+      "unreachable": "„{{label}}\" konnte nicht übermittelt werden."
+    }
+  },
+  "clipboard": {
+    "title": "Zwischenablage",
+    "historyLabel": "Clipboard history",
+    "clearAll": "Alle löschen",
+    "empty": "Noch keine Einträge. Was du kopierst, landet hier.",
+    "restore": "Klick → in Zwischenablage zurücklegen",
+    "remove": "Entfernen",
+    "removeEntry": "Eintrag entfernen",
+    "copyFailedTitle": "Nicht in die Zwischenablage gelegt",
+    "copyFailed": "Der Browser hat den Zugriff abgelehnt."
+  },
+  "screenshot": {
+    "toolLabel": "Screenshot tool",
+    "hint": "Klick + Ziehen für Auswahl  ·  Esc zum Abbrechen",
+    "copiedTitle": "Screenshot kopiert",
+    "copied": "Data-URL wurde in die Zwischenablage gelegt.",
+    "copyFailedTitle": "Screenshot nicht kopiert",
+    "copyFailed": "Die Zwischenablage hat den Zugriff abgelehnt.",
+    "viewerTitle": "Screenshot",
+    "failedTitle": "Aufnahme fehlgeschlagen",
+    "failed": "Vermutlich enthält die Seite Cross-Origin-Iframes, die html-to-image nicht erfassen kann.",
+    "close": "Schließen",
+    "preview": "Screenshot preview",
+    "copyAsText": "Als Text kopieren",
+    "download": "Herunterladen",
+    "openInViewer": "In Image-Viewer öffnen",
+    "discard": "Verwerfen"
+  },
+  "search": {
+    "placeholder": "Apps, Dateien, Einstellungen suchen …",
+    "noResults": "Nichts gefunden für „{{query}}“",
+    "hint": "Tippen zum Suchen — Apps, Einstellungen, Kommandos, Dateien, oder einfach rechnen (12*8)",
+    "terminal": "Terminal",
+    "window": {
+      "files": "Dateien",
+      "settings": "Einstellungen",
+      "taskManager": "Task-Manager"
+    },
+    "subtitle": {
+      "webApp": "Web App",
+      "systemApp": "System App",
+      "settings": "Einstellungen",
+      "quickCommand": "Quick Command · {{group}}",
+      "calc": "Ergebnis · Enter kopiert"
+    },
+    "group": {
+      "calc": "Ergebnis",
+      "apps": "Apps",
+      "settings": "Einstellungen",
+      "commands": "Kommandos",
+      "quickCommands": "Quick Commands",
+      "files": "Dateien"
+    }
+  },
+  "startMenu": {
+    "category": {
+      "system": "System",
+      "productivity": "Produktivität",
+      "engineering": "Engineering",
+      "developer": "Entwicklung",
+      "media": "Medien",
+      "services": "Dienste",
+      "games": "Spiele",
+      "wrapps": "Wrapps",
+      "other": "Sonstige"
+    },
+    "menu": {
+      "open": "Öffnen",
+      "unpin": "Von „Angepinnt“ lösen",
+      "pin": "Anpinnen (Start + Taskbar)",
+      "showInAppCenter": "Im App-Center anzeigen"
+    },
+    "appCenterTitle": "App-Center",
+    "lastChat": "Letzter Chat",
+    "leaveClaraMode": "{{assistant}}-Modus verlassen (Backspace)",
+    "input": {
+      "reply": "Antworten …",
+      "askClara": "Frag {{assistant}} …",
+      "default": "Frag {{assistant}} oder suche Apps …",
+      "stopRecording": "Aufnahme stoppen",
+      "dictate": "{{assistant}} diktieren",
+      "stop": "Stoppen",
+      "send": "Senden",
+      "expand": "Chat-Vollansicht öffnen"
+    },
+    "service": "Dienst",
+    "askClara": "„{{query}}“ — {{assistant}} fragen",
+    "quickAnswer": {
+      "waiting": "Warte bis {{assistant}}s Antwort fertig ist …",
+      "continue": "Im Chat fortsetzen ⤢",
+      "close": "Schließen"
+    },
+    "pinned": "Angepinnt",
+    "continue": "Weiter machen",
+    "claraChat": "{{assistant}}-Chat",
+    "allApps": "Alle Apps",
+    "footer": {
+      "settings": "Einstellungen",
+      "feedback": "Feedback geben",
+      "logout": "Abmelden",
+      "shutdown": "Herunterfahren ({{product}} Companion beenden)"
+    },
+    "chat": {
+      "backTitle": "Zurück zum Startmenü (Esc)",
+      "back": "‹ Startmenü"
+    }
+  },
+  "window": {
+    "menu": {
+      "restore": "Wiederherstellen",
+      "minimize": "Minimieren",
+      "maximize": "Maximieren",
+      "unmaximize": "Verkleinern",
+      "alwaysOnTop": "Immer im Vordergrund",
+      "moveToWorkspace": "Auf Arbeitsfläche verschieben…",
+      "workspaceCurrent": "{{name}} (aktuell)",
+      "close": "Schließen",
+      "closeShortcut": "Strg+W"
+    },
+    "close": "Schließen",
+    "minimize": "Minimieren",
+    "maximize": "Maximieren",
+    "restore": "Wiederherstellen",
+    "clara": {
+      "label": "{{assistant}}",
+      "open": "Mit {{assistant}} reden über das aktuelle Objekt",
+      "close": "{{assistant}} schließen"
+    },
+    "switchAccount": "Konto wechseln",
+    "altTab": {
+      "label": "Fensterwechsler",
+      "title": "Fenster wechseln"
+    },
+    "snap": {
+      "snapTo": "Snap to {{zone}}",
+      "zone": {
+        "left": "links",
+        "right": "rechts",
+        "top-left": "oben links",
+        "top-right": "oben rechts",
+        "bottom-left": "unten links",
+        "bottom-right": "unten rechts",
+        "maximize": "maximize"
+      }
+    },
+    "loading": "Wird geladen …",
+    "noComponent": "App <code>{{appId}}</code> has no registered component."
+  }
+}

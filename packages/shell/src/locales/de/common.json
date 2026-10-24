@@ -1,0 +1,18 @@
+{
+  "dnd": {
+    "remaining": {
+      "unlimited": "unbegrenzt",
+      "tomorrow": "bis morgen",
+      "days": "noch {{count}} Tage",
+      "hoursMinutes": "noch {{h}} Std. {{m}} Min.",
+      "hours": "noch {{h}} Std.",
+      "minutes": "noch {{count}} Min."
+    },
+    "preset": {
+      "30m": "30 Minuten",
+      "1h": "1 Stunde",
+      "tomorrow": "Bis morgen früh",
+      "off": "Bis ich es ausschalte"
+    }
+  }
+}

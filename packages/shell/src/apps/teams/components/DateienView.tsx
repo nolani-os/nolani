@@ -21,6 +21,7 @@ import { useWindowsStore, type FileNode } from "@claraos/core";
 import { getFileAppId, getViewerSizeForFile } from "../../../lib/fileTypeRouter";
 import { FolderIcon, PostsIcon } from "./icons";
 import styles from "./DateienView.module.css";
+import { regionLocale } from "@claraos/core";
 
 const QUELLE = "nextcloud";
 
@@ -36,7 +37,7 @@ function datum(iso?: string): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" });
+  return d.toLocaleDateString(regionLocale(), { day: "2-digit", month: "short", year: "numeric" });
 }
 
 export function DateienView({ startPfad = "/" }: { startPfad?: string }) {

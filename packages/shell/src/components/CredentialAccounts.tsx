@@ -17,7 +17,7 @@
  * anyone else's.
  */
 import { useEffect, useState } from "react";
-import { useCredentialsStore, type AppAccount, type CredentialSlot } from "@claraos/core";
+import { useCredentialsStore, useTranslation, type AppAccount, type CredentialSlot } from "@claraos/core";
 import styles from "./CredentialAccounts.module.css";
 
 const LEER: AppAccount[] = [];
@@ -47,11 +47,12 @@ export function CredentialAccounts({
   const [speichertGerade, setSpeichertGerade] = useState(false);
   const [fehler, setFehler] = useState("");
   const [sichtbar, setSichtbar] = useState<Record<string, boolean>>({});
+  const { t } = useTranslation("components");
 
   useEffect(() => { ladeKonten(appId); }, [appId, ladeKonten]);
 
   if (slots.length === 0) {
-    return <p className={styles.hinweis}>{hinweisOhneFelder || "Dieser Dienst braucht keine Zugangsdaten."}</p>;
+    return <p className={styles.hinweis}>{hinweisOhneFelder || t("accounts.noFields")}</p>;
   }
 
   const zuruecksetzen = () => {
@@ -62,7 +63,7 @@ export function CredentialAccounts({
     setSpeichertGerade(true); setFehler("");
     try {
       if (bearbeitet) await aktualisieren(appId, bearbeitet, werte);
-      else await speichern(appId, kontoname.trim() || "Standard", werte);
+      else await speichern(appId, kontoname.trim() || t("accounts.defaultAccountName"), werte);
       zuruecksetzen();
     } catch (e) {
       setFehler((e as Error).message);
@@ -82,13 +83,13 @@ export function CredentialAccounts({
   return (
     <div className={styles.wurzel}>
       <div className={styles.kopf}>
-        <h4 className={styles.titel}>Zugänge ({konten.length})</h4>
+        <h4 className={styles.titel}>{t("accounts.heading", { count: konten.length })}</h4>
         {!formOffen && (
           <button
             className={styles.primaer}
             onClick={() => { setBearbeitet(null); setKontoname(""); setWerte({}); setFormOffen(true); setSichtbar({}); }}
           >
-            + Zugang hinterlegen
+            {t("accounts.add")}
           </button>
         )}
       </div>
@@ -97,20 +98,20 @@ export function CredentialAccounts({
         <div key={k.accountName} className={`${styles.zeile} ${k.isActive ? styles.aktiv : ""}`}>
           <span className={styles.punkt} aria-hidden="true">{k.isActive ? "●" : "○"}</span>
           <span className={styles.name}>{k.accountName}</span>
-          {k.isActive && <span className={styles.marke}>in Benutzung</span>}
+          {k.isActive && <span className={styles.marke}>{t("accounts.inUse")}</span>}
           <div className={styles.aktionen}>
             {!k.isActive && (
               <button className={styles.klein} onClick={() => aktivieren(appId, k.accountName)}>
-                Benutzen
+                {t("accounts.use")}
               </button>
             )}
-            <button className={styles.klein} onClick={() => bearbeiten(k.accountName)}>Ändern</button>
+            <button className={styles.klein} onClick={() => bearbeiten(k.accountName)}>{t("accounts.edit")}</button>
             <button
               className={styles.kleinGefahr}
-              aria-label={`Zugang „${k.accountName}“ löschen`}
-              onClick={() => { if (confirm(`Zugang „${k.accountName}“ wirklich löschen?`)) loeschen(appId, k.accountName); }}
+              aria-label={t("accounts.deleteLabel", { name: k.accountName })}
+              onClick={() => { if (confirm(t("accounts.deleteConfirm", { name: k.accountName }))) loeschen(appId, k.accountName); }}
             >
-              Löschen
+              {t("accounts.delete")}
             </button>
           </div>
         </div>
@@ -118,20 +119,20 @@ export function CredentialAccounts({
 
       {konten.length === 0 && !formOffen && (
         <p className={styles.hinweis}>
-          Noch kein Zugang hinterlegt. Ohne ihn kann Clara diesen Dienst für dich nicht benutzen.
+          {t("accounts.empty")}
         </p>
       )}
 
       {formOffen && (
         <div className={styles.form}>
-          <h5 className={styles.formTitel}>{bearbeitet ? `Ändern: ${bearbeitet}` : "Neuer Zugang"}</h5>
+          <h5 className={styles.formTitel}>{bearbeitet ? t("accounts.editTitle", { name: bearbeitet }) : t("accounts.newTitle")}</h5>
 
           {!bearbeitet && (
             <label className={styles.feld}>
-              <span className={styles.beschriftung}>Bezeichnung</span>
+              <span className={styles.beschriftung}>{t("accounts.nameLabel")}</span>
               <input
                 className={styles.eingabe}
-                placeholder="z. B. Privat, Arbeit"
+                placeholder={t("accounts.namePlaceholder")}
                 value={kontoname}
                 onChange={(e) => setKontoname(e.target.value)}
               />
@@ -141,7 +142,7 @@ export function CredentialAccounts({
           {slots.map((slot) => (
             <label key={slot.key} className={styles.feld}>
               <span className={styles.beschriftung}>
-                {slot.label} {slot.required && <span className={styles.pflicht} aria-label="Pflichtfeld">*</span>}
+                {slot.label} {slot.required && <span className={styles.pflicht} aria-label={t("accounts.required")}>*</span>}
               </span>
               <div className={styles.eingabeZeile}>
                 <input
@@ -155,10 +156,10 @@ export function CredentialAccounts({
                   <button
                     type="button"
                     className={styles.eingabeKnopf}
-                    aria-label={sichtbar[slot.key] ? "Wert verbergen" : "Wert anzeigen"}
+                    aria-label={sichtbar[slot.key] ? t("accounts.hideValue") : t("accounts.showValue")}
                     onClick={() => setSichtbar((v) => ({ ...v, [slot.key]: !v[slot.key] }))}
                   >
-                    {sichtbar[slot.key] ? "Verbergen" : "Anzeigen"}
+                    {sichtbar[slot.key] ? t("accounts.hide") : t("accounts.show")}
                   </button>
                 )}
               </div>
@@ -169,9 +170,9 @@ export function CredentialAccounts({
 
           <div className={styles.formAktionen}>
             <button className={styles.primaer} onClick={sichern} disabled={speichertGerade}>
-              {speichertGerade ? "Wird gespeichert …" : "Speichern"}
+              {speichertGerade ? t("accounts.saving") : t("accounts.save")}
             </button>
-            <button className={styles.sekundaer} onClick={zuruecksetzen}>Abbrechen</button>
+            <button className={styles.sekundaer} onClick={zuruecksetzen}>{t("accounts.cancel")}</button>
           </div>
         </div>
       )}

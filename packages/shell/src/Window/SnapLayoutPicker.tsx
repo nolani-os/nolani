@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useTranslation } from "@claraos/core";
 import styles from "./SnapLayoutPicker.module.css";
 
 const HOVER_DELAY = 500;
@@ -59,6 +60,7 @@ interface Props {
  * 4-zone via core/wm/useSnapToEdge.
  */
 export function SnapLayoutPicker({ children, onPick }: Props) {
+  const { t } = useTranslation("shell");
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLSpanElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -121,8 +123,8 @@ export function SnapLayoutPicker({ children, onPick }: Props) {
                   data-shell-part="snap-zone"
                   style={z.style}
                   onClick={() => handleZoneClick(z.zone)}
-                  title={z.zone}
-                  aria-label={`Snap to ${z.zone}`}
+                  title={t(`window.snap.zone.${z.zone}`)}
+                  aria-label={t("window.snap.snapTo", { zone: t(`window.snap.zone.${z.zone}`) })}
                 />
               ))}
             </div>

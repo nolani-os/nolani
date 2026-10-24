@@ -15,7 +15,7 @@
  */
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { useAppRegistryStore, useVoiceStore } from "@claraos/core";
+import { useAppRegistryStore, useVoiceStore, useTranslation, getBrand } from "@claraos/core";
 import { ClaraChatPanel } from "../Chat";
 import type { ChatBind } from "../Chat/ClaraChatPanel";
 import type { ClaraActivity } from "../Chat/api";
@@ -82,21 +82,10 @@ type VoiceApi = {
   live?: boolean;
 };
 
-const LIVE_TEXT: Record<string, string> = {
-  idle: "Tippen für ein Live-Gespräch",
-  arming: "Verbinde …",
-  recording: "Ich höre zu — tippen zum Beenden",
-  speaking: "Clara spricht — einfach reinreden oder tippen zum Beenden",
-};
-
-const STATUS_TEXT: Record<string, string> = {
-  idle: "Tippen zum Sprechen",
-  arming: "Mikrofon wird geöffnet …",
-  recording: "Ich höre zu — tippen zum Senden",
-  transcribing: "Verstehe …",
-  thinking: "Clara denkt nach …",
-  speaking: "Clara spricht — tippen zum Unterbrechen",
-};
+// Voice states with their own status line in the "mobile" catalog
+// (overlay.live.* for a live conversation, overlay.status.* otherwise).
+const LIVE_STATES = new Set(["idle", "arming", "recording", "speaking"]);
+const STATUS_STATES = new Set(["idle", "arming", "recording", "transcribing", "thinking", "speaking"]);
 
 /** Leaf component so the ~15 Hz level ticks re-render only this ring. */
 function LevelRing() {
@@ -120,6 +109,7 @@ export function ClaraOverlay({ open, onClose, voice = false, versteckt = false, 
   onExitCobrowse?: () => void;
 }) {
   const cobrowse = !!appSlot;
+  const { t } = useTranslation("mobile");
   // Fine-grained voice state is mirrored from the chat's engine by
   // ClaraChatPanel — the overlay reflects it (no mic driving here).
   const voiceUi = useVoiceStore((s) => s.state);
@@ -182,8 +172,8 @@ export function ClaraOverlay({ open, onClose, voice = false, versteckt = false, 
   useEffect(() => {
     if (!open) return;
     setFrisch(true);
-    const t = window.setTimeout(() => setFrisch(false), 350);
-    return () => window.clearTimeout(t);
+    const timer = window.setTimeout(() => setFrisch(false), 350);
+    return () => window.clearTimeout(timer);
   }, [open]);
 
   // Double tap (half <-> full) existed but was documented nowhere.
@@ -201,8 +191,8 @@ export function ClaraOverlay({ open, onClose, voice = false, versteckt = false, 
       localStorage.setItem(HINWEIS_KEY, String(gesehen + 1));
     } catch { /* ignore */ }
     setHinweisZeigen(true);
-    const t = window.setTimeout(() => setHinweisZeigen(false), 4500);
-    return () => window.clearTimeout(t);
+    const timer = window.setTimeout(() => setHinweisZeigen(false), 4500);
+    return () => window.clearTimeout(timer);
   }, [open]);
 
   const handleClose = () => {
@@ -368,7 +358,9 @@ export function ClaraOverlay({ open, onClose, voice = false, versteckt = false, 
   };
 
   const status =
-    voiceError ?? (api?.live ? LIVE_TEXT[voiceUi] : undefined) ?? STATUS_TEXT[voiceUi] ?? STATUS_TEXT.idle;
+    voiceError ??
+    (api?.live && LIVE_STATES.has(voiceUi) ? t(`overlay.live.${voiceUi}`) : undefined) ??
+    t(`overlay.status.${STATUS_STATES.has(voiceUi) ? voiceUi : "idle"}`);
 
   return (
     <AnimatePresence>
@@ -415,11 +407,11 @@ export function ClaraOverlay({ open, onClose, voice = false, versteckt = false, 
               className={styles.titleRow}
               onClick={() => { if (!bind) return; void bind.refresh(); setVerlaufOffen((v) => !v); }}
               disabled={!bind}
-              aria-label={bind ? "Verlauf öffnen" : undefined}
+              aria-label={bind ? t("overlay.openHistory") : undefined}
               aria-expanded={bind ? verlaufOffen : undefined}
             >
               <ClaraC className={styles.titleLogo} />
-              <span className={styles.title}>{cobrowse ? "Clara · live" : (bind?.title || "Clara")}</span>
+              <span className={styles.title}>{cobrowse ? `${getBrand().assistant} · live` : (bind?.title || getBrand().assistant)}</span>
               {bind && !cobrowse && <span className={styles.titleCaret} aria-hidden>▾</span>}
             </button>
             <div className={styles.topBarAktionen}>
@@ -428,17 +420,17 @@ export function ClaraOverlay({ open, onClose, voice = false, versteckt = false, 
                   <button
                     className={styles.close}
                     onClick={() => { bind.startNewChat(); setVerlaufOffen(false); }}
-                    aria-label="Neuer Chat"
-                    title="Neuer Chat"
+                    aria-label={t("overlay.newChat")}
+                    title={t("overlay.newChat")}
                   >
                     ＋
                   </button>
                   <button
                     className={styles.close}
                     onClick={() => { void bind.refresh(); setVerlaufOffen((v) => !v); }}
-                    aria-label="Verlauf"
+                    aria-label={t("overlay.history")}
                     aria-expanded={verlaufOffen}
-                    title="Verlauf"
+                    title={t("overlay.history")}
                   >
                     ☰
                   </button>
@@ -452,15 +444,15 @@ export function ClaraOverlay({ open, onClose, voice = false, versteckt = false, 
                   data-voice-state={voiceUi}
                   data-voice-error={voiceError ? "true" : undefined}
                   onClick={onOrbTap}
-                  aria-label={recording ? "Senden" : voiceUi === "speaking" ? "Unterbrechen" : "Sprechen"}
+                  aria-label={recording ? t("overlay.send") : voiceUi === "speaking" ? t("overlay.interrupt") : t("overlay.speak")}
                 >
                   {recording ? "➤" : voiceUi === "speaking" ? "🔊" : "🎤"}
                 </button>
               )}
               {cobrowse && onExitCobrowse && (
-                <button className={styles.close} onClick={onExitCobrowse} aria-label="Vollbild-Chat">⤢</button>
+                <button className={styles.close} onClick={onExitCobrowse} aria-label={t("overlay.fullscreenChat")}>⤢</button>
               )}
-              <button className={styles.close} onClick={handleClose} aria-label="Schließen">✕</button>
+              <button className={styles.close} onClick={handleClose} aria-label={t("overlay.close")}>✕</button>
             </div>
           </div>
 
@@ -471,7 +463,7 @@ export function ClaraOverlay({ open, onClose, voice = false, versteckt = false, 
               data-voice-state={voiceUi}
               data-voice-error={voiceError ? "true" : undefined}
               onClick={onOrbTap}
-              aria-label={recording ? "Senden" : voiceUi === "speaking" ? "Unterbrechen" : "Sprechen"}
+              aria-label={recording ? t("overlay.send") : voiceUi === "speaking" ? t("overlay.interrupt") : t("overlay.speak")}
             >
               <span className={styles.orb} />
               {recording && <LevelRing />}
@@ -512,12 +504,12 @@ export function ClaraOverlay({ open, onClose, voice = false, versteckt = false, 
                 onPointerCancel={onHandlePointerUp}
                 onDoubleClick={() => { if (!cobrowse && snap !== "voice") applySnap(snap === "full" ? "half" : "full"); }}
                 role="separator"
-                aria-label="Chat-Höhe ändern"
+                aria-label={t("overlay.resizeChat")}
                 data-zieht={zieht ? "true" : undefined}
               >
                 <span className={styles.sheetHandleBar} />
                 {hinweisZeigen && !cobrowse && snap !== "strip" && snap !== "voice" && (
-                  <span className={styles.griffHinweis}>Ziehen · Doppeltippen = groß/klein</span>
+                  <span className={styles.griffHinweis}>{t("overlay.gripHint")}</span>
                 )}
               </div>
             )}

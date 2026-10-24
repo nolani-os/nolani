@@ -16,6 +16,7 @@ import {
   useWorkspaceStore,
   type DesktopItem,
   useSettingsStore,
+  useTranslation,
 } from "@claraos/core";
 import { WindowContextMenu, type ContextMenuItem } from "../components/WindowContextMenu";
 import { PropertiesDialog, formatBytes, formatDateTime } from "../components/PropertiesDialog";
@@ -149,6 +150,7 @@ function nodeToItem(node: FileTreeChild, gridRow: number, gridCol = 0): DesktopI
 }
 
 export const DesktopIcons = forwardRef<DesktopIconsRef>(function DesktopIcons(_, ref) {
+  const { t } = useTranslation("desktop");
   const openWindow = useWindowsStore((s) => s.openWindow);
   // Single vs. double click (Settings → General behaviour)
   const singleClickOpens =
@@ -310,10 +312,10 @@ export const DesktopIcons = forwardRef<DesktopIconsRef>(function DesktopIcons(_,
     clearSelection: () => setSelectedIds(new Set()),
     refresh: () => loadDesktop(),
     sortBy,
-    startCreatingFolder: () => setCreatingItem({ kind: "folder", value: "Neuer Ordner" }),
+    startCreatingFolder: () => setCreatingItem({ kind: "folder", value: t("desktop.icons.newFolderName") }),
     startCreatingFile: (extension: string) => {
       const ext = extension.startsWith(".") ? extension : `.${extension}`;
-      setCreatingItem({ kind: "file", value: `neue-datei${ext}`, ext });
+      setCreatingItem({ kind: "file", value: `${t("desktop.icons.newFileName")}${ext}`, ext });
     },
     renameSelected: () => {
       const id = selectedIds.values().next().value;
@@ -687,27 +689,27 @@ export const DesktopIcons = forwardRef<DesktopIconsRef>(function DesktopIcons(_,
     const count = multiSelected ? selectedIds.size : 1;
     const isFile = item.type === "file" && !!item.path;
     return [
-      { id: "open", label: multiSelected ? `${count} Elemente öffnen` : "Öffnen", onSelect: () => handleOpen(item), disabled: multiSelected },
+      { id: "open", label: multiSelected ? t("desktop.icons.openMany", { count }) : t("desktop.icons.open"), onSelect: () => handleOpen(item), disabled: multiSelected },
       {
         id: "open-with",
-        label: "Öffnen mit…",
+        label: t("desktop.icons.openWith"),
         submenu: [
-          { id: "open-files", label: "Dateien", onSelect: () => openWindow("files", { title: item.name }) },
-          { id: "open-text", label: "Text-Editor", onSelect: () => openWindow("text-editor", { title: item.name, path: item.path, source: item.source }) },
-          { id: "open-image", label: "Bildbetrachter", onSelect: () => openWindow("image-viewer", { title: item.name, width: 900, height: 700, path: item.path, source: item.source }) },
-          { id: "open-pdf", label: "PDF-Viewer", onSelect: () => openWindow("pdf-viewer", { title: item.name, width: 900, height: 1000, path: item.path, source: item.source }) },
-          { id: "open-video", label: "Videoplayer", onSelect: () => openWindow("video-player", { title: item.name, width: 960, height: 600, path: item.path, source: item.source }) },
+          { id: "open-files", label: t("desktop.icons.withFiles"), onSelect: () => openWindow("files", { title: item.name }) },
+          { id: "open-text", label: t("desktop.icons.withTextEditor"), onSelect: () => openWindow("text-editor", { title: item.name, path: item.path, source: item.source }) },
+          { id: "open-image", label: t("desktop.icons.withImageViewer"), onSelect: () => openWindow("image-viewer", { title: item.name, width: 900, height: 700, path: item.path, source: item.source }) },
+          { id: "open-pdf", label: t("desktop.icons.withPdfViewer"), onSelect: () => openWindow("pdf-viewer", { title: item.name, width: 900, height: 1000, path: item.path, source: item.source }) },
+          { id: "open-video", label: t("desktop.icons.withVideoPlayer"), onSelect: () => openWindow("video-player", { title: item.name, width: 960, height: 600, path: item.path, source: item.source }) },
         ],
       },
       {
         id: "download",
-        label: "Herunterladen",
+        label: t("desktop.icons.download"),
         disabled: !isFile || multiSelected,
         onSelect: () => { void downloadFile(item.source ?? "nextcloud", item.path!, item.name); },
       },
       {
         id: "archive",
-        label: "Als ZIP archivieren",
+        label: t("desktop.icons.archive"),
         disabled: !item.path || multiSelected,
         onSelect: async () => {
           const r = await fetch("/api/claraos/files/v2/archive", {
@@ -718,16 +720,16 @@ export const DesktopIcons = forwardRef<DesktopIconsRef>(function DesktopIcons(_,
           if (r.ok) {
             await loadDesktop();
           } else {
-            await alertDlg(`Archivieren fehlgeschlagen: ${(await r.json().catch(() => ({})))?.detail ?? r.status}`);
+            await alertDlg(t("desktop.icons.archiveFailed", { reason: (await r.json().catch(() => ({})))?.detail ?? r.status }));
           }
         },
       },
       {
         id: "encrypt",
-        label: "Verschlüsseln (AES-ZIP) …",
+        label: t("desktop.icons.encrypt"),
         disabled: !item.path || multiSelected,
         onSelect: async () => {
-          const pw = await promptDlg(`Passwort für „${item.name}“ — ohne Passwort ist das Archiv nicht lesbar:`);
+          const pw = await promptDlg(t("desktop.icons.encryptPrompt", { name: item.name }));
           if (!pw) return;
           const r = await fetch("/api/claraos/files/v2/encrypt", {
             method: "POST",
@@ -737,21 +739,21 @@ export const DesktopIcons = forwardRef<DesktopIconsRef>(function DesktopIcons(_,
           if (r.ok) {
             await loadDesktop();
           } else {
-            await alertDlg(`Verschlüsseln fehlgeschlagen: ${(await r.json().catch(() => ({})))?.detail ?? r.status}`);
+            await alertDlg(t("desktop.icons.encryptFailed", { reason: (await r.json().catch(() => ({})))?.detail ?? r.status }));
           }
         },
       },
       { id: "sep1", label: "---" },
       {
         id: "rename",
-        label: "Umbenennen",
+        label: t("desktop.icons.rename"),
         shortcut: "F2",
         onSelect: () => setEditing({ id: item.id, value: item.name }),
         disabled: multiSelected,
       },
       {
         id: "move",
-        label: "Verschieben nach…",
+        label: t("desktop.icons.moveTo"),
         submenu: workspaces
           .filter((w) => w.id !== activeWorkspaceId)
           .map((w) => ({
@@ -774,8 +776,8 @@ export const DesktopIcons = forwardRef<DesktopIconsRef>(function DesktopIcons(_,
       { id: "sep2", label: "---" },
       {
         id: "delete",
-        label: multiSelected ? `${count} Elemente löschen` : "Löschen",
-        shortcut: "Entf",
+        label: multiSelected ? t("desktop.icons.deleteMany", { count }) : t("desktop.icons.delete"),
+        shortcut: t("desktop.icons.deleteKey"),
         variant: "destructive",
         onSelect: () => {
           const sel = multiSelected ? items.filter((it) => selectedIds.has(it.id)) : [item];
@@ -785,12 +787,12 @@ export const DesktopIcons = forwardRef<DesktopIconsRef>(function DesktopIcons(_,
       { id: "sep3", label: "---" },
       {
         id: "properties",
-        label: "Eigenschaften",
+        label: t("desktop.icons.properties"),
         onSelect: () => setPropsItem(item),
         disabled: multiSelected,
       },
     ];
-  }, [selectedIds, items, workspaces, activeWorkspaceId, handleOpen, openWindow, addShortcut]);
+  }, [selectedIds, items, workspaces, activeWorkspaceId, handleOpen, openWindow, addShortcut, t]);
 
   const lassoStyle: CSSProperties | undefined = useMemo(
     () => lasso ? { left: lasso.x, top: lasso.y, width: lasso.w, height: lasso.h } : undefined,
@@ -829,7 +831,7 @@ export const DesktopIcons = forwardRef<DesktopIconsRef>(function DesktopIcons(_,
               if (singleClickOpens && !e.ctrlKey && !e.shiftKey) handleOpen(item);
             }}
             title={isFileShortcut
-              ? (broken ? `Verknüpfung defekt: ${itemAny.shortcutTarget}` : `→ ${itemAny.shortcutTarget}`)
+              ? (broken ? t("desktop.icons.brokenShortcut", { target: itemAny.shortcutTarget }) : `→ ${itemAny.shortcutTarget}`)
               : undefined}
           >
             {isAppShortcut ? (
@@ -897,13 +899,13 @@ export const DesktopIcons = forwardRef<DesktopIconsRef>(function DesktopIcons(_,
       {confirmDelete && (
         <div className={styles.modalOverlay} onClick={() => setConfirmDelete(null)}>
           <div className={styles.confirm} onClick={(e) => e.stopPropagation()}>
-            <h3>{confirmDelete.length === 1 ? "Datei löschen?" : `${confirmDelete.length} Dateien löschen?`}</h3>
+            <h3>{t("desktop.icons.confirmTitle", { count: confirmDelete.length })}</h3>
             <p>{confirmDelete.length === 1
-              ? `"${confirmDelete[0].name}" wird endgültig vom Server entfernt.`
-              : "Die gewählten Einträge werden endgültig vom Server entfernt."}</p>
+              ? t("desktop.icons.confirmOne", { name: confirmDelete[0].name })
+              : t("desktop.icons.confirmMany")}</p>
             <div className={styles.confirmActions}>
-              <button className={styles.btnCancel} onClick={() => setConfirmDelete(null)}>Abbrechen</button>
-              <button className={styles.btnDanger} onClick={() => performDelete(confirmDelete)}>Löschen</button>
+              <button className={styles.btnCancel} onClick={() => setConfirmDelete(null)}>{t("desktop.icons.cancel")}</button>
+              <button className={styles.btnDanger} onClick={() => performDelete(confirmDelete)}>{t("desktop.icons.delete")}</button>
             </div>
           </div>
         </div>

@@ -4,6 +4,7 @@ import styles from "../IdeasApp.module.css";
 import { Icon } from "../../../components/Icon";
 import type { KbObjectSlim, Stage } from "../types";
 import { STAGES, STAGE_BY_KEY } from "../stages";
+import { regionLocale } from "@claraos/core";
 
 interface Props {
   ideas: KbObjectSlim[];
@@ -62,7 +63,7 @@ export function ListView({ ideas, currentUser, onOpen }: Props) {
               <span className={styles.listMeta}>
                 {i.visibility === "family" && "👪 "}
                 {i.owner !== currentUser ? `${i.owner} · ` : ""}
-                {new Date(i.updated_at).toLocaleDateString("de-DE")}
+                {new Date(i.updated_at).toLocaleDateString(regionLocale())}
               </span>
             </button>
           );

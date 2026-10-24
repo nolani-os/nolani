@@ -68,7 +68,7 @@ COMMON_ENV = {
 FORMS = {
     "desktop": {
         "prefix": "ubd", "cdp": "ubdc", "dir": "desktop", "mem": os.environ.get("BROWSER_MEM_DESKTOP", "2g"),
-        "env": {"TITLE": "Clara Browser",
+        "env": {"TITLE": "Browser",
                 "CHROME_CLI": "--remote-debugging-port=9222 https://start.duckduckgo.com",
                 "SELKIES_USE_BROWSER_CURSORS": "true"},
         "mounts": [
@@ -89,7 +89,7 @@ FORMS = {
     },
     "mobile": {
         "prefix": "ubm", "cdp": "ubmc", "dir": "mobile", "mem": os.environ.get("BROWSER_MEM_MOBILE", "1536m"),
-        "env": {"TITLE": "Clara Browser Mobil",
+        "env": {"TITLE": "Browser Mobil",
                 # DSF 2.16 = 1080/500: Chromium's 500 CSS px window minimum (see the module).
                 "CHROME_CLI": "--kiosk --remote-debugging-port=9222 --force-device-scale-factor=2.16 "
                               "https://start.duckduckgo.com",

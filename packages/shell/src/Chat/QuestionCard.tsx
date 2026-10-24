@@ -11,6 +11,7 @@
  * Submitting sends the JSON object {name: value} as the answer over the same
  * endpoint; the option buttons stay below it as secondary actions.
  */
+import { getBrand } from "@claraos/core";
 import { useState, type FormEvent } from "react";
 import type { ClaraPendingQuestion, ClaraQuestionField } from "./api";
 import { buildFormAnswer, FIELD_MAX_LEN, type FormValues } from "./questionForm";
@@ -149,10 +150,10 @@ export function QuestionCard({ question }: QuestionCardProps) {
           <div className={form.footer}>
             <span className={form.hint}>
               {answered
-                ? "Clara hat deine Angaben"
+                ? `${getBrand().assistant} hat deine Angaben`
                 : anyRequired
-                  ? "* Pflichtfeld · leere Felder: Clara nimmt etwas Sinnvolles an"
-                  : "Leere Felder: Clara nimmt etwas Sinnvolles an"}
+                  ? `* Pflichtfeld · leere Felder: ${getBrand().assistant} nimmt etwas Sinnvolles an`
+                  : `Leere Felder: ${getBrand().assistant} nimmt etwas Sinnvolles an`}
             </span>
             <button
               type="submit"

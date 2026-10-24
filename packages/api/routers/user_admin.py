@@ -59,7 +59,9 @@ _USERNAME_RE = re.compile(r"^[a-z][a-z0-9._-]{1,31}$")
 # Groups/names that mark a technical account (not shown as a human)
 _SERVICE_GROUPS = {"claraos-bots", "claraos-backend-svc-group", "module-loader-svc-group", "sso-verify"}
 _SERVICE_SUFFIXES = ("-svc", "-bot", "-test")
-_SYSTEM_USERS = {"akadmin", "clara.bot"}
+# Reserved: the planner uses the credentials of the accounts "clara"/"clara-agent"
+# as Clara's own write identity (planner._CLARA_CRED_USERNAMES).
+_SYSTEM_USERS = {"akadmin", "clara.bot", "clara", "clara-agent"}
 
 # Default preset for household members
 FAMILY_GROUPS = ["clara-users", "team-family"]
@@ -397,6 +399,8 @@ async def create_user(body: CreateUser, request: Request) -> dict:
     username = body.username.strip().lower()
     if not _USERNAME_RE.match(username):
         raise HTTPException(422, "Ungültiger Benutzername (a-z, 2-32, Punkt/Bindestrich erlaubt).")
+    if username in _SYSTEM_USERS:
+        raise HTTPException(409, f"'{username}' ist für das System reserviert.")
     if await ak_get_user_by_username(username):
         raise HTTPException(409, f"Benutzer '{username}' existiert bereits.")
 

@@ -5,12 +5,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import styles from "../PlannerApp.module.css";
 import { plannerApi } from "../api";
 import type { ProjectCosts, TaskCost, VikProject, VikTask } from "../types";
+import { regionLocale, getBrand } from "@claraos/core";
 
 function eur(v: number | null | undefined): string {
   return v == null ? "—" : `${v.toFixed(v < 1 ? 4 : 2)} €`;
 }
 function tok(v: number | null | undefined): string {
-  return v == null ? "—" : v.toLocaleString("de-DE");
+  return v == null ? "—" : v.toLocaleString(regionLocale());
 }
 function mins(v: number | null | undefined): string {
   if (v == null) return "—";
@@ -98,7 +99,7 @@ export function CostsView({ project, onOpen }: { project: VikProject; onOpen: (t
 
       {costs.tasks.length === 0 ? (
         <div className={styles.emptyHint}>
-          Noch keine Kosten, Schätzungen oder Zeiten erfasst. Sobald Clara an Aufgaben dieses
+          Noch keine Kosten, Schätzungen oder Zeiten erfasst. Sobald {getBrand().assistant} an Aufgaben dieses
           Projekts arbeitet, erscheinen hier die realen Kosten pro Aufgabe.
         </div>
       ) : (

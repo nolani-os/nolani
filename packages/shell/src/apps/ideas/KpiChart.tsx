@@ -17,6 +17,7 @@
 import { useMemo, useState } from "react";
 import styles from "./IdeasApp.module.css";
 import { fmtNum } from "./kpiStatus";
+import { regionLocale } from "@claraos/core";
 
 export interface ChartPoint { t: number; v: number }
 
@@ -48,7 +49,7 @@ function ticks(min: number, max: number, wunsch = 4): number[] {
 }
 
 const tag = (ms: number) =>
-  new Date(ms).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
+  new Date(ms).toLocaleDateString(regionLocale(), { day: "2-digit", month: "2-digit" });
 
 /** Small axis-less chart for the tiles.
  *
@@ -156,7 +157,7 @@ export function KpiChart({ ist, plan, unit, target, label }: Props) {
           <tbody>
             {[...daten.i].reverse().map((p) => (
               <tr key={p.t}>
-                <td>{new Date(p.t).toLocaleDateString("de-DE")}</td>
+                <td>{new Date(p.t).toLocaleDateString(regionLocale())}</td>
                 <td>{fmtNum(p.v, unit)}</td>
               </tr>
             ))}
@@ -171,7 +172,7 @@ export function KpiChart({ ist, plan, unit, target, label }: Props) {
               <line className={styles.chartGrid} x1={PAD.links} x2={W - PAD.rechts}
                     y1={y(v)} y2={y(v)} />
               <text className={styles.chartTick} x={PAD.links - 6} y={y(v) + 3}
-                    textAnchor="end">{v.toLocaleString("de-DE")}</text>
+                    textAnchor="end">{v.toLocaleString(regionLocale())}</text>
             </g>
           ))}
 
@@ -205,8 +206,8 @@ export function KpiChart({ ist, plan, unit, target, label }: Props) {
       {!tabelle && (
         <p className={styles.chartHint} aria-live="polite">
           {hp
-            ? `${new Date(hp.t).toLocaleDateString("de-DE")}: ${fmtNum(hp.v, unit)}`
-            : `Zuletzt ${fmtNum(letzter.v, unit)} am ${new Date(letzter.t).toLocaleDateString("de-DE")}`}
+            ? `${new Date(hp.t).toLocaleDateString(regionLocale())}: ${fmtNum(hp.v, unit)}`
+            : `Zuletzt ${fmtNum(letzter.v, unit)} am ${new Date(letzter.t).toLocaleDateString(regionLocale())}`}
         </p>
       )}
     </div>

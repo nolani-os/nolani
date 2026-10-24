@@ -1,6 +1,7 @@
 /** Property input fields by type schema (kind: text|number|date|select|
  * multi_select|url|checkbox). Shared by MetaSidebar (detail) and
  * CollectionView (inline cells). Saves on blur/change. */
+import { getBrand } from "@claraos/core";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import styles from "./IdeasApp.module.css";
 import plaketten from "../wissen/Wissen.module.css";
@@ -80,7 +81,7 @@ export function PropertyField({ def, value, readOnly, compact, umbruch, onSave }
     return (
       <span className={styles.propLinkZeile}>
         <a href={url} target="_blank" rel="noreferrer" className={styles.propLink}
-           title={`${url}\nKlick: im Clara Browser öffnen · Strg+Klick: im Browser-Tab`}
+           title={`${url}\nKlick: im ${getBrand().assistant} Browser öffnen · Strg+Klick: im Browser-Tab`}
            onClick={oeffnen}>
           {compact ? "Link ↗" : url}
         </a>

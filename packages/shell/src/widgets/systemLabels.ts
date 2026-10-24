@@ -1,6 +1,8 @@
 // Wording of the system monitor (widget and task manager). The product names
 // the hypervisor generically; an installation can name its own
 // (optional heim.config.ts SYSTEM_LABELS).
+import { i18n } from "@claraos/core";
+
 export interface SystemLabels {
   /** Widget: empty state when the hypervisor API has no token. */
   tokenMissing: string;
@@ -15,12 +17,23 @@ export interface SystemLabels {
 }
 
 const heimConfig = import.meta.glob<{ SYSTEM_LABELS?: Partial<SystemLabels> }>("../heim.config.ts", { eager: true });
+const overrides: Partial<SystemLabels> = Object.values(heimConfig)[0]?.SYSTEM_LABELS ?? {};
 
-export const SYSTEM_LABELS: SystemLabels = {
-  tokenMissing: "Hypervisor-Token fehlt",
-  tokenMissingHint: "Hinweis: Hypervisor-API-Token nicht konfiguriert — Nodes/VMs erscheinen erst danach.",
-  tokenMissingTab: "Hypervisor-API-Token nicht konfiguriert — Nodes und VMs erscheinen erst danach.",
-  nodeGroup: "Nodes",
-  nodeKind: "Node",
-  ...Object.values(heimConfig)[0]?.SYSTEM_LABELS,
-};
+const KEYS: (keyof SystemLabels)[] = [
+  "tokenMissing", "tokenMissingHint", "tokenMissingTab", "nodeGroup", "nodeKind",
+];
+
+// Getters: each read returns the text in the current UI language, an
+// installation's own wording wins over the translation.
+export const SYSTEM_LABELS = Object.defineProperties(
+  {} as SystemLabels,
+  Object.fromEntries(
+    KEYS.map((k) => [
+      k,
+      {
+        enumerable: true,
+        get: () => overrides[k] ?? i18n.t(`desktop:widgets.systemLabels.${k}`),
+      },
+    ]),
+  ),
+);

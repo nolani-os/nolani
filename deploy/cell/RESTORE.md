@@ -1,4 +1,4 @@
-# Restoring a ClaraOS cell
+# Restoring a cell
 
 Both paths below have been rehearsed end to end;
 afterwards all six test suites (`run_tests.sh`) passed on the copy.

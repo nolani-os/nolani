@@ -26,6 +26,7 @@ PW = os.environ["IMMICH_ADMIN_PASSWORD"]
 KEY = os.environ.get("IMMICH_API_KEY", "").strip()
 SECRET = os.environ["IMMICH_OIDC_SECRET"]
 QUOTA = int(os.environ.get("IMMICH_DEFAULT_QUOTA_GB") or 5)
+PRODUCT = os.environ.get("CLARAOS_PRODUCT_NAME") or "NolaniOS"  # visible name only
 
 
 def log(*a):
@@ -74,7 +75,7 @@ with httpx.Client(timeout=30) as c:
         "clientId": "immich",
         "clientSecret": SECRET,
         "scope": "openid email profile",
-        "buttonText": "Mit ClaraOS anmelden",
+        "buttonText": f"Mit {PRODUCT} anmelden",
         "autoRegister": True,
         "autoLaunch": True,
         "storageLabelClaim": "preferred_username",

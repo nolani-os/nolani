@@ -14,6 +14,7 @@ import { ideasApi } from "./api";
 import type { ActionPlan } from "./types";
 import { useWindowsStore } from "@claraos/core";
 import { dispatchLocalAction } from "../../Chat/actionBus";
+import { regionLocale } from "@claraos/core";
 
 interface Props {
   goalId: string;
@@ -73,7 +74,7 @@ export function ActionPlanPanel({ goalId, canEdit, reloadTick }: Props) {
         {plan.total > 0 && (
           <span className={styles.metaHint}>
             {plan.done} von {plan.total} erledigt
-            {plan.next_due && ` · nächste Fälligkeit ${new Date(plan.next_due).toLocaleDateString("de-DE")}`}
+            {plan.next_due && ` · nächste Fälligkeit ${new Date(plan.next_due).toLocaleDateString(regionLocale())}`}
           </span>
         )}
         {plan.project_id && (

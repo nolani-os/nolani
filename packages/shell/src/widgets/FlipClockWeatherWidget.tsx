@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import type { WidgetProps } from "./registry";
 import { weatherPhoto } from "./weather-photo";
 import s from "./FlipClock.module.css";
+import { regionLocale, useTranslation } from "@claraos/core";
 
 interface DailyForecast {
   date: string; // YYYY-MM-DD
@@ -60,6 +61,7 @@ function FlipCard({ value }: { value: string }) {
 }
 
 export default function FlipClockWeatherWidget(_props: WidgetProps) {
+  const { t } = useTranslation("desktop");
   const [hhmm, setHhmm] = useState(() => {
     const d = new Date();
     return [String(d.getHours()).padStart(2, "0"), String(d.getMinutes()).padStart(2, "0")];
@@ -106,7 +108,7 @@ export default function FlipClockWeatherWidget(_props: WidgetProps) {
   const days = (weather?.daily ?? []).filter((d) => d.date > todayStr).slice(0, 5);
 
   return (
-    <div className={`${s.widget} ${s.vertical}`}>
+    <div className={`${s.widget} ${s.vertical}`} title="Wetterdaten: Deutscher Wetterdienst (DWD)">
       {/* big flip clock on a glossy blue base — two cards, no colon (reference design) */}
       <div className={s.clockFrame}>
         <div className={s.clock}>
@@ -121,8 +123,8 @@ export default function FlipClockWeatherWidget(_props: WidgetProps) {
       {/* date left, current temp + hi/lo right */}
       <div className={s.metaRow}>
         <div className={s.dateBlock}>
-          <div className={s.dateWd}>{today.toLocaleDateString("de-DE", { weekday: "short" }).replace(/\.$/, "")}.</div>
-          <div className={s.dateMd}>{today.toLocaleDateString("de-DE", { month: "long" })} {today.getDate()}</div>
+          <div className={s.dateWd}>{today.toLocaleDateString(regionLocale(), { weekday: "short" }).replace(/\.$/, "")}.</div>
+          <div className={s.dateMd}>{today.toLocaleDateString(regionLocale(), { month: "long" })} {today.getDate()}</div>
         </div>
         <div className={`${s.now} ${stale && weather ? s.staleNow : ""}`}>
           <div className={s.nowTemp}>{cur?.temperature != null ? `${Math.round(cur.temperature)}°` : "—°"}</div>
@@ -134,13 +136,13 @@ export default function FlipClockWeatherWidget(_props: WidgetProps) {
         {days.length ? days.map((d) => (
           <div key={d.date} className={s.day}>
             <div className={s.dayName}>
-              {new Date(`${d.date}T12:00:00`).toLocaleDateString("de-DE", { weekday: "short" }).replace(".", "")}
+              {new Date(`${d.date}T12:00:00`).toLocaleDateString(regionLocale(), { weekday: "short" }).replace(".", "")}
             </div>
             <div className={s.dayIcon}><img src={weatherPhoto(d.icon)} alt="" aria-hidden /></div>
             <div className={s.dayTemp}>{Math.round(d.max)}° <span>{Math.round(d.min)}°</span></div>
           </div>
         )) : (
-          <div className={s.noData}>{stale ? "Wetter offline" : "Wetter lädt…"}</div>
+          <div className={s.noData}>{stale ? t("widgets.weather.offline") : t("widgets.weather.loadingShort")}</div>
         )}
       </div>
     </div>

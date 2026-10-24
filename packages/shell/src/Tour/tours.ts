@@ -4,7 +4,12 @@
  * The guide assistant delivers tours at runtime using the same structure
  * (tool `start_tour`/`show_tour_step`); the IDs here must exist in the
  * TOUR_ANCHORS manifest — `resolveTour` validates that.
+ *
+ * Static tours carry only keys; their texts live in the "tour" catalog
+ * (`tours.<tourId>.steps.<key>.title|content`) and are resolved when the tour
+ * starts, so they follow the UI language.
  */
+import { i18n } from "@claraos/core";
 import { TOUR_ANCHORS } from "./anchors";
 
 export interface TourStepDef {
@@ -22,205 +27,65 @@ export interface TourDef {
   steps: TourStepDef[];
 }
 
-export const TOURS: Record<string, TourDef> = {
+/** A step of a static tour: texts come from the catalog via `key`. */
+interface StaticStepDef extends Omit<TourStepDef, "title" | "content"> {
+  key: string;
+}
+
+interface StaticTourDef {
+  id: string;
+  steps: StaticStepDef[];
+}
+
+export const TOURS: Record<string, StaticTourDef> = {
   "claraos-basics": {
     id: "claraos-basics",
-    name: "ClaraOS kennenlernen",
     steps: [
-      {
-        anchor: "center",
-        title: "Willkommen bei ClaraOS! 👋",
-        content:
-          "Schön, dass du da bist. Ich zeige dir in einer kurzen Tour die wichtigsten " +
-          "Bereiche — das dauert keine zwei Minuten.\n\nDu kannst jederzeit unten eine " +
-          "Frage stellen oder die Tour mit ✕ beenden.",
-        placement: "center",
-      },
-      {
-        anchor: "taskbar-clara",
-        title: "Das ist Clara",
-        content:
-          "Der wichtigste Knopf in ClaraOS: Er öffnet das Startmenü. Dort findest du " +
-          "alle Apps — und Clara, deine Assistentin, die dir bei allem hilft.",
-      },
-      {
-        anchor: "startmenu-input",
-        title: "Suchen — oder einfach fragen",
-        content:
-          "Hier tippst du los: Ein App-Name startet die App. Alles andere beantwortet " +
-          "Clara dir direkt — zum Beispiel „Wie füge ich Fotos hinzu?“ oder " +
-          "„Erstell mir eine Einkaufsliste“.",
-      },
-      {
-        anchor: "startmenu-pinned",
-        title: "Deine Apps",
-        content:
-          "Die wichtigsten Apps auf einen Blick. Ein Klick öffnet sie im eigenen " +
-          "Fenster — wie auf einem richtigen Computer.",
-      },
-      {
-        anchor: "taskbar-pinned",
-        title: "Schnellzugriff in der Leiste",
-        content:
-          "Deine Lieblings-Apps sind auch unten in der Leiste angepinnt. " +
-          "Offene Apps erkennst du am kleinen Punkt.",
-      },
-      {
-        anchor: "taskbar-tray",
-        title: "Benachrichtigungen & Einstellungen",
-        content:
-          "Rechts findest du die Glocke für Benachrichtigungen, das Zahnrad für " +
-          "Schnelleinstellungen (z. B. Lautstärke, Nicht stören) und die Uhr mit Kalender.",
-      },
-      {
-        anchor: "taskbar-voice",
-        title: "Mit Clara sprechen",
-        content:
-          "Keine Lust zu tippen? Mit dem Mikrofon-Knopf sprichst du direkt mit Clara.",
-      },
-      {
-        anchor: "center",
-        title: "Das war's! 🎉",
-        content:
-          "Du kennst jetzt die Grundlagen. Probier einfach Dinge aus — kaputt machen " +
-          "kannst du nichts. Und wenn du nicht weiterweißt: Frag Clara, dafür ist sie da.",
-        placement: "center",
-      },
+      { key: "welcome", anchor: "center", placement: "center" },
+      { key: "clara", anchor: "taskbar-clara" },
+      { key: "search", anchor: "startmenu-input" },
+      { key: "apps", anchor: "startmenu-pinned" },
+      { key: "taskbar", anchor: "taskbar-pinned" },
+      { key: "tray", anchor: "taskbar-tray" },
+      { key: "voice", anchor: "taskbar-voice" },
+      { key: "done", anchor: "center", placement: "center" },
+    ],
+  },
+  "files-basics": {
+    id: "files-basics",
+    steps: [
+      { key: "intro", anchor: "center", placement: "center" },
+      { key: "places", anchor: "files-sidebar" },
+      { key: "content", anchor: "files-content" },
+      { key: "search", anchor: "files-search" },
+      { key: "newFolder", anchor: "files-new-folder" },
+      { key: "done", anchor: "center", placement: "center" },
+    ],
+  },
+  "fotos-basics": {
+    id: "fotos-basics",
+    steps: [
+      { key: "intro", anchor: "center", placement: "center" },
+      { key: "app", anchor: "immich-frame" },
+      { key: "timeline", anchor: "immich-photos" },
+      { key: "albums", anchor: "immich-albums" },
+      { key: "tip", anchor: "center", placement: "center" },
+    ],
+  },
+  "geraete-setup": {
+    id: "geraete-setup",
+    steps: [
+      { key: "intro", anchor: "center", placement: "center" },
+      { key: "push", anchor: "settings-push" },
+      { key: "computer", anchor: "center", placement: "center" },
     ],
   },
 };
 
-TOURS["files-basics"] = {
-  id: "files-basics",
-  name: "Files kennenlernen",
-  steps: [
-    {
-      anchor: "center",
-      title: "Deine Dateien 📁",
-      content:
-        "Ich zeige dir kurz die Files-App — hier wohnen deine Dokumente, Fotos " +
-        "und Downloads. Ich öffne sie gleich für dich.",
-      placement: "center",
-    },
-    {
-      anchor: "files-sidebar",
-      title: "Deine Orte",
-      content:
-        "Links wählst du, wo du bist: deine eigenen Dateien, die Familien-Ablage " +
-        "oder andere Quellen. Ein Klick wechselt den Ort.",
-    },
-    {
-      anchor: "files-content",
-      title: "Ordner & Dateien",
-      content:
-        "Hier siehst du den Inhalt. Doppelklick öffnet, Rechtsklick zeigt alle " +
-        "Möglichkeiten (teilen, umbenennen, löschen). Zum Hochladen ziehst du " +
-        "Dateien einfach hier hinein.",
-    },
-    {
-      anchor: "files-search",
-      title: "Suchen statt klicken",
-      content:
-        "Tippen filtert den aktuellen Ordner, Enter durchsucht auch alle " +
-        "Unterordner — praktisch, wenn du nicht mehr weißt, wo etwas liegt.",
-    },
-    {
-      anchor: "files-new-folder",
-      title: "Ordnung halten",
-      content: "Mit diesem Knopf legst du einen neuen Ordner an.",
-    },
-    {
-      anchor: "center",
-      title: "Das war Files! ✅",
-      content:
-        "Übrigens: Du kannst mich auch einfach bitten, Dateien zu finden oder " +
-        "aufzuräumen — sag z. B. „Clara, find meine Steuerunterlagen“.",
-      placement: "center",
-    },
-  ],
-};
-
-TOURS["fotos-basics"] = {
-  id: "fotos-basics",
-  name: "Fotos kennenlernen",
-  steps: [
-    {
-      anchor: "center",
-      title: "Eure Fotos 📸",
-      content:
-        "Ich zeige dir die Fotos-App — hier liegen alle Familienfotos, sicher " +
-        "bei euch zuhause. Ich öffne sie gleich.",
-      placement: "center",
-    },
-    {
-      anchor: "immich-frame",
-      title: "Die Fotos-App",
-      content:
-        "Das ist eure Foto-Zentrale: alle Bilder in einer Zeitleiste, " +
-        "automatisch nach Personen und Orten sortiert. Vom Handy aus sichern " +
-        "sich Fotos von selbst hierher.",
-    },
-    {
-      anchor: "immich-photos",
-      title: "Die Zeitleiste",
-      content:
-        "Unter „Fotos“ siehst du alle Aufnahmen chronologisch — einfach " +
-        "scrollen, wie in der Galerie am Handy.",
-    },
-    {
-      anchor: "immich-albums",
-      title: "Alben",
-      content:
-        "Unter „Alben“ sammelst du Bilder zu Anlässen — Urlaub, Geburtstage, " +
-        "was du magst.",
-    },
-    {
-      anchor: "center",
-      title: "Mein Tipp 💡",
-      content:
-        "Du musst Alben nicht selbst zusammensuchen: Sag mir einfach " +
-        "„Erstell ein Album mit den Fotos vom letzten Wochenende“ — ich " +
-        "übernehme das und zeige dir das Ergebnis.",
-      placement: "center",
-    },
-  ],
-};
-
-TOURS["geraete-setup"] = {
-  id: "geraete-setup",
-  name: "Clara für unterwegs einrichten",
-  steps: [
-    {
-      anchor: "center",
-      title: "Clara überall dabei 📱",
-      content:
-        "Bis jetzt erreichst du ClaraOS nur hier im Browser. Ich zeige dir, " +
-        "wie du es auf dein Handy bekommst — dann erreichen dich meine " +
-        "Nachrichten auch unterwegs.",
-      placement: "center",
-    },
-    {
-      anchor: "settings-push",
-      title: "Alles für dein Handy",
-      content:
-        "Hier ist deine persönliche Einrichtungs-Ecke: Scanne den QR-Code mit " +
-        "der Handy-Kamera und folge den Schritten — ClaraOS landet als App auf " +
-        "deinem Startbildschirm, und Benachrichtigungen sind gleich mit dabei.",
-    },
-    {
-      anchor: "center",
-      title: "Und am Computer? 💻",
-      content:
-        "Für PC und Laptop gibt es die ClaraOS-Companion-App — frag mich " +
-        "einfach danach, wenn du sie möchtest.\n\nSobald dein Handy " +
-        "eingerichtet ist, sag kurz Bescheid — dann teste ich, ob meine " +
-        "Nachrichten ankommen.",
-      placement: "center",
-    },
-  ],
-};
-
-/** Validates all anchors of a tour against the manifest (throws on unknown ID). */
+/**
+ * Validates all anchors of a tour against the manifest (throws on unknown ID)
+ * and resolves its texts in the current UI language.
+ */
 export function resolveTour(tourId: string): TourDef {
   const tour = TOURS[tourId];
   if (!tour) throw new Error(`Unbekannte Tour: ${tourId}`);
@@ -229,5 +94,14 @@ export function resolveTour(tourId: string): TourDef {
       throw new Error(`Tour ${tourId}: unbekannter Anker ${step.anchor}`);
     }
   }
-  return tour;
+  const base = `tour:tours.${tourId}`;
+  return {
+    id: tour.id,
+    name: i18n.t(`${base}.name`),
+    steps: tour.steps.map(({ key, ...step }) => ({
+      ...step,
+      title: i18n.t(`${base}.steps.${key}.title`),
+      content: i18n.t(`${base}.steps.${key}.content`),
+    })),
+  };
 }

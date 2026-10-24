@@ -5,6 +5,7 @@ import styles from "../../ideas/IdeasApp.module.css";
 import kStyles from "../Knowledge.module.css";
 import { ideasApi } from "../../ideas/api";
 import type { KbObjectSlim } from "../../ideas/types";
+import { regionLocale } from "@claraos/core";
 
 const PIPELINE_TYPES = new Set(["idea", "vision"]);
 
@@ -63,7 +64,7 @@ export function SearchView({ onOpen }: Props) {
           <button key={o.id} className={styles.listRow} onClick={() => onOpen(o.id)}>
             <span className={styles.listTitle}>{o.title}</span>
             <span className={styles.listMeta}>
-              {o.type} · {new Date(o.updated_at).toLocaleDateString("de-DE")}
+              {o.type} · {new Date(o.updated_at).toLocaleDateString(regionLocale())}
             </span>
           </button>
         ))}

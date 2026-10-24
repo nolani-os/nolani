@@ -10,6 +10,7 @@ import { TrayButton } from "./tray/TrayButton";
 import { TrayPopoverHost } from "./tray/TrayPopoverHost";
 import ClaraMark from "../Mobile/clara-c.svg?react";
 import styles from "./Taskbar.module.css";
+import { regionLocale, useTranslation } from "@claraos/core";
 
 interface TaskbarProps {
   layout?: { taskbarPosition: string; taskbarHeight: number };
@@ -27,6 +28,7 @@ export function Taskbar({ layout, onSearchClick }: TaskbarProps) {
   const toggleStartMenu = useUIStore((s) => s.toggleStartMenu);
   const startMenuOpen = useUIStore((s) => s.startMenuOpen);
   const pinnedAppIds = useAppCenterStore((s) => s.pinnedAppIds);
+  const { t } = useTranslation("shell");
 
   const [time, setTime] = useState(new Date());
   const unpinApp = useAppCenterStore((s) => s.unpinApp);
@@ -137,7 +139,7 @@ export function Taskbar({ layout, onSearchClick }: TaskbarProps) {
           <button
             className={`${styles.claraBtn} ${startMenuOpen ? styles.claraActive : ""}`}
             onClick={() => toggleStartMenu()}
-            title="Clara"
+            title={t("taskbar.clara")}
             data-tour="taskbar-clara"
           >
             <ClaraMark className={styles.claraMark} />
@@ -146,7 +148,7 @@ export function Taskbar({ layout, onSearchClick }: TaskbarProps) {
           {/* Microphone */}
           <button
             className={`${styles.iconBtn} ${useVoiceStore.getState().recording ? styles.micRecording : ""}`}
-            title="Voice Mode"
+            title={t("taskbar.voice")}
             data-tour="taskbar-voice"
             onClick={() => {
               const vs = useVoiceStore.getState();
@@ -173,12 +175,12 @@ export function Taskbar({ layout, onSearchClick }: TaskbarProps) {
             const pinItems: ContextMenuItem[] = [
               {
                 id: "open",
-                label: isOpen ? `${app.name} fokussieren` : `${app.name} öffnen`,
+                label: isOpen ? t("taskbar.pinned.focus", { app: app.name }) : t("taskbar.pinned.open", { app: app.name }),
                 onSelect: () => handlePinnedClick(app.id),
               },
               {
                 id: "new-instance",
-                label: "Neue Instanz",
+                label: t("taskbar.pinned.newInstance"),
                 onSelect: () => openWindow(app.id, {
                   title: app.name,
                   width: app.window.defaultWidth,
@@ -190,14 +192,14 @@ export function Taskbar({ layout, onSearchClick }: TaskbarProps) {
               { id: "sep1", label: "---" },
               {
                 id: "unpin",
-                label: "Vom Taskbar lösen",
+                label: t("taskbar.pinned.unpin"),
                 onSelect: () => unpinApp(app.id),
                 variant: "destructive",
               },
               {
                 id: "app-center",
-                label: "App-Center öffnen",
-                onSelect: () => openWindow("app-center", { title: "App-Center", width: 800, height: 600 }),
+                label: t("taskbar.pinned.openAppCenter"),
+                onSelect: () => openWindow("app-center", { title: t("taskbar.pinned.appCenterTitle"), width: 800, height: 600 }),
               },
             ];
             return (
@@ -252,10 +254,10 @@ export function Taskbar({ layout, onSearchClick }: TaskbarProps) {
               <ContextMenu.Portal>
                 <ContextMenu.Content className={styles.ctxMenu}>
                   <ContextMenu.Item className={styles.ctxItem} onSelect={() => closeWindow(win.id)}>
-                    Schließen
+                    {t("taskbar.window.close")}
                   </ContextMenu.Item>
                   <ContextMenu.Item className={styles.ctxItem} onSelect={() => minimizeWindow(win.id)}>
-                    Minimieren
+                    {t("taskbar.window.minimize")}
                   </ContextMenu.Item>
                 </ContextMenu.Content>
               </ContextMenu.Portal>
@@ -277,10 +279,10 @@ export function Taskbar({ layout, onSearchClick }: TaskbarProps) {
 
           <div className={styles.tray} onClick={() => setTrayPopover("calendar")} data-ctx="tray-clock">
             <span className={styles.clock}>
-              {time.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
+              {time.toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" })}
             </span>
             <span className={styles.date}>
-              {time.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })}
+              {time.toLocaleDateString(regionLocale(), { day: "2-digit", month: "2-digit", year: "numeric" })}
             </span>
           </div>
 
@@ -289,7 +291,7 @@ export function Taskbar({ layout, onSearchClick }: TaskbarProps) {
             onClick={handleShowDesktopClick}
             onMouseEnter={handleShowDesktopEnter}
             onMouseLeave={handleShowDesktopLeave}
-            title="Desktop anzeigen"
+            title={t("taskbar.showDesktop")}
           />
         </div>
       </div>

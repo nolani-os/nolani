@@ -11,6 +11,7 @@ import type { KpiNode, KpiValue } from "./types";
 import { KpiChart } from "./KpiChart";
 import { Icon } from "../../components/Icon";
 import { fmtNum, fmtPct, statusColor, statusOf } from "./kpiStatus";
+import { regionLocale } from "@claraos/core";
 
 interface Props {
   kpi: KpiNode;
@@ -190,7 +191,7 @@ export function KpiCard({ kpi, currentUser, onOpen, onChanged }: Props) {
             m.attainment == null ? null : (
               <i key={m.date} className={styles.kpiMilestone}
                  style={{ left: `${Math.max(0, Math.min(100, m.attainment * 100))}%` }}
-                 title={`Zwischenziel ${fmtNum(m.value, p.unit)} bis ${new Date(m.date).toLocaleDateString("de-DE")}${m.label ? ` — ${m.label}` : ""}`} />
+                 title={`Zwischenziel ${fmtNum(m.value, p.unit)} bis ${new Date(m.date).toLocaleDateString(regionLocale())}${m.label ? ` — ${m.label}` : ""}`} />
             )
           ))}
           {/* Expectation marker: where you should be today. */}
@@ -212,7 +213,7 @@ export function KpiCard({ kpi, currentUser, onOpen, onChanged }: Props) {
       {p.next_milestone && (
         <p className={styles.metaHint}>
           Nächstes Zwischenziel: <strong>{fmtNum(p.next_milestone.value, p.unit)}</strong>
-          {" "}bis {new Date(p.next_milestone.date).toLocaleDateString("de-DE")}
+          {" "}bis {new Date(p.next_milestone.date).toLocaleDateString(regionLocale())}
         </p>
       )}
 
@@ -220,7 +221,7 @@ export function KpiCard({ kpi, currentUser, onOpen, onChanged }: Props) {
           silent adapter looks like "not measured yet". */}
       {kpi.source_error && (
         <p className={styles.kpiSourceError}
-           title={`seit ${new Date(kpi.source_error.at).toLocaleString("de-DE")}`}>
+           title={`seit ${new Date(kpi.source_error.at).toLocaleString(regionLocale())}`}>
           <Icon name="warning" size={15} className={styles.inlineIcon} />{kpi.source_error.message}
         </p>
       )}
@@ -290,7 +291,7 @@ export function KpiCard({ kpi, currentUser, onOpen, onChanged }: Props) {
             <ul className={styles.kpiValues}>
               {(p.milestones ?? []).map((m) => (
                 <li key={m.date}>
-                  <span>{new Date(m.date).toLocaleDateString("de-DE")}</span>
+                  <span>{new Date(m.date).toLocaleDateString(regionLocale())}</span>
                   <strong>{fmtNum(m.value, p.unit)}</strong>
                   <span className={styles.metaHint}>Zwischenziel</span>
                   {canEdit && (
@@ -309,7 +310,7 @@ export function KpiCard({ kpi, currentUser, onOpen, onChanged }: Props) {
             <ul className={styles.kpiValues}>
               {recent.slice(0, 5).map((v) => (
                 <li key={v.id}>
-                  <span>{new Date(v.ts).toLocaleDateString("de-DE")}</span>
+                  <span>{new Date(v.ts).toLocaleDateString(regionLocale())}</span>
                   <strong>{fmtNum(v.value, p.unit)}</strong>
                   <span className={styles.metaHint}>
                     {v.source === "manual" ? "von Hand" : v.source}

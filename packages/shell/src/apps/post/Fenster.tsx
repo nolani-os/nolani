@@ -13,13 +13,14 @@ import { useCallback, useEffect, useState } from "react";
 import styles from "./PostApp.module.css";
 import { Icon } from "../../components/Icon";
 import { postFenster, type SucheErgebnis, type Profil } from "./api";
+import { regionLocale } from "@claraos/core";
 
 type Melder = (text: string, fehler?: boolean) => void;
 
 function datumKurz(iso: string | null | undefined): string {
   if (!iso) return "";
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" });
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString(regionLocale(), { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
 
 /* ── Cross-source search ───────────────────────────────────────────────── */

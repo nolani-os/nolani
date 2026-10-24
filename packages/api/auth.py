@@ -17,7 +17,7 @@ If NEITHER variable is set, the legacy dev mode runs (local development
 without Caddy). As soon as one is set, fail-closed is enforced.
 """
 
-from betriebsprofil import OWNER_USER  # owner/admin account of this installation
+from betriebsprofil import IS_CELL, OWNER_USER, PRODUCT_NAME  # owner/admin account of this installation
 from domains_generated import BASE_DOMAIN  # cell: CLARAOS_BASE_DOMAIN
 import hmac
 import logging
@@ -54,12 +54,19 @@ DEV_USER = {
 SERVICE_USER = {
     "username": _SERVICE_USERNAME,
     "email": "",
-    "name": "ClaraOS Service",
+    "name": f"{PRODUCT_NAME} Service",
     "uid": "service",
     "groups": ["clara-admins"],
     "role": "admin",
 }
 
+if not ENFORCE and IS_CELL:
+    # A cell is reachable from the internet: dev mode there would make every
+    # visitor an administrator. Refuse to start instead of warning.
+    raise RuntimeError(
+        "CLARAOS_PROFILE=cell needs CLARAOS_PROXY_SECRET and/or CLARAOS_SERVICE_TOKEN "
+        "(deploy/cell/setup.sh generates both)."
+    )
 if not ENFORCE:
     logger.warning(
         "AUTH: kein CLARAOS_PROXY_SECRET/CLARAOS_SERVICE_TOKEN gesetzt — "
@@ -229,7 +236,17 @@ def get_current_user(request: Request) -> dict:
     # the service identity applies.
     if _matches(request.headers.get("X-ClaraOS-Service-Token", ""), SERVICE_TOKEN):
         user = _parse_authentik_headers(request)
-        return user if user["username"] else SERVICE_USER.copy()
+        if user["username"]:
+            return user
+        # Acting on behalf of a user (tool proxy, routines): that user, not the
+        # owner — otherwise every user's tool call would read and write the
+        # owner's data. Groups are unknown here, so the least role applies; only
+        # the owner keeps the service identity's role.
+        acting = (request.headers.get("x-claraos-user") or "").strip()
+        if acting and acting != SERVICE_USER["username"]:
+            return {"username": acting, "email": "", "name": acting, "uid": "",
+                    "groups": [], "role": "user"}
+        return SERVICE_USER.copy()
 
     if not _matches(request.headers.get("X-ClaraOS-Proxy-Secret", ""), PROXY_SECRET):
         raise HTTPException(

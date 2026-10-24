@@ -11,6 +11,7 @@
  * Warning: Clara's estimate is shown FADED with a dashed border until a human
  * confirms it. If you cannot tell a number from a guess, you lose trust in the
  * whole ranking. */
+import { getBrand } from "@claraos/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "../IdeasApp.module.css";
 import { ideasApi } from "../api";
@@ -179,7 +180,7 @@ export function MatrixView({ currentUser, onOpen, reloadTick }: Props) {
                 <circle r={9} />
                 <title>
                   {`${p.title}\nWirkung ${p._impact} · Aufwand ${p._effort}` +
-                   (p._guess ? `\n(Claras Schätzung${p.suggested?.reason ? ": " + p.suggested.reason : ""} — zum Bestätigen ziehen)` : "")}
+                   (p._guess ? `\n(${getBrand().assistant}s Schätzung${p.suggested?.reason ? ": " + p.suggested.reason : ""} — zum Bestätigen ziehen)` : "")}
                 </title>
                 <text x={13} y={4} className={styles.pointLabel}>{p.title.slice(0, 26)}</text>
               </g>
@@ -189,7 +190,7 @@ export function MatrixView({ currentUser, onOpen, reloadTick }: Props) {
           <div className={styles.matrixSide}>
             <p className={styles.metaHint}>
               Punkt ziehen = bewerten und bestätigen · Doppelklick öffnet das Objekt.
-              Blasse Punkte sind Claras Schätzung.
+              Blasse Punkte sind {getBrand().assistant}s Schätzung.
             </p>
 
             {unplaced.length > 0 && (
@@ -207,7 +208,7 @@ export function MatrixView({ currentUser, onOpen, reloadTick }: Props) {
                                 } catch (e) {
                                   setError(e instanceof Error ? e.message : "Schätzung fehlgeschlagen");
                                 }
-                              }}>Clara schätzen lassen</button>
+                              }}>{getBrand().assistant} schätzen lassen</button>
                     </li>
                   ))}
                 </ul>
@@ -245,7 +246,7 @@ export function MatrixView({ currentUser, onOpen, reloadTick }: Props) {
             {items.length === 0 && (
               <p className={styles.metaHint}>
                 Diesem Ziel ist noch keine Idee zugeordnet. Lass dir in der Ziele-Ansicht
-                welche von Clara vorschlagen.
+                welche von {getBrand().assistant} vorschlagen.
               </p>
             )}
           </div>

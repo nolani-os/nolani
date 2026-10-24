@@ -7,6 +7,7 @@
  * Important: the calculation works at DAY granularity. Comparing milliseconds
  * would turn a task due today at 9:00 into "yesterday" at 10:00.
  */
+import { regionLocale } from "@claraos/core";
 
 /** Distance in whole days: today = 0, tomorrow = 1, yesterday = −1. */
 export function tagesDiff(iso: string): number | null {
@@ -30,11 +31,11 @@ export function datumInWorten(iso?: string | null): string {
   if (tage === -1) return "Gestern";
   // The coming week with weekday — that is what people actually ask for day to day.
   if (tage > 1 && tage <= 7) {
-    return d.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "short" });
+    return d.toLocaleDateString(regionLocale(), { weekday: "short", day: "numeric", month: "short" });
   }
   if (tage < -1 && tage >= -13) return `vor ${-tage} Tagen`;
   const gleichesJahr = d.getFullYear() === new Date().getFullYear();
-  return d.toLocaleDateString("de-DE", gleichesJahr
+  return d.toLocaleDateString(regionLocale(), gleichesJahr
     ? { day: "numeric", month: "short" }
     : { day: "numeric", month: "short", year: "numeric" });
 }

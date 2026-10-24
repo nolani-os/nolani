@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import styles from "../../ideas/IdeasApp.module.css";
 import { Icon, iconFuerEmoji, type IconName } from "../../../components/Icon";
 import type { KbObjectSlim, KbType } from "../../ideas/types";
+import { regionLocale } from "@claraos/core";
 
 interface Props {
   objects: KbObjectSlim[];
@@ -85,7 +86,7 @@ export function KnowledgeList({ objects, types, currentUser, fixedType = false, 
               <span className={styles.listMeta}>
                 {o.visibility === "family" && <Icon name="people" size={12} className={styles.inlineIcon} />}
                 {o.owner !== currentUser ? `${o.owner} · ` : ""}
-                {new Date(o.updated_at).toLocaleDateString("de-DE")}
+                {new Date(o.updated_at).toLocaleDateString(regionLocale())}
               </span>
             </button>
           );

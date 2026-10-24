@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "../PlannerApp.module.css";
 import { plannerApi } from "../api";
 import { hasDate, type VikProject, type VikTask } from "../types";
+import { regionLocale } from "@claraos/core";
 
 const DAY_W = 30;
 const ROW_H = 34;
@@ -153,7 +154,7 @@ export function GanttView({ project, onOpen }: { project: VikProject; onOpen: (t
             <div className={styles.ganttHeader} style={{ paddingLeft: LABEL_W }}>
               {days.map(({ i, d, isToday, isFirst }) => (
                 <div key={i} className={`${styles.ganttDay} ${isToday ? styles.ganttToday : ""}`} style={{ width: DAY_W }}>
-                  {isFirst && <span className={styles.ganttMonth}>{d.toLocaleDateString("de-DE", { month: "short" })}</span>}
+                  {isFirst && <span className={styles.ganttMonth}>{d.toLocaleDateString(regionLocale(), { month: "short" })}</span>}
                   {d.getDate()}
                 </div>
               ))}

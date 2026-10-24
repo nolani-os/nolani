@@ -159,9 +159,9 @@
     var clara = null;
     if (!inShell) {
       clara = el("button", "claraos-clarapill",
-        ICONS.clara + "<span>Clara</span>");
-      clara.title = "Mit Clara reden";
-      clara.setAttribute("aria-label", "Clara fragen");
+        ICONS.clara + "<span>Assistent</span>");
+      clara.title = "Mit dem Assistenten reden";
+      clara.setAttribute("aria-label", "Assistent fragen");
       clara.addEventListener("click", openClara);
     }
 

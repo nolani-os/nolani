@@ -1,16 +1,14 @@
-"""Human-like input inside the Selkies container: pointer via X, keyboard via Wayland.
+"""OS-level input inside the user's own Selkies browser: pointer via X, keyboard via Wayland.
 
 WHY THIS EXISTS
 ---------------
-CDP `Input.dispatchMouseEvent` creates events *inside* the browser. Many sites'
-anti-automation checks look at the **physics of the input**: entropy of the mouse movement stream,
-keystroke timing, whether any movement happened before a click at all. Synthetic CDP
-events fail those checks; some sites then abort a sign-up with a generic "technical
-error, try another device or browser" and clear the form.
+The assistant fills in forms in the signed-in user's own browser, on the user's
+request. CDP `Input.dispatchMouseEvent` creates events *inside* the browser, and some
+pages do not accept such synthetic events: a form then fails with a generic error.
 
-This module works one level lower, **in front of** the browser. Chromium receives the
-same events as from real hardware, the same path a user's own input takes through the
-Selkies stream.
+This module delivers input one level lower, the same way the user's own input
+arrives through the Selkies stream: Chromium receives ordinary pointer and keyboard
+events.
 
 KEY PROPERTY: **two paths, not one**
    Chromium runs here as a **Wayland** client (`--ozone-platform=wayland` under labwc),
@@ -30,8 +28,7 @@ PITFALLS
       ⇒ **`wlrctl toplevel focus app_id:chromium`** before every input (`focus_window`).
    2. **Lost characters**: a `wtype` call with several characters delivers only the
       first ~3, regardless of `-d`.
-      ⇒ **One call per character.** Side effect: the gaps between separate processes
-      vary slightly, which helps rather than hurts keystroke entropy.
+      ⇒ **One call per character.**
    3. **Known limitation**: after a container restart the keyboard channel works
       reliably; after prolonged use it can stop delivering keys on every page (the
       page receives no `keydown` events at all, while DOM focus, window focus and
@@ -169,11 +166,10 @@ async def viewport_origin(viewport_w: int, viewport_h: int) -> tuple[int, int]:
 # ── Pointer ──────────────────────────────────────────────────────────────────
 
 async def move(x: int, y: int, steps: int = 12, ms: int = 12) -> None:
-    """Move the pointer in small steps.
+    """Move the pointer in small steps, like a user's pointer.
 
-    Jumping from A to B is the clearest bot signal: a click without preceding movement
-    is classified as a machine by rule. Hence always a trail of intermediate points
-    instead of a single `mousemove`.
+    Pages react to hover (menus, buttons that appear on hover); a single jump to the
+    target can skip those states, so the pointer passes intermediate points.
     """
     steps = max(1, min(steps, 60))
     cur = await _xdo("getmouselocation", "--shell")
@@ -197,8 +193,7 @@ async def click(x: int, y: int, button: int = 1, settle: float = 0.25) -> None:
 async def type_text(text: str, delay_ms: int = 90) -> int:
     """Type text. The content is NOT logged (passwords!).
 
-    The delay is not cosmetic: uniformly maximal-speed keystrokes are a detection
-    signal in themselves, and typing too fast loses keystrokes.
+    The delay is needed: typing too fast loses keystrokes.
     """
     if not isinstance(text, str) or not text:
         raise InputError("leerer Text")

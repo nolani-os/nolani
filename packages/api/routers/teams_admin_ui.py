@@ -8,6 +8,7 @@ UserAdminApp.tsx is planned.
 """
 from __future__ import annotations
 
+from betriebsprofil import PRODUCT_NAME
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
@@ -20,7 +21,7 @@ HTML = r"""<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="utf-8"/>
-<title>ClaraOS Teams Admin</title>
+<title>""" + PRODUCT_NAME + r""" Teams Admin</title>
 <style>
   :root {
     --bg:#1e1e2e; --panel:#28283c; --accent:#7fd1f5; --accent2:#c4a7e7;
@@ -74,7 +75,7 @@ HTML = r"""<!DOCTYPE html>
 </head>
 <body>
 <div class="wrap">
-  <h1>🛡 ClaraOS Teams Admin</h1>
+  <h1>🛡 """ + PRODUCT_NAME + r""" Teams Admin</h1>
 
   <div id="status"></div>
 

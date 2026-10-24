@@ -15,6 +15,7 @@
  * as equal-ranked buttons here, so delete is not one misclick away from a
  * secondary function.
  */
+import { getBrand } from "@claraos/core";
 import { useMemo, useState } from "react";
 import styles from "./IdeasApp.module.css";
 import leiste from "../wissen/Wissen.module.css";
@@ -263,7 +264,7 @@ export function MetaSidebar({
       <div className={leiste.leisteGruppe}>
         <p className={leiste.leisteText}>
           {STAGE_BY_KEY[object.stage ?? ""] ? `${STAGE_BY_KEY[object.stage!].label} · ` : ""}
-          von {object.owner}{object.created_by === "clara" ? " (via Clara 🤖)" : ""}<br />
+          von {object.owner}{object.created_by === "clara" ? ` (via ${getBrand().assistant} 🤖)` : ""}<br />
           angelegt {formatZeitpunkt(object.created_at)}<br />
           geändert {formatZeitpunkt(object.updated_at)}
         </p>

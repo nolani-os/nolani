@@ -10,9 +10,12 @@
 
 {
 	email admin@{$ZELLE_DOMAIN}
-	servers {
-		trusted_proxies static private_ranges
-	}
+	# Strip client-sent identity headers before forward_auth sets the real ones. Without
+	# this, Caddy's default order runs request_header AFTER forward_auth.
+	order request_header before forward_auth
+	# No trusted_proxies: Caddy is the edge of the cell. Trusting private ranges would
+	# keep a client's own X-Forwarded-For whenever Docker's IPv6 proxy makes the source
+	# look private (172.x) — and the API rate-limits by that address.
 }
 
 # Apex → Shell
@@ -43,6 +46,12 @@ home.{$ZELLE_DOMAIN} {
 		reverse_proxy authentik:9000
 	}
 
+	# Identity headers a client sent itself are dropped BEFORE forward_auth (see the
+	# global `order`): forward_auth only overwrites a header when Authentik returns a
+	# non-empty value, so e.g. a user without groups would otherwise keep a self-made
+	# X-Authentik-Groups.
+	request_header -X-Authentik-*
+
 	# Public: MCP (own per-user bearer keys), WOPI file paths for Collabora (access_token),
 	# static assets/PWA files (otherwise a 302 HTML page instead of the asset), app downloads.
 	@needs_auth not path /mcp /mcp/* /api/claraos/wopi/files /api/claraos/wopi/files/* /assets/* /sw.js /favicon.ico /favicon.svg /manifest.webmanifest /icon-192.png /icon-512.png /icon-192-maskable.png /icon-512-maskable.png /downloads/*
@@ -58,6 +67,22 @@ home.{$ZELLE_DOMAIN} {
 	handle @mcp {
 		reverse_proxy claraos-api:8090 {
 			header_up -X-ClaraOS-Proxy-Secret
+			header_up -X-ClaraOS-Service-Token
+			header_up -X-ClaraOS-Brain-Token
+			header_up -X-Claraos-User
+			header_up -X-Claraos-Actor
+			header_up -X-Claraos-Turn
+			header_up -X-Authentik-*
+		}
+	}
+
+	# WOPI file paths are exempt from forward_auth (Collabora authenticates with an
+	# access_token). Nothing set the X-Authentik-* headers here, so every one of them
+	# came from the client — drop them all, otherwise they would reach the API next to
+	# a valid proxy secret. (A single path matcher sorts before /api/claraos/*.)
+	handle /api/claraos/wopi/files* {
+		reverse_proxy claraos-api:8090 {
+			header_up X-ClaraOS-Proxy-Secret {env.CLARAOS_PROXY_SECRET}
 			header_up -X-ClaraOS-Service-Token
 			header_up -X-ClaraOS-Brain-Token
 			header_up -X-Claraos-User
@@ -152,6 +177,10 @@ matrix.{$ZELLE_DOMAIN} {
 
 # ── Element Call (call UI, embedded as a widget in the Teams app) ───────
 call.{$ZELLE_DOMAIN} {
+	# The Teams app reads the LiveKit address from this file to answer Element
+	# Call's get_rtc_transports (MSC4515). Without CORS the read fails and EC
+	# retries for ~30 s before it connects.
+	header /config.json Access-Control-Allow-Origin "https://home.{$ZELLE_DOMAIN}"
 	reverse_proxy element-call:8080
 }
 
@@ -218,7 +247,7 @@ import aktiv/*.caddy
 	}
 	handle_errors 502 503 {
 		header Content-Type "text/plain; charset=utf-8"
-		respond "Dein Browser schläft gerade. Öffne ihn über die Browser-Kachel in ClaraOS — dann startet er." 503
+		respond "Dein Browser schläft gerade. Öffne ihn über die Browser-Kachel — dann startet er." 503
 	}
 }
 

@@ -34,6 +34,7 @@ user reconnects, missed actions are lost. That's fine for the use cases
 """
 from __future__ import annotations
 
+from betriebsprofil import PRODUCT_NAME
 import asyncio
 import json
 import logging
@@ -170,7 +171,17 @@ def aktuelle_form(username: str) -> str | None:
 
 
 def _ws_username(ws: WebSocket) -> str:
-    return (ws.headers.get("x-authentik-username") or "").lower() or "dev"
+    """The signed-in user of a WebSocket, "" if not authenticated.
+
+    The identity header counts only next to the reverse proxy's secret — the API
+    is reachable on internal networks (e.g. the personal browsers'), where anyone
+    could set it. The "dev" fallback is for dev mode without any trust anchor.
+    """
+    if not ENFORCE:
+        return (ws.headers.get("x-authentik-username") or "").lower() or "dev"
+    if not _matches(ws.headers.get("x-claraos-proxy-secret", ""), PROXY_SECRET):
+        return ""
+    return (ws.headers.get("x-authentik-username") or "").strip().lower()
 
 
 @router.websocket("/ws")
@@ -261,7 +272,7 @@ def _dispatch_authorised(request: Request, target_user: str) -> bool:
     """
     if _matches(request.headers.get("x-claraos-service-token", ""), SERVICE_TOKEN):
         return True
-    if _MCP_TOKEN and (request.headers.get("x-claraos-mcp-token") or "") == _MCP_TOKEN:
+    if _matches(request.headers.get("x-claraos-mcp-token") or "", _MCP_TOKEN):
         return True
     # A user authenticated via the reverse proxy may send to THEMSELF — never to others.
     if _matches(request.headers.get("x-claraos-proxy-secret", ""), PROXY_SECRET):
@@ -337,7 +348,7 @@ async def dispatch(request: Request) -> JSONResponse:
         if not delivered:
             antwort["rendered"] = 0
             antwort["detail"] = (
-                "Kein Browser mit offenem ClaraOS verbunden — es wurde NICHTS "
+                f"Kein Browser mit offenem {PRODUCT_NAME} verbunden — es wurde NICHTS "
                 "angezeigt. Dem Nutzer das so sagen, nicht Erfolg melden."
             )
             return JSONResponse(content=antwort)

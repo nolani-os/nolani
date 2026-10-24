@@ -1,7 +1,7 @@
 """App registry endpoints – DB-driven with seed data."""
 
 from domains_generated import LEGACY_DOMAIN
-from betriebsprofil import heim_default, heim_struktur  # external cell: no silent home-server fallback
+from betriebsprofil import ASSISTANT_NAME, heim_default, heim_struktur  # external cell: no silent home-server fallback
 import asyncio
 import json
 import logging
@@ -391,7 +391,7 @@ async def selkies_status(request: Request) -> dict:
             "url": SELKIES_PUBLIC,
             "personal": False,
             "reason": "kein_eigener_browser",
-            "hint": "Für dich ist noch kein persönlicher Clara Browser eingerichtet.",
+            "hint": f"Für dich ist noch kein persönlicher {ASSISTANT_NAME} Browser eingerichtet.",
             "mobile": {"available": False, "url": SELKIES_MOBILE_PUBLIC},
         }
 

@@ -1,5 +1,5 @@
 import { lazy, type LazyExoticComponent, type ComponentType } from "react";
-import type { WidgetManifest } from "@claraos/core";
+import { i18n, type WidgetManifest, getBrand } from "@claraos/core";
 
 export interface WidgetProps {
   widgetId: string;
@@ -78,7 +78,7 @@ export const widgetManifests: Record<string, WidgetManifest> = {
   "nc-tasks": {
     id: "nc-tasks",
     name: "Aufgaben",
-    description: "Offene Aufgaben aus dem ClaraOS-Planner — abhakbar, zeigt woran Clara arbeitet",
+    get description() { return `Offene Aufgaben aus dem ${getBrand().product}-Planner — abhakbar, zeigt woran ${getBrand().assistant} arbeitet`; },
     icon: "✅",
     hasSettings: true,
     defaultSize: { w: 4, h: 3 },
@@ -131,7 +131,7 @@ export const widgetManifests: Record<string, WidgetManifest> = {
   "idea-capture": {
     id: "idea-capture",
     name: "Ideen-Blitz",
-    description: "Idee in einer Zeile festhalten — Clara denkt direkt mit",
+    get description() { return `Idee in einer Zeile festhalten — ${getBrand().assistant} denkt direkt mit`; },
     icon: "💡",
     defaultSize: { w: 4, h: 2 },
     minSize: { w: 3, h: 2 },
@@ -140,8 +140,8 @@ export const widgetManifests: Record<string, WidgetManifest> = {
   },
   "clara-quick": {
     id: "clara-quick",
-    name: "Clara Schnellchat",
-    description: "Clara direkt vom Desktop aus fragen",
+    get name() { return `${getBrand().assistant} Schnellchat`; },
+    get description() { return `${getBrand().assistant} direkt vom Desktop aus fragen`; },
     icon: "✨",
     defaultSize: { w: 4, h: 3 },
     minSize: { w: 3, h: 3 },
@@ -152,6 +152,20 @@ export const widgetManifests: Record<string, WidgetManifest> = {
 
 export function getWidgetManifest(type: string): WidgetManifest | undefined {
   return widgetManifests[type];
+}
+
+// Manifest texts stay German in code (and in installation overrides); other
+// languages translate them by widget id and fall back to the manifest text.
+// Read at render time — call inside components that use useTranslation().
+
+/** Display name of a widget in the UI language. */
+export function widgetName(m: WidgetManifest): string {
+  return i18n.t(`desktop:widgets.manifest.${m.id}.name`, { defaultValue: m.name });
+}
+
+/** Description of a widget in the UI language. */
+export function widgetDescription(m: WidgetManifest): string {
+  return i18n.t(`desktop:widgets.manifest.${m.id}.description`, { defaultValue: m.description });
 }
 
 /** Tapping/⚙ on a widget opens its associated app (null = no app to open).

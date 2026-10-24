@@ -14,17 +14,18 @@
  * annotated PNG as attachment_b64 on the conversation.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useWindowsStore } from "@claraos/core";
+import { useTranslation, useWindowsStore } from "@claraos/core";
 import { VoiceRecorderSession } from "../Chat/useVoiceRecorder";
 import { captureToDataUrl } from "../lib/screenshots";
 import MarkerOverlay from "../Marker/MarkerOverlay";
 import styles from "./FeedbackDialog.module.css";
 
+/** Labels: "components" catalog, `feedback.category.<id>`. */
 const CATEGORIES = [
-  { id: "bug", icon: "🐞", label: "Fehler" },
-  { id: "idee", icon: "💡", label: "Idee" },
-  { id: "kritik", icon: "😕", label: "Kritik" },
-  { id: "lob", icon: "💚", label: "Lob" },
+  { id: "bug", icon: "🐞" },
+  { id: "idee", icon: "💡" },
+  { id: "kritik", icon: "😕" },
+  { id: "lob", icon: "💚" },
 ] as const;
 
 type CategoryId = (typeof CATEGORIES)[number]["id"];
@@ -54,6 +55,7 @@ export function FeedbackDialogHost() {
   const [shotBlob, setShotBlob] = useState<Blob | null>(null);
   const [attachment, setAttachment] = useState<string | null>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
+  const { t } = useTranslation("components");
 
   const stopDictation = useCallback(() => {
     sessionRef.current?.stop();
@@ -148,7 +150,7 @@ export function FeedbackDialogHost() {
           if (cancelled) return;
           if (!dataUrl) {
             setPhase("form");
-            setVoiceErr("Bildschirmaufnahme hat nicht geklappt.");
+            setVoiceErr(t("feedback.captureFailed"));
             return;
           }
           const blob = await (await fetch(dataUrl)).blob();
@@ -158,13 +160,13 @@ export function FeedbackDialogHost() {
         } catch {
           if (!cancelled) {
             setPhase("form");
-            setVoiceErr("Bildschirmaufnahme hat nicht geklappt.");
+            setVoiceErr(t("feedback.captureFailed"));
           }
         }
       }),
     );
     return () => { cancelled = true; };
-  }, [phase]);
+  }, [phase, t]);
 
   const send = useCallback(async () => {
     if (!category || text.trim().length < 3 || status === "sending") return;
@@ -221,7 +223,7 @@ export function FeedbackDialogHost() {
         className={styles.card}
         role="dialog"
         aria-modal="true"
-        aria-label="Feedback geben"
+        aria-label={t("feedback.title")}
         data-testid="feedback-dialog"
         onClick={(e) => e.stopPropagation()}
       >
@@ -229,16 +231,13 @@ export function FeedbackDialogHost() {
           <div className={styles.doneBox} data-testid="feedback-done">
             <div className={styles.doneIcon}>💌</div>
             <div className={styles.doneText}>
-              Danke! Dein Feedback ist angekommen und wird gesichtet.
+              {t("feedback.done")}
             </div>
           </div>
         ) : (
           <>
-            <div className={styles.title}>Feedback geben</div>
-            <div className={styles.subtitle}>
-              Was funktioniert gut, was nervt, was fehlt? Dein Feedback landet
-              direkt bei uns.
-            </div>
+            <div className={styles.title}>{t("feedback.title")}</div>
+            <div className={styles.subtitle}>{t("feedback.subtitle")}</div>
             <div className={styles.cats}>
               {CATEGORIES.map((c) => (
                 <button
@@ -248,7 +247,7 @@ export function FeedbackDialogHost() {
                   data-testid={`feedback-cat-${c.id}`}
                   onClick={() => setCategory(c.id)}
                 >
-                  <span aria-hidden="true">{c.icon}</span> {c.label}
+                  <span aria-hidden="true">{c.icon}</span> {t(`feedback.category.${c.id}`)}
                 </button>
               ))}
             </div>
@@ -257,7 +256,7 @@ export function FeedbackDialogHost() {
               className={styles.text}
               data-testid="feedback-text"
               placeholder={
-                recState === "recording" ? "Ich höre zu …" : "Erzähl kurz, worum es geht …"
+                recState === "recording" ? t("feedback.placeholderListening") : t("feedback.placeholder")
               }
               rows={4}
               maxLength={4000}
@@ -269,28 +268,28 @@ export function FeedbackDialogHost() {
                 type="button"
                 className={recState === "idle" ? styles.toolBtn : styles.toolBtnActive}
                 data-testid="feedback-mic"
-                title={recState === "idle" ? "Diktieren" : "Aufnahme stoppen"}
+                title={recState === "idle" ? t("feedback.dictateTitle") : t("feedback.stopRecordingTitle")}
                 disabled={recState === "transcribing"}
                 onClick={() => {
                   if (recState === "idle") void startDictation();
                   else stopDictation();
                 }}
               >
-                {recState === "idle" ? "🎤 Diktieren"
-                  : recState === "transcribing" ? "⏳ Wandle um …"
-                  : "⏹ Stopp"}
+                {recState === "idle" ? t("feedback.dictate")
+                  : recState === "transcribing" ? t("feedback.transcribing")
+                  : t("feedback.stop")}
               </button>
               <button
                 type="button"
                 className={styles.toolBtn}
                 data-testid="feedback-marker"
-                title="Bildschirm festhalten und Bereich markieren"
+                title={t("feedback.markTitle")}
                 onClick={() => {
                   stopDictation();
                   setPhase("capturing");
                 }}
               >
-                🖍 Bereich markieren
+                {t("feedback.mark")}
               </button>
             </div>
             {attachment && (
@@ -298,13 +297,13 @@ export function FeedbackDialogHost() {
                 <img
                   className={styles.attachThumb}
                   src={`data:image/png;base64,${attachment}`}
-                  alt="Markierter Bildschirmausschnitt"
+                  alt={t("feedback.attachmentAlt")}
                 />
-                <span className={styles.attachLabel}>Markierung wird mitgeschickt</span>
+                <span className={styles.attachLabel}>{t("feedback.attachmentLabel")}</span>
                 <button
                   type="button"
                   className={styles.ctxClear}
-                  title="Anhang entfernen"
+                  title={t("feedback.removeAttachment")}
                   data-testid="feedback-attach-remove"
                   onClick={() => setAttachment(null)}
                 >
@@ -314,11 +313,11 @@ export function FeedbackDialogHost() {
             )}
             {appCtx && (
               <div className={styles.ctx}>
-                Betrifft: <b>{appCtx}</b>
+                {t("feedback.concerns")} <b>{appCtx}</b>
                 <button
                   type="button"
                   className={styles.ctxClear}
-                  title="App-Bezug entfernen"
+                  title={t("feedback.removeAppContext")}
                   onClick={() => setAppCtx("")}
                 >
                   ✕
@@ -328,13 +327,13 @@ export function FeedbackDialogHost() {
             {voiceErr && <div className={styles.error}>{voiceErr}</div>}
             {status === "error" && (
               <div className={styles.error} data-testid="feedback-error">
-                Senden hat nicht geklappt — bitte gleich nochmal versuchen.
+                {t("feedback.sendFailed")}
               </div>
             )}
             <div className={styles.actions}>
               <button type="button" className={styles.btn} onClick={close}
                       data-testid="feedback-cancel">
-                Abbrechen
+                {t("feedback.cancel")}
               </button>
               <button
                 type="button"
@@ -343,7 +342,7 @@ export function FeedbackDialogHost() {
                 disabled={!category || text.trim().length < 3 || status === "sending"}
                 onClick={() => void send()}
               >
-                {status === "sending" ? "Sende …" : "Senden"}
+                {status === "sending" ? t("feedback.sending") : t("feedback.send")}
               </button>
             </div>
           </>

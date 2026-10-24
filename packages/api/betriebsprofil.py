@@ -110,19 +110,6 @@ CELL_APP_FIELDS: dict[str, dict] = {
     "services-hub": {"description": "Externe Dienste — öffnen sich in deinem eigenen Browser"},
 }
 
-# Tiles that exist ONLY in a cell (not in app_seeds — in the home profile the name
-# "Routinen" may belong to another tile). Appended by zellen_apps.
-CELL_EXTRA_APPS: tuple[dict, ...] = (
-    {
-        "id": "clara-routinen", "name": "Routinen", "icon": "\U0001f501",
-        "description": "Wiederkehrende Aufträge an Clara — Ergebnis kommt als Meldung",
-        "type": "internal", "category": "productivity", "source": "builtin",
-        "activated": True, "showInStartMenu": True, "pinned": False,
-        "window": {"defaultWidth": 900, "defaultHeight": 680, "minWidth": 420, "minHeight": 400},
-        "permissions": [],
-    },
-)
-
 # Tiles present in a cell only as configuration carriers — not visible.
 # `element` carries `authMethod: matrix`, through which /auth-proxy/element issues the
 # Teams app its Matrix token; there is no Element UI in a cell.
@@ -205,6 +192,33 @@ OWNER_USER: str = (
     or "admin"
 )
 
+# Names users see: the product and its assistant. Ships as NolaniOS / Nolani; an
+# installation renames them via CLARAOS_PRODUCT_NAME / CLARAOS_ASSISTANT_NAME (cell
+# .env), at home via heim_werte. The shell gets both from /api/claraos/me.
+PRODUCT_NAME: str = (
+    os.environ.get("CLARAOS_PRODUCT_NAME", "").strip()
+    or ("" if IS_CELL else _heim_werte().get("CLARAOS_PRODUCT_NAME", ""))
+    or "NolaniOS"
+)
+ASSISTANT_NAME: str = (
+    os.environ.get("CLARAOS_ASSISTANT_NAME", "").strip()
+    or ("" if IS_CELL else _heim_werte().get("CLARAOS_ASSISTANT_NAME", ""))
+    or "Nolani"
+)
+
+# Tiles that exist ONLY in a cell (not in app_seeds — in the home profile the name
+# "Routinen" may belong to another tile). Appended by zellen_apps.
+CELL_EXTRA_APPS: tuple[dict, ...] = (
+    {
+        "id": "clara-routinen", "name": "Routinen", "icon": "\U0001f501",
+        "description": f"Wiederkehrende Aufträge an {ASSISTANT_NAME} — Ergebnis kommt als Meldung",
+        "type": "internal", "category": "productivity", "source": "builtin",
+        "activated": True, "showInStartMenu": True, "pinned": False,
+        "window": {"defaultWidth": 900, "defaultHeight": 680, "minWidth": 420, "minHeight": 400},
+        "permissions": [],
+    },
+)
+
 
 def zellen_apps(apps: list[dict], base_domain: str, home_domain: str = "example.com") -> list[dict]:
     """Tile set of a cell: only `CELL_APPS`, iframe URLs rewritten to the cell's domain.
@@ -277,7 +291,7 @@ _WERKZEUG_TEILE = re.compile(
     re.IGNORECASE,
 )
 ZELLE_CHAT_HINWEIS = (
-    "Du bist Clara in einer eigenständigen ClaraOS-Instanz. Hier hast du KEINE "
+    f"Du bist {ASSISTANT_NAME} in einer eigenständigen {PRODUCT_NAME}-Instanz. Hier hast du KEINE "
     "Werkzeuge: du kannst keine Dateien, Termine, Aufgaben oder Mails anlegen oder "
     "ändern und keine Apps steuern. Behaupte nie, etwas getan zu haben. Erkläre "
     "stattdessen kurz, wie der Nutzer es in der jeweiligen App selbst erledigt."

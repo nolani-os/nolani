@@ -4,6 +4,7 @@
  * but **the answer comes from the person**. A model that invents five levels
  * by itself produces plausible prose instead of a root cause, and that is
  * exactly where most "AI kaizen" tools fail. */
+import { getBrand } from "@claraos/core";
 import { useState } from "react";
 import styles from "./IdeasApp.module.css";
 import { Icon } from "../../components/Icon";
@@ -39,7 +40,7 @@ export function FiveWhyModal({ goal, onClose, onDone }: Props) {
       setNote(r.note);
       setAnswer("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Clara antwortet gerade nicht");
+      setError(e instanceof Error ? e.message : `${getBrand().assistant} antwortet gerade nicht`);
     } finally {
       setBusy(false);
     }
@@ -81,7 +82,7 @@ export function FiveWhyModal({ goal, onClose, onDone }: Props) {
         {!started ? (
           <>
             <p className={styles.metaHint}>
-              Beschreibe in einem Satz, was konkret nicht läuft. Clara fragt dann fünfmal
+              Beschreibe in einem Satz, was konkret nicht läuft. {getBrand().assistant} fragt dann fünfmal
               „warum?" — antworten musst du, denn du kennst die Lage. Sie schlägt jeweils
               ein paar Möglichkeiten vor, die du übernehmen oder überschreiben kannst.
             </p>
@@ -109,7 +110,7 @@ export function FiveWhyModal({ goal, onClose, onDone }: Props) {
               </ol>
             )}
 
-            {busy && <p className={styles.metaHint}>Clara denkt nach…</p>}
+            {busy && <p className={styles.metaHint}>{getBrand().assistant} denkt nach…</p>}
             {error && <div className={styles.error}>{error}</div>}
             {note && <p className={styles.metaHint}>{note}</p>}
 

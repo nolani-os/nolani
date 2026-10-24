@@ -8,9 +8,11 @@
  * encoding:"base64".
  */
 
+import { i18n } from "@claraos/core";
+
 export interface NewFileTemplate {
   ext: string;
-  /** German menu label. */
+  /** German menu label — shown via templateLabel(), which translates it. */
   label: string;
   content: string;
   encoding: "utf-8" | "base64";
@@ -41,4 +43,9 @@ export const NEW_FILE_TEMPLATES: NewFileTemplate[] = [
 
 export function getTemplate(ext: string): NewFileTemplate | undefined {
   return NEW_FILE_TEMPLATES.find((tpl) => tpl.ext === ext);
+}
+
+/** Menu label in the UI language (`common:newFile.<ext>`), German as fallback. */
+export function templateLabel(tpl: NewFileTemplate): string {
+  return i18n.t(`common:newFile.${tpl.ext.slice(1)}`, { defaultValue: tpl.label });
 }

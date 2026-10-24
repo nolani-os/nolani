@@ -14,6 +14,7 @@ import { ideasApi } from "./api";
 import type { Analysis, GoalNode } from "./types";
 import { FiveWhyModal } from "./FiveWhyModal";
 import { ParetoModal } from "./ParetoModal";
+import { regionLocale } from "@claraos/core";
 
 interface Props {
   goal: GoalNode;
@@ -82,7 +83,7 @@ export function KaizenPanel({ goal, canEdit, onOpen, onChanged }: Props) {
                 <Icon name={a.method === "pareto" ? "dashboard" : "analysis"} size={15} className={styles.inlineIcon} />{a.title}
               </button>
               <span className={styles.metaHint}>
-                {new Date(a.created_at).toLocaleDateString("de-DE")}
+                {new Date(a.created_at).toLocaleDateString(regionLocale())}
               </span>
               {a.root_cause && <p className={styles.metaHint}>Grundursache: {a.root_cause}</p>}
               {a.vital_few.length > 0 && (

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 export function runPolicyTests(mod) {
   const {
-    decide, isDndActive, ruleFor, dndUntilFor, dndRemainingLabel,
+    decide, isDndActive, ruleFor, dndUntilFor, dndRemainingLabel, dndRemaining,
     DEFAULT_POLICY, DEFAULT_APP_RULE,
   } = mod;
 
@@ -110,6 +110,13 @@ export function runPolicyTests(mod) {
     assert.match(dndRemainingLabel(P({ dndUntil: NOW + 90 * 60000 }), NOW), /1 Std\. 30 Min\./);
     assert.equal(dndRemainingLabel(P(), NOW), "", "ohne DND kein Text");
     assert.equal(dndRemainingLabel(P({ dndUntil: dndUntilFor(0, NOW) }), NOW), "unbegrenzt");
+  });
+
+  t("Restzeit als Daten für die Übersetzung", () => {
+    assert.equal(dndRemaining(P({ dndUntil: NOW - 1 }), NOW), null);
+    assert.deepEqual(dndRemaining(P({ dndUntil: NOW + 25 * 60000 }), NOW), { key: "minutes", count: 25 });
+    assert.deepEqual(dndRemaining(P({ dndUntil: NOW + 90 * 60000 }), NOW), { key: "hoursMinutes", h: 1, m: 30 });
+    assert.equal(dndRemainingLabel(P({ dndUntil: NOW + 90 * 60000 }), NOW), "noch 1 Std. 30 Min.");
   });
 
   return results;

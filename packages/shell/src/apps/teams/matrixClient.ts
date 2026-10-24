@@ -1,5 +1,5 @@
 import * as sdk from "matrix-js-sdk";
-import { useMatrixStore, appUrl } from "@claraos/core";
+import { useMatrixStore, appUrl, getBrand } from "@claraos/core";
 import type { MatrixRoom, MatrixMessage, MatrixSpace } from "@claraos/core";
 
 let client: sdk.MatrixClient | null = null;
@@ -193,7 +193,7 @@ async function upgradeToDeviceSession(
       body: JSON.stringify({
         type: "m.login.token",
         token: login_token,
-        initial_device_display_name: "ClaraOS Teams",
+        initial_device_display_name: `${getBrand().product} Teams`,
       }),
     });
     if (!r2.ok) return null;
@@ -236,7 +236,7 @@ export async function initMatrixClient(): Promise<boolean> {
       const loginResp = await tempClient.login("m.login.password", {
         identifier: { type: "m.id.user", user: data.credentials.username },
         password: data.credentials.password,
-        initial_device_display_name: "ClaraOS Teams",
+        initial_device_display_name: `${getBrand().product} Teams`,
       });
       accessToken = loginResp.access_token;
       userId = loginResp.user_id;

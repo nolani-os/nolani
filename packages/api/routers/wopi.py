@@ -53,6 +53,7 @@ WOPI_PUBLIC_BASE = os.environ.get(
 ).rstrip("/")
 
 TOKEN_TTL_S = 10 * 3600  # Collabora session length; the frontend re-mints on expiry
+_PUT_MAX_BYTES = 512 * 1024 * 1024  # largest document Collabora may save back
 
 # convert-to uses the same internal base (office.py); discovery returns the
 # public urlsrc including the version hash (/browser/<hash>/cool.html?).
@@ -297,7 +298,13 @@ async def put_file(file_id: str, request: Request) -> JSONResponse:
             )
             return JSONResponse(status_code=409, content={"COOLStatusCode": 1010})
 
-    body = await request.body()
+    # Read with a cap: this route is public (token in the query), an unbounded
+    # body would let a leaked token fill the API's memory.
+    body = b""
+    async for chunk in request.stream():
+        body += chunk
+        if len(body) > _PUT_MAX_BYTES:
+            raise HTTPException(status_code=413, detail="Datei zu groß")
     async with httpx.AsyncClient(timeout=60.0) as client:
         resp = await client.put(
             _webdav_url(nc_user, tok["path"]),

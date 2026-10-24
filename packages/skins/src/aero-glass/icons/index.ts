@@ -9,8 +9,6 @@ import PdfViewer from "./pdf-viewer.svg?react";
 import ImageViewer from "./image-viewer.svg?react";
 import VideoPlayer from "./video-player.svg?react";
 import Weather from "./weather.svg?react";
-import DeutscheBahn from "./deutsche-bahn.svg?react";
-import Tagesschau from "./tagesschau.svg?react";
 import UserAdmin from "./user-admin.svg?react";
 import TeamsWorkspace from "./teams-workspace.svg?react";
 import Clara from "./clara.svg?react";
@@ -39,8 +37,6 @@ export const aeroGlassIcons: Record<string, IconComponent> = {
   "image-viewer": ImageViewer,
   "video-player": VideoPlayer,
   weather: Weather,
-  "deutsche-bahn": DeutscheBahn,
-  tagesschau: Tagesschau,
   "user-admin": UserAdmin,
   "teams-workspace": TeamsWorkspace,
   clara: Clara,

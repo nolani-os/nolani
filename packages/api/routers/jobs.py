@@ -11,6 +11,7 @@ Event format and storage: services/jobs.py.
 """
 from __future__ import annotations
 
+from betriebsprofil import ASSISTANT_NAME
 import asyncio
 import logging
 
@@ -31,9 +32,9 @@ async def benachrichtigen(username: str, job: dict) -> None:
         from services.ntfy_publish import CLARAOS_PUBLIC_URL, notify_users
         titel = job.get("titel") or "Auftrag"
         if job["status"] == "fertig":
-            kopf, text = "Clara ist fertig", f"„{titel}“ ist erledigt."
+            kopf, text = f"{ASSISTANT_NAME} ist fertig", f"„{titel}“ ist erledigt."
         else:
-            kopf, text = "Clara kam nicht weiter", f"„{titel}“ ist fehlgeschlagen."
+            kopf, text = f"{ASSISTANT_NAME} kam nicht weiter", f"„{titel}“ ist fehlgeschlagen."
             if job.get("fehler"):
                 text += f" {job['fehler'][:160]}"
         chat_id = job.get("chat_id") or ""

@@ -15,6 +15,7 @@ import { dueLabel, fmtEur, fmtMins, fmtTokens } from "./shared";
 import { datumInWorten } from "../../lib/datumsWorte";
 import type { TaskCost } from "./types";
 import { FilePickerModal, type PickedRef } from "../../Chat/FilePickerModal";
+import { regionLocale } from "@claraos/core";
 
 type MetaLink = NonNullable<TaskMeta["links"]>[number];
 
@@ -57,7 +58,7 @@ function DatumFeld({ wert, onSetzen, mitZeit = true }: {
       <button className={styles.datumText} onClick={() => setOffen(true)}
               title={gesetzt ? "Ändern" : "Datum wählen"}>
         {gesetzt
-          ? `${datumInWorten(wert)}${mitZeit ? `, ${new Date(wert!).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr` : ""}`
+          ? `${datumInWorten(wert)}${mitZeit ? `, ${new Date(wert!).toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" })} Uhr` : ""}`
           : <span className={styles.datumLeer}>kein Datum</span>}
       </button>
     );
@@ -223,7 +224,7 @@ export function TaskDetail({
       {task._meta?.in_work_by && (
         <div className={styles.detailInWork}>
           ● {task._meta.in_work_by} arbeitet hieran
-          {task._meta.in_work_since && <> seit {new Date(task._meta.in_work_since).toLocaleString("de-DE")}</>}
+          {task._meta.in_work_since && <> seit {new Date(task._meta.in_work_since).toLocaleString(regionLocale())}</>}
           {/* Stale guard: the discipline is prompt-driven — stuck entries
               (session dead, finish_work forgotten) can be resolved manually. */}
           <button
@@ -527,7 +528,7 @@ export function TaskDetail({
               <span className={styles.metaBadge}>Schätzung:</span>
               {task._meta?.estimate_minutes != null && <span className={styles.metaBadge}>⏱ {task._meta.estimate_minutes} min</span>}
               {task._meta?.estimate_eur != null && <span className={styles.metaBadge}>💶 {task._meta.estimate_eur.toFixed(2)} €</span>}
-              {task._meta?.estimate_tokens != null && <span className={styles.metaBadge}>🪙 {task._meta.estimate_tokens.toLocaleString("de-DE")} Tokens</span>}
+              {task._meta?.estimate_tokens != null && <span className={styles.metaBadge}>🪙 {task._meta.estimate_tokens.toLocaleString(regionLocale())} Tokens</span>}
             </div>
           )}
         </section>
@@ -555,7 +556,7 @@ export function TaskDetail({
         {comments.map((c) => (
           <div key={c.id} className={styles.comment}>
             <span className={styles.commentAuthor}>{c.author?.username ?? "?"}</span>
-            {c.created && <span className={styles.commentTime}>{new Date(c.created).toLocaleString("de-DE")}</span>}
+            {c.created && <span className={styles.commentTime}>{new Date(c.created).toLocaleString(regionLocale())}</span>}
             <div className={styles.commentBody}>{c.comment.replace(/<[^>]+>/g, "")}</div>
           </div>
         ))}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useWindowsStore, useAppRegistryStore } from "@claraos/core";
+import { useWindowsStore, useAppRegistryStore, useTranslation } from "@claraos/core";
 import { AppIcon } from "../components/AppIcon";
 import { captureToDataUrl } from "../lib/screenshots";
 import styles from "./AltTabSwitcher.module.css";
@@ -18,6 +18,7 @@ import styles from "./AltTabSwitcher.module.css";
  */
 export function AltTabSwitcher() {
   const { open, candidates, activeIndex } = useAltTabState();
+  const { t } = useTranslation("shell");
   const focusWindow = useWindowsStore((s) => s.focusWindow);
   const apps = useAppRegistryStore((s) => s.apps);
 
@@ -57,9 +58,9 @@ export function AltTabSwitcher() {
   if (!open || candidates.length === 0) return null;
 
   return (
-    <div className={styles.overlay} role="dialog" aria-label="Window switcher">
+    <div className={styles.overlay} role="dialog" aria-label={t("window.altTab.label")}>
       <div className={`aeroWidget ${styles.panel}`}>
-        <div className={styles.title}>Fenster wechseln</div>
+        <div className={styles.title}>{t("window.altTab.title")}</div>
         <div className={styles.row}>
           {candidates.map((winId, idx) => {
             const win = useWindowsStore.getState().windows[winId];

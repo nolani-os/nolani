@@ -235,7 +235,7 @@ tools:
 
   - name: add_insight
     description: |
-      Append an entry to an object's activity trail (shows as "Clara" in the
+      Append an entry to an object's activity trail (shows as the assistant in the
       Idea/Knowledge Suite): kind=analysis (your assessment), question (a follow-up for
       the user), answer (persisting the user's answer), comment. Use this to
       make the idea-development dialog durable — insights belong on the

@@ -10,8 +10,9 @@
  * All requests send JSON: the API accepts them only from a person in the shell.
  */
 import { useCallback, useEffect, useState } from "react";
-import { useUIStore } from "@claraos/core";
+import { useUIStore, useTranslation, i18n } from "@claraos/core";
 import styles from "./ClaraMemoryTab.module.css";
+import { regionLocale } from "@claraos/core";
 
 interface AgentKey {
   id: string;
@@ -44,24 +45,28 @@ function zeit(iso?: string | null): string {
   const d = new Date(iso);
   return Number.isNaN(d.getTime())
     ? ""
-    : d.toLocaleString("de-DE", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    : d.toLocaleString(regionLocale(), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
 function copy(text: string, label: string) {
-  const done = () => useUIStore.getState().addNotification({ title: "Kopiert", body: label, icon: "📋" });
+  const done = () =>
+    useUIStore.getState().addNotification({ title: i18n.t("settingsTabs:agentKeys.copied"), body: label, icon: "📋" });
   navigator.clipboard?.writeText(text).then(done).catch(() => {
     useUIStore.getState().addNotification({
-      title: "Kopieren nicht möglich", body: `${label} bitte von Hand markieren und kopieren.`, icon: "⚠️",
+      title: i18n.t("settingsTabs:agentKeys.copyFailed"),
+      body: i18n.t("settingsTabs:agentKeys.copyManually", { label }),
+      icon: "⚠️",
     });
   });
 }
 
 function Kopierfeld({ label, wert }: { label: string; wert: string }) {
+  const { t } = useTranslation("settingsTabs");
   return (
     <div className={styles.field}>
       <div className={styles.fieldHead}>
         <span className={styles.label}>{label}</span>
-        <button type="button" className={styles.ghost} onClick={() => copy(wert, label)}>Kopieren</button>
+        <button type="button" className={styles.ghost} onClick={() => copy(wert, label)}>{t("agentKeys.copy")}</button>
       </div>
       <code style={{ display: "block", whiteSpace: "pre-wrap", wordBreak: "break-all", fontSize: "0.8rem" }}>{wert}</code>
     </div>
@@ -69,6 +74,7 @@ function Kopierfeld({ label, wert }: { label: string; wert: string }) {
 }
 
 export function AgentKeysTab() {
+  const { t } = useTranslation("settingsTabs");
   const [daten, setDaten] = useState<Overview | null>(null);
   const [status, setStatus] = useState<"laden" | "bereit" | "fehler">("laden");
   const [name, setName] = useState("");
@@ -98,7 +104,7 @@ export function AgentKeysTab() {
         body: JSON.stringify({ name: name.trim() || "Agent", can_write: schreiben }),
       });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok) { setFehler(d.detail || `Fehler ${r.status}`); return; }
+      if (!r.ok) { setFehler(d.detail || t("agentKeys.errorStatus", { status: r.status })); return; }
       setNeu({ key: d.key, endpoint: d.endpoint, name: d.name });
       setName("");
       setSchreiben(false);
@@ -124,53 +130,48 @@ export function AgentKeysTab() {
 
   return (
     <div className={styles.wrap} data-settings-tab="agent-keys">
-      <p className={styles.hint}>
-        Mit einem Agenten-Schlüssel arbeitet ein KI-Agent deiner Wahl (Claude Code, Cursor …) in deinem
-        Namen in ClaraOS: Planner, Mail, Kalender, Kontakte, Dokumente. Er sieht nur, was du siehst.
-        Senden, Löschen und Passwörter bleiben ihm immer verschlossen.
-      </p>
-      {status === "laden" && <p className={styles.meta}>Lade …</p>}
-      {status === "fehler" && <p className={styles.error}>Agenten-Zugang konnte nicht geladen werden.</p>}
+      <p className={styles.hint}>{t("agentKeys.intro")}</p>
+      {status === "laden" && <p className={styles.meta}>{t("agentKeys.loading")}</p>}
+      {status === "fehler" && <p className={styles.error}>{t("agentKeys.loadError")}</p>}
 
       {daten && !daten.enabled && (
         <div className={styles.empty}>
-          Der Agenten-Zugang ist in dieser Installation ausgeschaltet. Einschalten kann ihn, wer den
-          Server betreibt (<code>setup.sh --mcp</code>).
+          {t("agentKeys.disabled")} (<code>setup.sh --mcp</code>).
         </div>
       )}
 
       {neu && (
         <div className={styles.field} data-agent-key-new>
-          <div className={styles.label}>Schlüssel „{neu.name}“ — wird nur jetzt angezeigt</div>
-          <Kopierfeld label="Schlüssel" wert={neu.key} />
-          <Kopierfeld label="Adresse" wert={neu.endpoint} />
+          <div className={styles.label}>{t("agentKeys.newKeyShownOnce", { name: neu.name })}</div>
+          <Kopierfeld label={t("agentKeys.fieldKey")} wert={neu.key} />
+          <Kopierfeld label={t("agentKeys.fieldEndpoint")} wert={neu.endpoint} />
           <Kopierfeld label="Claude Code" wert={claudeCode} />
-          <Kopierfeld label="mcp.json (z. B. Cursor)" wert={mcpJson} />
+          <Kopierfeld label={t("agentKeys.fieldMcpJson")} wert={mcpJson} />
           <div className={styles.actions}>
-            <button type="button" className={styles.primary} onClick={() => setNeu(null)}>Ich habe ihn gesichert</button>
+            <button type="button" className={styles.primary} onClick={() => setNeu(null)}>{t("agentKeys.saved")}</button>
           </div>
         </div>
       )}
 
       {daten?.enabled && !neu && (
         <div className={styles.field}>
-          <label className={styles.label} htmlFor="agent-key-name">Neuer Schlüssel</label>
+          <label className={styles.label} htmlFor="agent-key-name">{t("agentKeys.newKey")}</label>
           <input
             id="agent-key-name"
             className={styles.input}
-            placeholder="Name, z. B. Claude auf dem Laptop"
+            placeholder={t("agentKeys.namePlaceholder")}
             value={name}
             maxLength={60}
             onChange={(e) => setName(e.target.value)}
           />
           <label className={styles.toggleRow}>
             <input type="checkbox" checked={schreiben} onChange={(e) => setSchreiben(e.target.checked)} />
-            <span>Darf auch ändern (Aufgaben anlegen, Termine eintragen, Mail-Entwürfe schreiben)</span>
+            <span>{t("agentKeys.canWrite")}</span>
           </label>
           {fehler && <p className={styles.error}>{fehler}</p>}
           <div className={styles.actions}>
             <button type="button" className={styles.primary} disabled={arbeitet} onClick={() => void erstellen()}>
-              {arbeitet ? "…" : "Schlüssel erstellen"}
+              {arbeitet ? "…" : t("agentKeys.create")}
             </button>
           </div>
         </div>
@@ -184,18 +185,18 @@ export function AgentKeysTab() {
                 <div>
                   <div className={styles.label}>{k.name}</div>
                   <p className={styles.meta}>
-                    {k.prefix}… · {k.can_write ? "lesen und ändern" : "nur lesen"}
-                    {k.created ? ` · seit ${zeit(k.created)}` : ""}
-                    {` · ${k.last_used ? `zuletzt ${zeit(k.last_used)}` : "noch nie benutzt"}`}
+                    {k.prefix}… · {k.can_write ? t("agentKeys.readWrite") : t("agentKeys.readOnly")}
+                    {k.created ? ` · ${t("agentKeys.since", { time: zeit(k.created) })}` : ""}
+                    {` · ${k.last_used ? t("agentKeys.lastUsed", { time: zeit(k.last_used) }) : t("agentKeys.neverUsed")}`}
                   </p>
                 </div>
                 <button
                   type="button"
                   className={styles.danger}
                   onClick={() => void widerrufen(k.id)}
-                  aria-label={`Schlüssel ${k.name} widerrufen`}
+                  aria-label={t("agentKeys.revokeLabel", { name: k.name })}
                 >
-                  Widerrufen
+                  {t("agentKeys.revoke")}
                 </button>
               </div>
             </li>
@@ -203,16 +204,16 @@ export function AgentKeysTab() {
         </ul>
       )}
       {daten?.enabled && daten.keys.length === 0 && !neu && (
-        <div className={styles.empty}>Noch kein Schlüssel. Ohne Schlüssel kommt kein Agent herein.</div>
+        <div className={styles.empty}>{t("agentKeys.noKeys")}</div>
       )}
 
       {daten && daten.calls.length > 0 && (
         <div className={styles.field}>
-          <div className={styles.label}>Letzte Aufrufe deiner Agenten</div>
+          <div className={styles.label}>{t("agentKeys.recentCalls")}</div>
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 2 }}>
             {daten.calls.map((c, i) => (
               <li key={i} className={styles.meta}>
-                {zeit(c.at)} · {c.key ?? "gelöschter Schlüssel"} · {c.tool} · {c.ok ? "ok" : "abgelehnt/Fehler"}
+                {zeit(c.at)} · {c.key ?? t("agentKeys.deletedKey")} · {c.tool} · {c.ok ? "ok" : t("agentKeys.callFailed")}
               </li>
             ))}
           </ul>

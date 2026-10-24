@@ -12,6 +12,7 @@ import {
   type TrustLevel,
 } from "./federationApi";
 import { Button } from "../../components/Button";
+import { useTranslation } from "@claraos/core";
 import styles from "./FederationTab.module.css";
 
 function Ampel({ label, state, detail }: { label: string; state?: LayerState; detail?: string }) {
@@ -25,6 +26,7 @@ function Ampel({ label, state, detail }: { label: string; state?: LayerState; de
 }
 
 export function FederationTab() {
+  const { t } = useTranslation("settingsTabs");
   const [partners, setPartners] = useState<FederationPartner[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -87,7 +89,7 @@ export function FederationTab() {
   };
 
   const handleDisconnect = async (p: FederationPartner) => {
-    if (!confirm(`Verbindung zu "${p.name}" (${p.base_domain}) trennen?`)) return;
+    if (!confirm(t("federation.confirmDisconnect", { name: p.name, domain: p.base_domain }))) return;
     setError(null);
     try {
       await disconnectPartner(p.id);
@@ -100,54 +102,49 @@ export function FederationTab() {
   return (
     <div className={styles.seite}>
       <div className={styles.kopf}>
-        <h3>Verbundene Instanzen</h3>
-        <p>
-          Föderierte ClaraOS-Instanzen — geteilte Identität (OIDC), Chat (Matrix)
-          und Dateien (Nextcloud).
-        </p>
+        <h3>{t("federation.title")}</h3>
+        <p>{t("federation.intro")}</p>
       </div>
 
       {error && <div className={`${styles.karte} ${styles.karteFehler}`} role="alert">{error}</div>}
 
       {/* Pairing code generator (on the side being joined) */}
       <div className={styles.karte}>
-        <div className={styles.kartenTitel}>Diese Instanz verbinden lassen</div>
-        <div className={styles.kartenText}>
-          Erzeuge einen Pairing-Code und gib ihn dem Admin der anderen Instanz.
-        </div>
+        <div className={styles.kartenTitel}>{t("federation.pairTitle")}</div>
+        <div className={styles.kartenText}>{t("federation.pairText")}</div>
         <div className={styles.zeile}>
-          <Button stufe="filled" groesse="s" icon="link" onClick={handleMintCode}>Pairing-Code erzeugen</Button>
+          <Button stufe="filled" groesse="s" icon="link" onClick={handleMintCode}>{t("federation.mintCode")}</Button>
           {pairing && <code className={styles.code}>{pairing.code}</code>}
-          {pairing && <span className={styles.hinweis}>gültig {Math.round(pairing.expires_in / 60)} min</span>}
+          {pairing && <span className={styles.hinweis}>{t("federation.validFor", { minutes: Math.round(pairing.expires_in / 60) })}</span>}
         </div>
       </div>
 
       {/* Connect-Wizard */}
       <div className={styles.karte}>
         <div className={styles.zeileZwischen}>
-          <span className={styles.kartenTitel}>Mit einer Instanz verbinden</span>
+          <span className={styles.kartenTitel}>{t("federation.connectTitle")}</span>
           <Button stufe={showConnect ? "text" : "tonal"} groesse="s" icon={showConnect ? "close" : "plus"}
                   onClick={() => setShowConnect((v) => !v)}>
-            {showConnect ? "Abbrechen" : "Verbinden"}
+            {showConnect ? t("federation.cancel") : t("federation.connect")}
           </Button>
         </div>
         {showConnect && (
           <div className={styles.formular}>
-            <input placeholder="Anzeigename (z.B. ClaraOS-Lab)" value={fName}
+            <input placeholder={t("federation.namePlaceholder")} value={fName}
                    onChange={(e) => setFName(e.target.value)} />
-            <input placeholder="Basis-Domain (z.B. lab.example.com)" value={fDomain}
+            <input placeholder={t("federation.domainPlaceholder")} value={fDomain}
                    onChange={(e) => setFDomain(e.target.value)} />
-            <input placeholder="Pairing-Code (von der anderen Instanz)" value={fCode}
+            <input placeholder={t("federation.codePlaceholder")} value={fCode}
                    onChange={(e) => setFCode(e.target.value)} />
             <select value={fTrust} onChange={(e) => setFTrust(e.target.value as TrustLevel)}>
-              <option value="partial">Trust: Partial (Chat + Dateien)</option>
-              <option value="full">Trust: Full (alle Apps)</option>
-              <option value="per_app">Trust: Per-App-Whitelist</option>
+              <option value="partial">{t("federation.trustPartial")}</option>
+              <option value="full">{t("federation.trustFull")}</option>
+              <option value="per_app">{t("federation.trustPerApp")}</option>
             </select>
             <div className={styles.zeile}>
               <Button stufe="filled" groesse="s" onClick={handleConnect}
                       disabled={busy || !fName.trim() || !fDomain.trim() || !fCode.trim()}>
-                {busy ? "Verbinde…" : "Verbindung herstellen"}
+                {busy ? t("federation.connecting") : t("federation.establish")}
               </Button>
             </div>
           </div>
@@ -156,9 +153,9 @@ export function FederationTab() {
 
       {/* Partner list */}
       {partners === null ? (
-        <div className={styles.leer}>Lade …</div>
+        <div className={styles.leer}>{t("federation.loading")}</div>
       ) : partners.length === 0 ? (
-        <div className={`${styles.karte} ${styles.leer}`}>Noch keine verbundenen Instanzen.</div>
+        <div className={`${styles.karte} ${styles.leer}`}>{t("federation.empty")}</div>
       ) : (
         partners.map((p) => (
           <div key={p.id} className={styles.karte}>
@@ -173,11 +170,11 @@ export function FederationTab() {
               <Ampel label="Nextcloud" state={p.status.nextcloud?.state} detail={p.status.nextcloud?.detail} />
             </div>
             <div className={styles.zeile}>
-              <Button stufe="tonal" groesse="s" icon="reload" onClick={() => handleProbe(p.id)}>Status prüfen</Button>
-              <Button stufe="danger" groesse="s" icon="close" onClick={() => handleDisconnect(p)}>Trennen</Button>
+              <Button stufe="tonal" groesse="s" icon="reload" onClick={() => handleProbe(p.id)}>{t("federation.probe")}</Button>
+              <Button stufe="danger" groesse="s" icon="close" onClick={() => handleDisconnect(p)}>{t("federation.disconnect")}</Button>
             </div>
             {p.status.probed_at && (
-              <div className={styles.fussnote}>Zuletzt geprüft: {p.status.probed_at}</div>
+              <div className={styles.fussnote}>{t("federation.lastProbed", { time: p.status.probed_at })}</div>
             )}
           </div>
         ))

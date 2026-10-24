@@ -10,15 +10,20 @@ import {
   Capability,
   IOpenIDUpdate,
   IRoomEvent,
+  type IRtcTransport,
   ISendDelayedEventDetails,
   ITurnServer,
   OpenIDRequestState,
   SimpleObservable,
   WidgetDriver,
+  type IRtcTransportsResult,
   type ISendEventDetails,
 } from "matrix-widget-api";
 
-import { getMatrixClient, isCryptoEnabled } from "./matrixClient";
+import { ELEMENT_CALL_ORIGIN, getMatrixClient, isCryptoEnabled } from "./matrixClient";
+
+// Element Call's config.json changes only on a redeploy — read it once.
+let rtcTransportsFromConfig: Promise<IRtcTransport[]> | null = null;
 
 // Convert a matrix-js-sdk MatrixEvent into the IRoomEvent shape the Widget API
 // expects to feed into the iframe. The event types from the SDK have a few
@@ -86,6 +91,43 @@ export class ElementCallWidgetDriver extends WidgetDriver {
       });
   }
 
+  // Critical: without this a call takes ~35 s to connect.
+  //
+  // Since Element Call 0.26.1 the embedded widget no longer looks up its media
+  // server itself — it asks the host via `get_rtc_transports` (MSC4515). A
+  // host that cannot answer makes the request fail, EC's
+  // `doNetworkOperationWithRetry` retries four times (2+4+8+16 s), and only
+  // then falls back to its own config.json. During that window the call shows
+  // its controls but has no connection: camera, screen sharing and reactions
+  // do nothing, and whoever hangs up before that never joined at all.
+  //
+  // Sources in the same order EC itself uses: the homeserver (MSC4143), then
+  // EC's own config.json — that file is where the LiveKit URL is maintained,
+  // so it is read rather than duplicated here (served with CORS `*`).
+  public override async getRtcTransports(): Promise<IRtcTransportsResult> {
+    const client = getMatrixClient();
+    try {
+      const fromServer = await (client as any)?._unstable_getRTCTransports();
+      if (Array.isArray(fromServer) && fromServer.length > 0) {
+        return { rtc_transports: fromServer };
+      }
+    } catch {
+      // Homeserver without MSC4143 (404) — fall through to the EC config.
+    }
+    rtcTransportsFromConfig ??= fetch(`${ELEMENT_CALL_ORIGIN}/config.json`)
+      .then((r) => r.json())
+      .then((cfg) => {
+        const url = cfg?.livekit?.livekit_service_url;
+        if (!url) throw new Error("no livekit_service_url in Element Call config");
+        return [{ type: "livekit", livekit_service_url: url }];
+      })
+      .catch((e) => {
+        rtcTransportsFromConfig = null; // let the next call retry
+        throw e;
+      });
+    return { rtc_transports: await rtcTransportsFromConfig };
+  }
+
   public override async sendEvent(
     eventType: string,
     content: unknown,
@@ -123,9 +165,12 @@ export class ElementCallWidgetDriver extends WidgetDriver {
   // A promise without an implementation is worse than a refusal: the caller
   // relies on it. Synapse supports it (`org.matrix.msc4140: true` under
   // /_matrix/client/versions).
+  //
+  // Since matrix-widget-api 1.19 the driver no longer receives a
+  // `parentDelayId` (ClientWidgetApi logs and drops it) — the old 6-argument
+  // signature would shift every argument by one.
   public override async sendDelayedEvent(
-    delay: number | null,
-    parentDelayId: string | null,
+    delay: number,
     eventType: string,
     content: unknown,
     stateKey?: string | null,
@@ -134,12 +179,7 @@ export class ElementCallWidgetDriver extends WidgetDriver {
     const client = getMatrixClient();
     if (!client) throw new Error("matrix client not initialised");
     const targetRoom = roomId || this.defaultRoomId;
-    // Either a delay in ms OR placement under an already existing parent
-    // event — the js-sdk types are mutually exclusive.
-    const delayOpts: any =
-      delay !== null
-        ? { delay, ...(parentDelayId ? { parent_delay_id: parentDelayId } : {}) }
-        : { parent_delay_id: parentDelayId };
+    const delayOpts: any = { delay };
     const res =
       stateKey != null
         ? await (client as any)._unstable_sendDelayedStateEvent(
@@ -319,15 +359,15 @@ export class ElementCallWidgetDriver extends WidgetDriver {
       try {
         resp = await client.turnServer();
       } catch {
-        yield { urls: [], username: "", credential: "" };
+        yield { uris: [], username: "", password: "" };
         // Don't busy-loop on a misconfigured homeserver
         await new Promise((r) => setTimeout(r, 60_000));
         continue;
       }
       yield {
-        urls: resp.uris ?? [],
+        uris: resp.uris ?? [],
         username: resp.username ?? "",
-        credential: resp.password ?? "",
+        password: resp.password ?? "",
       };
       const ttlMs = (resp.ttl ?? 3600) * 1000;
       // Refresh slightly before expiry

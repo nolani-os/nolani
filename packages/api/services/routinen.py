@@ -16,6 +16,7 @@ No cron syntax for users: rhythm = daily | weekdays | weekly | hourly plus a tim
 """
 from __future__ import annotations
 
+from betriebsprofil import ASSISTANT_NAME
 import asyncio
 import datetime as dt
 import json
@@ -121,7 +122,7 @@ async def chat_vorschlag(username: str, modul: str, werkzeug: str, argumente: di
             """INSERT INTO claraos_routine_laeufe (routine_id, username, status, ergebnis, beendet, vorschlaege)
                VALUES (NULL, $1, 'wartet', 'Aus dem Chat', NOW(), $2::jsonb) RETURNING id""",
             username, json.dumps([eintrag])))
-    await melden(username, "Clara wartet auf deine Freigabe",
+    await melden(username, f"{ASSISTANT_NAME} wartet auf deine Freigabe",
                  f"{werkzeug.replace('_', ' ')} ({modul}) — in „Routinen“ freigeben oder verwerfen.")
     return lauf_id, 0
 

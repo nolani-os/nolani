@@ -5,6 +5,7 @@ import styles from "../../PlannerApp.module.css";
 import type { CalEventFull, CalTask } from "../../api";
 import { addDays, ymdOf } from "./calLayout";
 import { busyClassOf, eventTimeLabel } from "./EventBlock";
+import { regionLocale } from "@claraos/core";
 
 const BUSY_LABEL: Record<string, string> = {
   free: "Frei", busy: "", tentative: "Mit Vorbehalt", oof: "Außer Haus",
@@ -53,7 +54,7 @@ export function AgendaList({
         return (
           <section key={key} className={styles.section}>
             <h3 className={`${styles.agendaDay} ${key === today ? styles.agendaToday : ""}`}>
-              {d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}
+              {d.toLocaleDateString(regionLocale(), { weekday: "long", day: "numeric", month: "long" })}
               {key === today ? " · Heute" : ""}
             </h3>
             {(byDay.get(key) ?? []).map((item, i) =>
@@ -78,7 +79,7 @@ export function AgendaList({
                      className={`${styles.agendaRow} ${styles.agendaTask} ${item.task.done ? styles.taskDone : ""}`}
                      onClick={() => onTaskClick(item.task.id)}>
                   <span className={styles.agendaTime}>
-                    {new Date(item.task.due_date).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
+                    {new Date(item.task.due_date).toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" })}
                   </span>
                   <span className={styles.agendaTitle}>{item.task.done ? "✓" : "○"} {item.task.title}</span>
                   <span className={styles.agendaSub}>Aufgabe fällig</span>

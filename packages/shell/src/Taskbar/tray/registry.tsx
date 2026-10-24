@@ -29,7 +29,8 @@ export interface TrayItemDef {
   id: string;
   /** Sort order, gaps of 100 for later insertions. */
   order: number;
-  title: string;
+  /** Translation key in the "shell" namespace — translated in TrayButton. */
+  titleKey: string;
   TrayIcon: ComponentType;
   Popover: ComponentType<{ onClose: () => void }>;
   /** Hook — called in TrayButton (own component instance per item). */
@@ -78,7 +79,7 @@ export const TRAY_ITEMS: TrayItemDef[] = [
   {
     id: "quick-settings",
     order: 100,
-    title: "Schnelleinstellungen (Win+A)",
+    titleKey: "tray.quickSettings.title",
     TrayIcon: GearIcon,
     Popover: ({ onClose }) => <QuickSettingsPanel open onClose={onClose} />,
     ctxId: "tray-quick-settings",
@@ -87,7 +88,7 @@ export const TRAY_ITEMS: TrayItemDef[] = [
   {
     id: "volume",
     order: 200,
-    title: "Lautstärke",
+    titleKey: "tray.volume.title",
     TrayIcon: VolumeTrayIcon,
     Popover: VolumeTray,
     ctxId: "tray-volume", // always visible (browser audio fallback)
@@ -95,7 +96,7 @@ export const TRAY_ITEMS: TrayItemDef[] = [
   {
     id: "connectivity",
     order: 300,
-    title: "Verbindungen",
+    titleKey: "tray.connectivity.title",
     TrayIcon: ConnectivityTrayIcon,
     Popover: ConnectivityTray,
     visibleWhen: (dev) => dev.caps.includes("wifi") || dev.caps.includes("bluetooth"),
@@ -104,7 +105,7 @@ export const TRAY_ITEMS: TrayItemDef[] = [
   {
     id: "power",
     order: 400,
-    title: "Energie",
+    titleKey: "tray.power.title",
     TrayIcon: PowerTrayIcon,
     Popover: PowerTray,
     // Cap OR web battery data (navigator.getBattery) — show where data exists
@@ -115,7 +116,7 @@ export const TRAY_ITEMS: TrayItemDef[] = [
   {
     id: "notifications",
     order: 500,
-    title: "Benachrichtigungen",
+    titleKey: "tray.notifications.title",
     TrayIcon: BellIcon,
     Popover: ({ onClose }) => <NotificationPanel open onClose={onClose} />,
     useBadge: () =>
@@ -127,7 +128,7 @@ export const TRAY_ITEMS: TrayItemDef[] = [
     // while Clara is actually working on something — not a permanent guest.
     id: "clara-work",
     order: 600,
-    title: "Clara arbeitet",
+    titleKey: "tray.claraWork.title",
     TrayIcon: ClaraWorkTrayIcon,
     Popover: ClaraWorkTray,
     useBadge: useClaraWorkBadge,

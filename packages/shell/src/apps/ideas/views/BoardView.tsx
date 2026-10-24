@@ -1,6 +1,7 @@
 /** Ideas board — Kanban by maturity stage (pattern: planner/views/BoardView, HTML5 DnD).
  * Mobile: columns scroll horizontally with scroll snap; stages can also be changed
  * via the stepper in the detail view (touch DnD is unreliable). */
+import { getBrand } from "@claraos/core";
 import { useState } from "react";
 import styles from "../IdeasApp.module.css";
 import { Icon } from "../../../components/Icon";
@@ -62,7 +63,7 @@ export function BoardView({ ideas, currentUser, onOpen, onMove }: Props) {
                     {idea.owner !== currentUser && (
                       <span className={styles.cardOwner}>{idea.owner}</span>
                     )}
-                    {idea.created_by === "clara" && <span title="Von Clara angelegt">🤖</span>}
+                    {idea.created_by === "clara" && <span title={`Von ${getBrand().assistant} angelegt`}>🤖</span>}
                   </div>
                 </div>
               ))}

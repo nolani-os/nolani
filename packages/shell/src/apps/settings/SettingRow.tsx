@@ -8,7 +8,7 @@
  *     (KDE only shows the marker; the per-field reset is our improvement)
  *   - dependsOn visibly disables the field instead of hiding it
  */
-import { useSetting } from "@claraos/core";
+import { useSetting, useTranslation, settingText, languageName, i18n, type TFunction } from "@claraos/core";
 import { ACCENT_PRESETS } from "@claraos/skins";
 import styles from "./SettingsApp.module.css";
 import { IconButton } from "../../components/Button";
@@ -22,7 +22,11 @@ interface Props {
 
 export function SettingRow({ moduleId, settingKey, highlightChanged }: Props) {
   const { def, value, enabled, isDefault, setValue, reset } = useSetting(moduleId, settingKey);
+  const { t } = useTranslation("settings");
   if (!def) return null;
+
+  const label = settingText(moduleId, def.key, "label", def.label);
+  const description = settingText(moduleId, def.key, "description", def.description ?? "");
 
   const showMarker = highlightChanged && !isDefault;
 
@@ -31,11 +35,11 @@ export function SettingRow({ moduleId, settingKey, highlightChanged }: Props) {
       <div className={styles.rowLabel}>
         <label htmlFor={`set-${moduleId}-${settingKey}`}>
           {showMarker && (
-            <span className={styles.changedMarker} title="Weicht vom Standard ab" aria-hidden />
+            <span className={styles.changedMarker} title={t("row.changed")} aria-hidden />
           )}
-          {def.label}
+          {label}
         </label>
-        {def.description && <p className={styles.rowDesc}>{def.description}</p>}
+        {description && <p className={styles.rowDesc}>{description}</p>}
       </div>
 
       <div className={styles.rowControl}>
@@ -59,7 +63,7 @@ export function SettingRow({ moduleId, settingKey, highlightChanged }: Props) {
           >
             {def.choices.map((c) => (
               <option key={c} value={c}>
-                {enumLabel(def.key, c)}
+                {enumLabel(t, def.key, c)}
               </option>
             ))}
           </select>
@@ -102,7 +106,7 @@ export function SettingRow({ moduleId, settingKey, highlightChanged }: Props) {
                 }`}
                 style={{ background: preset }}
                 title={preset}
-                aria-label={`Farbe ${preset}`}
+                aria-label={t("row.color", { value: preset })}
                 disabled={!enabled}
                 onClick={() => setValue(preset)}
               />
@@ -113,7 +117,7 @@ export function SettingRow({ moduleId, settingKey, highlightChanged }: Props) {
               disabled={!enabled}
               value={String(value ?? "#3daee9")}
               onChange={(e) => setValue(e.target.value)}
-              title="Eigene Farbe wählen"
+              title={t("row.customColor")}
             />
           </div>
         )}
@@ -122,7 +126,7 @@ export function SettingRow({ moduleId, settingKey, highlightChanged }: Props) {
           <IconButton
             groesse="s"
             icon="restore"
-            label={`${def.label} auf Standard zurücksetzen`}
+            label={t("row.reset", { label })}
             onClick={() => void reset()}
           />
         )}
@@ -131,22 +135,26 @@ export function SettingRow({ moduleId, settingKey, highlightChanged }: Props) {
   );
 }
 
-/** German labels for enum values; unknown values stay raw. */
-const ENUM_LABELS: Record<string, Record<string, string>> = {
-  clickBehavior: { single: "Öffnet sie", double: "Wählt sie aus (Doppelklick öffnet)" },
-  animationSpeed: { instant: "Sofort (aus)", fast: "Schnell", normal: "Normal", slow: "Langsam" },
-  viewMode: {
-    "icons-large": "Große Symbole", "icons-small": "Kleine Symbole",
-    list: "Liste", details: "Details",
-  },
-  sortKey: { name: "Name", modified: "Geändert", size: "Größe", type: "Typ" },
-  sortDir: { asc: "Aufsteigend", desc: "Absteigend" },
-  groupBy: { none: "Nicht gruppieren", type: "Nach Typ", date: "Nach Datum" },
-  closeSplitViewChoice: {
-    active: "Die aktive Seite", inactive: "Die inaktive Seite", right: "Immer die rechte Seite",
-  },
-};
+/**
+ * Labels for enum values from the "settings" catalog (`enum.<key>.<choice>`);
+ * the UI language picker shows each language in its own name. Unknown values
+ * stay raw.
+ */
+function enumLabel(t: TFunction, key: string, choice: string): string {
+  if (key === "uiLanguage" && choice !== "system") return languageName(choice);
+  // Region and currency names come from Intl in the UI language — no
+  // catalog entries to maintain per region ("German (Austria)").
+  if ((key === "locale" && choice !== "auto") || key === "currency") {
+    const name = displayName(key === "locale" ? "language" : "currency", choice);
+    if (name) return key === "currency" ? `${name} (${choice})` : name;
+  }
+  return t(`enum.${key}.${choice}`, { defaultValue: choice });
+}
 
-function enumLabel(key: string, choice: string): string {
-  return ENUM_LABELS[key]?.[choice] ?? choice;
+function displayName(type: "language" | "currency", code: string): string | undefined {
+  try {
+    return new Intl.DisplayNames([i18n.language], { type }).of(code);
+  } catch {
+    return undefined;
+  }
 }

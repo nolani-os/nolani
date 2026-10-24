@@ -61,6 +61,8 @@ export type { MatrixStore, MatrixState, MatrixActions, MatrixRoom, MatrixMessage
 export { useWindowsStore, windowCloseGuards, requestCloseWindow } from "./stores/windows";
 export { useUIStore } from "./stores/ui";
 export { useAuthStore, useIstZelle } from "./stores/auth";
+export { DEFAULT_BRAND, getBrand, setBrand, useBrand, brandVariables } from "./brand";
+export type { Brand } from "./brand";
 export { useProcessStore } from "./stores/process";
 export { useFileStore } from "./stores/files";
 export { useClaraStore } from "./stores/clara";
@@ -79,7 +81,30 @@ export {
   DEFAULT_FORMAT_PREFS,
 } from "./format";
 export type { FormatPrefs } from "./format";
-export { useFormatPrefs, getFormatPrefs, loadFormatPrefs } from "./stores/useFormatPrefs";
+export {
+  i18n,
+  initI18n,
+  initialUiLanguage,
+  applyUiLanguage,
+  useTranslation,
+  Trans,
+  settingsModuleName,
+  settingsCategoryName,
+  settingText,
+  dndRemainingText,
+  dndPresetLabel,
+  commandLabel,
+  commandCategory,
+} from "./i18n";
+export type { CatalogLoader, TFunction } from "./i18n";
+export {
+  LANGUAGES,
+  FALLBACK_LANGUAGE,
+  resolveUiLanguage,
+  languageName,
+} from "./i18n/languages";
+export type { LanguageCode, UiLanguageSetting } from "./i18n/languages";
+export { useFormatPrefs, getFormatPrefs, loadFormatPrefs, regionLocale } from "./stores/useFormatPrefs";
 export {
   decide as decideNotification,
   isDndActive,

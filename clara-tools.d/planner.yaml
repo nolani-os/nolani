@@ -7,7 +7,7 @@ tools:
   - name: list_projects
     description: |
       List the CURRENT USER's planner projects (id + title). Projects group
-      tasks and have a Kanban board + Gantt view. Show one in the ClaraOS
+      tasks and have a Kanban board + Gantt view. Show one in the
       planner app via claraos_action_navigate_to(app_id="planner",
       pattern_key="project"|"gantt", params={"project_id": <id>}).
     endpoint: "http://localhost:8090/api/claraos/planner/clara/list_projects"
@@ -253,8 +253,8 @@ tools:
 
   - name: start_work
     description: |
-      Mark that YOU (clara) start working on a task — sets the "Clara
-      arbeitet" badge in the planner and opens a worklog entry. Call this
+      Mark that YOU (the assistant) start working on a task — sets the "working"
+      badge in the planner and opens a worklog entry. Call this
       BEFORE working on a task the user gave you; pass your chat session id
       if you know it. ALWAYS pair with finish_work when done.
     endpoint: "http://localhost:8090/api/claraos/planner/work/start"
@@ -272,7 +272,7 @@ tools:
 
   - name: finish_work
     description: |
-      Mark your work on a task as finished — clears the "Clara arbeitet"
+      Mark your work on a task as finished — clears the "working"
       badge and closes the worklog entry (time tracking!). Call when you
       completed or abandoned the work; note = short result summary.
       Set complete=true to ALSO tick the task off (always do that for a task
@@ -295,7 +295,7 @@ tools:
     description: |
       Show the user what you are working on RIGHT NOW when there is no planner
       task yet — the normal case for a job given in chat. One call: creates a
-      task in the "Clara" project, marks it "Clara arbeitet" and returns
+      task in the assistant's own project, marks it "working" and returns
       project_id + task_id. The badge is visible in the planner app and in the
       desktop tasks widget while you work.
       USE IT for jobs that take several steps or several tool calls (research,

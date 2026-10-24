@@ -10,7 +10,7 @@ import json
 import httpx
 from fastapi import HTTPException
 
-from betriebsprofil import OWNER_USER  # owner/admin account of this installation
+from betriebsprofil import OWNER_USER, PRODUCT_NAME  # owner/admin account of this installation
 from betriebsprofil import heim_default  # external deployments: no silent home-server fallback
 from database import get_pool
 from encryption import decrypt_credentials
@@ -37,7 +37,7 @@ async def _get_synapse_admin_token() -> str:
             "type": "m.login.password",
             "identifier": {"type": "m.id.user", "user": creds["username"]},
             "password": creds["password"],
-            "initial_device_display_name": "ClaraOS Teams Admin",
+            "initial_device_display_name": f"{PRODUCT_NAME} Teams Admin",
         })
         if resp.status_code != 200:
             raise HTTPException(500, f"Synapse admin login failed: {resp.status_code}")

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useUIStore } from "@claraos/core";
+import { useUIStore, useTranslation } from "@claraos/core";
 import {
   availableSkins,
   aeroGlassStaticWallpaper,
@@ -19,6 +19,7 @@ export function PersonalizationTab() {
   const wallpaper = useUIStore((s) => s.wallpaper);
   const setWallpaper = useUIStore((s) => s.setWallpaper);
 
+  const { t } = useTranslation("settings");
   // ── Avatar and custom wallpapers ────────────────────────────────────
   // Both are stored in Nextcloud so they persist across devices. The cache
   // buster on the image is needed, otherwise the browser shows the old one
@@ -65,7 +66,7 @@ export function PersonalizationTab() {
     const r = await fetch(path, { method: "POST", body: form });
     if (!r.ok) {
       const b = await r.json().catch(() => ({}));
-      setImgError(b.detail ?? `Hochladen fehlgeschlagen (${r.status})`);
+      setImgError(b.detail ?? t("personalization.uploadFailed", { status: r.status }));
       return null;
     }
     return r.json().catch(() => ({}));
@@ -130,16 +131,16 @@ export function PersonalizationTab() {
 
   return (
     <div className={styles.tab}>
-      <h2 className={styles.heading}>Personalization</h2>
+      <h2 className={styles.heading}>{t("personalization.heading")}</h2>
 
       {/* Theme Selection */}
       <section className={styles.section}>
-        <h3 className={styles.sectionTitle}>Theme</h3>
+        <h3 className={styles.sectionTitle}>{t("personalization.theme")}</h3>
         <div className={styles.themeRow}>
           <button
             className={`${styles.themeCard} ${skinId === "clara-glass" ? styles.themeActive : ""}`}
             onClick={() => handleSkinChange("clara-glass")}
-            title="Clara Glass — die Clara-Designsprache"
+            title={t("personalization.claraGlassHint")}
           >
             <div
               className={styles.themePreview}
@@ -153,7 +154,7 @@ export function PersonalizationTab() {
             >
               <div className={styles.previewBar} style={{ background: "rgba(12, 18, 34, 0.75)", backdropFilter: "blur(8px)" }} />
             </div>
-            <span className={styles.themeLabel}>Clara Glass</span>
+            <span className={styles.themeLabel}>Glass</span>
           </button>
           <button
             className={`${styles.themeCard} ${skinId === "windows11-dark" ? styles.themeActive : ""}`}
@@ -162,7 +163,7 @@ export function PersonalizationTab() {
             <div className={styles.themePreview} style={{ background: "linear-gradient(135deg, #000428, #004e92)" }}>
               <div className={styles.previewBar} style={{ background: "rgba(32,32,32,0.8)" }} />
             </div>
-            <span className={styles.themeLabel}>Dark</span>
+            <span className={styles.themeLabel}>{t("personalization.dark")}</span>
           </button>
           <button
             className={`${styles.themeCard} ${skinId === "windows11-light" ? styles.themeActive : ""}`}
@@ -171,12 +172,12 @@ export function PersonalizationTab() {
             <div className={styles.themePreview} style={{ background: "linear-gradient(135deg, #667eea, #764ba2)" }}>
               <div className={styles.previewBar} style={{ background: "rgba(243,243,243,0.8)" }} />
             </div>
-            <span className={styles.themeLabel}>Light</span>
+            <span className={styles.themeLabel}>{t("personalization.light")}</span>
           </button>
           <button
             className={`${styles.themeCard} ${skinId === "aero-glass" ? styles.themeActive : ""}`}
             onClick={() => handleSkinChange("aero-glass")}
-            title="Aero Glass — premium laptop skin"
+            title={t("personalization.aeroGlassHint")}
           >
             <div
               className={styles.themePreview}
@@ -190,14 +191,14 @@ export function PersonalizationTab() {
             >
               <div className={styles.previewBar} style={{ background: "rgba(20, 22, 38, 0.55)", backdropFilter: "blur(8px)" }} />
             </div>
-            <span className={styles.themeLabel}>Aero Glass</span>
+            <span className={styles.themeLabel}>Crystal</span>
           </button>
         </div>
       </section>
 
       {/* Available Skins */}
       <section className={styles.section}>
-        <h3 className={styles.sectionTitle}>Skin</h3>
+        <h3 className={styles.sectionTitle}>{t("personalization.skin")}</h3>
         <div className={styles.skinList}>
           {availableSkins.map((skin) => (
             <button
@@ -225,20 +226,20 @@ export function PersonalizationTab() {
       {/* Live wallpaper — Aero-Glass-only signature */}
       {skinId === "aero-glass" && (
         <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>Live-Wallpaper</h3>
+          <h3 className={styles.sectionTitle}>{t("personalization.liveWallpaper")}</h3>
           <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
             <input
               type="checkbox"
               checked={liveWallpaper}
               onChange={(e) => setLiveWallpaper(e.target.checked)}
             />
-            <span>Animierte Mesh-Gradients + Bokeh-Drift</span>
+            <span>{t("personalization.liveWallpaperDesc")}</span>
             <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-secondary)" }}>
-              {liveWallpaper ? "An" : "Aus"}
+              {liveWallpaper ? t("personalization.on") : t("personalization.off")}
             </span>
           </label>
           <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>
-            Pausiert automatisch bei <code>prefers-reduced-motion</code>.
+            {t("personalization.pausesOn")} <code>prefers-reduced-motion</code>.
           </span>
         </section>
       )}
@@ -247,22 +248,22 @@ export function PersonalizationTab() {
           kcm_users. The initials case needs no file and is the normal
           case, so it is not shown as "empty". */}
       <section className={styles.section}>
-        <h3 className={styles.sectionTitle}>Profilbild</h3>
+        <h3 className={styles.sectionTitle}>{t("personalization.avatar")}</h3>
         <div className={styles.avatarRow}>
           {avatarUrl ? (
-            <img className={styles.avatarPreview} src={avatarUrl} alt="Profilbild" />
+            <img className={styles.avatarPreview} src={avatarUrl} alt={t("personalization.avatar")} />
           ) : (
             <div
               className={styles.avatarPreview}
               style={{ background: fallback?.color ?? "#686b6f", color: fallback?.textColor ?? "#fff" }}
-              aria-label="Profilbild aus Initialen"
+              aria-label={t("personalization.avatarInitials")}
             >
               {fallback?.initials ?? "?"}
             </div>
           )}
           <div className={styles.avatarActions}>
             <label className={styles.uploadBtn}>
-              Bild wählen …
+              {t("personalization.chooseImage")}
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp,image/avif"
@@ -274,7 +275,7 @@ export function PersonalizationTab() {
               />
             </label>
             {avatarUrl && (
-              <button onClick={() => void removeAvatar()}>Auf Initialen zurücksetzen</button>
+              <button onClick={() => void removeAvatar()}>{t("personalization.resetToInitials")}</button>
             )}
           </div>
         </div>
@@ -283,7 +284,7 @@ export function PersonalizationTab() {
 
       {/* Wallpaper */}
       <section className={styles.section}>
-        <h3 className={styles.sectionTitle}>Wallpaper</h3>
+        <h3 className={styles.sectionTitle}>{t("personalization.wallpaper")}</h3>
 
         {/* Custom images — stored in Nextcloud, so they apply on every
             device, not just in this browser. */}
@@ -305,8 +306,8 @@ export function PersonalizationTab() {
               </button>
               <button
                 className={styles.wallpaperDelete}
-                title="Bild entfernen"
-                aria-label={`${w.name} entfernen`}
+                title={t("personalization.removeImage")}
+                aria-label={t("personalization.removeNamed", { name: w.name })}
                 onClick={() => void removeWallpaper(w.name)}
               >
                 ×
@@ -315,7 +316,7 @@ export function PersonalizationTab() {
           ))}
           <label className={`${styles.wallpaperCard} ${styles.wallpaperUpload}`}>
             <div className={styles.wallpaperPreview}>＋</div>
-            <span className={styles.wallpaperLabel}>Eigenes Bild …</span>
+            <span className={styles.wallpaperLabel}>{t("personalization.ownImage")}</span>
             <input
               type="file"
               accept="image/png,image/jpeg,image/webp,image/avif"

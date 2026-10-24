@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { appUrl } from "@claraos/core";
+import { appUrl, getBrand } from "@claraos/core";
 import { CreateUserWizard } from "./CreateUserWizard";
 import { UserDetail } from "./UserDetail";
 import styles from "./UserAdminApp.module.css";
+import { regionLocale } from "@claraos/core";
 
 interface User {
   username: string;
@@ -131,7 +132,7 @@ export default function UserAdminApp({ windowId: _windowId }: { windowId: string
   const formatDate = (d: string | null) => {
     if (!d) return "–";
     try {
-      return new Date(d).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+      return new Date(d).toLocaleString(regionLocale(), { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
     } catch { return d; }
   };
 
@@ -147,7 +148,7 @@ export default function UserAdminApp({ windowId: _windowId }: { windowId: string
             <span className={styles.sessionId}>session: {activeSession.sessionId.slice(0, 8)}</span>
             <button className={styles.endBtn} onClick={endImpersonation}>Sitzung beenden</button>
           </div>
-          <iframe className={styles.iframe} src={ADMIN_VIEW_URL} title={`ClaraOS als ${activeSession.target}`}
+          <iframe className={styles.iframe} src={ADMIN_VIEW_URL} title={`${getBrand().product} als ${activeSession.target}`}
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
             allow="fullscreen; clipboard-read; clipboard-write; camera; microphone" />
         </div>

@@ -1,5 +1,6 @@
 """Seed data for all ClaraOS apps. Single source of truth for builtin app manifests."""
 
+from betriebsprofil import ASSISTANT_NAME
 from domains_generated import BASE_DOMAIN as _DOMAIN  # cell: CLARAOS_BASE_DOMAIN
 
 # fmt: off
@@ -14,7 +15,7 @@ BUILTIN_APPS: list[dict] = [
     # INTERNAL APPS (native React components, no credentials)
     # ──────────────────────────────────────────
     {
-        "id": "teams-workspace", "name": "Teams", "icon": "\U0001f465",
+        "id": "teams-workspace", "name": "Team-Chat", "icon": "\U0001f465",
         "description": "Unified collaboration hub — chat, calls, files, and planning",
         "type": "internal", "category": "productivity", "source": "builtin",
         "activated": True, "showInStartMenu": True, "pinned": True,
@@ -187,7 +188,7 @@ BUILTIN_APPS: list[dict] = [
         "permissions": [],
     },
     {
-        "id": "vaultwarden", "name": "Bitwarden", "icon": "\ud83d\udd11",
+        "id": "vaultwarden", "name": "Passwörter", "icon": "\ud83d\udd11",
         "description": "Password Manager \u2014 install Bitwarden Browser-Extension for Auto-Fill",
         "type": "iframe", "category": "system", "source": "builtin",
         "activated": True, "showInStartMenu": True, "pinned": False,
@@ -225,7 +226,7 @@ BUILTIN_APPS: list[dict] = [
     },
     {
         "id": "services-hub", "name": "Dienste", "icon": "\U0001f9e9",
-        "description": "Externe Dienste (Amazon & Co.) — Portal mit Auto-Login im Clara Browser",
+        "description": "Externe Dienste — gespeicherte Zugänge, Anmeldung im eigenen Browser",
         "type": "internal", "category": "services", "source": "builtin",
         "activated": True, "showInStartMenu": True, "pinned": False,
         "window": {"defaultWidth": 1000, "defaultHeight": 700, "minWidth": 600, "minHeight": 440, "maximizable": True},
@@ -261,6 +262,11 @@ try:
     from app_seeds_heim import HEIM_REIHENFOLGE as _HEIM_REIHENFOLGE  # noqa: E402
 except ImportError:
     _HEIM_APPS, _HEIM_KACHELN, _HEIM_REIHENFOLGE = [], [], ()
+try:
+    # The installation's own tile names for product apps ({app id: name}).
+    from app_seeds_heim import HEIM_NAMEN as _HEIM_NAMEN  # noqa: E402
+except ImportError:
+    _HEIM_NAMEN = {}
 
 
 def _ordered(apps: list[dict], order: tuple[str, ...]) -> list[dict]:
@@ -271,6 +277,9 @@ def _ordered(apps: list[dict], order: tuple[str, ...]) -> list[dict]:
 
 
 BUILTIN_APPS = _ordered(BUILTIN_APPS + _HEIM_KACHELN, _HEIM_REIHENFOLGE) + _HEIM_APPS
+for _app in BUILTIN_APPS:
+    if _app["id"] in _HEIM_NAMEN:
+        _app["name"] = _HEIM_NAMEN[_app["id"]]
 
 # External cell: only the tiles on the allowlist betriebsprofil.CELL_APPS. Tile
 # URLs are already built on the cell's own domain (`_DOMAIN`), so nothing needs

@@ -3,9 +3,9 @@
 
     ZELLE_TEST_PW=… python3 social_test.py <domain> <user>
 
-1 Mastodon: login via ClaraOS (OIDC), account created, not admin
+1 Mastodon: login via single sign-on (OIDC), account created, not admin
 2 Mastodon: private post → readable → deleted
-3 PeerTube: login via ClaraOS (OIDC plugin), account created, normal user with quota
+3 PeerTube: login via single sign-on (OIDC plugin), account created, normal user with quota
 4 Neither offers self-registration
 Skipped when the cell does not host the social cell. Never prints passwords or tokens.
 """
@@ -56,7 +56,7 @@ if s in (0, 502, 503) or s >= 500:
 r = z.get(f"{SOCIAL}/auth/sign_in")
 seite = r.read().decode()
 # The button is a link with data-method="post" (rails-ujs); the CSRF token is in <meta>.
-assert 'href="/auth/auth/openid_connect"' in seite, "kein ClaraOS-Anmeldeknopf auf der Mastodon-Anmeldeseite"
+assert 'href="/auth/auth/openid_connect"' in seite, "kein SSO-Anmeldeknopf auf der Mastodon-Anmeldeseite"
 token = re.search(r'<meta name="csrf-token" content="([^"]+)"', seite).group(1)
 start = urllib.request.Request(f"{SOCIAL}/auth/auth/openid_connect", method="POST",
                                data=urllib.parse.urlencode({"authenticity_token": html.unescape(token)}).encode(),
@@ -95,7 +95,7 @@ print("2 Mastodon: Beitrag → lesen → löschen     ok")
 # ── 3 PeerTube login ────────────────────────────────────────────────────
 s, cfg, _ = anfrage("GET", f"{VIDEO}/api/v1/config")
 ext = [a for a in (cfg.get("plugin") or {}).get("registeredExternalAuths", []) if "openid" in a.get("npmName", "")]
-assert ext, "PeerTube bietet keine ClaraOS-Anmeldung an"
+assert ext, "PeerTube bietet keine SSO-Anmeldung an"
 a = ext[0]
 start_url = f"{VIDEO}/plugins/{a['name']}/{a['version']}/auth/{a['authName']}"
 rueck = z.oidc_rueckweg(start_url)

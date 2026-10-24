@@ -1,0 +1,155 @@
+{
+  "card": {
+    "askPlaceholder": "What would you like to know?",
+    "send": "Send",
+    "thinking": "is thinking …",
+    "closeQuestion": "Close question",
+    "askQuestion": "❓ Ask a question",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done",
+    "failedWithError": "That didn't work just now ({{error}}). Please try again in a moment.",
+    "failed": "That didn't work just now. Please try again in a moment."
+  },
+  "nudge": {
+    "later": "Later"
+  },
+  "nudges": {
+    "welcome": {
+      "title": "👋 Hi, I'm {{assistant}}!",
+      "text": "Great to have you here. Shall I quickly show you how everything works — or would you like to tell me first what you want to use {{product}} for?",
+      "primary": "Show me {{product}}",
+      "secondary": "Talk to {{assistant}}"
+    },
+    "device-setup": {
+      "title": "📱 {{assistant}} on the go",
+      "text": "Shall I show you how to get {{product}} on your phone? Then my messages reach you even when you're not at your computer.",
+      "primary": "Show me the setup"
+    },
+    "files-tour": {
+      "title": "📁 Your files",
+      "text": "Would you like to get to know the Files app next? It takes a minute.",
+      "primary": "Show me Files"
+    },
+    "fotos-tour": {
+      "title": "📸 Your photos",
+      "text": "Shall I show you the Photos app — including the trick for how I build albums for you?",
+      "primary": "Show me Photos"
+    },
+    "feedback-after-tour": {
+      "title": "💬 How's it going with {{product}}?",
+      "text": "Would you briefly tell us what works well and what could be better? Your feedback comes straight to us.",
+      "primary": "Give feedback"
+    }
+  },
+  "tours": {
+    "claraos-basics": {
+      "name": "Get to know {{product}}",
+      "steps": {
+        "welcome": {
+          "title": "Welcome to {{product}}! 👋",
+          "content": "Great to have you here. In a short tour I'll show you the most important areas — it takes less than two minutes.\n\nYou can ask a question below at any time or end the tour with ✕."
+        },
+        "clara": {
+          "title": "This is {{assistant}}",
+          "content": "The most important button in {{product}}: it opens the start menu. There you'll find all apps — and {{assistant}}, your assistant who helps you with everything."
+        },
+        "search": {
+          "title": "Search — or just ask",
+          "content": "Start typing here: an app name launches the app. {{assistant}} answers everything else directly — for example “How do I add photos?” or “Make me a shopping list”."
+        },
+        "apps": {
+          "title": "Your apps",
+          "content": "The most important apps at a glance. A click opens them in their own window — just like on a real computer."
+        },
+        "taskbar": {
+          "title": "Quick access in the taskbar",
+          "content": "Your favorite apps are also pinned to the taskbar at the bottom. A small dot marks apps that are open."
+        },
+        "tray": {
+          "title": "Notifications & settings",
+          "content": "On the right you'll find the bell for notifications, the gear for quick settings (e.g. volume, do not disturb) and the clock with the calendar."
+        },
+        "voice": {
+          "title": "Talk to {{assistant}}",
+          "content": "Don't feel like typing? Use the microphone button to talk to {{assistant}} directly."
+        },
+        "done": {
+          "title": "That's it! 🎉",
+          "content": "You now know the basics. Just try things out — you can't break anything. And if you get stuck: ask {{assistant}}, that's what she's there for."
+        }
+      }
+    },
+    "files-basics": {
+      "name": "Get to know Files",
+      "steps": {
+        "intro": {
+          "title": "Your files 📁",
+          "content": "Let me briefly show you the Files app — this is where your documents, photos and downloads live. I'll open it for you right away."
+        },
+        "places": {
+          "title": "Your places",
+          "content": "On the left you choose where you are: your own files, the family storage or other sources. One click switches the place."
+        },
+        "content": {
+          "title": "Folders & files",
+          "content": "This is where you see the contents. Double-click opens, right-click shows all options (share, rename, delete). To upload, simply drag files in here."
+        },
+        "search": {
+          "title": "Search instead of clicking",
+          "content": "Typing filters the current folder, Enter also searches all subfolders — handy when you no longer remember where something is."
+        },
+        "newFolder": {
+          "title": "Keep things tidy",
+          "content": "Use this button to create a new folder."
+        },
+        "done": {
+          "title": "That was Files! ✅",
+          "content": "By the way: you can also simply ask me to find or tidy up files — say e.g. “{{assistant}}, find my tax documents”."
+        }
+      }
+    },
+    "fotos-basics": {
+      "name": "Get to know Photos",
+      "steps": {
+        "intro": {
+          "title": "Your photos 📸",
+          "content": "Let me show you the Photos app — this is where all your family photos live, safely at home with you. I'll open it right away."
+        },
+        "app": {
+          "title": "The Photos app",
+          "content": "This is your photo hub: all pictures in one timeline, automatically sorted by people and places. Photos from your phone back themselves up here."
+        },
+        "timeline": {
+          "title": "The timeline",
+          "content": "Under “Photos” you see all shots in chronological order — just scroll, like in the gallery on your phone."
+        },
+        "albums": {
+          "title": "Albums",
+          "content": "Under “Albums” you collect pictures for occasions — holidays, birthdays, whatever you like."
+        },
+        "tip": {
+          "title": "My tip 💡",
+          "content": "You don't have to put albums together yourself: just tell me “Make an album with the photos from last weekend” — I'll take care of it and show you the result."
+        }
+      }
+    },
+    "geraete-setup": {
+      "name": "Set up {{assistant}} for on the go",
+      "steps": {
+        "intro": {
+          "title": "{{assistant}} everywhere 📱",
+          "content": "So far you can only reach {{product}} here in the browser. I'll show you how to get it on your phone — then my messages reach you on the go too."
+        },
+        "push": {
+          "title": "Everything for your phone",
+          "content": "This is your personal setup corner: scan the QR code with your phone camera and follow the steps — {{product}} lands as an app on your home screen, with notifications included."
+        },
+        "computer": {
+          "title": "And on the computer? 💻",
+          "content": "For PCs and laptops there is the {{product}} Companion app — just ask me about it if you'd like it.\n\nAs soon as your phone is set up, let me know — then I'll test whether my messages arrive."
+        }
+      }
+    }
+  }
+}

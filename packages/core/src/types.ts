@@ -305,6 +305,8 @@ export interface User {
   groups: string[];
   logout_url?: string;               // Authentik invalidation flow URL
   profil?: "home" | "cell";          // operating profile of the instance ("cell" = hosted external instance)
+  brand?: { product: string; assistant: string };  // names of product + assistant (brand.ts)
+  source_url?: string;               // where this installation's source code is (AGPL §13)
 }
 
 // === Skin Types ===

@@ -32,7 +32,7 @@ done
 if ! pactl list short sources 2>/dev/null | grep -q 'ClaraMic'; then
   pactl load-module module-remap-source \
     source_name=ClaraMic master=input.monitor \
-    source_properties=device.description=ClaraOS-Mikrofon >/dev/null 2>&1 \
+    source_properties=device.description=Mikrofon >/dev/null 2>&1 \
     && echo "[pulse-fix] ClaraMic angelegt"
 fi
 pactl set-default-source ClaraMic >/dev/null 2>&1

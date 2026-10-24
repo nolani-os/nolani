@@ -5,6 +5,7 @@
  * script and activates it on Stalwart. "Show script" displays what the server
  * actually runs — no black box.
  */
+import { getBrand } from "@claraos/core";
 import { useEffect, useState } from "react";
 import styles from "./PostApp.module.css";
 import { Icon } from "../../components/Icon";
@@ -51,8 +52,8 @@ export function RegelnDialog({ ordner, onClose, melde }: { ordner: Ordner[]; onC
   return (
     <div className={styles.dialogHinter} onClick={onClose}>
       <div className={`${styles.dialog} ${styles.dialogBreit}`} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.dialogTitel}>Regeln <span className={styles.hinweis}>— laufen auf dem Mailserver, auch wenn ClaraOS zu ist</span></div>
-        {fremd.length > 0 && <div className={styles.warnung}>Beim Server ist ein anderes Skript aktiv ({fremd.join(", ")}) — z. B. aus der Mail-App. Speichern hier schaltet auf die ClaraOS-Regeln um.</div>}
+        <div className={styles.dialogTitel}>Regeln <span className={styles.hinweis}>— laufen auf dem Mailserver, auch wenn {getBrand().product} zu ist</span></div>
+        {fremd.length > 0 && <div className={styles.warnung}>Beim Server ist ein anderes Skript aktiv ({fremd.join(", ")}) — z. B. aus der Mail-App. Speichern hier schaltet auf die {getBrand().product}-Regeln um.</div>}
         {!regeln ? <div className={styles.leer}>Lädt…</div> : (
           <div className={styles.regelnKoerper}>
             <div className={styles.regelListe}>

@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useUIStore } from "@claraos/core";
 import { primaryAction, runNotificationAction } from "./notificationActions";
 import styles from "./NotificationPanel.module.css";
+import { regionLocale, useTranslation } from "@claraos/core";
 
 interface NotificationPanelProps {
   open: boolean;
@@ -12,6 +13,7 @@ export function NotificationPanel({ open, onClose }: NotificationPanelProps) {
   const notifications = useUIStore((s) => s.notifications);
   const markRead = useUIStore((s) => s.markRead);
   const clearNotifications = useUIStore((s) => s.clearNotifications);
+  const { t } = useTranslation("shell");
 
   const unreadCount = notifications.filter(
     (n) => !n.read && n.countInBadge !== false,
@@ -31,19 +33,19 @@ export function NotificationPanel({ open, onClose }: NotificationPanelProps) {
           >
             <div className={styles.header}>
               <h3 className={styles.title}>
-                Notifications
+                {t("notifications.title")}
                 {unreadCount > 0 && <span className={styles.badge}>{unreadCount}</span>}
               </h3>
               {notifications.length > 0 && (
                 <button className={styles.clearBtn} onClick={clearNotifications}>
-                  Clear all
+                  {t("notifications.clearAll")}
                 </button>
               )}
             </div>
 
             <div className={styles.list}>
               {notifications.length === 0 && (
-                <div className={styles.empty}>No notifications</div>
+                <div className={styles.empty}>{t("notifications.empty")}</div>
               )}
               {notifications.map((n) => (
                 <div
@@ -73,7 +75,7 @@ export function NotificationPanel({ open, onClose }: NotificationPanelProps) {
                     <span className={styles.itemTitle}>{n.title}</span>
                     <span className={styles.itemBody}>{n.body}</span>
                     <span className={styles.itemTime}>
-                      {new Date(n.timestamp).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
+                      {new Date(n.timestamp).toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" })}
                     </span>
                     {n.actions && n.actions.length > 0 && (
                       <div className={styles.itemActions} onClick={(e) => e.stopPropagation()}>

@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react-swc";
 import svgr from "vite-plugin-svgr";
 import path from "path";
 import { createRequire } from "module";
+import fs from "fs";
 
 // pdfjs-dist is only a dependency of react-pdf (pnpm does not put it in our
 // node_modules) — resolve it through react-pdf for the worker import.
@@ -11,8 +12,34 @@ const pdfjsDir = path.dirname(
   createRequire(path.join(reactPdfDir, "package.json")).resolve("pdfjs-dist/package.json"),
 );
 
+// Product name for the static files (page title, PWA manifest), which exist before
+// any JavaScript runs: the installation's own name from src/heim.config.ts (BRAND),
+// otherwise the product's (core/src/brand.ts).
+function productName(): string {
+  try {
+    const cfg = fs.readFileSync(path.join(import.meta.dirname, "src/heim.config.ts"), "utf8");
+    return /BRAND\s*=\s*\{\s*product:\s*"([^"]+)"/.exec(cfg)?.[1] ?? "NolaniOS";
+  } catch {
+    return "NolaniOS";
+  }
+}
+
+function brandStatic() {
+  const name = productName();
+  return {
+    name: "brand-static",
+    transformIndexHtml: (html: string) => html.replaceAll("%PRODUCT_NAME%", name),
+    closeBundle() {
+      const file = path.join(import.meta.dirname, "dist/manifest.webmanifest");
+      if (fs.existsSync(file)) {
+        fs.writeFileSync(file, fs.readFileSync(file, "utf8").replaceAll("%PRODUCT_NAME%", name));
+      }
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), svgr()],
+  plugins: [react(), svgr(), brandStatic()],
   resolve: {
     alias: {
       "@claraos/core": path.resolve(import.meta.dirname, "../core/src"),

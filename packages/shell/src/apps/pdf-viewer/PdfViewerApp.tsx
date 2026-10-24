@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { useWindowsStore, useFileStore, buildObjectUri } from "@claraos/core";
+import { useWindowsStore, buildObjectUri } from "@claraos/core";
+import { fileUrl } from "../../lib/downloadFile";
 
 // Without a built-in PDF viewer (Android WebView of the companion app) we render
 // ourselves — a PDF in an iframe crashed the app there.
@@ -27,20 +28,16 @@ export default function PdfViewerApp({ windowId }: { windowId: string }) {
     let cancelled = false;
     let createdUrl = "";
     (async () => {
-      const data = await useFileStore.getState().readFile(winSource, winPath);
-      if (cancelled || !data) {
+      // Load from the streaming endpoint, not via /read: /read returns JSON/Base64
+      // with a 10 MB cap (413), so every larger PDF showed "Failed to load PDF".
+      // The blob URL stays: the companion's own renderer needs local bytes.
+      const resp = await fetch(fileUrl(winSource, winPath, { inline: true })).catch(() => null);
+      if (cancelled || !resp?.ok) {
         if (!cancelled) setError("Failed to load PDF");
         return;
       }
-      let blob: Blob;
-      if (data.encoding === "base64") {
-        const bin = atob(data.content);
-        const bytes = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        blob = new Blob([bytes], { type: "application/pdf" });
-      } else {
-        blob = new Blob([data.content], { type: "application/pdf" });
-      }
+      const blob = new Blob([await resp.arrayBuffer()], { type: "application/pdf" });
+      if (cancelled) return;
       createdUrl = URL.createObjectURL(blob);
       if (!cancelled) {
         setPdfUrl(createdUrl);

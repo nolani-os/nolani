@@ -839,7 +839,7 @@
       });
       sheetItem(sheet, "trash", "Browserdaten löschen (Cookies+Cache)", function () {
         openSheet(function (confirm) {
-          sheetHeader(confirm, "Cookies und Cache im Clara Browser löschen?",
+          sheetHeader(confirm, "Cookies und Cache im Browser löschen?",
             "Du wirst überall abgemeldet.");
           sheetItem(confirm, "trash", "Ja, löschen", function () {
             call("ClaraOS.clearData", {}, 15000).then(function () {
@@ -907,7 +907,7 @@
     menuEl = el("div", "");
     menuEl.id = "claraos-menu";
     [
-      { icon: "clara", label: "Clara fragen", fn: openClara },
+      { icon: "clara", label: "Assistent fragen", fn: openClara },
       { icon: "newtab", label: "Neuer Tab", fn: function () {
           call("ClaraOS.tabs.create", { url: homeUrl() }).then(afterTabChange);
         } },
@@ -952,8 +952,8 @@
     try { inShell = window.parent && window.parent !== window; } catch (e) { inShell = true; }
     var claraFab = inShell ? null : el("button", "claraos-clarafab", ICONS.clara);
     if (claraFab) {
-      claraFab.title = "Clara fragen";
-      claraFab.setAttribute("aria-label", "Clara fragen");
+      claraFab.title = "Assistent fragen";
+      claraFab.setAttribute("aria-label", "Assistent fragen");
       claraFab.addEventListener("click", openClara);
       document.body.appendChild(claraFab);
     }

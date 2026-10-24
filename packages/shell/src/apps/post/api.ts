@@ -3,6 +3,7 @@
  * The shell talks only to the ClaraOS API, which fetches mail via JMAP using
  * the user's mailbox credentials. No second login, no CORS.
  */
+import { regionLocale } from "@claraos/core";
 
 const BASE = "/api/claraos/post";
 
@@ -250,16 +251,16 @@ export function datumKurz(iso: string | null): string {
   if (Number.isNaN(d.getTime())) return "";
   const jetzt = new Date();
   const gleicherTag = d.toDateString() === jetzt.toDateString();
-  if (gleicherTag) return d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
-  if (d.getFullYear() === jetzt.getFullYear()) return d.toLocaleDateString("de-DE", { day: "numeric", month: "short" });
-  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" });
+  if (gleicherTag) return d.toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" });
+  if (d.getFullYear() === jetzt.getFullYear()) return d.toLocaleDateString(regionLocale(), { day: "numeric", month: "short" });
+  return d.toLocaleDateString(regionLocale(), { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
 
 export function datumLang(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleString(regionLocale(), { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 export function groesse(bytes: number | null): string {

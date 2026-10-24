@@ -1,7 +1,7 @@
 import { Suspense, useCallback, useRef, useState } from "react";
 import { AppErrorBoundary } from "../components/AppErrorBoundary";
 import * as ContextMenu from "@radix-ui/react-context-menu";
-import { useWorkspaceStore, useWindowsStore, useAppRegistryStore } from "@claraos/core";
+import { useWorkspaceStore, useWindowsStore, useAppRegistryStore, useTranslation } from "@claraos/core";
 import { widgetComponents, getWidgetManifest, WIDGET_OPEN_APP } from "../widgets/registry";
 import styles from "./DesktopWidgets.module.css";
 
@@ -10,6 +10,7 @@ const CELL_W = 90;
 const CELL_H = 90;
 
 export function DesktopWidgets() {
+  const { t } = useTranslation("desktop");
   const widgets = useWorkspaceStore((s) => s.getActive().widgets ?? []);
   const moveWidget = useWorkspaceStore((s) => s.moveWidget);
   const removeWidget = useWorkspaceStore((s) => s.removeWidget);
@@ -171,7 +172,7 @@ export function DesktopWidgets() {
                   className={styles.menuBtn}
                   data-no-drag
                   onClick={openMenuAt}
-                  aria-label="Widget-Menü"
+                  aria-label={t("desktop.widgetMenu.menu")}
                 >
                   ⋯
                 </button>
@@ -187,7 +188,7 @@ export function DesktopWidgets() {
               <ContextMenu.Content className={styles.ctxMenu}>
                 <ContextMenu.Sub>
                   <ContextMenu.SubTrigger className={styles.ctxItem}>
-                    Größe
+                    {t("desktop.widgetMenu.size")}
                     <span style={{ marginLeft: "auto" }}>›</span>
                   </ContextMenu.SubTrigger>
                   <ContextMenu.Portal>
@@ -198,20 +199,20 @@ export function DesktopWidgets() {
                             className={styles.ctxItem}
                             onSelect={() => resizeWidget(widget.id, manifest.minSize.w, manifest.minSize.h)}
                           >
-                            Klein
+                            {t("desktop.widgetMenu.small")}
                           </ContextMenu.Item>
                           <ContextMenu.Item
                             className={styles.ctxItem}
                             onSelect={() => resizeWidget(widget.id, manifest.defaultSize.w, manifest.defaultSize.h)}
                           >
-                            Standard
+                            {t("desktop.widgetMenu.default")}
                           </ContextMenu.Item>
                           {manifest.maxSize && (
                             <ContextMenu.Item
                               className={styles.ctxItem}
                               onSelect={() => resizeWidget(widget.id, manifest.maxSize!.w, manifest.maxSize!.h)}
                             >
-                              Groß
+                              {t("desktop.widgetMenu.large")}
                             </ContextMenu.Item>
                           )}
                         </>
@@ -230,7 +231,7 @@ export function DesktopWidgets() {
                       )
                     }
                   >
-                    Einstellungen…
+                    {t("desktop.widgetMenu.settings")}
                   </ContextMenu.Item>
                 )}
                 {canOpenApp && (
@@ -238,7 +239,7 @@ export function DesktopWidgets() {
                     className={styles.ctxItem}
                     onSelect={() => openAppFor(widget.type)}
                   >
-                    App öffnen
+                    {t("desktop.widgetMenu.openApp")}
                   </ContextMenu.Item>
                 )}
                 <ContextMenu.Separator className={styles.ctxSeparator} />
@@ -246,7 +247,7 @@ export function DesktopWidgets() {
                   className={styles.ctxItem}
                   onSelect={() => removeWidget(widget.id)}
                 >
-                  Widget entfernen
+                  {t("desktop.widgetMenu.remove")}
                 </ContextMenu.Item>
               </ContextMenu.Content>
             </ContextMenu.Portal>

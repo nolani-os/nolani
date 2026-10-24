@@ -1,3 +1,4 @@
+import { getBrand } from "@claraos/core";
 /**
  * Where does a chat come from?
  *
@@ -26,7 +27,7 @@ const PRAEFIXE: { dienst: Dienst; praefix: string; bot: string }[] = [
 ];
 
 export const DIENST_NAME: Record<Dienst, string> = {
-  claraos: "ClaraOS",
+  get claraos() { return getBrand().product; },
   signal: "Signal",
   whatsapp: "WhatsApp",
   telegram: "Telegram",

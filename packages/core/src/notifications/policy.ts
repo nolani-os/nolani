@@ -103,28 +103,54 @@ export function decide(
 }
 
 /** Human-readable remaining time for display (e.g. "45 min left"). */
-export function dndRemainingLabel(policy: NotificationPolicy, now = Date.now()): string {
-  if (!isDndActive(policy, now)) return "";
+/**
+ * Remaining DND time as data — the UI turns it into text in its language
+ * (`common:dnd.remaining.<key>`). null = DND is off.
+ */
+export type DndRemaining =
+  | { key: "unlimited" | "tomorrow" }
+  | { key: "days"; count: number }
+  | { key: "hoursMinutes"; h: number; m: number }
+  | { key: "hours"; h: number }
+  | { key: "minutes"; count: number };
+
+export function dndRemaining(policy: NotificationPolicy, now = Date.now()): DndRemaining | null {
+  if (!isDndActive(policy, now)) return null;
   const mins = Math.ceil((policy.dndUntil - now) / 60000);
-  if (mins >= 60 * 24 * 365) return "unbegrenzt";
+  if (mins >= 60 * 24 * 365) return { key: "unlimited" };
   if (mins >= 60 * 20) {
     const days = Math.round(mins / (60 * 24));
-    return days <= 1 ? "bis morgen" : `noch ${days} Tage`;
+    return days <= 1 ? { key: "tomorrow" } : { key: "days", count: days };
   }
   if (mins >= 60) {
     const h = Math.floor(mins / 60);
     const m = mins % 60;
-    return m ? `noch ${h} Std. ${m} Min.` : `noch ${h} Std.`;
+    return m ? { key: "hoursMinutes", h, m } : { key: "hours", h };
   }
-  return `noch ${mins} Min.`;
+  return { key: "minutes", count: mins };
+}
+
+/** German text of dndRemaining() — the fallback when no catalog is loaded. */
+export function dndRemainingLabel(policy: NotificationPolicy, now = Date.now()): string {
+  const r = dndRemaining(policy, now);
+  if (!r) return "";
+  switch (r.key) {
+    case "unlimited": return "unbegrenzt";
+    case "tomorrow": return "bis morgen";
+    case "days": return `noch ${r.count} Tage`;
+    case "hoursMinutes": return `noch ${r.h} Std. ${r.m} Min.`;
+    case "hours": return `noch ${r.h} Std.`;
+    case "minutes": return `noch ${r.count} Min.`;
+  }
 }
 
 /** Preset durations for quick selection (minutes; 0 = unlimited). */
-export const DND_PRESETS: { label: string; minutes: number }[] = [
-  { label: "30 Minuten", minutes: 30 },
-  { label: "1 Stunde", minutes: 60 },
-  { label: "Bis morgen früh", minutes: -1 },
-  { label: "Bis ich es ausschalte", minutes: 0 },
+/** `id` is the catalog key (`common:dnd.preset.<id>`), `label` the German fallback. */
+export const DND_PRESETS: { id: string; label: string; minutes: number }[] = [
+  { id: "30m", label: "30 Minuten", minutes: 30 },
+  { id: "1h", label: "1 Stunde", minutes: 60 },
+  { id: "tomorrow", label: "Bis morgen früh", minutes: -1 },
+  { id: "off", label: "Bis ich es ausschalte", minutes: 0 },
 ];
 
 /** Compute the timestamp for a quick selection. */

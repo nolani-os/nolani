@@ -13,7 +13,7 @@
  * first channel), because a space itself keeps no account data for us.
  */
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { useAppRegistryStore, useMatrixStore } from "@claraos/core";
+import { useAppRegistryStore, useMatrixStore, getBrand } from "@claraos/core";
 import { useTeamResource, teamOrdnerPfad } from "../teamResources";
 import { KalenderView } from "./KalenderView";
 import { DateienView } from "./DateienView";
@@ -191,7 +191,7 @@ export function TeamView({ spaceId, windowId }: { spaceId: string; windowId: str
                 type="button"
                 className={art === "app" ? styles.artAktiv : styles.art}
                 onClick={() => setArt("app")}
-              >ClaraOS-App</button>
+              >{getBrand().product}-App</button>
               <button
                 type="button"
                 className={art === "url" ? styles.artAktiv : styles.art}

@@ -20,6 +20,7 @@ Off unless `CLARAOS_MCP=on` (`betriebsprofil.MCP_ENABLED`).
 """
 from __future__ import annotations
 
+from betriebsprofil import PRODUCT_NAME
 import json
 import logging
 import os
@@ -247,7 +248,7 @@ class RejectAllVerifier:
 server: Server = Server(
     "claraos",
     instructions=(
-        "Tools of a ClaraOS workspace (mail, planner, calendar, contacts, documents, "
+        f"Tools of a {PRODUCT_NAME} workspace (mail, planner, calendar, contacts, documents, "
         "knowledge). Every call runs as the user who owns the access key. Look things "
         "up (list/search) before changing them; never guess ids."
     ),

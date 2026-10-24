@@ -1,0 +1,40 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! **Security problems** go through private reporting instead
+        (Security → Report a vulnerability), never into a public issue.
+        Please remove personal data, host names and secrets from logs before pasting them.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open …
+        2. Click …
+        3. See …
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      description: Commit hash or date of your checkout
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      options: [Desktop shell, Mobile shell, API / backend, Cell setup (deploy/cell), Other]
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output (redacted)
+      render: text

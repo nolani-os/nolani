@@ -120,7 +120,7 @@ const effects: SkinManifest["tokens"]["effects"] = {
 
 export const aeroGlassSkin: SkinManifest = {
   id: "aero-glass",
-  name: "Aero Glass",
+  name: "Crystal",
   colorScheme: "dark",
   tokens: { colors, fonts, spacing, shadows, effects },
   layout: {

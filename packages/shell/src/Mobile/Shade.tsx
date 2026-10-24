@@ -22,13 +22,14 @@
  */
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
 import { motion } from "motion/react";
-import { useUIStore, useWindowsStore } from "@claraos/core";
+import { useUIStore, useWindowsStore, useTranslation } from "@claraos/core";
 import type { Notification } from "@claraos/core";
 import { primaryAction, runNotificationAction } from "../Notifications/notificationActions";
 import { Icon } from "../components/Icon";
 import { Button, IconButton } from "../components/Button";
 import { QuickSettings } from "./QuickSettings";
 import styles from "./Shade.module.css";
+import { regionLocale } from "@claraos/core";
 
 export type ShadeModus = "meldungen" | "schnell" | "kombiniert";
 
@@ -60,8 +61,8 @@ function Uhrzeit() {
   }, []);
   return (
     <div className={styles.kopfUhr}>
-      <div className={styles.uhr}>{now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}</div>
-      <div className={styles.datum}>{now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</div>
+      <div className={styles.uhr}>{now.toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" })}</div>
+      <div className={styles.datum}>{now.toLocaleDateString(regionLocale(), { weekday: "long", day: "numeric", month: "long" })}</div>
     </div>
   );
 }
@@ -69,7 +70,7 @@ function Uhrzeit() {
 function Karte({ n, vibrate }: { n: Notification; vibrate: (ms?: number) => void }) {
   const removeNotification = useUIStore((s) => s.removeNotification);
   const [offen, setOffen] = useState(false);
-  const zeit = new Date(n.timestamp).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  const zeit = new Date(n.timestamp).toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" });
   // As on Android: tapping the card opens the target — the notification
   // stays. Deletion happens ONLY by swiping right. The target action therefore
   // gets no pill of its own; other actions (Yes/No, Later) remain as pills.
@@ -128,6 +129,7 @@ export function Shade({ modus, panelRef, listRef, gesten, onWechsel, onSchliesse
   const neu = notifications.filter((n) => !n.read).reverse();
   const still = notifications.filter((n) => n.read).reverse();
   const getrennt = modus !== "kombiniert";
+  const { t } = useTranslation("mobile");
 
   // A horizontal swipe switches the panel (separate mode only). Detected on
   // pointermove (an Android lesson), never in sliders or cards — there the
@@ -135,8 +137,8 @@ export function Shade({ modus, panelRef, listRef, gesten, onWechsel, onSchliesse
   const wechsel = useRef<{ x: number; y: number; fired: boolean } | null>(null);
   const onDown = useCallback((e: ReactPointerEvent) => {
     gesten.onPointerDown(e);
-    const t = e.target as HTMLElement;
-    if (!getrennt || t.closest?.("[data-qs-control],[data-notif-card],button,input")) { wechsel.current = null; return; }
+    const target = e.target as HTMLElement;
+    if (!getrennt || target.closest?.("[data-qs-control],[data-notif-card],button,input")) { wechsel.current = null; return; }
     wechsel.current = { x: e.clientX, y: e.clientY, fired: false };
   }, [gesten, getrennt]);
   const onMove = useCallback((e: ReactPointerEvent) => {
@@ -184,16 +186,16 @@ export function Shade({ modus, panelRef, listRef, gesten, onWechsel, onSchliesse
             {notifications.length === 0 ? (
               <div className={styles.leer}>
                 <Icon name="bell" size={22} />
-                <span>Keine Benachrichtigungen</span>
+                <span>{t("shade.empty")}</span>
               </div>
             ) : (
               <>
-                {neu.length > 0 && <div className={styles.gruppe}><span>Neu</span></div>}
+                {neu.length > 0 && <div className={styles.gruppe}><span>{t("shade.groupNew")}</span></div>}
                 {neu.map((n) => <Karte key={n.id} n={n} vibrate={vibrate} />)}
                 {still.length > 0 && (
                   <div className={styles.gruppe}>
-                    <span>Still</span>
-                    <IconButton label="Gelesene entfernen" icon="close" groesse="s" onClick={() => { vibrate(); clearReadNotifications(); }} />
+                    <span>{t("shade.groupSilent")}</span>
+                    <IconButton label={t("shade.clearRead")} icon="close" groesse="s" onClick={() => { vibrate(); clearReadNotifications(); }} />
                   </div>
                 )}
                 {still.map((n) => <Karte key={n.id} n={n} vibrate={vibrate} />)}
@@ -205,14 +207,14 @@ export function Shade({ modus, panelRef, listRef, gesten, onWechsel, onSchliesse
 
       {zeigeMeldungen && (
         <div className={styles.fuss}>
-          <IconButton label="Einstellungen" icon="gear" groesse="l" onClick={oeffneEinstellungen} />
+          <IconButton label={t("shade.settings")} icon="gear" groesse="l" onClick={oeffneEinstellungen} />
           <Button stufe="tonal" groesse="l" className={styles.fussPille} disabled={notifications.length === 0}
                   onClick={() => { vibrate(); clearNotifications(); }}>
-            Alle löschen
+            {t("shade.clearAll")}
           </Button>
           {getrennt
-            ? <IconButton label="Schnelleinstellungen" icon="arrowRight" groesse="l" onClick={() => onWechsel("schnell")} />
-            : <IconButton label="Schließen" icon="close" groesse="l" onClick={onSchliessen} />}
+            ? <IconButton label={t("shade.quickSettings")} icon="arrowRight" groesse="l" onClick={() => onWechsel("schnell")} />
+            : <IconButton label={t("shade.close")} icon="close" groesse="l" onClick={onSchliessen} />}
         </div>
       )}
 
@@ -222,7 +224,7 @@ export function Shade({ modus, panelRef, listRef, gesten, onWechsel, onSchliesse
           <button type="button" className={`${styles.punkt} ${modus === "schnell" ? styles.punktAn : ""}`} onClick={() => onWechsel("schnell")} tabIndex={-1} />
         </div>
       )}
-      <button type="button" className={styles.griff} onClick={onSchliessen} aria-label="Schließen">
+      <button type="button" className={styles.griff} onClick={onSchliessen} aria-label={t("shade.close")}>
         <span className={styles.griffLinie} />
       </button>
     </motion.div>

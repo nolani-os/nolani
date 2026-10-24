@@ -7,7 +7,7 @@
  * the Composer can hand them straight to the existing file-upload pipeline.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useFileStore, type FileNode, type FileSourceInfo } from "@claraos/core";
+import { useFileStore, type FileNode, type FileSourceInfo, getBrand } from "@claraos/core";
 import { XIcon } from "./icons";
 import { FileTypeIcon } from "../components/FileTypeIcon";
 import styles from "./FilePickerModal.module.css";
@@ -168,7 +168,7 @@ export function FilePickerModal({ open, onClose, onPick, onPickRefs, mimePrefix 
     <div className={styles.overlay} onClick={close} role="dialog" aria-modal="true">
       <div className={styles.modal} onClick={(e) => e.stopPropagation()} data-no-drag>
         <header className={styles.header}>
-          <span className={styles.title}>Datei aus ClaraOS wählen</span>
+          <span className={styles.title}>Datei aus {getBrand().product} wählen</span>
           <button type="button" className={styles.iconBtn} onClick={close} title="Schließen">
             <XIcon size={14} />
           </button>
