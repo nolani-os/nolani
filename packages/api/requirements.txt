@@ -29,6 +29,9 @@ mcp==2.3.0
 pyzipper
 
 
+# Allowlist HTML sanitiser (Rust ammonia) for mail HTML; bleach is deprecated.
+nh3==0.3.7
+
 # Markdown->HTML for Collabora convert-to (docx generation)
 markdown>=3.6
 boto3==1.40.9

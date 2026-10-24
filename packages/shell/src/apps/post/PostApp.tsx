@@ -24,6 +24,7 @@ import {
   postRegeln, postSchlummern, postBusiness, type Konto,
 } from "./api";
 import Composer, { type ComposerStart } from "./Composer";
+import { sanitizeMailHtml } from "./mailHtml";
 import { RegelnDialog, AbwesenheitDialog, AufraeumenDialog } from "./Regeln";
 import { FreigabenDialog, VerzeichnisDialog, VerteilerDialog } from "./Business";
 import { MeinTag } from "./MeinTag";
@@ -1569,7 +1570,7 @@ function Einstellungen({ identitaeten, prefs, onClose, onSave }: {
 /** Small HTML editor for the signature (bold, italic, link, line break). */
 function SignaturEditor({ html, onChange }: { html: string; onChange: (h: string) => void }) {
   const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => { if (ref.current && ref.current.innerHTML !== html) ref.current.innerHTML = html; /* eslint-disable-line react-hooks/exhaustive-deps */ }, []);
+  useEffect(() => { if (ref.current && ref.current.innerHTML !== html) ref.current.innerHTML = sanitizeMailHtml(html); /* eslint-disable-line react-hooks/exhaustive-deps */ }, []);
   const cmd = (n: string, a?: string) => { ref.current?.focus(); document.execCommand(n, false, a); onChange(ref.current?.innerHTML ?? ""); };
   return (
     <div className={styles.sigBox}>

@@ -58,7 +58,9 @@ export default defineConfig({
   },
   build: {
     outDir: "dist",
-    sourcemap: true,
+    // /assets/* is served without login: maps would expose installation-specific
+    // sources (e.g. heim.config.ts) to anyone. Enable locally when debugging.
+    sourcemap: false,
     rollupOptions: {
       output: {
         // Force unique filenames on every build to bust browser cache

@@ -10,6 +10,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./PostApp.module.css";
+import { sanitizeMailHtml } from "./mailHtml";
 import { Icon } from "../../components/Icon";
 import {
   postApi, postSchreiben, postBusiness,
@@ -179,7 +180,7 @@ export default function Composer({ start, identitaeten, prefs, onClose, melde, o
       ? `<div><br></div><div class="claraos-signatur">${identity.html_signature}</div>`
       : (prefs.signature_on !== false && identity?.text_signature
         ? `<div><br></div><div class="claraos-signatur">${identity.text_signature.split("\n").map((l) => l.replace(/&/g, "&amp;").replace(/</g, "&lt;")).join("<br>")}</div>` : "");
-    ed.innerHTML = start.draftId ? (start.html ?? "") : `<div><br></div>${sig}${start.html ?? ""}`;
+    ed.innerHTML = sanitizeMailHtml(start.draftId ? (start.html ?? "") : `<div><br></div>${sig}${start.html ?? ""}`);
     ed.focus();
     const sel = window.getSelection();
     if (sel && ed.firstChild) { const r = document.createRange(); r.setStart(ed.firstChild, 0); r.collapse(true); sel.removeAllRanges(); sel.addRange(r); }

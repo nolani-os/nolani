@@ -46,6 +46,7 @@ from zoneinfo import ZoneInfo
 from urllib.parse import urlsplit, urlunsplit
 
 import httpx
+import nh3
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
@@ -53,6 +54,7 @@ from pydantic import BaseModel
 from auth import require_caller
 from database import get_pool, user_tx
 from services import localtime
+from services.download_policy import base_type, is_inline_safe, safe_media
 from encryption import decrypt_credentials
 
 logger = logging.getLogger(__name__)
@@ -919,14 +921,50 @@ async def post_messages(request: Request,
             "sort_unsupported": sortierung_abgelehnt}
 
 
-def _sanitize_html(html_src: str) -> str:
-    """Rough server-side sanitising; the shell additionally renders in a
-    sandboxed iframe without scripts and blocks remote images via CSP."""
-    out = re.sub(r"<(script|iframe|object|embed|form|link|meta|base)[^>]*>.*?</\1>", "", html_src, flags=re.S | re.I)
-    out = re.sub(r"<(script|iframe|object|embed|form|link|meta|base)[^>]*/?>", "", out, flags=re.I)
-    out = re.sub(r"\son\w+\s*=\s*(\"[^\"]*\"|'[^']*'|[^\s>]+)", "", out, flags=re.I)
-    out = re.sub(r"(href|src)\s*=\s*([\"']?)\s*javascript:[^\"'>]*", r"\1=\2#", out, flags=re.I)
-    return out
+# Mail HTML is written by strangers. It reaches the sandboxed reading pane and,
+# when replying or forwarding, the composer — a contenteditable on the shell
+# origin, where a surviving event handler runs with the user's session. Regexes
+# cannot parse HTML (`<svg/onload>`, `src="x"onerror=`, `java&#115;cript:` all
+# slipped through the earlier version), so an allowlist parser decides.
+_MAIL_TAGS = (set(nh3.ALLOWED_TAGS) | {"font", "center"}) - {"style"}
+_MAIL_ATTRS = {
+    "*": {"style", "class", "dir", "lang", "title", "align", "valign", "width", "height", "bgcolor", "color"},
+    "a": {"href", "hreflang"},
+    "img": {"src", "alt", "border"},
+    "font": {"face", "size"},
+    "table": {"border", "cellpadding", "cellspacing"},
+    "td": {"colspan", "rowspan"},
+    "th": {"colspan", "rowspan"},
+    "ol": {"start", "type"},
+    "blockquote": {"cite"},
+}
+# Layout and typography only: no `position`, `z-index` or similar, which would let
+# a quote overlay the composer's own controls.
+_MAIL_STYLE_PROPS = {
+    "color", "background-color", "background", "font", "font-family", "font-size", "font-style",
+    "font-weight", "line-height", "letter-spacing", "text-align", "text-decoration", "text-indent",
+    "text-transform", "vertical-align", "white-space", "word-break", "direction",
+    "margin", "margin-top", "margin-right", "margin-bottom", "margin-left",
+    "padding", "padding-top", "padding-right", "padding-bottom", "padding-left",
+    "border", "border-top", "border-right", "border-bottom", "border-left", "border-color",
+    "border-style", "border-width", "border-collapse", "border-spacing", "border-radius",
+    "width", "max-width", "min-width", "height", "max-height", "min-height", "display", "list-style-type",
+}
+_MAIL_SCHEMES = {"http", "https", "mailto", "tel", "cid"}
+
+
+def _sanitize_html(html_src: str, *, style_blocks: bool = False) -> str:
+    """Allowlist-sanitise mail HTML.
+
+    `style_blocks` keeps `<style>` elements for the reading pane, which renders
+    in a sandboxed iframe without scripts; the CSS inside is not inspected, so it
+    must never reach the composer on the shell origin.
+    """
+    tags = _MAIL_TAGS | {"style"} if style_blocks else _MAIL_TAGS
+    return nh3.clean(
+        html_src, tags=tags, clean_content_tags={"script"} if style_blocks else {"script", "style"},
+        attributes=_MAIL_ATTRS, url_schemes=_MAIL_SCHEMES, filter_style_properties=_MAIL_STYLE_PROPS,
+        link_rel="noopener noreferrer")
 
 
 @router.get("/message/{email_id}")
@@ -954,7 +992,7 @@ async def post_message(email_id: str, request: Request, mark_read: bool = Query(
         v = values.get(part.get("partId"))
         if v and v.get("value"):
             text_parts.append(v["value"])
-    html_out = _sanitize_html("\n".join(html_parts)) if html_parts else ""
+    html_out = _sanitize_html("\n".join(html_parts), style_blocks=True) if html_parts else ""
     text_out = _clean("\n".join(text_parts))
     # Conversation: all mails of the thread (lightweight rows)
     thread_rows: list[dict[str, Any]] = []
@@ -993,8 +1031,11 @@ async def post_blob(blob_id: str, request: Request, name: str = Query("anhang"),
     s = await _jmap_session(user)
     konto = await _konto(user, account_id)
     from urllib.parse import quote
+    # The type comes from the attachment metadata, i.e. from the sender, and the
+    # JMAP server echoes it as Content-Type: only pass it on when it is safe.
+    asked_type = base_type(type) if is_inline_safe(type) else "application/octet-stream"
     url = (s["download_url"].replace("{accountId}", konto).replace("{blobId}", blob_id)
-           .replace("{name}", quote(name)).replace("{type}", quote(type, safe="")))
+           .replace("{name}", quote(name)).replace("{type}", quote(asked_type, safe="")))
     cl = httpx.AsyncClient(timeout=120, follow_redirects=True)
     r = await cl.send(cl.build_request("GET", url, headers={"Authorization": s["headers"]["Authorization"]}), stream=True)
     if r.status_code != 200:
@@ -1007,8 +1048,10 @@ async def post_blob(blob_id: str, request: Request, name: str = Query("anhang"),
         finally:
             await r.aclose(); await cl.aclose()
     safe_name = re.sub(r"[^\w.\- ]+", "_", name)[:120] or "anhang"
-    return StreamingResponse(gen(), media_type=r.headers.get("content-type", type),
-                             headers={"Content-Disposition": f'inline; filename="{safe_name}"'})
+    media_type, inline, security = safe_media(r.headers.get("content-type", asked_type), want_inline=True)
+    disposition = "inline" if inline else "attachment"
+    return StreamingResponse(gen(), media_type=media_type,
+                             headers={"Content-Disposition": f'{disposition}; filename="{safe_name}"', **security})
 
 
 class PostSet(BaseModel):

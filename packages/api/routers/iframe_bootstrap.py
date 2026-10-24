@@ -22,6 +22,7 @@ Per-app config in `claraos_apps.manifest.config`:
   - forceFreshAuth: bool — if true, IframeApp uses this bootstrap
 """
 
+import html
 import json
 import logging
 import urllib.parse
@@ -67,7 +68,13 @@ def _build_bootstrap_html(
     here, but `fetch(..., {credentials: "omit"})` followed by a navigation
     forces the browser to re-establish the service session via Authentik.
     """
-    cookies_js = json.dumps(session_cookies)
+    # Values come from the user name and the app manifest: escape for HTML, and
+    # inside <script> also escape "<" — json.dumps leaves "</script>" intact.
+    def js(value: object) -> str:
+        return json.dumps(value).replace("<", "\\u003c")
+
+    cookies_js = js(session_cookies)
+    user_hint, app_id = html.escape(user_hint), html.escape(app_id)
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -91,9 +98,9 @@ def _build_bootstrap_html(
 </div>
 <script>
 (async function() {{
-  const SERVICE_URL = {json.dumps(service_url)};
-  const LOGOUT_URL  = {json.dumps(logout_url) if logout_url else 'null'};
-  const LOGIN_URL   = {json.dumps(login_url)};
+  const SERVICE_URL = {js(service_url)};
+  const LOGOUT_URL  = {js(logout_url) if logout_url else 'null'};
+  const LOGIN_URL   = {js(login_url)};
   const COOKIES     = {cookies_js};
 
   // Step 1: best-effort cookie clear (only same-origin will succeed)

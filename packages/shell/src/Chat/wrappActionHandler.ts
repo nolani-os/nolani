@@ -14,7 +14,7 @@
  */
 import { useFileStore, useUIStore, useWrappStore, useIframeAppStore, type SharedObjectNode, getBrand } from "@claraos/core";
 import { meldeErgebnis, registerActionHandler, registerFallbackActionHandler, type ActionPayload } from "./actionBus";
-import { dispatchToIframe } from "./iframeBridge";
+import { dispatchToIframe, iframeTargetOrigin } from "./iframeBridge";
 import { ausfuehrenLokal, installShellActionHandler, type Ergebnis } from "./shellActionHandler";
 
 /**
@@ -36,7 +36,7 @@ function postToIframe(windowId: string, message: Record<string, unknown>): boole
     `iframe[data-window-id="${CSS.escape(windowId)}"]`,
   );
   if (!iframe || !iframe.contentWindow) return false;
-  iframe.contentWindow.postMessage(message, "*");
+  iframe.contentWindow.postMessage(message, iframeTargetOrigin(iframe));
   return true;
 }
 

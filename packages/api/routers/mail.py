@@ -22,7 +22,6 @@ import asyncio
 import email
 import email.header
 import email.utils
-import gzip
 import imaplib
 import io
 import logging
@@ -31,6 +30,7 @@ import re
 import smtplib
 import ssl
 import zipfile
+import zlib
 from email.message import EmailMessage
 from typing import Any, Optional
 
@@ -292,6 +292,11 @@ def _get_message_sync(addr: str, pw: str, mailbox: str, uid: str) -> dict[str, A
         M.logout()
 
 
+# Anyone can mail a few-MB archive that inflates to gigabytes; the caller only
+# keeps a few thousand characters anyway, so unpacking stops here.
+_ENTPACKT_MAX = 2 * 1024 * 1024
+
+
 def _entpacken(name: str, roh: bytes) -> tuple[str, str]:
     """Unpack ZIP/GZIP attachments, interpret everything else as text.
 
@@ -303,14 +308,21 @@ def _entpacken(name: str, roh: bytes) -> tuple[str, str]:
     """
     klein = name.lower()
     if klein.endswith(".zip"):
+        teile, rest = [], _ENTPACKT_MAX
         with zipfile.ZipFile(io.BytesIO(roh)) as z:
-            teile = [
-                z.read(n).decode("utf-8", "replace")
-                for n in z.namelist() if not n.endswith("/")
-            ]
+            for info in z.infolist():
+                if info.is_dir() or rest <= 0:
+                    continue
+                # Read with a limit instead of trusting the header sizes: an
+                # attacker writes those too.
+                with z.open(info) as f:
+                    stueck = f.read(rest)
+                rest -= len(stueck)
+                teile.append(stueck.decode("utf-8", "replace"))
         return "\n".join(teile), f"aus ZIP entpackt ({len(teile)} Datei(en))"
     if klein.endswith(".gz"):
-        return gzip.decompress(roh).decode("utf-8", "replace"), "aus GZIP entpackt"
+        d = zlib.decompressobj(16 + zlib.MAX_WBITS)
+        return d.decompress(roh, _ENTPACKT_MAX).decode("utf-8", "replace"), "aus GZIP entpackt"
     return roh.decode("utf-8", "replace"), "unverändert als Text gelesen"
 
 

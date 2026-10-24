@@ -41,11 +41,30 @@
   let _ready = false;
   let _disposed = false;
 
+  // Only the shell that embeds this app may drive the bridge, and context goes
+  // only to it — any other page could frame the app as well. The script is
+  // served by the shell, so its own origin names the trusted parent.
+  const _shellOrigin = (function () {
+    try {
+      const src = document.currentScript && document.currentScript.src;
+      const origin = src ? new URL(src).origin : null;
+      // Served by the app's own host (proxy injection, inline copy) it names nothing.
+      if (origin && origin !== window.location.origin) return origin;
+    } catch (e) { /* fall back below */ }
+    return null;
+  })();
+
+  function _fromShell(ev) {
+    if (ev.source !== window.parent) return false;
+    if (_shellOrigin) return ev.origin === _shellOrigin;
+    try { return new URL(ev.origin).hostname.indexOf("home.") === 0; } catch (e) { return false; }
+  }
+
   function send(type, extra) {
     if (_disposed || !window.parent) return;
     const msg = Object.assign({ type, windowId: _windowId }, extra || {});
     try {
-      window.parent.postMessage(msg, "*");
+      window.parent.postMessage(msg, _shellOrigin || "*");
     } catch (e) {
       // cross-origin frames may throw — non-fatal
     }
@@ -61,6 +80,7 @@
   }
 
   function onMessage(ev) {
+    if (!_fromShell(ev)) return;
     const data = ev.data;
     if (!data || typeof data !== "object" || typeof data.type !== "string") return;
     if (!data.type.startsWith("claraos:")) return;

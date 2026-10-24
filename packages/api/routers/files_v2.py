@@ -971,6 +971,7 @@ async def cross_copy(request: Request, body: _CopyBody) -> dict:
 from fastapi import Query
 from fastapi.responses import StreamingResponse, Response
 from urllib.parse import quote as _urlq
+from services.download_policy import safe_media
 
 
 def _disposition(name: str) -> str:
@@ -1006,16 +1007,18 @@ async def _stream_nc(url: str, headers: dict, name: str, want_zip: bool,
             await client.aclose()
 
     disp = _disposition(name)
+    if want_zip:
+        media_type, security = "application/zip", {"X-Content-Type-Options": "nosniff"}
+    else:
+        media_type, inline, security = safe_media(ctype, inline)
     out_headers = {"Content-Disposition": disp.replace("attachment", "inline", 1) if inline else disp,
-                   "Cache-Control": "private, max-age=0"}
+                   "Cache-Control": "private, max-age=0", **security}
     if resp.headers.get("content-length") and not resp.headers.get("content-encoding"):
         out_headers["Content-Length"] = resp.headers["content-length"]
     for h in ("content-range", "accept-ranges", "etag", "last-modified"):
         if resp.headers.get(h):
             out_headers[h.title()] = resp.headers[h]
-    return StreamingResponse(body(), status_code=resp.status_code,
-                             media_type="application/zip" if want_zip else (ctype or "application/octet-stream"),
-                             headers=out_headers)
+    return StreamingResponse(body(), status_code=resp.status_code, media_type=media_type, headers=out_headers)
 
 
 async def _zip_in_api(backend: "_Backend", paths: list[str], name: str) -> Response:

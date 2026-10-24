@@ -28,7 +28,7 @@
  *   { type: "claraos:notify",        windowId, title?, message }
  *   { type: "claraos:close-window",  windowId }
  */
-import { useIframeAppStore, useUIStore, requestCloseWindow } from "@claraos/core";
+import { BASE_DOMAIN, useIframeAppStore, useUIStore, requestCloseWindow } from "@claraos/core";
 
 const SHELL_HELLO_DELAY_MS = 400;   // wait for iframe to load its handler
 const HELLO_RETRY_MAX = 4;          // 4 hellos at 400/800/1600/3200 ms
@@ -39,15 +39,29 @@ const HELLO_RETRY_MAX = 4;          // 4 hellos at 400/800/1600/3200 ms
  * addresses in a browser with persistent logins (shopping, parcel services).
  * Currently only the mail app — add further sources (chat, feed reader) here.
  */
-const LINK_SOURCE_HOSTS = ["mail."];
+const LINK_SOURCE_HOSTS = ["mail"];
 
 export function isLinkSourceAllowed(origin: string): boolean {
   try {
     const u = new URL(origin);
-    return u.protocol === "https:" && LINK_SOURCE_HOSTS.some((p) => u.hostname.startsWith(p));
+    // Exact host of this installation: a prefix match also let `mail.evil.example` in.
+    return u.protocol === "https:" && LINK_SOURCE_HOSTS.some((h) => u.hostname === `${h}.${BASE_DOMAIN}`);
   } catch {
     return false;
   }
+}
+
+/** Origin each bridged window answered `claraos:ready` from. The frame's `src`
+ * is no guide: apps that need fresh auth start on /api/claraos/iframe-bootstrap
+ * (shell origin) and only then navigate to their own host. Once known, actions
+ * and context requests go only there and messages from other origins are
+ * ignored, so a page the frame is later navigated to cannot take over the bridge. */
+const peerOrigins = new Map<string, string>();
+
+/** Target origin for postMessage into this iframe; wildcard until the app said ready. */
+export function iframeTargetOrigin(iframe: HTMLIFrameElement): string {
+  const windowId = iframe.dataset.windowId;
+  return (windowId && peerOrigins.get(windowId)) || "*";
 }
 
 export interface BridgeHandle {
@@ -62,12 +76,13 @@ export interface BridgeHandle {
 export function attachIframeBridge(iframe: HTMLIFrameElement, windowId: string, userId = ""): BridgeHandle {
   let helloAttempt = 0;
   let disposed = false;
+  peerOrigins.delete(windowId);   // a new attach (new src) learns the origin again
   const pending = new Map<string, { resolve: (v: unknown) => void; reject: (e: Error) => void; timer: number }>();
 
   function send(payload: Record<string, unknown>): void {
     if (disposed) return;
     try {
-      iframe.contentWindow?.postMessage({ ...payload, windowId }, "*");
+      iframe.contentWindow?.postMessage({ ...payload, windowId }, iframeTargetOrigin(iframe));
     } catch (err) {
       console.warn("[iframeBridge] postMessage failed", err);
     }
@@ -92,10 +107,13 @@ export function attachIframeBridge(iframe: HTMLIFrameElement, windowId: string, 
     if (!data || typeof data !== "object" || typeof data.type !== "string") return;
     if (!data.type.startsWith("claraos:")) return;
     if (data.windowId && data.windowId !== windowId) return;
+    const known = peerOrigins.get(windowId);
+    if (known && ev.origin !== known) return;
 
     const store = useIframeAppStore.getState();
     switch (data.type) {
       case "claraos:ready": {
+        if (!known && ev.origin !== "null") peerOrigins.set(windowId, ev.origin);
         store.setReady(windowId, String(data.appId ?? "unknown"), Array.isArray(data.capabilities) ? data.capabilities.map(String) : []);
         if (data.context && typeof data.context === "object") {
           store.setContext(windowId, data.context as Record<string, unknown>);
@@ -175,6 +193,7 @@ export function attachIframeBridge(iframe: HTMLIFrameElement, windowId: string, 
         p.reject(new Error("bridge disposed"));
       });
       pending.clear();
+      peerOrigins.delete(windowId);
       useIframeAppStore.getState().remove(windowId);
     },
     hello,
@@ -209,7 +228,7 @@ export function dispatchToIframe(
   if (!iframe || !iframe.contentWindow) return false;
   iframe.contentWindow.postMessage(
     { type: "claraos:action", windowId, action, args },
-    "*",
+    iframeTargetOrigin(iframe),
   );
   return true;
 }

@@ -5,6 +5,7 @@ import os
 import json
 import logging
 import base64
+import html
 import re
 import httpx
 from fastapi import APIRouter, Request, HTTPException
@@ -344,7 +345,7 @@ async def nc_editor(doctype: str, request: Request):
 
     cfg = NC_SCRATCH_FILES.get(doctype)
     if not cfg:
-        return HTMLResponse(f"Unknown doctype: {doctype}", status_code=400)
+        return HTMLResponse(f"Unknown doctype: {html.escape(doctype)}", status_code=400)
 
     # Internal URL bypasses Caddy/Authentik forward_auth (WebDAV needs direct access)
     nc_internal = NEXTCLOUD_INTERNAL_URL
@@ -356,7 +357,7 @@ async def nc_editor(doctype: str, request: Request):
         file_id = await _nc_get_or_create_scratch(nc_internal, nc_username, nc_password, doctype)
     except Exception as e:
         logger.exception("nc-editor error")
-        return HTMLResponse(f"Error: {e}", status_code=500)
+        return HTMLResponse(f"Error: {html.escape(str(e))}", status_code=500)
 
     if not file_id:
         return HTMLResponse("Failed to create/find scratch file in Nextcloud", status_code=502)
@@ -402,10 +403,10 @@ async def get_auth_login(app_id: str, request: Request):
     try:
         result = await handler(internal_url, creds)
     except Exception as e:
-        return HTMLResponse(f"Login error: {e}", status_code=500)
+        return HTMLResponse(f"Login error: {html.escape(str(e))}", status_code=500)
 
     if "error" in result:
-        return HTMLResponse(f"Login failed: {result['error']}", status_code=502)
+        return HTMLResponse(f"Login failed: {html.escape(str(result['error']))}", status_code=502)
 
     # Redirect to a Caddy route on the app's own domain that sets the cookie
     session = result.get("session_cookie", "")

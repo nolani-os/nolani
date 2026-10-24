@@ -135,6 +135,14 @@ function App() {
   );
 }
 
+// Registered here instead of an inline <script> in index.html, so the shell's
+// Content-Security-Policy can do without 'unsafe-inline' for scripts.
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch((e) => console.warn("SW reg failed", e));
+  });
+}
+
 // Render only once the region/language settings and the start catalogs are
 // in: dates are formatted at render time (regionLocale() is not reactive) and
 // the first frame should already be in the user's language. Neither may block
