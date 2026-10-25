@@ -2,6 +2,7 @@
  * Same pattern as planner/api.ts: own http<T> wrapper, cookie auth.
  * No 424 onboarding needed; the backend requires no app tokens. */
 import type { ActionPlan, GoalNode, KbActivity, KbCollection, KbCollectionShare, KbComment, KbDiffOp, KbField, KbHistoryEntry, KbNotification, KbObject, KbObjectSlim, KbPropDef, KbRow, KbTemplate, KbType, KbView, KpiProgress, KpiSource, KpiSourceError, KpiValue, IdeaProposal, MatrixItem, SuggestedRating, Analysis, Countermeasure, ParetoRow, WhyLink, Stage, Visibility } from "./types";
+import { i18n } from "@claraos/core";
 
 const BASE = "/api/claraos/knowledge";
 
@@ -37,15 +38,15 @@ function serverText(rumpf: string): string {
 function satzZu(status: number, rumpf: string): string {
   const eigen = serverText(rumpf);
   if (eigen) return eigen;                       // the server knows better
-  if (status === 0) return "Keine Verbindung zum Server.";
-  if (status === 401) return "Deine Anmeldung ist abgelaufen — bitte neu anmelden.";
-  if (status === 403) return "Dafür fehlt dir die Berechtigung.";
-  if (status === 404) return "Das gibt es nicht mehr.";
-  if (status === 409) return "Das passt gerade nicht zusammen — bitte neu laden.";
-  if (status === 413) return "Die Datei ist zu groß.";
-  if (status === 429) return "Zu viele Anfragen auf einmal — kurz warten.";
-  if (status >= 500) return "Der Server konnte das gerade nicht beantworten.";
-  return "Die Anfrage ist fehlgeschlagen.";
+  if (status === 0) return i18n.t("wissen:apiError.offline");
+  if (status === 401) return i18n.t("wissen:apiError.401");
+  if (status === 403) return i18n.t("wissen:apiError.403");
+  if (status === 404) return i18n.t("wissen:apiError.404");
+  if (status === 409) return i18n.t("wissen:apiError.409");
+  if (status === 413) return i18n.t("wissen:apiError.413");
+  if (status === 429) return i18n.t("wissen:apiError.429");
+  if (status >= 500) return i18n.t("wissen:apiError.5xx");
+  return i18n.t("wissen:apiError.other");
 }
 
 async function http<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -220,7 +221,7 @@ export const ideasApi = {
     const r = await fetch("/api/claraos/knowledge/import", {
       method: "POST", credentials: "include", body: form,
     });
-    if (!r.ok) throw new Error(`Import fehlgeschlagen (${r.status})`);
+    if (!r.ok) throw new Error(i18n.t("wissen:app.importFailed", { status: r.status }));
     return r.json() as Promise<{ pages: number; collections: number; rows: number; links_rewritten: number }>;
   },
   exportUrl: (collectionId?: string) =>

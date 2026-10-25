@@ -19,6 +19,7 @@
  */
 import { FieldType } from "../ideas/types";
 import type { KbField, KbRow } from "../ideas/types";
+import { i18n } from "@claraos/core";
 
 export interface Gruppe {
   /** Unique key (React key and collapse state). Do NOT use `label`: if the
@@ -50,7 +51,9 @@ export function gruppierbar(f: KbField): boolean {
  * date column can be grouped — "Bought on" or "Modified" would then all land
  * under "overdue", which is simply wrong. "Vergangen" (past) fits both;
  * otherwise "Done" and "Overdue" can end up side by side in the same row. */
-const DATUM_ORDNUNG = ["Vergangen", "Heute", "Morgen", "Diese Woche", "Später"];
+// Internal bucket keys — the label is looked up only for display, so order,
+// sorting and the remembered collapse state do not depend on the language.
+const DATUM_ORDNUNG = ["vergangen", "heute", "morgen", "woche", "spaeter"];
 
 function tagesSchluessel(d: Date) {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
@@ -63,15 +66,15 @@ function datumsKorb(iso: unknown): string | null {
   const heute = new Date();
   const morgen = new Date();
   morgen.setDate(morgen.getDate() + 1);
-  if (tagesSchluessel(d) === tagesSchluessel(heute)) return "Heute";
-  if (tagesSchluessel(d) === tagesSchluessel(morgen)) return "Morgen";
+  if (tagesSchluessel(d) === tagesSchluessel(heute)) return "heute";
+  if (tagesSchluessel(d) === tagesSchluessel(morgen)) return "morgen";
   // Compare at day level, not milliseconds — otherwise "this morning" slips
   // into the past as soon as it is afternoon.
   const tagAnfang = new Date(heute.getFullYear(), heute.getMonth(), heute.getDate());
-  if (d.getTime() < tagAnfang.getTime()) return "Vergangen";
+  if (d.getTime() < tagAnfang.getTime()) return "vergangen";
   const inSieben = new Date(tagAnfang);
   inSieben.setDate(inSieben.getDate() + 7);
-  return d.getTime() < inSieben.getTime() ? "Diese Woche" : "Später";
+  return d.getTime() < inSieben.getTime() ? "woche" : "spaeter";
 }
 
 /** Value(s) of a row in this column — several only for multi-select. */
@@ -80,7 +83,7 @@ function werteVon(row: KbRow, feld: KbField): (string | null)[] {
   if (feld.field_type === FieldType.UpdatedTime) return [datumsKorb(row.updated_at)];
   const roh = row.properties?.[feld.key];
   if (feld.field_type === FieldType.Date) return [datumsKorb(roh)];
-  if (feld.field_type === FieldType.Checkbox) return [roh ? "Erledigt" : "Offen"];
+  if (feld.field_type === FieldType.Checkbox) return [roh ? "erledigt" : "offen"];
   if (feld.field_type === FieldType.MultiSelect) {
     const arr = Array.isArray(roh) ? roh.map(String).filter(Boolean) : [];
     // Like tags in the Planner: a row with three tags appears in three groups.
@@ -91,10 +94,19 @@ function werteVon(row: KbRow, feld: KbField): (string | null)[] {
   return [s || null];
 }
 
+/** Display name of a group: date and checkbox buckets are internal keys,
+ *  everything else is the user's own value. */
+function gruppenName(w: string | null, feld: KbField): string {
+  if (w === null) return i18n.t("wissen:group.without", { name: feld.name });
+  const intern = feld.field_type === FieldType.Checkbox || feld.field_type === FieldType.Date
+    || feld.field_type === FieldType.CreatedTime || feld.field_type === FieldType.UpdatedTime;
+  return intern ? i18n.t(`wissen:group.${w}`) : w;
+}
+
 /** Sort key of a group. The empty group always goes last. */
 function rang(wert: string | null, feld: KbField, optionen: string[]): number {
   if (wert === null) return 1e6;
-  if (feld.field_type === FieldType.Checkbox) return wert === "Offen" ? 0 : 1;
+  if (feld.field_type === FieldType.Checkbox) return wert === "offen" ? 0 : 1;
   if (feld.field_type === FieldType.Date || feld.field_type === FieldType.CreatedTime
       || feld.field_type === FieldType.UpdatedTime) {
     const i = DATUM_ORDNUNG.indexOf(wert);
@@ -115,7 +127,7 @@ export function gruppiere(rows: KbRow[], feld: KbField): Gruppe[] {
       const schluessel = w === null ? " leer" : `w:${w}`;
       let g = nachWert.get(schluessel);
       if (!g) {
-        g = { schluessel, label: w ?? `Ohne ${feld.name}`, wert: w, zeilen: [] };
+        g = { schluessel, label: gruppenName(w, feld), wert: w, zeilen: [] };
         nachWert.set(schluessel, g);
       }
       g.zeilen.push(row);
@@ -123,6 +135,6 @@ export function gruppiere(rows: KbRow[], feld: KbField): Gruppe[] {
   }
   return [...nachWert.values()].sort((a, b) => {
     const d = rang(a.wert, feld, optionen) - rang(b.wert, feld, optionen);
-    return d !== 0 ? d : a.label.localeCompare(b.label, "de");
+    return d !== 0 ? d : a.label.localeCompare(b.label, i18n.resolvedLanguage ?? i18n.language);
   });
 }

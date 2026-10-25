@@ -46,13 +46,16 @@ from zoneinfo import ZoneInfo
 from urllib.parse import urlsplit, urlunsplit
 
 import httpx
+import nh3
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from auth import require_caller
+from sprache import Text, sprache_jetzt, t as _t, tx
 from database import get_pool, user_tx
 from services import localtime
+from services.download_policy import base_type, is_inline_safe, safe_media
 from encryption import decrypt_credentials
 
 logger = logging.getLogger(__name__)
@@ -109,7 +112,7 @@ async def _user_from_token(token: str | None) -> str:
     """Identity from the bridge token — the only trust anchor here."""
     await _ensure_tables()
     if not token or not token.startswith("pb_") or len(token) > 200:
-        raise HTTPException(status_code=401, detail="Brücken-Token fehlt oder ungültig")
+        raise HTTPException(status_code=401, detail=Text("post.bridgeTokenMissing"))
     # Authentication path: the token hash IS the lookup key, the user is not
     # known yet — deliberately on the plain pool (no per-user RLS).
     pool = await get_pool()
@@ -118,7 +121,7 @@ async def _user_from_token(token: str | None) -> str:
             "UPDATE claraos_post_bridge_tokens SET last_used_at = NOW(), uses = uses + 1 "
             "WHERE token_hash = $1 RETURNING username", _hash(token))
     if not row:
-        raise HTTPException(status_code=401, detail=f"Brücken-Token unbekannt — in {PRODUCT_NAME} neu erzeugen")
+        raise HTTPException(status_code=401, detail=Text("post.bridgeTokenUnknown", product=PRODUCT_NAME))
     return row["username"]
 
 
@@ -126,7 +129,7 @@ async def _user_from_token(token: str | None) -> str:
 
 async def _mail_credentials(user: str) -> tuple[str, str]:
     if not user:
-        raise HTTPException(status_code=409, detail="Kein Mail-Konto verbunden")
+        raise HTTPException(status_code=409, detail=Text("post.noAccount"))
     async with user_tx(user) as conn:   # row-level security (migrations/042)
         row = await conn.fetchrow("""
             SELECT credentials FROM claraos_app_credentials
@@ -134,11 +137,11 @@ async def _mail_credentials(user: str) -> tuple[str, str]:
             ORDER BY updated_at DESC NULLS LAST LIMIT 1
         """, user)
     if not row:
-        raise HTTPException(status_code=409, detail=f"Kein Mail-Konto für {user!r} in {PRODUCT_NAME} verbunden")
+        raise HTTPException(status_code=409, detail=Text("post.noAccountFor", user=repr(user), product=PRODUCT_NAME))
     creds = decrypt_credentials(row["credentials"])
     addr, pw = creds.get("username", ""), creds.get("password", "")
     if not addr or not pw:
-        raise HTTPException(status_code=409, detail="Mail-Zugang unvollständig")
+        raise HTTPException(status_code=409, detail=Text("post.accessIncomplete"))
     return addr, pw
 
 
@@ -182,7 +185,7 @@ async def _jmap_email(addr: str, pw: str, email_id: str) -> dict[str, Any]:
         except Exception:
             raise HTTPException(status_code=502, detail="JMAP: unlesbare Antwort")
         if resp[0] != "Email/get" or not resp[1].get("list"):
-            raise HTTPException(status_code=404, detail="E-Mail nicht gefunden (ID unbekannt oder fremdes Konto)")
+            raise HTTPException(status_code=404, detail=Text("post.mailNotFound"))
         return resp[1]["list"][0]
 
 
@@ -223,10 +226,11 @@ def _clean(s: str) -> str:
     return re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", s or "")
 
 
-def _when(email: dict[str, Any]) -> str:
+def _when(email: dict[str, Any], lang: str = "de") -> str:
     raw = email.get("receivedAt") or email.get("sentAt") or ""
+    fmt = "%d.%m.%Y %H:%M" if lang == "de" else "%Y-%m-%d %H:%M"
     try:
-        return datetime.fromisoformat(raw.replace("Z", "+00:00")).astimezone(LOCAL_TZ).strftime("%d.%m.%Y %H:%M")
+        return datetime.fromisoformat(raw.replace("Z", "+00:00")).astimezone(LOCAL_TZ).strftime(fmt)
     except Exception:
         return raw
 
@@ -357,7 +361,7 @@ def _parse_when(raw: str | None, tz_now: datetime) -> datetime:
     s = raw.strip().lower()
     m = re.fullmatch(r"(heute|morgen|übermorgen|\d{4}-\d{2}-\d{2}|\d{1,2}\.\d{1,2}\.(?:\d{4})?)\s*(\d{1,2})(?::(\d{2}))?", s)
     if not m:
-        raise HTTPException(status_code=400, detail="Zeitangabe nicht verstanden — z. B. „morgen 09:00“ oder „2026-09-12 14:30“")
+        raise HTTPException(status_code=400, detail=Text("post.timeNotUnderstood"))
     day, hh, mm = m.group(1), int(m.group(2)), int(m.group(3) or 0)
     if day == "heute":
         date = tz_now.date()
@@ -372,7 +376,7 @@ def _parse_when(raw: str | None, tz_now: datetime) -> datetime:
         year = int(parts[2]) if len(parts) > 2 and parts[2] else tz_now.year
         date = datetime(year, int(parts[1]), int(parts[0])).date()
     if not (0 <= hh <= 23 and 0 <= mm <= 59):
-        raise HTTPException(status_code=400, detail="Uhrzeit ungültig")
+        raise HTTPException(status_code=400, detail=Text("post.timeInvalid"))
     return datetime.combine(date, datetime.min.time()).replace(hour=hh, minute=mm, tzinfo=tz_now.tzinfo)
 
 
@@ -418,7 +422,7 @@ async def _do_mail_to_contact(user: str, email_id, note):
     mail_addr = (sender.get("email") or "").strip().lower()
     name = (sender.get("name") or "").strip()
     if not mail_addr:
-        raise HTTPException(status_code=422, detail="Absender ohne E-Mail-Adresse")
+        raise HTTPException(status_code=422, detail=Text("post.senderNoAddress"))
     async with _internal(user) as cl:
         existing = await _ok_json(await cl.get("/api/claraos/contacts", params={"q": mail_addr, "limit": 20}),
                                   "Kontaktsuche")
@@ -427,7 +431,7 @@ async def _do_mail_to_contact(user: str, email_id, note):
             # is in data.mails or in the search text — so match roughly over the whole row.
             if mail_addr in json.dumps(k, ensure_ascii=False).lower():
                 return {"ok": True, "kind": "contact", "id": k.get("id"), "existing": True,
-                        "message": f"{name or mail_addr} ist schon in den Kontakten"}
+                        "message": await tx("post.alreadyContact", name=name or mail_addr)}
         vor, nach = (name.split(" ", 1) + [""])[:2] if name else ("", "")
         data = {
             "namen": {"vorname": vor, "nachname": nach, "anzeigename": name or mail_addr},
@@ -437,7 +441,7 @@ async def _do_mail_to_contact(user: str, email_id, note):
         created = await _ok_json(await cl.post("/api/claraos/contacts", json={"data": data}), "Kontakt anlegen")
     kontakt = created.get("kontakt") or created
     return {"ok": True, "kind": "contact", "id": kontakt.get("id"), "existing": False,
-            "message": f"Kontakt „{name or mail_addr}“ angelegt"}
+            "message": await tx("post.contactCreated", name=name or mail_addr)}
 
 
 @router.post("/bridge/mail_to_note")
@@ -455,7 +459,7 @@ async def _do_mail_to_note(user: str, email_id, note):
         }), "Notiz anlegen")
     obj = created.get("object") or {}
     return {"ok": True, "kind": "note", "id": obj.get("id"), "title": d["subject"],
-            "message": f"Notiz „{d['subject']}“ in der Wissens-App angelegt"}
+            "message": await tx("post.noteCreated", subject=d["subject"])}
 
 
 # ── Token management (shell, Authentik session) ──────────────────────────
@@ -661,7 +665,7 @@ async def clara_mail_to_note(body: ClaraMailRef, request: Request):
         }), "Notiz anlegen")
     obj = created.get("object") or {}
     return {"ok": True, "kind": "note", "id": obj.get("id"), "title": d["subject"],
-            "message": f"Notiz „{d['subject']}“ in der Wissens-App angelegt"}
+            "message": await tx("post.noteCreated", subject=d["subject"])}
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -729,7 +733,7 @@ async def _konto(user: str, account_id: str | None) -> str:
     if not account_id or account_id == s["account"]:
         return s["account"]
     if account_id not in (s.get("accounts") or {}):
-        raise HTTPException(status_code=403, detail="Auf dieses Postfach hast du keinen Zugriff")
+        raise HTTPException(status_code=403, detail=Text("post.noMailboxAccess"))
     return account_id
 
 
@@ -919,14 +923,50 @@ async def post_messages(request: Request,
             "sort_unsupported": sortierung_abgelehnt}
 
 
-def _sanitize_html(html_src: str) -> str:
-    """Rough server-side sanitising; the shell additionally renders in a
-    sandboxed iframe without scripts and blocks remote images via CSP."""
-    out = re.sub(r"<(script|iframe|object|embed|form|link|meta|base)[^>]*>.*?</\1>", "", html_src, flags=re.S | re.I)
-    out = re.sub(r"<(script|iframe|object|embed|form|link|meta|base)[^>]*/?>", "", out, flags=re.I)
-    out = re.sub(r"\son\w+\s*=\s*(\"[^\"]*\"|'[^']*'|[^\s>]+)", "", out, flags=re.I)
-    out = re.sub(r"(href|src)\s*=\s*([\"']?)\s*javascript:[^\"'>]*", r"\1=\2#", out, flags=re.I)
-    return out
+# Mail HTML is written by strangers. It reaches the sandboxed reading pane and,
+# when replying or forwarding, the composer — a contenteditable on the shell
+# origin, where a surviving event handler runs with the user's session. Regexes
+# cannot parse HTML (`<svg/onload>`, `src="x"onerror=`, `java&#115;cript:` all
+# slipped through the earlier version), so an allowlist parser decides.
+_MAIL_TAGS = (set(nh3.ALLOWED_TAGS) | {"font", "center"}) - {"style"}
+_MAIL_ATTRS = {
+    "*": {"style", "class", "dir", "lang", "title", "align", "valign", "width", "height", "bgcolor", "color"},
+    "a": {"href", "hreflang"},
+    "img": {"src", "alt", "border"},
+    "font": {"face", "size"},
+    "table": {"border", "cellpadding", "cellspacing"},
+    "td": {"colspan", "rowspan"},
+    "th": {"colspan", "rowspan"},
+    "ol": {"start", "type"},
+    "blockquote": {"cite"},
+}
+# Layout and typography only: no `position`, `z-index` or similar, which would let
+# a quote overlay the composer's own controls.
+_MAIL_STYLE_PROPS = {
+    "color", "background-color", "background", "font", "font-family", "font-size", "font-style",
+    "font-weight", "line-height", "letter-spacing", "text-align", "text-decoration", "text-indent",
+    "text-transform", "vertical-align", "white-space", "word-break", "direction",
+    "margin", "margin-top", "margin-right", "margin-bottom", "margin-left",
+    "padding", "padding-top", "padding-right", "padding-bottom", "padding-left",
+    "border", "border-top", "border-right", "border-bottom", "border-left", "border-color",
+    "border-style", "border-width", "border-collapse", "border-spacing", "border-radius",
+    "width", "max-width", "min-width", "height", "max-height", "min-height", "display", "list-style-type",
+}
+_MAIL_SCHEMES = {"http", "https", "mailto", "tel", "cid"}
+
+
+def _sanitize_html(html_src: str, *, style_blocks: bool = False) -> str:
+    """Allowlist-sanitise mail HTML.
+
+    `style_blocks` keeps `<style>` elements for the reading pane, which renders
+    in a sandboxed iframe without scripts; the CSS inside is not inspected, so it
+    must never reach the composer on the shell origin.
+    """
+    tags = _MAIL_TAGS | {"style"} if style_blocks else _MAIL_TAGS
+    return nh3.clean(
+        html_src, tags=tags, clean_content_tags={"script"} if style_blocks else {"script", "style"},
+        attributes=_MAIL_ATTRS, url_schemes=_MAIL_SCHEMES, filter_style_properties=_MAIL_STYLE_PROPS,
+        link_rel="noopener noreferrer")
 
 
 @router.get("/message/{email_id}")
@@ -942,7 +982,7 @@ async def post_message(email_id: str, request: Request, mark_read: bool = Query(
     resp = await _jmap(user, calls)
     lst = _by_tag(resp, "g").get("list") or []
     if not lst:
-        raise HTTPException(status_code=404, detail="E-Mail nicht gefunden")
+        raise HTTPException(status_code=404, detail=Text("post.mailNotFound"))
     e = lst[0]
     values = e.get("bodyValues") or {}
     html_parts, text_parts = [], []
@@ -954,7 +994,7 @@ async def post_message(email_id: str, request: Request, mark_read: bool = Query(
         v = values.get(part.get("partId"))
         if v and v.get("value"):
             text_parts.append(v["value"])
-    html_out = _sanitize_html("\n".join(html_parts)) if html_parts else ""
+    html_out = _sanitize_html("\n".join(html_parts), style_blocks=True) if html_parts else ""
     text_out = _clean("\n".join(text_parts))
     # Conversation: all mails of the thread (lightweight rows)
     thread_rows: list[dict[str, Any]] = []
@@ -993,8 +1033,11 @@ async def post_blob(blob_id: str, request: Request, name: str = Query("anhang"),
     s = await _jmap_session(user)
     konto = await _konto(user, account_id)
     from urllib.parse import quote
+    # The type comes from the attachment metadata, i.e. from the sender, and the
+    # JMAP server echoes it as Content-Type: only pass it on when it is safe.
+    asked_type = base_type(type) if is_inline_safe(type) else "application/octet-stream"
     url = (s["download_url"].replace("{accountId}", konto).replace("{blobId}", blob_id)
-           .replace("{name}", quote(name)).replace("{type}", quote(type, safe="")))
+           .replace("{name}", quote(name)).replace("{type}", quote(asked_type, safe="")))
     cl = httpx.AsyncClient(timeout=120, follow_redirects=True)
     r = await cl.send(cl.build_request("GET", url, headers={"Authorization": s["headers"]["Authorization"]}), stream=True)
     if r.status_code != 200:
@@ -1007,8 +1050,10 @@ async def post_blob(blob_id: str, request: Request, name: str = Query("anhang"),
         finally:
             await r.aclose(); await cl.aclose()
     safe_name = re.sub(r"[^\w.\- ]+", "_", name)[:120] or "anhang"
-    return StreamingResponse(gen(), media_type=r.headers.get("content-type", type),
-                             headers={"Content-Disposition": f'inline; filename="{safe_name}"'})
+    media_type, inline, security = safe_media(r.headers.get("content-type", asked_type), want_inline=True)
+    disposition = "inline" if inline else "attachment"
+    return StreamingResponse(gen(), media_type=media_type,
+                             headers={"Content-Disposition": f'{disposition}; filename="{safe_name}"', **security})
 
 
 class PostSet(BaseModel):
@@ -1169,7 +1214,7 @@ async def post_upload(request: Request, file: UploadFile = File(...)):
     s = await _jmap_session(user)
     data = await file.read()
     if len(data) > 50 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail="Anhang größer als 50 MB")
+        raise HTTPException(status_code=413, detail=Text("post.attachmentTooLarge"))
     async with httpx.AsyncClient(timeout=120, follow_redirects=True) as cl:
         sess = (await cl.get(f"https://{JMAP_PUBLIC_HOST}/jmap/session", headers=s["headers"])).json()
         url = _rehost(sess.get("uploadUrl", "")).replace("{accountId}", s["account"])
@@ -1299,7 +1344,7 @@ async def post_draft(body: DraftIn, request: Request):
 async def post_send(body: SendIn, request: Request):
     user = require_caller(request)
     if not _addr_objs(body.to) and not _addr_objs(body.cc) and not _addr_objs(body.bcc):
-        raise HTTPException(status_code=400, detail="Kein Empfänger")
+        raise HTTPException(status_code=400, detail=Text("post.noRecipient"))
     s = await _jmap_session(user)
     eid, roles = await _create_email(user, body)
     identity = await _identity(user, body.identity_id)
@@ -1313,7 +1358,7 @@ async def post_send(body: SendIn, request: Request):
             raise HTTPException(status_code=400, detail="send_at unlesbar (ISO-Zeit erwartet)")
         secs = int((when - datetime.now(LOCAL_TZ)).total_seconds())
         if secs < 0:
-            raise HTTPException(status_code=400, detail="Sendezeit liegt in der Vergangenheit")
+            raise HTTPException(status_code=400, detail=Text("post.sendTimePast"))
         params["holdfor"] = str(min(secs, 30 * 24 * 3600))
     elif body.delay_s > 0:
         params["holdfor"] = str(min(max(body.delay_s, 5), 600))
@@ -1343,14 +1388,14 @@ async def post_send_undo(submission_id: str, request: Request):
                            ["EmailSubmission/get", {"accountId": s["account"], "ids": [submission_id]}, "g"]], using=USING_SUB)
     u = _by_tag(r, "u")
     if u.get("notUpdated"):
-        raise HTTPException(status_code=409, detail="Zu spät — die Mail ist schon unterwegs")
+        raise HTTPException(status_code=409, detail=Text("post.tooLate"))
     g = (_by_tag(r, "g").get("list") or [{}])[0]
     eid = g.get("emailId")
     if eid and roles.get("drafts"):
         await _jmap(user, [["Email/set", {"accountId": s["account"], "update": {eid: {
             f"mailboxIds/{roles['drafts']}": True, **({f"mailboxIds/{roles['sent']}": None} if roles.get("sent") else {}),
             "keywords/$draft": True}}}, "b"]])
-    return {"ok": True, "draft_id": eid, "message": "Senden rückgängig — liegt wieder bei den Entwürfen"}
+    return {"ok": True, "draft_id": eid, "message": await tx("post.sendUndone")}
 
 
 @router.get("/outbox")
@@ -1383,7 +1428,7 @@ async def post_reply_source(email_id: str, request: Request, mode: str = Query("
                                           "fetchAllBodyValues": True, "maxBodyValueBytes": 400_000}, "g"]])
     lst = _by_tag(r, "g").get("list") or []
     if not lst:
-        raise HTTPException(status_code=404, detail="E-Mail nicht gefunden")
+        raise HTTPException(status_code=404, detail=Text("post.mailNotFound"))
     e = lst[0]
     me = (s["address"] or "").lower()
     ident_r = await _jmap(user, [["Identity/get", {"accountId": s["account"]}, "i"]], using=USING_SUB)
@@ -1396,17 +1441,20 @@ async def post_reply_source(email_id: str, request: Request, mode: str = Query("
     text_src = "".join(values.get(p.get("partId"), {}).get("value", "") for p in e.get("textBody") or [])
     if not text_src and html_src:
         text_src = _html_to_text(html_src)
-    when = _when(e)
+    lang = await sprache_jetzt()
+    when = _when(e, lang)
     who = _addr_list(frm)
     if mode == "forward":
         to, cc = [], []
         subject = subj if re.match(r"^\s*(fwd?|wg)\s*:", subj, re.I) else f"Fwd: {subj}"
-        head_html = ("<div>---------- Weitergeleitete Nachricht ----------<br>"
-                     f"<b>Von:</b> {html.escape(who)}<br><b>Datum:</b> {html.escape(when)}<br>"
-                     f"<b>Betreff:</b> {html.escape(subj)}<br><b>An:</b> {html.escape(_addr_list(e.get('to')))}</div><br>")
+        k = {f: _t(lang, f"post.{f}") for f in ("from", "date", "subject", "to")}
+        head_html = (f"<div>{html.escape(_t(lang, 'post.forwardHead'))}<br>"
+                     f"<b>{k['from']}:</b> {html.escape(who)}<br><b>{k['date']}:</b> {html.escape(when)}<br>"
+                     f"<b>{k['subject']}:</b> {html.escape(subj)}<br><b>{k['to']}:</b> {html.escape(_addr_list(e.get('to')))}</div><br>")
         quote_html = head_html + (_sanitize_html(html_src) if html_src else "<div>" + html.escape(text_src).replace("\n", "<br>") + "</div>")
-        quote_text = f"---------- Weitergeleitete Nachricht ----------\nVon: {who}\nDatum: {when}\nBetreff: {subj}\nAn: {_addr_list(e.get('to'))}\n\n{text_src}"
-        atts = [{"blob_id": a.get("blobId"), "name": a.get("name") or "Anhang", "type": a.get("type"), "size": a.get("size")}
+        quote_text = (f"{_t(lang, 'post.forwardHead')}\n{k['from']}: {who}\n{k['date']}: {when}\n"
+                      f"{k['subject']}: {subj}\n{k['to']}: {_addr_list(e.get('to'))}\n\n{text_src}")
+        atts = [{"blob_id": a.get("blobId"), "name": a.get("name") or _t(lang, "post.attachment"), "type": a.get("type"), "size": a.get("size")}
                 for a in e.get("attachments") or [] if a.get("blobId") and not (a.get("disposition") == "inline" and a.get("cid"))]
     else:
         to = [a for a in reply_to if (a.get("email") or "").lower() not in mine] or reply_to
@@ -1418,7 +1466,7 @@ async def post_reply_source(email_id: str, request: Request, mode: str = Query("
                 if em and em not in seen:
                     cc.append(a); seen.add(em)
         subject = subj if re.match(r"^\s*(re|aw)\s*:", subj, re.I) else f"Re: {subj}"
-        intro = f"Am {when} schrieb {who}:"
+        intro = _t(lang, "post.replyIntro", when=when, who=who)
         quote_html = f"<br><br><div>{html.escape(intro)}</div><blockquote style=\"border-left:2px solid #999;margin:0 0 0 .5em;padding-left:.8em\">" + \
                      (_sanitize_html(html_src) if html_src else "<div>" + html.escape(text_src).replace("\n", "<br>") + "</div>") + "</blockquote>"
         quote_text = f"\n\n{intro}\n" + "\n".join("> " + ln for ln in text_src.splitlines())
@@ -1785,7 +1833,7 @@ async def post_sweep(body: SweepIn, request: Request):
     roles = await _roles(user)
     sender = body.sender.strip().lower()
     if not sender:
-        raise HTTPException(status_code=400, detail="Absender fehlt")
+        raise HTTPException(status_code=400, detail=Text("post.senderMissing"))
     box = body.mailbox or roles.get("inbox")
     r = await _jmap(user, [["Email/query", {"accountId": s["account"], "filter": {"inMailbox": box, "from": sender}, "limit": 500}, "q"]])
     ids = _by_tag(r, "q").get("ids") or []
@@ -1819,9 +1867,11 @@ async def post_sweep(body: SweepIn, request: Request):
                     ON CONFLICT (username) DO UPDATE SET rules = EXCLUDED.rules, script = EXCLUDED.script, updated_at = NOW()
                 """, user, json.dumps([x.model_dump() for x in rules]), script)
             rule_added = True
-    what = "archiviert" if body.action == "archive" else "gelöscht"
+    lang = await sprache_jetzt()
+    what = _t(lang, "post.archived" if body.action == "archive" else "post.deleted")
     return {"ok": True, "count": moved, "rule_added": rule_added,
-            "message": f"{moved} Mail(s) von {sender} {what}" + (" — künftige landen automatisch dort" if rule_added else "")}
+            "message": _t(lang, "post.swept", n=moved, sender=sender, what=what)
+                       + (_t(lang, "post.sweptRule") if rule_added else "")}
 
 
 class BlockIn(BaseModel):
@@ -1834,7 +1884,7 @@ async def post_block(body: BlockIn, request: Request):
     user = require_caller(request)
     sender = body.sender.strip().lower()
     if not sender or "@" not in sender:
-        raise HTTPException(status_code=400, detail="Adresse fehlt")
+        raise HTTPException(status_code=400, detail=Text("post.addressMissing"))
     await _ensure_rules_table()
     roles = await _roles(user)
     async with user_tx(user) as conn:
@@ -1851,7 +1901,7 @@ async def post_block(body: BlockIn, request: Request):
             ON CONFLICT (username) DO UPDATE SET rules = EXCLUDED.rules, script = EXCLUDED.script, updated_at = NOW()
         """, user, json.dumps([x.model_dump() for x in rules]), script)
     sw = await post_sweep(SweepIn(sender=sender, action="delete"), request)
-    return {"ok": True, "message": f"{sender} blockiert — {sw['count']} vorhandene Mail(s) in den Papierkorb"}
+    return {"ok": True, "message": await tx("post.blocked", sender=sender, n=sw["count"])}
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -1977,7 +2027,7 @@ def _snooze_until(raw: str) -> datetime:
     if d.tzinfo is None:
         d = d.replace(tzinfo=LOCAL_TZ)
     if d <= now:
-        raise HTTPException(status_code=400, detail="Weckzeit liegt in der Vergangenheit")
+        raise HTTPException(status_code=400, detail=Text("post.wakeTimePast"))
     return d
 
 
@@ -2029,7 +2079,7 @@ async def _wake(user: str, email_ids: list[str]) -> int:
 async def post_unsnooze(body: PostSet, request: Request):
     user = require_caller(request)
     n = await _wake(user, body.ids)
-    return {"ok": True, "woken": n, "message": f"{n} Mail(s) zurück im Posteingang"}
+    return {"ok": True, "woken": n, "message": await tx("post.woken", n=n)}
 
 
 @router.get("/snoozed")

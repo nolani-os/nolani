@@ -7,7 +7,7 @@
  * because the same KPI may contribute to several goals.
  *
  * Important: all percentages and traffic lights arrive pre-computed from the server. */
-import { getBrand } from "@claraos/core";
+import { useTranslation, i18n, Trans } from "@claraos/core";
 import { useCallback, useEffect, useState } from "react";
 import styles from "../IdeasApp.module.css";
 import { ideasApi } from "../api";
@@ -36,6 +36,7 @@ interface Draft {
 }
 
 export function GoalsView({ currentUser, onOpen, onChanged, reloadTick }: Props) {
+  const { t } = useTranslation("wissen");
   const [tree, setTree] = useState<GoalNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +51,7 @@ export function GoalsView({ currentUser, onOpen, onChanged, reloadTick }: Props)
       setTree(r.tree);
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Zielbaum nicht ladbar");
+      setError(e instanceof Error ? e.message : i18n.t("wissen:views.goals.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -77,8 +78,8 @@ export function GoalsView({ currentUser, onOpen, onChanged, reloadTick }: Props)
         <div className={styles.goalRow}>
           <button className={styles.goalToggle} disabled={!hasChildren}
                   onClick={() => setCollapsed((c) => ({ ...c, [n.id]: !c[n.id] }))}
-                  title={isCollapsed ? "Aufklappen" : "Zuklappen"}
-                  aria-label={isCollapsed ? "Aufklappen" : "Zuklappen"}>
+                  title={isCollapsed ? t("views.goals.expand") : t("views.goals.collapse")}
+                  aria-label={isCollapsed ? t("views.goals.expand") : t("views.goals.collapse")}>
             {hasChildren ? <Icon name={isCollapsed ? "chevronRight" : "chevronDown"} size={16} /> : null}
           </button>
 
@@ -91,8 +92,8 @@ export function GoalsView({ currentUser, onOpen, onChanged, reloadTick }: Props)
           <div className={styles.goalMeta}>
             <span className={styles.goalStatus} title={
               n.progress.parts === 0
-                ? "Noch keine Kennzahl und kein Unterziel — der Fortschritt ist unbekannt."
-                : `${st.label} · ${n.progress.parts} Beitrag/Beiträge`
+                ? t("views.goals.unknown")
+                : t("views.goals.parts", { status: st.label, count: n.progress.parts })
             } style={{ color: statusColor(n.progress.status) }}>
               <Icon name={st.iconName} size={16} />
             </span>
@@ -102,7 +103,7 @@ export function GoalsView({ currentUser, onOpen, onChanged, reloadTick }: Props)
                 anyway. */}
             {n.progress.attainment !== null && n.progress.attainment !== undefined && (
               <>
-                <div className={styles.goalBar} title={`${fmtPct(n.progress.attainment)} erreicht`}>
+                <div className={styles.goalBar} title={t("views.goals.reached", { pct: fmtPct(n.progress.attainment) })}>
                   <span style={{
                     width: `${Math.max(0, Math.min(100, n.progress.attainment * 100))}%`,
                     background: statusColor(n.progress.status),
@@ -111,24 +112,24 @@ export function GoalsView({ currentUser, onOpen, onChanged, reloadTick }: Props)
                 <span className={styles.goalPct}>{fmtPct(n.progress.attainment)}</span>
               </>
             )}
-            {due && <span className={styles.goalDue} title="Termin">bis {fmtDate(due)}</span>}
+            {due && <span className={styles.goalDue} title={t("views.goals.due")}>{t("views.goals.until", { date: fmtDate(due) })}</span>}
           </div>
 
           {mine && (
             <span className={styles.goalActions}>
-              <button className={styles.iconBtn} title="Unterziel anlegen"
-                      aria-label="Unterziel anlegen"
+              <button className={styles.iconBtn} title={t("views.goals.addSub")}
+                      aria-label={t("views.goals.addSub")}
                       onClick={() => setDraft({ kind: "goal", parent: n })}>
                 <Icon name="plus" size={13} /><Icon name="target" size={17} />
               </button>
-              <button className={styles.iconBtn} title="Kennzahl zuordnen"
-                      aria-label="Kennzahl zuordnen"
+              <button className={styles.iconBtn} title={t("views.goals.addKpi")}
+                      aria-label={t("views.goals.addKpi")}
                       onClick={() => setDraft({ kind: "kpi", parent: n })}>
                 <Icon name="plus" size={13} /><Icon name="kpi" size={17} />
               </button>
               {n.type === "goal" && (
-                <button className={styles.iconBtn} title={`${getBrand().assistant} Ideen vorschlagen lassen`}
-                        aria-label={`${getBrand().assistant} Ideen vorschlagen lassen`}
+                <button className={styles.iconBtn} title={t("views.goals.suggest")}
+                        aria-label={t("views.goals.suggest")}
                         onClick={() => setSuggestFor(n)}><Icon name="sparkle" size={18} /></button>
               )}
             </span>
@@ -165,10 +166,10 @@ export function GoalsView({ currentUser, onOpen, onChanged, reloadTick }: Props)
                 at the top, where you no longer know which goal is meant. */}
             {n.kpis.length === 0 && n.children.length === 0 && mine && (
               <p className={styles.goalEmptyHint}>
-                Ohne Kennzahl unmessbar ·{" "}
+                {t("views.goals.unmeasurable")}{" "}
                 <button className={styles.linkBtn}
                         onClick={() => setDraft({ kind: "kpi", parent: n })}>
-                  Kennzahl zuordnen
+                  {t("views.goals.addKpi")}
                 </button>
               </p>
             )}
@@ -181,25 +182,23 @@ export function GoalsView({ currentUser, onOpen, onChanged, reloadTick }: Props)
   return (
     <div className={styles.goals}>
       <div className={styles.visionsHead}>
-        <h3><Icon name="target" size={18} className={styles.inlineIcon} />Ziele</h3>
+        <h3><Icon name="target" size={18} className={styles.inlineIcon} />{t("views.goals.title")}</h3>
         <div>
           <button className={styles.btnGhost} onClick={() => setDraft({ kind: "vision", parent: null })}>
-            <Icon name="plus" size={14} className={styles.inlineIcon} />Vision
+            <Icon name="plus" size={14} className={styles.inlineIcon} />{t("views.goals.vision")}
           </button>
           <button className={styles.btnPrimary} onClick={() => setDraft({ kind: "goal", parent: null })}>
-            <Icon name="plus" size={14} className={styles.inlineIcon} />Ziel
+            <Icon name="plus" size={14} className={styles.inlineIcon} />{t("views.goals.goal")}
           </button>
         </div>
       </div>
 
       {error && <div className={styles.error}>{error}</div>}
-      {loading && <div className={styles.empty}>Lade…</div>}
+      {loading && <div className={styles.empty}>{t("views.goals.loading")}</div>}
 
       {!loading && tree.length === 0 && (
         <div className={styles.empty}>
-          Noch kein Ziel. Fang mit einer <strong>Vision</strong> an (wohin die Reise geht),
-          leite daraus <strong>Ziele</strong> ab und häng an jedes Ziel mindestens eine
-          <strong> Kennzahl</strong> — ohne Kennzahl kann niemand sagen, ob ihr vorankommt.
+          <Trans t={t} i18nKey="views.goals.empty" components={{ b: <strong /> }} />
         </div>
       )}
 
@@ -225,6 +224,7 @@ export function GoalsView({ currentUser, onOpen, onChanged, reloadTick }: Props)
 function DraftModal({ draft, onClose, onDone }: {
   draft: Draft; onClose: () => void; onDone: () => void;
 }) {
+  const { t } = useTranslation("wissen");
   const { kind, parent } = draft;
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -246,9 +246,9 @@ function DraftModal({ draft, onClose, onDone }: {
     try {
       if (kind === "kpi") {
         const b = num(baseline);
-        const t = num(target);
-        if (t === null || Number.isNaN(t)) throw new Error("Zielwert ist Pflicht — sonst gibt es keine Ampel.");
-        if (b !== null && Number.isNaN(b)) throw new Error("Basis ist keine Zahl.");
+        const ziel = num(target);
+        if (ziel === null || Number.isNaN(ziel)) throw new Error(t("views.goals.targetRequired"));
+        if (b !== null && Number.isNaN(b)) throw new Error(t("views.goals.baselineNaN"));
         const kpi = await ideasApi.createObject({
           type: "kpi",
           title: title.trim(),
@@ -256,10 +256,10 @@ function DraftModal({ draft, onClose, onDone }: {
           properties: {
             unit: unit.trim(),
             baseline: b,
-            target: t,
+            target: ziel,
             // Direction follows from target vs. baseline — the calculation
             // doesn't need it, the display does.
-            direction: b !== null && t < b ? "down" : "up",
+            direction: b !== null && ziel < b ? "down" : "up",
             start_date: start || null,
             due_date: due || null,
             source,
@@ -277,16 +277,16 @@ function DraftModal({ draft, onClose, onDone }: {
       }
       onDone();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Anlegen fehlgeschlagen");
+      setError(e instanceof Error ? e.message : t("views.goals.createFailed"));
     } finally {
       setBusy(false);
     }
   };
 
   const heads: Record<NewKind, string> = {
-    vision: "Neue Vision",
-    goal: parent ? `Unterziel von „${parent.title}"` : "Neues Ziel",
-    kpi: parent ? `Kennzahl für „${parent.title}"` : "Neue Kennzahl",
+    vision: t("views.goals.newVision"),
+    goal: parent ? t("views.goals.subOf", { title: parent.title }) : t("views.goals.newGoal"),
+    kpi: parent ? t("views.goals.kpiFor", { title: parent.title }) : t("views.goals.newKpi"),
   };
 
   return (
@@ -294,38 +294,38 @@ function DraftModal({ draft, onClose, onDone }: {
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHead}>
           <h3>{heads[kind]}</h3>
-          <button className={styles.iconBtn} onClick={onClose} title="Schließen">
-            <Icon name="close" size={18} title="Schließen" />
+          <button className={styles.iconBtn} onClick={onClose} title={t("app.close")}>
+            <Icon name="close" size={18} title={t("app.close")} />
           </button>
         </div>
 
         <input className={styles.input} autoFocus value={title}
-               placeholder={kind === "kpi" ? "Was wird gemessen?" : "Worum geht es?"}
+               placeholder={kind === "kpi" ? t("views.goals.whatMeasured") : t("views.goals.about")}
                onChange={(e) => setTitle(e.target.value)}
                onKeyDown={(e) => { if (e.key === "Enter" && kind !== "kpi") void submit(); }} />
         <textarea className={styles.input} rows={2} value={body}
-                  placeholder="Beschreibung (optional)"
+                  placeholder={t("views.goals.desc")}
                   onChange={(e) => setBody(e.target.value)} />
 
         {kind === "kpi" ? (
           <div className={styles.kpiForm}>
-            <label>Einheit
-              <input className={styles.input} value={unit} placeholder="kg, €, Stück…"
+            <label>{t("views.goals.unit")}
+              <input className={styles.input} value={unit} placeholder={t("views.goals.unitPlaceholder")}
                      onChange={(e) => setUnit(e.target.value)} />
             </label>
-            <label>Basis (heute)
+            <label>{t("views.goals.baseline")}
               <input className={styles.input} inputMode="decimal" value={baseline}
                      onChange={(e) => setBaseline(e.target.value)} />
             </label>
-            <label>Zielwert
+            <label>{t("views.goals.target")}
               <input className={styles.input} inputMode="decimal" value={target}
                      onChange={(e) => setTarget(e.target.value)} />
             </label>
-            <label>Start
+            <label>{t("views.goals.start")}
               <input className={styles.input} type="date" value={start}
                      onChange={(e) => setStart(e.target.value)} />
             </label>
-            <label>Termin
+            <label>{t("views.goals.dueField")}
               <input className={styles.input} type="date" value={due}
                      onChange={(e) => setDue(e.target.value)} />
             </label>
@@ -335,7 +335,7 @@ function DraftModal({ draft, onClose, onDone }: {
         {kind === "kpi" ? (
           <KpiSourcePicker value={source} onChange={setSource} />
         ) : (
-          <label className={styles.kpiFormRow}>Termin (optional)
+          <label className={styles.kpiFormRow}>{t("views.goals.dueOptional")}
             <input className={styles.input} type="date" value={due}
                    onChange={(e) => setDue(e.target.value)} />
           </label>
@@ -346,7 +346,7 @@ function DraftModal({ draft, onClose, onDone }: {
         <div className={styles.modalFoot}>
           <button className={styles.btnPrimary} disabled={!title.trim() || busy}
                   onClick={() => void submit()}>
-            Anlegen
+            {t("views.goals.create")}
           </button>
         </div>
       </div>

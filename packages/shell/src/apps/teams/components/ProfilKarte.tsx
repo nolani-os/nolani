@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useMatrixStore } from "@claraos/core";
+import { useMatrixStore, useTranslation, i18n } from "@claraos/core";
 import { profilLaden, talkOeffnen, TALK_ANZEIGEN, type Profil, type Weg } from "../personenApi";
 import { startCall, startDM } from "../matrixClient";
 import { Avatar } from "./Avatar";
@@ -36,6 +36,7 @@ function WegZeile({
   onChat: (w: Weg) => void;
   onAnruf: (w: Weg) => void;
 }) {
+  const { t } = useTranslation("teams");
   const nutzbar = weg.chat_moeglich || weg.anruf_moeglich;
   const beschaeftigt = laeuft?.weg === weg.dienst;
 
@@ -44,7 +45,7 @@ function WegZeile({
       <span className={styles.wegName}>{weg.name}</span>
       {!nutzbar && (
         <span className={styles.marke} data-art="passiv" title={weg.hinweis}>
-          {weg.klasse === "bridge" ? "Brücke aus" : "nur Verweis"}
+          {weg.klasse === "bridge" ? t("profile.bridgeOff") : t("profile.referenceOnly")}
         </span>
       )}
       <span className={styles.wegHandle}>{weg.handle}</span>
@@ -56,9 +57,9 @@ function WegZeile({
               className={styles.aktion}
               onClick={() => onChat(weg)}
               disabled={beschaeftigt}
-              title={`Chat über ${weg.name} mit ${person}`}
+              title={t("profile.chatVia", { via: weg.name, person })}
             >
-              {beschaeftigt && laeuft?.art === "chat" ? "…" : "Chat"}
+              {beschaeftigt && laeuft?.art === "chat" ? "…" : t("profile.chat")}
             </button>
           )}
           {weg.anruf_moeglich && (
@@ -66,9 +67,9 @@ function WegZeile({
               className={styles.aktion}
               onClick={() => onAnruf(weg)}
               disabled={beschaeftigt}
-              title={`Anruf über ${weg.name} mit ${person}`}
+              title={t("profile.callVia", { via: weg.name, person })}
             >
-              {beschaeftigt && laeuft?.art === "anruf" ? "…" : "Anruf"}
+              {beschaeftigt && laeuft?.art === "anruf" ? "…" : t("profile.call")}
             </button>
           )}
         </span>
@@ -84,6 +85,7 @@ export function ProfilKarte({
   username: string;
   onSchliessen: () => void;
 }) {
+  const { t } = useTranslation("teams");
   const [profil, setProfil] = useState<Profil | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
   const [laeuft, setLaeuft] = useState<Vorgang>(null);
@@ -96,7 +98,7 @@ export function ProfilKarte({
     setFehler(null);
     profilLaden(username)
       .then((p) => !abgebrochen && setProfil(p))
-      .catch(() => !abgebrochen && setFehler("Profil konnte nicht geladen werden."));
+      .catch(() => !abgebrochen && setFehler(i18n.t("teams:profile.loadFailed")));
     return () => {
       abgebrochen = true;
     };
@@ -108,7 +110,7 @@ export function ProfilKarte({
     try {
       if (weg.dienst === "matrix") {
         const raum = await startDM(weg.handle);
-        if (!raum) throw new Error("Matrix-Unterhaltung konnte nicht geöffnet werden.");
+        if (!raum) throw new Error(i18n.t("teams:profile.matrixFailed"));
         setActiveRoom(raum);
         setRailView("teams");
         if (art === "anruf") await startCall(raum);
@@ -120,7 +122,7 @@ export function ProfilKarte({
         window.open(art === "anruf" ? g.anruf_url : g.url, "_blank", "noopener");
       }
     } catch (e) {
-      setFehler(e instanceof Error ? e.message : "Der Versuch ist fehlgeschlagen.");
+      setFehler(e instanceof Error ? e.message : i18n.t("teams:profile.attemptFailed"));
     } finally {
       setLaeuft(null);
     }
@@ -131,13 +133,13 @@ export function ProfilKarte({
   );
 
   return (
-    <aside className={styles.karte} aria-label={`Profil von ${username}`}>
-      <button className={styles.schliessen} onClick={onSchliessen} aria-label="Profil schließen">
+    <aside className={styles.karte} aria-label={t("profile.of", { user: username })}>
+      <button className={styles.schliessen} onClick={onSchliessen} aria-label={t("profile.close")}>
         ✕
       </button>
 
       {fehler && <p className={styles.fehler}>{fehler}</p>}
-      {!profil && !fehler && <p className={styles.laedt}>Lädt…</p>}
+      {!profil && !fehler && <p className={styles.laedt}>{t("common.loading")}</p>}
 
       {profil && (
         <>
@@ -151,11 +153,11 @@ export function ProfilKarte({
 
           {profil.teams.length > 0 && (
             <section className={styles.block}>
-              <h3 className={styles.blockTitel}>Gemeinsame Teams</h3>
+              <h3 className={styles.blockTitel}>{t("profile.sharedTeams")}</h3>
               <ul className={styles.teams}>
-                {profil.teams.map((t) => (
-                  <li key={t} className={styles.team}>
-                    {t}
+                {profil.teams.map((team) => (
+                  <li key={team} className={styles.team}>
+                    {team}
                   </li>
                 ))}
               </ul>
@@ -163,13 +165,13 @@ export function ProfilKarte({
           )}
 
           <section className={styles.block}>
-            <h3 className={styles.blockTitel}>Erreichbar über</h3>
+            <h3 className={styles.blockTitel}>{t("profile.reachableVia")}</h3>
             {/* Channels that lead out of ClaraOS (currently only Nextcloud
                 Talk — it opens a new browser tab) are hidden. The server still
                 delivers them; the decision lives here in the UI, see
                 TALK_ANZEIGEN. */}
             {sichtbareWege.length === 0 ? (
-              <p className={styles.leer}>Kein bekannter Weg.</p>
+              <p className={styles.leer}>{t("profile.noWay")}</p>
             ) : (
               <ul className={styles.wege}>
                 {sichtbareWege.map((w) => (

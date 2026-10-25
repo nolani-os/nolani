@@ -18,7 +18,7 @@ import {
   QUICK_CHATS_FOLDER,
   useVoiceStore,
   type ChatSurface,
-  getBrand,
+  i18n,
 } from "@claraos/core";
 import { VoiceRecorderSession } from "./useVoiceRecorder";
 import { parseQuestionFields } from "./questionForm";
@@ -36,6 +36,7 @@ import {
   type WebUIFolder,
   type WebUIMessage,
   type ClaraActivity,
+  type ClaraActiveTool,
   type ClaraSubAgentSummary,
   type ClaraToolCall,
   type ClaraosStreamEvent,
@@ -256,7 +257,7 @@ function reduceActivity(prev: ClaraActivity | undefined, ev: ClaraosStreamEvent)
       const elapsed = typeof ev.elapsed_s === "number" ? ev.elapsed_s : 0;
       return {
         ...base,
-        slowNotice: `Das dauert länger als erwartet (${elapsed}s) — ${getBrand().assistant} arbeitet noch …`,
+        slowNotice: i18n.t("chatWork:notices.slow", { seconds: elapsed }),
       };
     }
     case "final": {
@@ -559,7 +560,7 @@ export function useClaraChat(options: UseClaraChatOptions): UseClaraChatResult {
             anzeige.push({ type: "file", name: f.name });
           }
         } catch (err) {
-          setError(`Anhang „${f.name}“ konnte nicht verarbeitet werden: ${String(err)}`);
+          setError(i18n.t("chatWork:errors.attachmentFailed", { name: f.name, error: String(err) }));
         }
       }
       const userMsg: WebUIMessage = {
@@ -622,6 +623,9 @@ export function useClaraChat(options: UseClaraChatOptions): UseClaraChatResult {
               app_id: appId,
               object_uri: objectUri,
               surface,
+              // The brain's prompts are partly German; the UI language tells it
+              // which language the user reads.
+              ui_language: i18n.resolvedLanguage ?? i18n.language,
               ...(_opts?.extraMetaOverride ?? extraMetaRef.current ?? {}),
               ...(bilder.length ? { bilder } : {}),
               ...(dateien.length ? { dateien: dateien.map((d) => ({ name: d.name })) } : {}),
@@ -1024,7 +1028,7 @@ export function useClaraChat(options: UseClaraChatOptions): UseClaraChatResult {
       let id = chatIdRef.current;
       if (!id) {
         if (!spokenChatRef.current) {
-          const erste = (messagesRef.current ?? []).find((m) => m.role === "user")?.content ?? "Live-Gespräch";
+          const erste = (messagesRef.current ?? []).find((m) => m.role === "user")?.content ?? i18n.t("chatWork:voice.liveChatTitle");
           spokenChatRef.current = (async () => {
             try {
               const folder = activeFolderId ?? (await ensureFolder());

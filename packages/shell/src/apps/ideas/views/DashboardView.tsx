@@ -17,7 +17,7 @@ import type { KpiProgress } from "../types";
 import { Sparkline } from "../KpiChart";
 import { Icon } from "../../../components/Icon";
 import { fmtDate, fmtNum, fmtPct, statusColor, statusOf } from "../kpiStatus";
-import { regionLocale } from "@claraos/core";
+import { regionLocale, useTranslation, i18n, Trans } from "@claraos/core";
 
 interface DashKpi {
   id: string;
@@ -34,9 +34,9 @@ interface Props {
 }
 
 const ZEITRAEUME = [
-  { tage: 30, label: "30 Tage" },
-  { tage: 90, label: "90 Tage" },
-  { tage: 365, label: "1 Jahr" },
+  { tage: 30, key: "days30" },
+  { tage: 90, key: "days90" },
+  { tage: 365, key: "year" },
 ];
 
 const TREND_ICON = { up: "trendUp", down: "trendDown", flat: "trendFlat" } as const;
@@ -49,6 +49,7 @@ function delta(reihe: { value: number }[]): number | null {
 }
 
 function Kachel({ k, onOpen }: { k: DashKpi; onOpen: (id: string) => void }) {
+  const { t } = useTranslation("wissen");
   const p = k.progress;
   const st = statusOf(p.status);
   const d = delta(k.series);
@@ -72,7 +73,7 @@ function Kachel({ k, onOpen }: { k: DashKpi; onOpen: (id: string) => void }) {
         <span style={{ color: statusColor(p.status) }}>
           <Icon name={st.iconName} size={14} /> {st.label}
         </span>
-        {p.target != null && <> · Ziel {fmtNum(p.target, p.unit)}</>}
+        {p.target != null && <>{t("views.dash.target", { value: fmtNum(p.target, p.unit) })}</>}
         {p.attainment != null && <> · {fmtPct(p.attainment)}</>}
       </span>
 
@@ -86,12 +87,12 @@ function Kachel({ k, onOpen }: { k: DashKpi; onOpen: (id: string) => void }) {
             {d != null ? `${d > 0 ? "+" : "−"}${fmtNum(Math.abs(d), p.unit)}` : "—"}
           </span>
         ) : (
-          <span className={styles.trendNeutral}>keine Richtung</span>
+          <span className={styles.trendNeutral}>{t("views.dash.noDirection")}</span>
         )}
         {p.behind_by != null && Math.abs(p.behind_by) > 0.001 && (
           <span className={p.behind_by > 0 ? styles.trendSchlecht : styles.trendGut}>
             {" · "}{fmtNum(Math.abs(p.behind_by), p.unit)}
-            {p.behind_by > 0 ? " hinter Plan" : " vor Plan"}
+            {p.behind_by > 0 ? t("views.dash.behind") : t("views.dash.ahead")}
           </span>
         )}
       </span>
@@ -99,13 +100,14 @@ function Kachel({ k, onOpen }: { k: DashKpi; onOpen: (id: string) => void }) {
       {/* Data freshness: without it nobody knows whether the number is from
           today or from last quarter. */}
       <span className={styles.tileStamp}>
-        {p.current_ts ? `Stand ${fmtDate(p.current_ts.slice(0, 10))}` : "nie gemessen"}
+        {p.current_ts ? t("views.dash.asOf", { date: fmtDate(p.current_ts.slice(0, 10)) }) : t("views.dash.never")}
       </span>
     </button>
   );
 }
 
 export function DashboardView({ onOpen, reloadTick }: Props) {
+  const { t } = useTranslation("wissen");
   const [kpis, setKpis] = useState<DashKpi[]>([]);
   const [tage, setTage] = useState(90);
   const [stand, setStand] = useState<string | null>(null);
@@ -120,7 +122,7 @@ export function DashboardView({ onOpen, reloadTick }: Props) {
       setStand(r.generated_at);
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Übersicht nicht ladbar");
+      setError(e instanceof Error ? e.message : i18n.t("wissen:views.dash.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -138,24 +140,23 @@ export function DashboardView({ onOpen, reloadTick }: Props) {
   return (
     <div className={styles.dash}>
       <div className={styles.dashHead}>
-        <h3>Übersicht</h3>
-        <div className={styles.dashFilter} role="group" aria-label="Zeitraum">
+        <h3>{t("views.dash.title")}</h3>
+        <div className={styles.dashFilter} role="group" aria-label={t("views.dash.period")}>
           {ZEITRAEUME.map((z) => (
             <button key={z.tage}
                     className={`${styles.chip} ${tage === z.tage ? styles.chipAktiv : ""}`}
                     aria-pressed={tage === z.tage}
-                    onClick={() => setTage(z.tage)}>{z.label}</button>
+                    onClick={() => setTage(z.tage)}>{t(`views.dash.${z.key}`)}</button>
           ))}
         </div>
       </div>
 
       {error && <div className={styles.error}>{error}</div>}
-      {loading && kpis.length === 0 && <div className={styles.empty}>Lade…</div>}
+      {loading && kpis.length === 0 && <div className={styles.empty}>{t("views.dash.loading")}</div>}
 
       {!loading && kpis.length === 0 && !error && (
         <div className={styles.empty}>
-          Noch keine Kennzahl. Leg im Reiter <strong>Ziele</strong> eine an — ohne
-          Kennzahl kann niemand sagen, ob es vorangeht.
+          <Trans t={t} i18nKey="views.dash.empty" components={{ b: <strong /> }} />
         </div>
       )}
 
@@ -168,18 +169,18 @@ export function DashboardView({ onOpen, reloadTick }: Props) {
               eye only. */}
           <div className={styles.hero}>
             <span className={styles.srOnly}>
-              {zahlen.gut} von {zahlen.gesamt} Kennzahlen auf Kurs
-              {zahlen.schlecht > 0 && `, ${zahlen.schlecht} hinter Plan`}
-              {zahlen.blind > 0 && `, ${zahlen.blind} ohne Messung`}
+              {t("views.dash.srOnTrack", { good: zahlen.gut, total: zahlen.gesamt })}
+              {zahlen.schlecht > 0 && t("views.dash.srBehind", { count: zahlen.schlecht })}
+              {zahlen.blind > 0 && t("views.dash.srBlind", { count: zahlen.blind })}
             </span>
             <span className={styles.heroFigure} aria-hidden="true">
               {zahlen.gut}<span className={styles.heroOf}>/{zahlen.gesamt}</span>
             </span>
             <span className={styles.heroLabel} aria-hidden="true">
-              auf Kurs
+              {t("views.dash.onTrack")}
               {zahlen.schlecht > 0 && <> · <b className={styles.trendSchlecht}>
-                {zahlen.schlecht} hinter Plan</b></>}
-              {zahlen.blind > 0 && <> · {zahlen.blind} ohne Messung</>}
+                {t("views.dash.behindN", { count: zahlen.schlecht })}</b></>}
+              {zahlen.blind > 0 && <> · {t("views.dash.blindN", { count: zahlen.blind })}</>}
             </span>
           </div>
 
@@ -191,7 +192,7 @@ export function DashboardView({ onOpen, reloadTick }: Props) {
 
       {stand && (
         <p className={styles.metaHint}>
-          Stand: {new Date(stand).toLocaleString(regionLocale())} · Zeitraum {tage} Tage
+          {t("views.dash.footer", { when: new Date(stand).toLocaleString(regionLocale()), days: tage })}
         </p>
       )}
     </div>

@@ -1,0 +1,78 @@
+# CELL ONLY — the user's files (routers/files_v2.py), as the user of the running chat
+# turn. The brain offers these under the home names `files_<tool>`. No delete: removing
+# files stays with the user.
+tools:
+  - name: list_sources
+    description: "The file sources the user has (id, name, connected). Default source: nextcloud."
+    endpoint: "http://localhost:8090/api/claraos/files/v2/sources"
+    method: GET
+    auth: none
+    schema:
+      type: object
+      properties: {}
+
+  - name: list_directory
+    description: "Folders and files in one folder of a source (name, path, size, type)."
+    endpoint: "http://localhost:8090/api/claraos/files/v2/tree"
+    method: GET
+    auth: none
+    schema:
+      type: object
+      properties:
+        source: { type: string, description: "Default nextcloud" }
+        path: { type: string, description: "Folder, default /" }
+      required: [path]
+
+  - name: search_files
+    description: "Find files and folders by name, recursively below a folder."
+    endpoint: "http://localhost:8090/api/claraos/files/v2/search"
+    method: GET
+    auth: none
+    schema:
+      type: object
+      properties:
+        q: { type: string, description: "Part of the name" }
+        source: { type: string }
+        path: { type: string, description: "Search below this folder, default /" }
+        limit: { type: integer }
+      required: [q]
+
+  - name: read_file
+    description: "Content of a text file (binary files come back base64-encoded)."
+    endpoint: "http://localhost:8090/api/claraos/files/v2/read"
+    method: GET
+    auth: none
+    schema:
+      type: object
+      properties:
+        source: { type: string }
+        path: { type: string }
+      required: [path]
+
+  - name: write_file
+    description: |
+      Create or overwrite a text file. Never write a document the user has open in the
+      office viewer — insert there with claraos_action_office_insert instead.
+    endpoint: "http://localhost:8090/api/claraos/files/v2/write"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        source: { type: string }
+        path: { type: string }
+        content: { type: string }
+      required: [path, content]
+
+  - name: rename
+    description: "Rename a file or folder in place (new leaf name only)."
+    endpoint: "http://localhost:8090/api/claraos/files/v2/rename"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        source: { type: string }
+        path: { type: string }
+        new_name: { type: string }
+      required: [path, new_name]

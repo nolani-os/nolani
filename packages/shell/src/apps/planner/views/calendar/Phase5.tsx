@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import styles from "../../PlannerApp.module.css";
 import { Icon } from "../../../../components/Icon";
 import { kalenderApi, plannerApi, type FreeBusyResult, type KalenderFreigabe, type Person } from "../../api";
-import { regionLocale } from "@claraos/core";
+import { regionLocale, useTranslation } from "@claraos/core";
 
 const H0 = 7;   // grid 07:00–21:00
 const H1 = 21;
@@ -26,6 +26,7 @@ export function FreiGebucht({
   end: Date;
   onPick: (start: Date, end: Date) => void;
 }) {
+  const { t } = useTranslation("planner");
   const [res, setRes] = useState<FreeBusyResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -61,7 +62,7 @@ export function FreiGebucht({
         <span className={styles.calMonthLabel}>{day.toLocaleDateString(regionLocale(), { weekday: "long", day: "numeric", month: "long" })}</span>
         <button className={styles.btn} onClick={() => setDay(new Date(day.getTime() + 86400_000))}>›</button>
         <span style={{ flex: 1 }} />
-        <button className={styles.btn} onClick={load} disabled={loading} title="Neu laden"><Icon name="reload" size={14} /></button>
+        <button className={styles.btn} onClick={load} disabled={loading} title={t("calendar.freeBusy.reload")}><Icon name="reload" size={14} /></button>
       </div>
       {err && <div className={styles.errorBox}>{err}</div>}
       <div className={styles.fbGrid}>
@@ -75,7 +76,7 @@ export function FreiGebucht({
         </div>
         {(res?.people ?? attendeeUsernames.map((u) => ({ username: u, busy: [], available: true }))).map((p) => (
           <div key={p.username} className={styles.fbRow}>
-            <span className={styles.fbName} title={p.username}>{nameOf(p.username)}{!p.available ? " (kein Kalender)" : ""}</span>
+            <span className={styles.fbName} title={p.username}>{nameOf(p.username)}{!p.available ? ` ${t("calendar.freeBusy.noCalendar")}` : ""}</span>
             <div className={styles.fbTrack}>
               {p.busy.filter((b) => new Date(b.end) > dayStart && new Date(b.start) < new Date(dayStart.getTime() + span * 60000)).map((b, i) => {
                 const l = pct(new Date(b.start)), r = pct(new Date(b.end));
@@ -83,15 +84,15 @@ export function FreiGebucht({
                              style={{ left: `${l}%`, width: `${Math.max(1, r - l)}%` }}
                              title={`${fmtT(b.start)}–${fmtT(b.end)}`} />;
               })}
-              {sameDay && <span className={styles.fbEvent} style={{ left: `${evL}%`, width: `${Math.max(1, evR - evL)}%` }} title="Dieser Termin" />}
+              {sameDay && <span className={styles.fbEvent} style={{ left: `${evL}%`, width: `${Math.max(1, evR - evL)}%` }} title={t("calendar.freeBusy.thisEvent")} />}
             </div>
           </div>
         ))}
       </div>
-      {loading && <div className={styles.hint}>Lade Belegung…</div>}
+      {loading && <div className={styles.hint}>{t("calendar.freeBusy.loading")}</div>}
       {res && (
         <div className={styles.fbSuggest}>
-          <span className={styles.hint}>{res.suggestions.length ? `Alle frei (${durMin} min):` : "In den nächsten 7 Tagen keine gemeinsame Lücke in der Arbeitszeit."}</span>
+          <span className={styles.hint}>{res.suggestions.length ? t("calendar.freeBusy.allFree", { minutes: durMin }) : t("calendar.freeBusy.noSlot")}</span>
           {res.suggestions.map((s) => (
             <button key={s.start} className={styles.labelChip}
                     onClick={() => onPick(new Date(s.start), new Date(s.end))}>
@@ -111,6 +112,7 @@ export function EinladungAntwort({
   uid: string; calendar?: string; myPartstat?: string;
   onDone: (msg: string) => void; onError: (msg: string) => void;
 }) {
+  const { t } = useTranslation("planner");
   const [comment, setComment] = useState("");
   const [proposal, setProposal] = useState("");
   const [busy, setBusy] = useState(false);
@@ -125,7 +127,7 @@ export function EinladungAntwort({
         body.proposed_end = new Date(s.getTime() + 3600_000).toISOString();
       }
       const r = await kalenderApi.antworten(uid, body);
-      onDone(`Antwort gespeichert${r.organizer_notified ? " – Organisator benachrichtigt" : ""}.`);
+      onDone(r.organizer_notified ? t("event.invitation.savedNotified") : t("event.invitation.saved"));
     } catch (e) {
       onError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -135,19 +137,26 @@ export function EinladungAntwort({
   const cur = myPartstat ?? "NEEDS-ACTION";
   return (
     <div className={styles.detailSection}>
-      <h4>Einladung {cur !== "NEEDS-ACTION" ? <span className={styles.hintInline}>(aktuell: {cur === "ACCEPTED" ? "zugesagt" : cur === "DECLINED" ? "abgesagt" : "mit Vorbehalt"})</span> : null}</h4>
+      <h4>{t("event.invitation.title")} {cur !== "NEEDS-ACTION" ? (
+        <span className={styles.hintInline}>
+          {t("event.invitation.current", {
+            status: t(cur === "ACCEPTED" ? "event.invitation.status.accepted"
+              : cur === "DECLINED" ? "event.invitation.status.declined" : "event.invitation.status.tentative"),
+          })}
+        </span>
+      ) : null}</h4>
       <div className={styles.labelPicker}>
-        <button className={`${styles.btn}`} disabled={busy} onClick={() => send("ACCEPTED")}>✓ Zusagen</button>
-        <button className={`${styles.btn}`} disabled={busy} onClick={() => send("TENTATIVE")}>~ Mit Vorbehalt</button>
-        <button className={`${styles.btnDanger}`} disabled={busy} onClick={() => send("DECLINED")}>✗ Absagen</button>
+        <button className={`${styles.btn}`} disabled={busy} onClick={() => send("ACCEPTED")}>✓ {t("event.invitation.accept")}</button>
+        <button className={`${styles.btn}`} disabled={busy} onClick={() => send("TENTATIVE")}>~ {t("event.invitation.tentative")}</button>
+        <button className={`${styles.btnDanger}`} disabled={busy} onClick={() => send("DECLINED")}>✗ {t("event.invitation.decline")}</button>
       </div>
       <div className={styles.fieldRow}>
-        <label>Kommentar</label>
-        <input className={styles.input} placeholder="optional, geht an den Organisator" value={comment} onChange={(e) => setComment(e.target.value)} />
+        <label>{t("event.invitation.comment")}</label>
+        <input className={styles.input} placeholder={t("event.invitation.commentPlaceholder")} value={comment} onChange={(e) => setComment(e.target.value)} />
       </div>
       <div className={styles.fieldRow}>
-        <label>Vorschlag</label>
-        <input type="datetime-local" className={styles.input} title="Andere Zeit vorschlagen" value={proposal} onChange={(e) => setProposal(e.target.value)} />
+        <label>{t("event.invitation.proposal")}</label>
+        <input type="datetime-local" className={styles.input} title={t("event.invitation.proposalTitle")} value={proposal} onChange={(e) => setProposal(e.target.value)} />
       </div>
     </div>
   );
@@ -161,6 +170,7 @@ export function KalenderTeilenDialog({
   onClose: () => void;
   onNotice: (msg: string) => void;
 }) {
+  const { t } = useTranslation("planner");
   const own = calendars.filter((c) => c.writable !== false);
   const [cal, setCal] = useState(own[0]?.name ?? "");
   const [people, setPeople] = useState<Person[]>([]);
@@ -196,42 +206,42 @@ export function KalenderTeilenDialog({
   return (
     <div className={styles.dialogOverlay} onClick={onClose}>
       <div className={`${styles.dialog} ${styles.eventDialog}`} onClick={(e) => e.stopPropagation()}>
-        <h3><Icon name="share" size={16} /> Kalender freigeben</h3>
+        <h3><Icon name="share" size={16} /> {t("calendar.share.title")}</h3>
         <div className={styles.fieldRow}>
-          <label>Kalender</label>
+          <label>{t("calendar.share.calendar")}</label>
           <select className={styles.select} value={cal} onChange={(e) => setCal(e.target.value)}>
             {own.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
           </select>
         </div>
         {err && <div className={styles.errorBox}>{err}</div>}
         <div className={styles.detailSection}>
-          <h4>Freigegeben für</h4>
-          {shares.length === 0 && <div className={styles.hint}>Noch niemand.</div>}
+          <h4>{t("calendar.share.sharedWith")}</h4>
+          {shares.length === 0 && <div className={styles.hint}>{t("calendar.share.nobody")}</div>}
           {shares.map((s) => (
             <div key={s.principal} className={styles.attachRow}>
               <Icon name="person" size={14} /> <span style={{ flex: 1 }}>{s.name}</span>
-              <span className={styles.hintInline}>{s.access === "write" ? "darf bearbeiten" : "nur lesen"}</span>
-              <button className={styles.btn} disabled={busy} title="Freigabe entfernen" onClick={() => apply(s.username, true)}>
+              <span className={styles.hintInline}>{s.access === "write" ? t("calendar.share.canEdit") : t("calendar.share.readOnly")}</span>
+              <button className={styles.btn} disabled={busy} title={t("calendar.share.remove")} onClick={() => apply(s.username, true)}>
                 <Icon name="close" size={14} />
               </button>
             </div>
           ))}
         </div>
         <div className={styles.fieldRow}>
-          <label>Hinzufügen</label>
+          <label>{t("calendar.share.add")}</label>
           <select className={styles.select} value={who} onChange={(e) => setWho(e.target.value)}>
-            <option value="">Person wählen…</option>
+            <option value="">{t("calendar.share.choosePerson")}</option>
             {candidates.map((p) => <option key={p.username} value={p.username}>{p.name}</option>)}
           </select>
           <select className={styles.select} value={access} onChange={(e) => setAccess(e.target.value as "read" | "write")}>
-            <option value="read">nur lesen</option>
-            <option value="write">bearbeiten</option>
+            <option value="read">{t("calendar.share.accessRead")}</option>
+            <option value="write">{t("calendar.share.accessWrite")}</option>
           </select>
-          <button className={styles.btnPrimary} disabled={!who || busy} onClick={() => apply(who, false)}>Freigeben</button>
+          <button className={styles.btnPrimary} disabled={!who || busy} onClick={() => apply(who, false)}>{t("calendar.share.submit")}</button>
         </div>
-        <div className={styles.hint}>Freigaben laufen über Nextcloud; die Person sieht den Kalender sofort in ihrem Planner (und in der Nextcloud-Kalender-App).</div>
+        <div className={styles.hint}>{t("calendar.share.hint")}</div>
         <div className={styles.dialogActions}>
-          <button className={styles.btn} onClick={onClose}>Schließen</button>
+          <button className={styles.btn} onClick={onClose}>{t("actions.close")}</button>
         </div>
       </div>
     </div>
@@ -253,6 +263,7 @@ export function KalenderEinstellungen({
   onChange: (p: KalenderPrefs) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("planner");
   const [local, setLocal] = useState<KalenderPrefs>(prefs);
   const save = async () => {
     const all = await plannerApi.getPlannerPrefs();
@@ -263,26 +274,26 @@ export function KalenderEinstellungen({
   return (
     <div className={styles.dialogOverlay} onClick={onClose}>
       <div className={styles.dialog} onClick={(e) => e.stopPropagation()}>
-        <h3><Icon name="gear" size={16} /> Kalender-Einstellungen</h3>
+        <h3><Icon name="gear" size={16} /> {t("calendar.settings.title")}</h3>
         <div className={styles.fieldRow}>
-          <label>Feiertage</label>
+          <label>{t("calendar.settings.holidays")}</label>
           <input type="checkbox" className={styles.selectCheck} checked={local.show_holidays !== false}
                  onChange={(e) => setLocal({ ...local, show_holidays: e.target.checked })} />
           <select className={styles.select} value={local.holiday_state ?? ""} disabled={local.show_holidays === false}
                   onChange={(e) => setLocal({ ...local, holiday_state: e.target.value })}>
-            <option value="">nur bundesweite</option>
+            <option value="">{t("calendar.settings.nationalOnly")}</option>
             {states.map((s) => <option key={s.code} value={s.code}>{s.name}</option>)}
           </select>
         </div>
         <div className={styles.fieldRow}>
-          <label>Erinnerungen</label>
+          <label>{t("calendar.settings.reminders")}</label>
           <input type="checkbox" className={styles.selectCheck} checked={local.reminders_push !== false}
                  onChange={(e) => setLocal({ ...local, reminders_push: e.target.checked })} />
-          <span className={styles.hint}>als Push aufs Handy (ntfy), zur eingestellten Erinnerungszeit</span>
+          <span className={styles.hint}>{t("calendar.settings.remindersHint")}</span>
         </div>
         <div className={styles.dialogActions}>
-          <button className={styles.btn} onClick={onClose}>Abbrechen</button>
-          <button className={styles.btnPrimary} onClick={save}>Speichern</button>
+          <button className={styles.btn} onClick={onClose}>{t("actions.cancel")}</button>
+          <button className={styles.btnPrimary} onClick={save}>{t("actions.save")}</button>
         </div>
       </div>
     </div>

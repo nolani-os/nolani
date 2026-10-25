@@ -15,6 +15,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { WebUIChatSummary, WebUIFolder } from "./api";
 import { chats as chatsApi } from "./api";
 import { WindowContextMenu, type ContextMenuItem } from "../components/WindowContextMenu";
+import { useTranslation } from "@claraos/core";
 import styles from "./ClaraChatPanel.module.css";
 
 interface Props {
@@ -41,21 +42,21 @@ interface TreeNode {
   totalChats: number;
 }
 
-// ── Date group helpers (German — the shell is a German-first OS) ──
-type DateGroup = "Heute" | "Gestern" | "Diese Woche" | "Dieser Monat" | "Älter";
+// ── Date group helpers (ids; the label comes from the catalog) ──
+type DateGroup = "today" | "yesterday" | "thisWeek" | "thisMonth" | "older";
 
 function getDateGroup(updatedAt: number | undefined): DateGroup {
-  if (!updatedAt) return "Älter";
+  if (!updatedAt) return "older";
   const ts = updatedAt < 1e12 ? updatedAt * 1000 : updatedAt;
   const diff = Date.now() - ts;
-  if (diff < 86_400_000) return "Heute";
-  if (diff < 2 * 86_400_000) return "Gestern";
-  if (diff < 7 * 86_400_000) return "Diese Woche";
-  if (diff < 30 * 86_400_000) return "Dieser Monat";
-  return "Älter";
+  if (diff < 86_400_000) return "today";
+  if (diff < 2 * 86_400_000) return "yesterday";
+  if (diff < 7 * 86_400_000) return "thisWeek";
+  if (diff < 30 * 86_400_000) return "thisMonth";
+  return "older";
 }
 
-const DATE_GROUP_ORDER: DateGroup[] = ["Heute", "Gestern", "Diese Woche", "Dieser Monat", "Älter"];
+const DATE_GROUP_ORDER: DateGroup[] = ["today", "yesterday", "thisWeek", "thisMonth", "older"];
 
 function groupByDate(chats: WebUIChatSummary[]): Map<DateGroup, WebUIChatSummary[]> {
   const map = new Map<DateGroup, WebUIChatSummary[]>();
@@ -121,7 +122,7 @@ function RowMenu({
   items,
   moveTargets,
   onMove,
-  title = "Aktionen",
+  title,
 }: {
   items: MenuItem[];
   /** When set, a "Verschieben" entry expands an inline folder list. */
@@ -129,6 +130,7 @@ function RowMenu({
   onMove?: (folderId: string | null) => void;
   title?: string;
 }) {
+  const { t } = useTranslation("chat");
   const [open, setOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -150,7 +152,7 @@ function RowMenu({
       <button
         type="button"
         className={`${styles.rowMenuBtn} ${open ? styles.rowMenuBtnOpen : ""}`}
-        title={title}
+        title={title ?? t("folders.actions")}
         onClick={(e) => {
           e.stopPropagation();
           setOpen((o) => !o);
@@ -185,22 +187,22 @@ function RowMenu({
                   setMoveOpen((o) => !o);
                 }}
               >
-                In Ordner verschieben {moveOpen ? "▾" : "▸"}
+                {t("folders.moveToFolder")} {moveOpen ? "▾" : "▸"}
               </button>
               {moveOpen &&
-                moveTargets.map((t) => (
+                moveTargets.map((mt) => (
                   <button
-                    key={t.id ?? "__root__"}
+                    key={mt.id ?? "__root__"}
                     type="button"
                     className={`${styles.rowMenuItem} ${styles.rowMenuItemSub}`}
                     onClick={(e) => {
                       e.stopPropagation();
                       setOpen(false);
                       setMoveOpen(false);
-                      onMove(t.id);
+                      onMove(mt.id);
                     }}
                   >
-                    {t.label}
+                    {mt.label}
                   </button>
                 ))}
             </>
@@ -213,6 +215,7 @@ function RowMenu({
 
 // ── Main component ──
 export function FolderTree(props: Props) {
+  const { t } = useTranslation("chat");
   const [query, setQuery] = useState("");
   const [foldersOpen, setFoldersOpen] = useState<boolean>(() => {
     try {
@@ -245,13 +248,13 @@ export function FolderTree(props: Props) {
 
   const moveTargets = useMemo(
     () => [
-      { id: null, label: "· Ohne Ordner" },
+      { id: null, label: `· ${t("folders.noFolder")}` },
       ...props.folders
         .slice()
         .sort((a, b) => a.name.localeCompare(b.name))
         .map((f) => ({ id: f.id as string | null, label: f.name })),
     ],
-    [props.folders],
+    [props.folders, t],
   );
 
   const toggleFolders = () => {
@@ -277,21 +280,21 @@ export function FolderTree(props: Props) {
   // Same actions for the hover "⋯" menu AND right-click.
   const chatCtxItems = (c: WebUIChatSummary): ContextMenuItem[] => [
     ...(props.onRenameChat
-      ? [{ id: "rename", label: "Umbenennen", onSelect: () => props.onRenameChat!(c.id, c.title || "") }]
+      ? [{ id: "rename", label: t("folders.rename"), onSelect: () => props.onRenameChat!(c.id, c.title || "") }]
       : []),
     {
       id: "move",
-      label: "In Ordner verschieben",
-      submenu: moveTargets.map((t) => ({
-        id: `mv-${t.id ?? "root"}`,
-        label: t.label,
-        onSelect: () => moveChat(c.id, t.id),
+      label: t("folders.moveToFolder"),
+      submenu: moveTargets.map((mt) => ({
+        id: `mv-${mt.id ?? "root"}`,
+        label: mt.label,
+        onSelect: () => moveChat(c.id, mt.id),
       })),
     },
     ...(props.onDeleteChat
       ? [
           { id: "sep", label: "---" },
-          { id: "delete", label: "Löschen", variant: "destructive" as const, onSelect: () => props.onDeleteChat!(c.id) },
+          { id: "delete", label: t("folders.delete"), variant: "destructive" as const, onSelect: () => props.onDeleteChat!(c.id) },
         ]
       : []),
   ];
@@ -308,10 +311,10 @@ export function FolderTree(props: Props) {
           <RowMenu
             items={[
               ...(props.onRenameChat
-                ? [{ label: "Umbenennen", onClick: () => props.onRenameChat!(c.id, c.title || "") }]
+                ? [{ label: t("folders.rename"), onClick: () => props.onRenameChat!(c.id, c.title || "") }]
                 : []),
               ...(props.onDeleteChat
-                ? [{ label: "Löschen", danger: true, onClick: () => props.onDeleteChat!(c.id) }]
+                ? [{ label: t("folders.delete"), danger: true, onClick: () => props.onDeleteChat!(c.id) }]
                 : []),
             ]}
             moveTargets={moveTargets}
@@ -327,13 +330,13 @@ export function FolderTree(props: Props) {
     <div className={styles.folderTree}>
       <div className={styles.treeHeader}>
         <button type="button" className={styles.newChatBtn} onClick={() => props.onNewChat()}>
-          ＋ Neuer Chat
+          ＋ {t("folders.newChat")}
         </button>
       </div>
       <div className={styles.treeSearch}>
         <input
           className={styles.treeSearchInput}
-          placeholder="Chats durchsuchen …"
+          placeholder={t("folders.searchPlaceholder")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -344,7 +347,7 @@ export function FolderTree(props: Props) {
         {filtered ? (
           <>
             {filtered.map(chatRow)}
-            {filtered.length === 0 && <div className={styles.treeEmpty}>Keine Treffer.</div>}
+            {filtered.length === 0 && <div className={styles.treeEmpty}>{t("folders.noResults")}</div>}
           </>
         ) : (
           <>
@@ -354,17 +357,17 @@ export function FolderTree(props: Props) {
                 <div className={styles.foldersSectionHeader}>
                   <button type="button" className={styles.foldersToggle} onClick={toggleFolders}>
                     <span className={styles.folderChevron}>{foldersOpen ? "▾" : "▸"}</span>
-                    <span>Ordner</span>
+                    <span>{t("folders.section")}</span>
                     {folderCount > 0 && <span className={styles.folderCount}>{folderCount}</span>}
                   </button>
                   <RowMenu
-                    title="Ordner-Aktionen"
+                    title={t("folders.folderActions")}
                     items={[
                       ...(props.onCreateFolder
-                        ? [{ label: "Neuer Ordner", onClick: () => props.onCreateFolder!() }]
+                        ? [{ label: t("folders.newFolder"), onClick: () => props.onCreateFolder!() }]
                         : []),
                       ...(props.onCleanupAutoFolders
-                        ? [{ label: "Leere Auto-Ordner aufräumen", onClick: props.onCleanupAutoFolders }]
+                        ? [{ label: t("folders.cleanupAuto"), onClick: props.onCleanupAutoFolders }]
                         : []),
                     ]}
                   />
@@ -385,7 +388,7 @@ export function FolderTree(props: Props) {
                     />
                   ))}
                 {foldersOpen && shownRoots.length === 0 && (
-                  <div className={styles.treeEmpty}>Keine Ordner mit Inhalt.</div>
+                  <div className={styles.treeEmpty}>{t("folders.noFolders")}</div>
                 )}
               </div>
             )}
@@ -396,13 +399,13 @@ export function FolderTree(props: Props) {
               if (!groupChats?.length) return null;
               return (
                 <div key={group} className={styles.dateGroup}>
-                  <div className={styles.dateGroupLabel}>{group}</div>
+                  <div className={styles.dateGroupLabel}>{t(`folders.group.${group}`)}</div>
                   {groupChats.map(chatRow)}
                 </div>
               );
             })}
 
-            {allChats.length === 0 && <div className={styles.treeEmpty}>Noch keine Chats.</div>}
+            {allChats.length === 0 && <div className={styles.treeEmpty}>{t("folders.noChats")}</div>}
           </>
         )}
       </div>
@@ -434,6 +437,7 @@ function FolderNode({
   onDeleteFolder,
   onRefresh,
 }: FolderNodeProps) {
+  const { t } = useTranslation("chat");
   const [open, setOpen] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
@@ -453,17 +457,17 @@ function FolderNode({
   };
 
   const folderCtxItems: ContextMenuItem[] = [
-    { id: "new-chat", label: "Neuer Chat hier", onSelect: () => onNewChat(node.folder.id) },
+    { id: "new-chat", label: t("folders.newChatHere"), onSelect: () => onNewChat(node.folder.id) },
     ...(onCreateFolder
-      ? [{ id: "new-sub", label: "Neuer Unterordner", onSelect: () => onCreateFolder(node.folder.id) }]
+      ? [{ id: "new-sub", label: t("folders.newSubfolder"), onSelect: () => onCreateFolder(node.folder.id) }]
       : []),
     ...(onRenameFolder
-      ? [{ id: "rename", label: "Umbenennen", onSelect: () => onRenameFolder(node.folder.id, node.folder.name) }]
+      ? [{ id: "rename", label: t("folders.rename"), onSelect: () => onRenameFolder(node.folder.id, node.folder.name) }]
       : []),
     ...(onDeleteFolder
       ? [
           { id: "sep", label: "---" },
-          { id: "delete", label: "Löschen", variant: "destructive" as const, onSelect: () => onDeleteFolder(node.folder.id, node.folder.name) },
+          { id: "delete", label: t("folders.delete"), variant: "destructive" as const, onSelect: () => onDeleteFolder(node.folder.id, node.folder.name) },
         ]
       : []),
   ];
@@ -486,17 +490,17 @@ function FolderNode({
         <span className={styles.folderName}>{node.folder.name}</span>
         <span className={styles.folderCount}>{node.totalChats}</span>
         <RowMenu
-          title="Ordner-Aktionen"
+          title={t("folders.folderActions")}
           items={[
-            { label: "Neuer Chat hier", onClick: () => onNewChat(node.folder.id) },
+            { label: t("folders.newChatHere"), onClick: () => onNewChat(node.folder.id) },
             ...(onCreateFolder
-              ? [{ label: "Neuer Unterordner", onClick: () => onCreateFolder(node.folder.id) }]
+              ? [{ label: t("folders.newSubfolder"), onClick: () => onCreateFolder(node.folder.id) }]
               : []),
             ...(onRenameFolder
-              ? [{ label: "Umbenennen", onClick: () => onRenameFolder(node.folder.id, node.folder.name) }]
+              ? [{ label: t("folders.rename"), onClick: () => onRenameFolder(node.folder.id, node.folder.name) }]
               : []),
             ...(onDeleteFolder
-              ? [{ label: "Löschen", danger: true, onClick: () => onDeleteFolder(node.folder.id, node.folder.name) }]
+              ? [{ label: t("folders.delete"), danger: true, onClick: () => onDeleteFolder(node.folder.id, node.folder.name) }]
               : []),
           ]}
         />
@@ -537,6 +541,7 @@ function ChatItem({
   onSelect: () => void;
   menu?: React.ReactNode;
 }) {
+  const { t } = useTranslation("chat");
   return (
     <div
       className={`${styles.chatItem} ${active ? styles.chatItemActive : ""}`}
@@ -550,7 +555,7 @@ function ChatItem({
       }}
     >
       <button type="button" className={styles.chatItemBtn} onClick={onSelect}>
-        <span className={styles.chatItemTitle}>{chat.title || "(ohne Titel)"}</span>
+        <span className={styles.chatItemTitle}>{chat.title || t("folders.untitled")}</span>
       </button>
       {menu}
     </div>

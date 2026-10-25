@@ -11,7 +11,7 @@
  * Warning: Clara's estimate is shown FADED with a dashed border until a human
  * confirms it. If you cannot tell a number from a guess, you lose trust in the
  * whole ranking. */
-import { getBrand } from "@claraos/core";
+import { useTranslation, i18n } from "@claraos/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "../IdeasApp.module.css";
 import { ideasApi } from "../api";
@@ -40,6 +40,7 @@ function flatten(nodes: GoalNode[], out: GoalNode[] = []): GoalNode[] {
 }
 
 export function MatrixView({ currentUser, onOpen, reloadTick }: Props) {
+  const { t } = useTranslation("wissen");
   const [goals, setGoals] = useState<GoalNode[]>([]);
   const [goalId, setGoalId] = useState<string>("");
   const [items, setItems] = useState<MatrixItem[]>([]);
@@ -56,7 +57,7 @@ export function MatrixView({ currentUser, onOpen, reloadTick }: Props) {
         setGoals(flat);
         setGoalId((cur) => cur || (flat[0]?.id ?? ""));
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Ziele nicht ladbar");
+        setError(e instanceof Error ? e.message : i18n.t("wissen:views.matrix.goalsFailed"));
       } finally {
         setLoading(false);
       }
@@ -70,7 +71,7 @@ export function MatrixView({ currentUser, onOpen, reloadTick }: Props) {
       setItems(r.items);
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Matrix nicht ladbar");
+      setError(e instanceof Error ? e.message : i18n.t("wissen:views.matrix.loadFailed"));
     }
   }, [goalId]);
 
@@ -83,7 +84,7 @@ export function MatrixView({ currentUser, onOpen, reloadTick }: Props) {
     try {
       await ideasApi.setContribution(goalId, item.id, impact, effort);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Bewertung nicht gespeichert");
+      setError(e instanceof Error ? e.message : i18n.t("wissen:views.matrix.rateFailed"));
       await load();
     }
   };
@@ -116,7 +117,7 @@ export function MatrixView({ currentUser, onOpen, reloadTick }: Props) {
   return (
     <div className={styles.matrixWrap}>
       <div className={styles.visionsHead}>
-        <h3>🧭 Wirkung und Aufwand</h3>
+        <h3>{t("views.matrix.title")}</h3>
         <select className={styles.input} value={goalId}
                 onChange={(e) => setGoalId(e.target.value)} style={{ maxWidth: 320, margin: 0 }}>
           {goals.map((g) => (
@@ -126,9 +127,9 @@ export function MatrixView({ currentUser, onOpen, reloadTick }: Props) {
       </div>
 
       {error && <div className={styles.error}>{error}</div>}
-      {loading && <div className={styles.empty}>Lade…</div>}
+      {loading && <div className={styles.empty}>{t("views.matrix.loading")}</div>}
       {!loading && goals.length === 0 && (
-        <div className={styles.empty}>Noch kein Ziel — lege zuerst eins in der Ziele-Ansicht an.</div>
+        <div className={styles.empty}>{t("views.matrix.noGoal")}</div>
       )}
 
       {goalId && (
@@ -158,18 +159,18 @@ export function MatrixView({ currentUser, onOpen, reloadTick }: Props) {
             <rect x={SIZE / 2} y={SIZE / 2} width={(SIZE - 2 * PAD) / 2} height={(SIZE - 2 * PAD) / 2}
                   className={styles.qBad} />
 
-            <text x={PAD + 8} y={PAD + 18} className={styles.qLabel}>Schnelle Treffer</text>
-            <text x={SIZE / 2 + 8} y={PAD + 18} className={styles.qLabel}>Große Brocken</text>
-            <text x={PAD + 8} y={SIZE / 2 + 18} className={styles.qLabel}>Nebenbei</text>
-            <text x={SIZE / 2 + 8} y={SIZE / 2 + 18} className={styles.qLabel}>Zeitfresser</text>
+            <text x={PAD + 8} y={PAD + 18} className={styles.qLabel}>{t("views.matrix.quickWins")}</text>
+            <text x={SIZE / 2 + 8} y={PAD + 18} className={styles.qLabel}>{t("views.matrix.bigBets")}</text>
+            <text x={PAD + 8} y={SIZE / 2 + 18} className={styles.qLabel}>{t("views.matrix.fillIns")}</text>
+            <text x={SIZE / 2 + 8} y={SIZE / 2 + 18} className={styles.qLabel}>{t("views.matrix.timeSinks")}</text>
 
             {/* Axes */}
             <line x1={PAD} y1={SIZE - PAD} x2={SIZE - PAD} y2={SIZE - PAD} className={styles.axis} />
             <line x1={PAD} y1={PAD} x2={PAD} y2={SIZE - PAD} className={styles.axis} />
             <text x={SIZE - PAD} y={SIZE - 10} textAnchor="end" className={styles.axisLabel}>
-              Aufwand →
+              {t("views.matrix.effort")}
             </text>
-            <text x={10} y={PAD + 4} className={styles.axisLabel}>Wirkung ↑</text>
+            <text x={10} y={PAD + 4} className={styles.axisLabel}>{t("views.matrix.impact")}</text>
 
             {shown.map((p) => (
               <g key={p.id}
@@ -179,8 +180,8 @@ export function MatrixView({ currentUser, onOpen, reloadTick }: Props) {
                  onDoubleClick={() => onOpen(p.id)}>
                 <circle r={9} />
                 <title>
-                  {`${p.title}\nWirkung ${p._impact} · Aufwand ${p._effort}` +
-                   (p._guess ? `\n(${getBrand().assistant}s Schätzung${p.suggested?.reason ? ": " + p.suggested.reason : ""} — zum Bestätigen ziehen)` : "")}
+                  {`${p.title}\n${t("views.matrix.point", { impact: p._impact, effort: p._effort })}` +
+                   (p._guess ? `\n${t("views.matrix.guess", { reason: p.suggested?.reason ? ": " + p.suggested.reason : "" })}` : "")}
                 </title>
                 <text x={13} y={4} className={styles.pointLabel}>{p.title.slice(0, 26)}</text>
               </g>
@@ -189,13 +190,12 @@ export function MatrixView({ currentUser, onOpen, reloadTick }: Props) {
 
           <div className={styles.matrixSide}>
             <p className={styles.metaHint}>
-              Punkt ziehen = bewerten und bestätigen · Doppelklick öffnet das Objekt.
-              Blasse Punkte sind {getBrand().assistant}s Schätzung.
+              {t("views.matrix.hint")}
             </p>
 
             {unplaced.length > 0 && (
               <div className={styles.matrixUnplaced}>
-                <strong>Noch unbewertet ({unplaced.length})</strong>
+                <strong>{t("views.matrix.unrated", { count: unplaced.length })}</strong>
                 <ul>
                   {unplaced.map((p) => (
                     <li key={p.id}>
@@ -206,9 +206,9 @@ export function MatrixView({ currentUser, onOpen, reloadTick }: Props) {
                                   await ideasApi.rateContribution(goalId, p.id);
                                   await load();
                                 } catch (e) {
-                                  setError(e instanceof Error ? e.message : "Schätzung fehlgeschlagen");
+                                  setError(e instanceof Error ? e.message : t("views.matrix.guessFailed"));
                                 }
-                              }}>{getBrand().assistant} schätzen lassen</button>
+                              }}>{t("views.matrix.letGuess")}</button>
                     </li>
                   ))}
                 </ul>
@@ -217,7 +217,7 @@ export function MatrixView({ currentUser, onOpen, reloadTick }: Props) {
 
             {shown.length > 0 && (
               <div className={styles.matrixList}>
-                <strong>Beste zuerst</strong>
+                <strong>{t("views.matrix.best")}</strong>
                 <ul>
                   {[...shown]
                     .sort((a, b) => (b._impact! - b._effort!) - (a._impact! - a._effort!))
@@ -228,15 +228,15 @@ export function MatrixView({ currentUser, onOpen, reloadTick }: Props) {
                         <button className={styles.linkBtn} onClick={() => onOpen(p.id)}>
                           {p.title}
                         </button>
-                        <button className={styles.btnGhost} title="Als Aufgabe in den Aktionsplan"
+                        <button className={styles.btnGhost} title={t("views.matrix.toPlanTitle")}
                                 onClick={async () => {
                                   try {
                                     await ideasApi.promoteToPlan(goalId, p.id);
                                     await load();
                                   } catch (e) {
-                                    setError(e instanceof Error ? e.message : "Übernahme fehlgeschlagen");
+                                    setError(e instanceof Error ? e.message : t("views.matrix.takeFailed"));
                                   }
-                                }}>→ Aktionsplan</button>
+                                }}>{t("views.matrix.toPlan")}</button>
                       </li>
                     ))}
                 </ul>
@@ -245,8 +245,7 @@ export function MatrixView({ currentUser, onOpen, reloadTick }: Props) {
 
             {items.length === 0 && (
               <p className={styles.metaHint}>
-                Diesem Ziel ist noch keine Idee zugeordnet. Lass dir in der Ziele-Ansicht
-                welche von {getBrand().assistant} vorschlagen.
+                {t("views.matrix.noIdeas")}
               </p>
             )}
           </div>

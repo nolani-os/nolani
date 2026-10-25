@@ -11,7 +11,7 @@ import type { KpiNode, KpiValue } from "./types";
 import { KpiChart } from "./KpiChart";
 import { Icon } from "../../components/Icon";
 import { fmtNum, fmtPct, statusColor, statusOf } from "./kpiStatus";
-import { regionLocale } from "@claraos/core";
+import { regionLocale, useTranslation, i18n, Trans } from "@claraos/core";
 
 interface Props {
   kpi: KpiNode;
@@ -20,18 +20,16 @@ interface Props {
   onChanged: () => void;
 }
 
-const SOURCE_LABEL: Record<string, string> = {
-  planner: "Planner",
-  formula: "Formel",
-  manual: "von Hand",
-};
+/** Site-specific source labels (heim/kpiSources.tsx); built-in kinds come from the catalog. */
+const SOURCE_LABEL: Record<string, string> = {};
+const sourceLabel = (kind: string) =>
+  SOURCE_LABEL[kind] ?? i18n.t(`wissen:kpiSource.kinds.${kind}`, { defaultValue: kind });
 // Optional site-specific data sources may register their labels here (heim/kpiSources.tsx).
 for (const mod of Object.values(
   import.meta.glob<{ heimKpiSourceLabels?: Record<string, string> }>("../../heim/kpiSources.tsx", { eager: true }),
 )) Object.assign(SOURCE_LABEL, mod.heimKpiSourceLabels ?? {});
 
 const TREND_ICON = { up: "trendUp", down: "trendDown", flat: "trendFlat" } as const;
-const TREND_WORT = { up: "steigend", down: "fallend", flat: "stagnierend" } as const;
 
 /** Direction over recent weeks plus distance to the expected value.
  *
@@ -41,6 +39,7 @@ const TREND_WORT = { up: "steigend", down: "fallend", flat: "stagnierend" } as c
  * as for sources: failure ≠ measurement).
  */
 function TrendRow({ p }: { p: KpiNode["progress"] }) {
+  const { t } = useTranslation("wissen");
   const richtung = p.trend ?? null;
   const abstand = p.behind_by ?? null;
   if (!richtung && abstand == null) return null;
@@ -57,14 +56,14 @@ function TrendRow({ p }: { p: KpiNode["progress"] }) {
           p.trend_good === true ? styles.trendGut
             : p.trend_good === false ? styles.trendSchlecht : styles.trendNeutral
         }>
-          <Icon name={TREND_ICON[richtung]} size={15} /> {TREND_WORT[richtung]}
+          <Icon name={TREND_ICON[richtung]} size={15} /> {t(`kpi.trend.${richtung}`)}
           {belastbar && proWoche != null && richtung !== "flat"
-            ? ` · ${fmtNum(Math.abs(proWoche), p.unit)} pro Woche`
+            ? t("kpi.perWeek", { value: fmtNum(Math.abs(proWoche), p.unit) })
             : ""}
         </span>
       ) : (
         <span className={styles.trendNeutral}>
-          Noch keine Richtung — zu wenige Messwerte
+          {t("kpi.noDirection")}
         </span>
       )}
 
@@ -72,7 +71,7 @@ function TrendRow({ p }: { p: KpiNode["progress"] }) {
         <>
           {" · "}
           <span className={abstand > 0 ? styles.trendSchlecht : styles.trendGut}>
-            {fmtNum(Math.abs(abstand), p.unit)} {abstand > 0 ? "hinter Plan" : "vor Plan"}
+            {t(abstand > 0 ? "kpi.behindPlan" : "kpi.aheadPlan", { value: fmtNum(Math.abs(abstand), p.unit) })}
           </span>
         </>
       )}
@@ -81,6 +80,7 @@ function TrendRow({ p }: { p: KpiNode["progress"] }) {
 }
 
 export function KpiCard({ kpi, currentUser, onOpen, onChanged }: Props) {
+  const { t } = useTranslation("wissen");
   const [open, setOpen] = useState(false);
   const [series, setSeries] = useState<{ ts: string; value: number }[]>([]);
   const [recent, setRecent] = useState<KpiValue[]>([]);
@@ -105,7 +105,7 @@ export function KpiCard({ kpi, currentUser, onOpen, onChanged }: Props) {
       setSeries(prog.series);
       setRecent(vals);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Verlauf nicht ladbar");
+      setError(e instanceof Error ? e.message : i18n.t("wissen:kpi.historyFailed"));
     }
   }, [kpi.id]);
 
@@ -120,12 +120,12 @@ export function KpiCard({ kpi, currentUser, onOpen, onChanged }: Props) {
     try {
       const r = await ideasApi.collectKpi(kpi.id);
       if (r.error) setError(r.error);
-      else if (r.skipped) setNote(`Nichts geholt: ${r.skipped}`);
-      else setNote(`Neuer Wert: ${fmtNum(r.value, p.unit)}`);
+      else if (r.skipped) setNote(i18n.t("wissen:kpi.skipped", { reason: r.skipped }));
+      else setNote(i18n.t("wissen:kpi.newValue", { value: fmtNum(r.value, p.unit) }));
       await load();
       onChanged();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Abruf fehlgeschlagen");
+      setError(e instanceof Error ? e.message : i18n.t("wissen:kpi.fetchFailed"));
     } finally {
       setBusy(false);
     }
@@ -134,7 +134,7 @@ export function KpiCard({ kpi, currentUser, onOpen, onChanged }: Props) {
   const save = async () => {
     const num = Number(input.replace(",", "."));
     if (!input.trim() || Number.isNaN(num)) {
-      setError("Bitte eine Zahl eingeben");
+      setError(i18n.t("wissen:kpi.number"));
       return;
     }
     setBusy(true);
@@ -150,7 +150,7 @@ export function KpiCard({ kpi, currentUser, onOpen, onChanged }: Props) {
       await load();
       onChanged();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Speichern fehlgeschlagen");
+      setError(e instanceof Error ? e.message : i18n.t("wissen:kpi.saveFailed"));
     } finally {
       setBusy(false);
     }
@@ -159,24 +159,24 @@ export function KpiCard({ kpi, currentUser, onOpen, onChanged }: Props) {
   return (
     <div className={styles.kpiCard} style={{ borderLeftColor: statusColor(p.status) }}>
       <div className={styles.kpiHead}>
-        <button className={styles.kpiTitle} onClick={() => onOpen(kpi.id)} title="Kennzahl öffnen">
+        <button className={styles.kpiTitle} onClick={() => onOpen(kpi.id)} title={t("kpi.open")}>
           <Icon name="kpi" size={16} className={styles.inlineIcon} />{kpi.title}
         </button>
         <span className={styles.kpiStatus} title={p.reason} style={{ color: statusColor(p.status) }}>
           <Icon name={st.iconName} size={15} /> {st.label}
         </span>
         <button className={styles.iconBtn} onClick={() => setOpen((v) => !v)}
-                title={open ? "Zuklappen" : "Verlauf und Eingabe"}>
+                title={open ? t("kpi.collapse") : t("kpi.expand")}>
           <Icon name={open ? "chevronDown" : "chevronRight"} size={16}
-                title={open ? "Zuklappen" : "Verlauf und Eingabe"} />
+                title={open ? t("kpi.collapse") : t("kpi.expand")} />
         </button>
       </div>
 
       <div className={styles.kpiFigures}>
         <strong>{fmtNum(p.current, p.unit)}</strong>
         <span className={styles.metaHint}>
-          {p.target !== null ? `Ziel ${fmtNum(p.target, p.unit)}` : "kein Zielwert"}
-          {p.attainment !== null && ` · ${fmtPct(p.attainment)} erreicht`}
+          {p.target !== null ? t("kpi.target", { value: fmtNum(p.target, p.unit) }) : t("kpi.noTarget")}
+          {p.attainment !== null && t("kpi.reached", { pct: fmtPct(p.attainment) })}
         </span>
       </div>
 
@@ -191,14 +191,14 @@ export function KpiCard({ kpi, currentUser, onOpen, onChanged }: Props) {
             m.attainment == null ? null : (
               <i key={m.date} className={styles.kpiMilestone}
                  style={{ left: `${Math.max(0, Math.min(100, m.attainment * 100))}%` }}
-                 title={`Zwischenziel ${fmtNum(m.value, p.unit)} bis ${new Date(m.date).toLocaleDateString(regionLocale())}${m.label ? ` — ${m.label}` : ""}`} />
+                 title={t("kpi.milestoneTitle", { value: fmtNum(m.value, p.unit), date: new Date(m.date).toLocaleDateString(regionLocale()) }) + (m.label ? ` — ${m.label}` : "")} />
             )
           ))}
           {/* Expectation marker: where you should be today. */}
           {p.expected !== null && (
             <i className={styles.kpiExpected}
                style={{ left: `${Math.max(0, Math.min(100, p.expected * 100))}%` }}
-               title={`Erwartet: ${fmtPct(p.expected)}`
+               title={t("kpi.expected", { pct: fmtPct(p.expected) })
                       + (p.expected_value != null ? ` (${fmtNum(p.expected_value, p.unit)})` : "")} />
           )}
         </div>
@@ -212,8 +212,8 @@ export function KpiCard({ kpi, currentUser, onOpen, onChanged }: Props) {
 
       {p.next_milestone && (
         <p className={styles.metaHint}>
-          Nächstes Zwischenziel: <strong>{fmtNum(p.next_milestone.value, p.unit)}</strong>
-          {" "}bis {new Date(p.next_milestone.date).toLocaleDateString(regionLocale())}
+          <Trans t={t} i18nKey="kpi.nextMilestone" components={{ b: <strong /> }}
+                 values={{ value: fmtNum(p.next_milestone.value, p.unit), date: new Date(p.next_milestone.date).toLocaleDateString(regionLocale()) }} />
         </p>
       )}
 
@@ -221,7 +221,7 @@ export function KpiCard({ kpi, currentUser, onOpen, onChanged }: Props) {
           silent adapter looks like "not measured yet". */}
       {kpi.source_error && (
         <p className={styles.kpiSourceError}
-           title={`seit ${new Date(kpi.source_error.at).toLocaleString(regionLocale())}`}>
+           title={t("kpi.since", { when: new Date(kpi.source_error.at).toLocaleString(regionLocale()) })}>
           <Icon name="warning" size={15} className={styles.inlineIcon} />{kpi.source_error.message}
         </p>
       )}
@@ -232,18 +232,18 @@ export function KpiCard({ kpi, currentUser, onOpen, onChanged }: Props) {
             <KpiChart ist={series} plan={p.plan_path} unit={p.unit}
                       target={p.target} label={kpi.title} />
           ) : (
-            <p className={styles.metaHint}>Noch zu wenige Messwerte für eine Kurve.</p>
+            <p className={styles.metaHint}>{t("kpi.tooFew")}</p>
           )}
 
           {kpi.source && kpi.source.kind !== "manual" && (
             <div className={styles.kpiSourceRow}>
               <span className={styles.metaHint}>
-                Quelle: <strong>{SOURCE_LABEL[kpi.source.kind] ?? kpi.source.kind}</strong>
-                {kpi.source.every_minutes ? ` · alle ${kpi.source.every_minutes} min` : ""}
+                <Trans t={t} i18nKey="kpi.source" components={{ b: <strong /> }} values={{ source: sourceLabel(kpi.source.kind) }} />
+                {kpi.source.every_minutes ? t("kpi.every", { n: kpi.source.every_minutes }) : ""}
               </span>
               {canEdit && (
                 <button className={styles.btnGhost} disabled={busy}
-                        onClick={() => void collectNow()}>Jetzt abrufen</button>
+                        onClick={() => void collectNow()}>{t("kpi.fetchNow")}</button>
               )}
             </div>
           )}
@@ -251,40 +251,40 @@ export function KpiCard({ kpi, currentUser, onOpen, onChanged }: Props) {
 
           {canEdit ? (
             <div className={styles.kpiEntry}>
-              <input className={styles.input} inputMode="decimal" placeholder={`Wert${p.unit ? ` in ${p.unit}` : ""}`}
+              <input className={styles.input} inputMode="decimal" placeholder={p.unit ? t("kpi.valueIn", { unit: p.unit }) : t("kpi.valuePlaceholder")}
                      value={input} onChange={(e) => setInput(e.target.value)}
                      onKeyDown={(e) => { if (e.key === "Enter") void save(); }} />
-              <input className={styles.input} type="date" value={when} title="Zeitpunkt (leer = jetzt)"
+              <input className={styles.input} type="date" value={when} title={t("kpi.when")}
                      onChange={(e) => setWhen(e.target.value)} />
               <button className={styles.btnPrimary} disabled={busy} onClick={() => void save()}>
-                Eintragen
+                {t("kpi.enter")}
               </button>
             </div>
           ) : (
-            <p className={styles.metaHint}>Nur {kpi.owner} kann Werte eintragen.</p>
+            <p className={styles.metaHint}>{t("kpi.onlyOwner", { owner: kpi.owner })}</p>
           )}
 
           {/* Manage milestones */}
           {canEdit && (
             <div className={styles.kpiEntry}>
-              <input className={styles.input} type="date" value={msDate} title="Zwischenziel bis"
+              <input className={styles.input} type="date" value={msDate} title={t("kpi.milestoneUntil")}
                      onChange={(e) => setMsDate(e.target.value)} />
               <input className={styles.input} inputMode="decimal" value={msValue}
-                     placeholder={`Zwischenziel${p.unit ? ` in ${p.unit}` : ""}`}
+                     placeholder={p.unit ? t("kpi.milestoneIn", { unit: p.unit }) : t("kpi.milestone")}
                      onChange={(e) => setMsValue(e.target.value)} />
               <button className={styles.btnGhost} disabled={busy || !msDate || !msValue.trim()}
                       onClick={async () => {
                         const num = Number(msValue.replace(",", "."));
-                        if (Number.isNaN(num)) { setError("Bitte eine Zahl eingeben"); return; }
+                        if (Number.isNaN(num)) { setError(t("kpi.number")); return; }
                         setBusy(true);
                         try {
                           await ideasApi.addMilestone(kpi.id, msDate, num);
                           setMsDate(""); setMsValue("");
                           onChanged();
                         } catch (e) {
-                          setError(e instanceof Error ? e.message : "Zwischenziel nicht gespeichert");
+                          setError(e instanceof Error ? e.message : t("kpi.milestoneFailed"));
                         } finally { setBusy(false); }
-                      }}>Zwischenziel setzen</button>
+                      }}>{t("kpi.setMilestone")}</button>
             </div>
           )}
           {(p.milestones ?? []).length > 0 && (
@@ -293,13 +293,13 @@ export function KpiCard({ kpi, currentUser, onOpen, onChanged }: Props) {
                 <li key={m.date}>
                   <span>{new Date(m.date).toLocaleDateString(regionLocale())}</span>
                   <strong>{fmtNum(m.value, p.unit)}</strong>
-                  <span className={styles.metaHint}>Zwischenziel</span>
+                  <span className={styles.metaHint}>{t("kpi.milestone")}</span>
                   {canEdit && (
-                    <button className={styles.iconBtn} title="Zwischenziel entfernen"
+                    <button className={styles.iconBtn} title={t("kpi.removeMilestone")}
                             onClick={async () => {
                               await ideasApi.deleteMilestone(kpi.id, m.date);
                               onChanged();
-                            }}><Icon name="close" size={14} title="Entfernen" /></button>
+                            }}><Icon name="close" size={14} title={t("kpi.remove")} /></button>
                   )}
                 </li>
               ))}
@@ -313,15 +313,15 @@ export function KpiCard({ kpi, currentUser, onOpen, onChanged }: Props) {
                   <span>{new Date(v.ts).toLocaleDateString(regionLocale())}</span>
                   <strong>{fmtNum(v.value, p.unit)}</strong>
                   <span className={styles.metaHint}>
-                    {v.source === "manual" ? "von Hand" : v.source}
+                    {v.source === "manual" ? t("kpi.manual") : v.source}
                   </span>
                   {canEdit && (
-                    <button className={styles.iconBtn} title="Messwert löschen"
+                    <button className={styles.iconBtn} title={t("kpi.deleteValue")}
                             onClick={async () => {
                               await ideasApi.deleteKpiValue(kpi.id, v.id);
                               await load();
                               onChanged();
-                            }}><Icon name="close" size={14} title="Entfernen" /></button>
+                            }}><Icon name="close" size={14} title={t("kpi.remove")} /></button>
                   )}
                 </li>
               ))}

@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { createSpace, createChannel } from "../matrixClient";
 import styles from "./OnboardingWizard.module.css";
+import { useTranslation } from "@claraos/core";
 
 export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
+  const { t } = useTranslation("teams");
   const [step, setStep] = useState(0);
   const [teamName, setTeamName] = useState("");
   const [channelName, setChannelName] = useState("general");
@@ -27,11 +29,11 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
       {step === 0 && (
         <div className={styles.step}>
           <div className={styles.emoji}>👋</div>
-          <h2>Willkommen bei Teams</h2>
-          <p>Dein eigener Ort für Zusammenarbeit — Chat, Anrufe, Dateien und Planung an einer Stelle.</p>
-          <p className={styles.subtitle}>Auf Basis von Matrix (Ende-zu-Ende-verschlüsselt), LiveKit (Videoanrufe) und Nextcloud (Dateien).</p>
+          <h2>{t("onboarding.welcome")}</h2>
+          <p>{t("onboarding.intro")}</p>
+          <p className={styles.subtitle}>{t("onboarding.basis")}</p>
           <button className={styles.primaryBtn} onClick={() => setStep(1)}>
-            Los geht's
+            {t("onboarding.start")}
           </button>
         </div>
       )}
@@ -39,12 +41,12 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
       {step === 1 && (
         <div className={styles.step}>
           <div className={styles.emoji}>👥</div>
-          <h2>Erstes Team anlegen</h2>
-          <p>Ein Team ist eine Gruppe von Menschen, die zusammenarbeiten oder sich austauschen.</p>
+          <h2>{t("onboarding.firstTeam")}</h2>
+          <p>{t("onboarding.teamIntro")}</p>
           <input
             autoFocus
             className={styles.input}
-            placeholder="z. B. Familie, Haushalt, Arbeit…"
+            placeholder={t("onboarding.teamPlaceholder")}
             value={teamName}
             onChange={(e) => setTeamName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && teamName.trim() && setStep(2)}
@@ -54,7 +56,7 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
             onClick={() => setStep(2)}
             disabled={!teamName.trim()}
           >
-            Weiter
+            {t("onboarding.next")}
           </button>
         </div>
       )}
@@ -62,12 +64,12 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
       {step === 2 && (
         <div className={styles.step}>
           <div className={styles.emoji}>#</div>
-          <h2>Kanal hinzufügen</h2>
-          <p>Kanäle ordnen Gespräche nach Thema.</p>
+          <h2>{t("onboarding.addChannel")}</h2>
+          <p>{t("onboarding.channelIntro")}</p>
           <input
             autoFocus
             className={styles.input}
-            placeholder="z. B. allgemein, sonstiges, projekte…"
+            placeholder={t("onboarding.channelPlaceholder")}
             value={channelName}
             onChange={(e) => setChannelName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleCreate()}
@@ -77,10 +79,10 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
             onClick={handleCreate}
             disabled={creating}
           >
-            {creating ? "Wird angelegt…" : `„${teamName}“ mit #${channelName} anlegen`}
+            {creating ? t("onboarding.creating") : t("onboarding.create", { team: teamName, channel: channelName })}
           </button>
           <button className={styles.skipBtn} onClick={onComplete}>
-            Später einrichten
+            {t("onboarding.later")}
           </button>
         </div>
       )}

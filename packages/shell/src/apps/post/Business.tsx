@@ -17,12 +17,14 @@ import { useCallback, useEffect, useState } from "react";
 import styles from "./PostApp.module.css";
 import { Icon } from "../../components/Icon";
 import { postBusiness, type FreigabeOrdner, type VerzeichnisEintrag, type Verteiler } from "./api";
+import { useTranslation } from "@claraos/core";
 
 type Melder = (text: string, fehler?: boolean) => void;
 
 /* ── Sharing ───────────────────────────────────────────────────────────── */
 
 export function FreigabenDialog({ onClose, melde }: { onClose: () => void; melde: Melder }) {
+  const { t } = useTranslation("post");
   const [ordner, setOrdner] = useState<FreigabeOrdner[] | null>(null);
   const [hinweis, setHinweis] = useState<string | null>(null);
   const [stufen, setStufen] = useState<{ id: string; name: string }[]>([]);
@@ -51,13 +53,13 @@ export function FreigabenDialog({ onClose, melde }: { onClose: () => void; melde
   }, [laden]);
 
   const setzen = async (mailboxId: string, person: string, neueStufe: string) => {
-    if (!person) { melde("Wen denn?", true); return; }
+    if (!person) { melde(t("sharing.whom"), true); return; }
     setLaeuft(true);
     try {
       const r = await postBusiness.freigabeSetzen(mailboxId, person, neueStufe);
       melde(neueStufe === "keine"
-        ? `Freigabe von „${r.ordner}" zurückgenommen`
-        : `„${r.ordner}" ist jetzt freigegeben (${r.anzahl_freigaben} ${r.anzahl_freigaben === 1 ? "Person" : "Personen"})`);
+        ? t("sharing.revoked", { folder: r.ordner })
+        : t("sharing.shared", { folder: r.ordner, count: r.anzahl_freigaben }));
       setWen("");
       setOffen(null);
       await laden();
@@ -72,10 +74,10 @@ export function FreigabenDialog({ onClose, melde }: { onClose: () => void; melde
     <div className={styles.dialogHinter} onClick={onClose}>
       <div className={`${styles.dialog} ${styles.dialogBreit}`} onClick={(e) => e.stopPropagation()}>
         <div className={styles.dialogTitel}>
-          Freigaben <span className={styles.hinweis}>— wer darf in meine Ordner schauen?</span>
+          {t("sharing.title")} <span className={styles.hinweis}>{t("sharing.titleHint")}</span>
         </div>
-        {ordner === null && <div className={styles.leer}>Lade …</div>}
-        {ordner?.length === 0 && <div className={styles.leer}>{hinweis ?? "Keine Ordner gefunden."}</div>}
+        {ordner === null && <div className={styles.leer}>{t("common.loading")}</div>}
+        {ordner?.length === 0 && <div className={styles.leer}>{hinweis ?? t("sharing.noFolders")}</div>}
         <div className={styles.regelEditor}>
           {(ordner ?? []).map((o) => (
             <div key={o.id} className={styles.freigabeOrdner}>
@@ -83,16 +85,16 @@ export function FreigabenDialog({ onClose, melde }: { onClose: () => void; melde
                 <Icon name="folder" size={15} />
                 <b>{o.name}</b>
                 {o.geteilt_mit.length === 0
-                  ? <span className={styles.hinweis}>nur für dich</span>
+                  ? <span className={styles.hinweis}>{t("sharing.onlyYou")}</span>
                   : <span className={styles.hinweis}>
-                      freigegeben für {o.geteilt_mit.map((g) => g.name).join(", ")}
+                      {t("sharing.sharedWith", { names: o.geteilt_mit.map((g) => g.name).join(", ") })}
                     </span>}
                 <span style={{ flex: 1 }} />
                 {o.darf_freigeben
                   ? <button className={styles.chip} onClick={() => { setOffen(offen === o.id ? null : o.id); setWen(""); }}>
-                      <Icon name="plus" size={13} /> Freigeben
+                      <Icon name="plus" size={13} /> {t("sharing.share")}
                     </button>
-                  : <span className={styles.hinweis}>nicht freigebbar</span>}
+                  : <span className={styles.hinweis}>{t("sharing.notShareable")}</span>}
               </div>
 
               {o.geteilt_mit.map((g) => (
@@ -103,9 +105,9 @@ export function FreigabenDialog({ onClose, melde }: { onClose: () => void; melde
                   <select className={styles.miniSelect} value={g.stufe} disabled={laeuft}
                           onChange={(e) => void setzen(o.id, g.email || g.id, e.target.value)}>
                     {stufen.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    {g.stufe === "eigene" && <option value="eigene">Eigene Rechte</option>}
+                    {g.stufe === "eigene" && <option value="eigene">{t("sharing.customRights")}</option>}
                   </select>
-                  <button className={styles.iconKnopf} title="Freigabe zurücknehmen" disabled={laeuft}
+                  <button className={styles.iconKnopf} title={t("sharing.revoke")} disabled={laeuft}
                           onClick={() => void setzen(o.id, g.email || g.id, "keine")}>
                     <Icon name="close" size={13} />
                   </button>
@@ -115,15 +117,15 @@ export function FreigabenDialog({ onClose, melde }: { onClose: () => void; melde
               {offen === o.id && (
                 <div className={styles.regelZeile} style={{ paddingLeft: "1.6rem" }}>
                   <select className={styles.miniSelect} value={wen} onChange={(e) => setWen(e.target.value)}>
-                    <option value="">Person wählen …</option>
+                    <option value="">{t("sharing.pickPerson")}</option>
                     {personen.map((p) => <option key={p.id} value={p.email}>{p.name} ({p.email})</option>)}
                   </select>
                   <select className={styles.miniSelect} value={stufe} onChange={(e) => setStufe(e.target.value)}>
                     {stufen.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                   <button className={`${styles.chip} ${styles.chipAktiv}`} disabled={laeuft || !wen}
-                          onClick={() => void setzen(o.id, wen, stufe)}>Freigeben</button>
-                  <button className={styles.chip} onClick={() => setOffen(null)}>Abbrechen</button>
+                          onClick={() => void setzen(o.id, wen, stufe)}>{t("sharing.share")}</button>
+                  <button className={styles.chip} onClick={() => setOffen(null)}>{t("common.cancel")}</button>
                 </div>
               )}
             </div>
@@ -131,10 +133,10 @@ export function FreigabenDialog({ onClose, melde }: { onClose: () => void; melde
         </div>
         <div className={styles.composerFuss}>
           <span className={styles.hinweis}>
-            Freigegebene Ordner erscheinen beim anderen als zusätzliches Postfach in der Ordnerspalte.
+            {t("sharing.footer")}
           </span>
           <span style={{ flex: 1 }} />
-          <button className={styles.chip} onClick={onClose}>Schließen</button>
+          <button className={styles.chip} onClick={onClose}>{t("common.close")}</button>
         </div>
       </div>
     </div>
@@ -145,6 +147,7 @@ export function FreigabenDialog({ onClose, melde }: { onClose: () => void; melde
 
 export function VerzeichnisDialog({ onClose, onSchreiben }:
   { onClose: () => void; onSchreiben: (adresse: string, name: string) => void }) {
+  const { t } = useTranslation("post");
   const [q, setQ] = useState("");
   const [eintraege, setEintraege] = useState<VerzeichnisEintrag[]>([]);
   const [hinweis, setHinweis] = useState<string | null>(null);
@@ -153,46 +156,46 @@ export function VerzeichnisDialog({ onClose, onSchreiben }:
   useEffect(() => {
     let abbruch = false;
     setLaeuft(true);
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       postBusiness.verzeichnis(q).then((r) => { if (!abbruch) { setEintraege(r.eintraege); setHinweis(r.hinweis ?? null); setLaeuft(false); } })
         .catch(() => { if (!abbruch) setLaeuft(false); });
     }, q ? 220 : 0);   // debounce: do not send every keystroke to the server
-    return () => { abbruch = true; clearTimeout(t); };
+    return () => { abbruch = true; clearTimeout(timer); };
   }, [q]);
 
   return (
     <div className={styles.dialogHinter} onClick={onClose}>
       <div className={`${styles.dialog} ${styles.dialogBreit}`} onClick={(e) => e.stopPropagation()}>
         <div className={styles.dialogTitel}>
-          Verzeichnis <span className={styles.hinweis}>— alle Postfächer und Kontakte</span>
+          {t("directory.title")} <span className={styles.hinweis}>{t("directory.titleHint")}</span>
         </div>
         <div className={styles.regelZeile} style={{ padding: "0 0.6rem" }}>
           <Icon name="search" size={15} />
-          <input className={styles.miniInput} style={{ flex: 1 }} autoFocus placeholder="Name oder Adresse …"
+          <input className={styles.miniInput} style={{ flex: 1 }} autoFocus placeholder={t("directory.placeholder")}
                  value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div className={styles.regelEditor}>
-          {laeuft && <div className={styles.leer}>Suche …</div>}
+          {laeuft && <div className={styles.leer}>{t("search.searching")}</div>}
           {!laeuft && hinweis && <div className={styles.warnung}>{hinweis}</div>}
           {!laeuft && eintraege.length === 0 && (
-            <div className={styles.leer}>{hinweis ? "Aus der Kontakte-App kam niemand." : "Niemand gefunden."}</div>
+            <div className={styles.leer}>{hinweis ? t("directory.noContacts") : t("directory.nobody")}</div>
           )}
           {eintraege.map((e) => (
             <div key={`${e.quelle}-${e.id}`} className={styles.regelZeile}>
               <Icon name={e.typ === "group" ? "people" : "person"} size={15} />
               <span style={{ minWidth: "12rem" }}>{e.name}</span>
               <span className={styles.hinweis} style={{ flex: 1 }}>{e.email}</span>
-              <span className={styles.hinweis}>{e.quelle === "verzeichnis" ? "Postfach" : "Kontakt"}</span>
+              <span className={styles.hinweis}>{e.quelle === "verzeichnis" ? t("directory.mailbox") : t("directory.contact")}</span>
               <button className={styles.chip} onClick={() => { onSchreiben(e.email, e.name); onClose(); }}>
-                <Icon name="mail" size={13} /> Schreiben
+                <Icon name="mail" size={13} /> {t("common.write")}
               </button>
             </div>
           ))}
         </div>
         <div className={styles.composerFuss}>
-          <span className={styles.hinweis}>{eintraege.length} Einträge</span>
+          <span className={styles.hinweis}>{t("directory.entries", { count: eintraege.length })}</span>
           <span style={{ flex: 1 }} />
-          <button className={styles.chip} onClick={onClose}>Schließen</button>
+          <button className={styles.chip} onClick={onClose}>{t("common.close")}</button>
         </div>
       </div>
     </div>
@@ -202,6 +205,7 @@ export function VerzeichnisDialog({ onClose, onSchreiben }:
 /* ── Distribution lists ────────────────────────────────────────────────── */
 
 export function VerteilerDialog({ onClose, melde }: { onClose: () => void; melde: Melder }) {
+  const { t } = useTranslation("post");
   const [liste, setListe] = useState<Verteiler[] | null>(null);
   const [personen, setPersonen] = useState<VerzeichnisEintrag[]>([]);
   const [name, setName] = useState("");
@@ -222,11 +226,11 @@ export function VerteilerDialog({ onClose, melde }: { onClose: () => void; melde
   const bearbeiten = (v: Verteiler) => { setName(v.name); setMitglieder(v.mitglieder); };
 
   const speichern = async () => {
-    if (!name.trim() || mitglieder.length === 0) { melde("Name und mindestens ein Mitglied", true); return; }
+    if (!name.trim() || mitglieder.length === 0) { melde(t("lists.needNameAndMember"), true); return; }
     setLaeuft(true);
     try {
       await postBusiness.verteilerSetzen(name.trim(), mitglieder);
-      melde(`Verteiler „${name.trim()}" gespeichert (${mitglieder.length})`);
+      melde(t("lists.saved", { name: name.trim(), count: mitglieder.length }));
       setName(""); setMitglieder([]);
       await laden();
     } catch (e) { melde(e instanceof Error ? e.message : String(e), true); }
@@ -235,7 +239,7 @@ export function VerteilerDialog({ onClose, melde }: { onClose: () => void; melde
 
   const loeschen = async (v: string) => {
     setLaeuft(true);
-    try { await postBusiness.verteilerLoeschen(v); melde(`„${v}" gelöscht`); await laden(); }
+    try { await postBusiness.verteilerLoeschen(v); melde(t("lists.deleted", { name: v })); await laden(); }
     catch (e) { melde(e instanceof Error ? e.message : String(e), true); }
     finally { setLaeuft(false); }
   };
@@ -244,28 +248,28 @@ export function VerteilerDialog({ onClose, melde }: { onClose: () => void; melde
     <div className={styles.dialogHinter} onClick={onClose}>
       <div className={`${styles.dialog} ${styles.dialogBreit}`} onClick={(e) => e.stopPropagation()}>
         <div className={styles.dialogTitel}>
-          Verteiler <span className={styles.hinweis}>— eigene Empfängergruppen</span>
+          {t("lists.title")} <span className={styles.hinweis}>{t("lists.titleHint")}</span>
         </div>
         <div className={styles.regelnKoerper}>
           <div className={styles.regelListe}>
-            {liste === null && <div className={styles.leer}>Lade …</div>}
-            {liste?.length === 0 && <div className={styles.leer}>Noch keiner.</div>}
+            {liste === null && <div className={styles.leer}>{t("common.loading")}</div>}
+            {liste?.length === 0 && <div className={styles.leer}>{t("lists.none")}</div>}
             {(liste ?? []).map((v) => (
               <div key={v.name} className={styles.regelZeile}>
                 <button className={styles.link} style={{ flex: 1, textAlign: "left" }} onClick={() => bearbeiten(v)}>
                   <Icon name="people" size={13} /> {v.name}
                 </button>
                 <span className={styles.hinweis}>{v.mitglieder.length}</span>
-                <button className={styles.iconKnopf} title="Löschen" disabled={laeuft}
+                <button className={styles.iconKnopf} title={t("common.delete")} disabled={laeuft}
                         onClick={() => void loeschen(v.name)}><Icon name="close" size={12} /></button>
               </div>
             ))}
           </div>
           <div className={styles.regelEditor}>
-            <div className={styles.regelAbschnitt}>Name</div>
-            <input className={styles.miniInput} value={name} placeholder="z. B. Familie"
+            <div className={styles.regelAbschnitt}>{t("lists.name")}</div>
+            <input className={styles.miniInput} value={name} placeholder={t("lists.namePlaceholder")}
                    onChange={(e) => setName(e.target.value)} />
-            <div className={styles.regelAbschnitt}>Mitglieder ({mitglieder.length})</div>
+            <div className={styles.regelAbschnitt}>{t("lists.members", { count: mitglieder.length })}</div>
             {mitglieder.map((m) => (
               <div key={m} className={styles.regelZeile}>
                 <Icon name="person" size={13} /><span style={{ flex: 1 }}>{m}</span>
@@ -278,10 +282,10 @@ export function VerteilerDialog({ onClose, melde }: { onClose: () => void; melde
               <select className={styles.miniSelect} value="" onChange={(e) => {
                 if (e.target.value && !mitglieder.includes(e.target.value)) setMitglieder([...mitglieder, e.target.value]);
               }}>
-                <option value="">Aus dem Verzeichnis …</option>
+                <option value="">{t("lists.fromDirectory")}</option>
                 {personen.map((p) => <option key={`${p.quelle}-${p.id}`} value={p.email}>{p.name} ({p.email})</option>)}
               </select>
-              <input className={styles.miniInput} value={neu} placeholder="oder Adresse tippen"
+              <input className={styles.miniInput} value={neu} placeholder={t("lists.typeAddress")}
                      onChange={(e) => setNeu(e.target.value)}
                      onKeyDown={(e) => {
                        if (e.key === "Enter" && neu.includes("@")) {
@@ -292,15 +296,14 @@ export function VerteilerDialog({ onClose, melde }: { onClose: () => void; melde
             </div>
             <div className={styles.composerFuss}>
               <button className={`${styles.chip} ${styles.chipAktiv}`} disabled={laeuft} onClick={() => void speichern()}>
-                Speichern
+                {t("common.save")}
               </button>
-              <button className={styles.chip} onClick={() => { setName(""); setMitglieder([]); }}>Leeren</button>
+              <button className={styles.chip} onClick={() => { setName(""); setMitglieder([]); }}>{t("lists.clear")}</button>
               <span style={{ flex: 1 }} />
-              <button className={styles.chip} onClick={onClose}>Schließen</button>
+              <button className={styles.chip} onClick={onClose}>{t("common.close")}</button>
             </div>
             <div className={styles.hinweis} style={{ padding: "0.4rem 0" }}>
-              Im Composer genügt der Verteilername als Empfänger — beim Senden wird er durch die
-              Mitglieder ersetzt. Adressen, die doppelt vorkämen, fallen dabei weg.
+              {t("lists.hint")}
             </div>
           </div>
         </div>

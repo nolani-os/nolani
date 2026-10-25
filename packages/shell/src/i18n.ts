@@ -30,6 +30,6 @@ export function startI18n(uiLanguage?: unknown): Promise<unknown> {
     },
     // Loaded before the first render: everything the shell frame shows.
     // App namespaces load on demand.
-    { lng, ns: ["common", "settings", "shell", "mobile", "desktop", "components", "tour", "apps", "settingsTabs"] },
+    { lng, ns: ["common", "settings", "shell", "mobile", "desktop", "components", "tour", "apps", "settingsTabs", "chat", "chatWork"] },
   );
 }

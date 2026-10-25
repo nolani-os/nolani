@@ -13,7 +13,7 @@ import { useCallback, useEffect, useState } from "react";
 import styles from "./PostApp.module.css";
 import { Icon } from "../../components/Icon";
 import { postFenster, type SucheErgebnis, type Profil } from "./api";
-import { regionLocale } from "@claraos/core";
+import { regionLocale, useTranslation } from "@claraos/core";
 
 type Melder = (text: string, fehler?: boolean) => void;
 
@@ -32,6 +32,7 @@ export function SucheDialog({ start, onClose, onMail, onApp, melde }: {
   onApp: (app: string) => void;
   melde: Melder;
 }) {
+  const { t } = useTranslation("post");
   const [q, setQ] = useState(start);
   const [erg, setErg] = useState<SucheErgebnis | null>(null);
   const [laeuft, setLaeuft] = useState(false);
@@ -51,8 +52,8 @@ export function SucheDialog({ start, onClose, onMail, onApp, melde }: {
 
   useEffect(() => {
     // Debounce: do not send every keystroke to four sources.
-    const t = setTimeout(() => void suchen(q), q === start ? 0 : 350);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => void suchen(q), q === start ? 0 : 350);
+    return () => clearTimeout(timer);
   }, [q, start, suchen]);
 
   const gruppe = (titel: string, eintraege: { id: string | number; titel: string; zeile?: string; datum?: string | null }[],
@@ -75,38 +76,38 @@ export function SucheDialog({ start, onClose, onMail, onApp, melde }: {
     <div className={styles.dialogHinter} onClick={onClose}>
       <div className={`${styles.dialog} ${styles.dialogBreit}`} onClick={(e) => e.stopPropagation()}>
         <div className={styles.dialogTitel}>
-          Überall suchen <span className={styles.hinweis}>— Mail, Kontakte, Aufgaben, Termine</span>
+          {t("search.title")} <span className={styles.hinweis}>{t("search.titleHint")}</span>
         </div>
         <div className={styles.regelZeile} style={{ padding: "0 0.6rem" }}>
           <Icon name="search" size={15} />
           <input className={styles.miniInput} style={{ flex: 1 }} autoFocus value={q}
-                 placeholder="Suchbegriff …" onChange={(e) => setQ(e.target.value)} />
+                 placeholder={t("search.placeholder")} onChange={(e) => setQ(e.target.value)} />
         </div>
 
         <div className={styles.regelEditor}>
-          {laeuft && <div className={styles.leer}>Suche …</div>}
+          {laeuft && <div className={styles.leer}>{t("search.searching")}</div>}
           {!laeuft && erg && (erg.nicht_erreicht?.length ?? 0) > 0 && (
             <div className={styles.warnung}>
-              Nicht erreicht: {erg.nicht_erreicht.join(", ")} — was dort liegt, fehlt in dieser Liste.
+              {t("search.unreached", { sources: erg.nicht_erreicht.join(", ") })}
             </div>
           )}
           {!laeuft && erg && erg.gesamt === 0 && (
-            <div className={styles.leer}>Nichts gefunden zu „{erg.suchbegriff}".</div>
+            <div className={styles.leer}>{t("search.nothing", { term: erg.suchbegriff })}</div>
           )}
           {!laeuft && erg && (
             <>
-              {gruppe("E-Mails", erg.mails, "mail", (id) => { onMail(String(id)); onClose(); })}
-              {gruppe("Kontakte", erg.kontakte, "person", () => { onApp("kontakte"); onClose(); })}
-              {gruppe("Aufgaben", erg.aufgaben, "check", () => { onApp("planner"); onClose(); })}
-              {gruppe("Termine", erg.termine, "calendar", () => { onApp("planner"); onClose(); })}
+              {gruppe(t("search.mails"), erg.mails, "mail", (id) => { onMail(String(id)); onClose(); })}
+              {gruppe(t("search.contacts"), erg.kontakte, "person", () => { onApp("kontakte"); onClose(); })}
+              {gruppe(t("search.tasks"), erg.aufgaben, "check", () => { onApp("planner"); onClose(); })}
+              {gruppe(t("search.events"), erg.termine, "calendar", () => { onApp("planner"); onClose(); })}
             </>
           )}
         </div>
 
         <div className={styles.composerFuss}>
-          <span className={styles.hinweis}>{erg?.hinweis ?? "Mindestens zwei Zeichen."}</span>
+          <span className={styles.hinweis}>{erg?.hinweis ?? t("search.minChars")}</span>
           <span style={{ flex: 1 }} />
-          <button className={styles.chip} onClick={onClose}>Schließen</button>
+          <button className={styles.chip} onClick={onClose}>{t("common.close")}</button>
         </div>
       </div>
     </div>
@@ -122,6 +123,7 @@ export function ProfilKarte({ email, name, onClose, onMail, onSchreiben }: {
   onMail: (id: string) => void;
   onSchreiben: (email: string, name: string) => void;
 }) {
+  const { t } = useTranslation("post");
   const [p, setP] = useState<Profil | null>(null);
   const [laeuft, setLaeuft] = useState(true);
 
@@ -141,7 +143,7 @@ export function ProfilKarte({ email, name, onClose, onMail, onSchreiben }: {
           <span className={styles.hinweis}> — {email}</span>
         </div>
 
-        {laeuft && <div className={styles.leer}>Lade …</div>}
+        {laeuft && <div className={styles.leer}>{t("common.loading")}</div>}
 
         {!laeuft && p && (
           <div className={styles.regelEditor}>
@@ -150,18 +152,18 @@ export function ProfilKarte({ email, name, onClose, onMail, onSchreiben }: {
                 <Icon name="person" size={14} />
                 <span>{p.kontakt.name}</span>
                 {p.kontakt.firma && <span className={styles.hinweis}>{p.kontakt.firma}</span>}
-                {(p.kontakt.telefone ?? []).map((t) => <span key={t} className={styles.hinweis}>{t}</span>)}
+                {(p.kontakt.telefone ?? []).map((nr) => <span key={nr} className={styles.hinweis}>{nr}</span>)}
               </div>
             ) : (
               <div className={styles.hinweis} style={{ padding: "0.3rem 0" }}>
-                Kein Eintrag in der Kontakte-App.
+                {t("profile.noContact")}
               </div>
             )}
 
             <div className={styles.tagTitel} style={{ marginTop: "0.7rem" }}>
-              <Icon name="mail" size={13} /> Letzte Mails ({p.mails.length})
+              <Icon name="mail" size={13} /> {t("profile.recentMails", { count: p.mails.length })}
             </div>
-            {p.mails.length === 0 && <div className={styles.hinweis}>Keine gefunden.</div>}
+            {p.mails.length === 0 && <div className={styles.hinweis}>{t("profile.noneFound")}</div>}
             {p.mails.map((m) => (
               <button key={m.id} className={styles.sucheTreffer} onClick={() => { onMail(String(m.id)); onClose(); }}>
                 <span className={styles.tagText}>{m.titel}</span>
@@ -170,19 +172,19 @@ export function ProfilKarte({ email, name, onClose, onMail, onSchreiben }: {
             ))}
 
             <div className={styles.tagTitel} style={{ marginTop: "0.7rem" }}>
-              <Icon name="calendar" size={13} /> Gemeinsame Termine ({p.termine.length})
+              <Icon name="calendar" size={13} /> {t("profile.sharedEvents", { count: p.termine.length })}
             </div>
-            {p.termine.length === 0 && <div className={styles.hinweis}>Keine gefunden.</div>}
-            {p.termine.map((t) => (
-              <div key={t.id} className={styles.tagZeile}>
-                <span className={styles.tagZeit}>{datumKurz(t.datum)}</span>
-                <span className={styles.tagText}>{t.titel}</span>
+            {p.termine.length === 0 && <div className={styles.hinweis}>{t("profile.noneFound")}</div>}
+            {p.termine.map((x) => (
+              <div key={x.id} className={styles.tagZeile}>
+                <span className={styles.tagZeit}>{datumKurz(x.datum)}</span>
+                <span className={styles.tagText}>{x.titel}</span>
               </div>
             ))}
 
             {(p.nicht_erreicht?.length ?? 0) > 0 && (
               <div className={styles.warnung} style={{ marginTop: "0.6rem" }}>
-                Nicht erreicht: {p.nicht_erreicht.join(", ")}
+                {t("profile.unreached", { sources: p.nicht_erreicht.join(", ") })}
               </div>
             )}
           </div>
@@ -191,10 +193,10 @@ export function ProfilKarte({ email, name, onClose, onMail, onSchreiben }: {
         <div className={styles.composerFuss}>
           <button className={`${styles.chip} ${styles.chipAktiv}`}
                   onClick={() => { onSchreiben(email, p?.kontakt?.name || name || ""); onClose(); }}>
-            <Icon name="pen" size={13} /> Schreiben
+            <Icon name="pen" size={13} /> {t("common.write")}
           </button>
           <span style={{ flex: 1 }} />
-          <button className={styles.chip} onClick={onClose}>Schließen</button>
+          <button className={styles.chip} onClick={onClose}>{t("common.close")}</button>
         </div>
       </div>
     </div>

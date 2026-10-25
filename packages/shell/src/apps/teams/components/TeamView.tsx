@@ -13,7 +13,7 @@
  * first channel), because a space itself keeps no account data for us.
  */
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { useAppRegistryStore, useMatrixStore, getBrand } from "@claraos/core";
+import { useAppRegistryStore, useMatrixStore, useTranslation } from "@claraos/core";
 import { useTeamResource, teamOrdnerPfad } from "../teamResources";
 import { KalenderView } from "./KalenderView";
 import { DateienView } from "./DateienView";
@@ -33,6 +33,7 @@ type ReiterDef = {
 };
 
 export function TeamView({ spaceId, windowId }: { spaceId: string; windowId: string }) {
+  const { t } = useTranslation("teams");
   const space = useMatrixStore((s) => s.spaces[spaceId]);
   const rooms = useMatrixStore((s) => s.rooms);
 
@@ -76,14 +77,14 @@ export function TeamView({ spaceId, windowId }: { spaceId: string; windowId: str
   }, [waehlbar, appId]);
 
   const reiter: ReiterDef[] = [
-    ...(teamOrdner ? [{ id: "files", label: "Dateien", icon: <FolderIcon size={15} /> }] : []),
-    ...(teamRes?.calendar_url ? [{ id: "calendar", label: "Kalender", icon: <CalendarIcon size={15} /> }] : []),
-    { id: `${APP_TAB_PREFIX}planner`, label: "Plan", icon: <KanbanIcon size={15} /> },
-    ...eigene.map((t) => ({
-      id: t.appId ? `${APP_TAB_PREFIX}${t.appId}` : `custom:${t.name}`,
-      label: t.name,
+    ...(teamOrdner ? [{ id: "files", label: t("teamView.files"), icon: <FolderIcon size={15} /> }] : []),
+    ...(teamRes?.calendar_url ? [{ id: "calendar", label: t("teamView.calendar"), icon: <CalendarIcon size={15} /> }] : []),
+    { id: `${APP_TAB_PREFIX}planner`, label: t("teamView.plan"), icon: <KanbanIcon size={15} /> },
+    ...eigene.map((tab) => ({
+      id: tab.appId ? `${APP_TAB_PREFIX}${tab.appId}` : `custom:${tab.name}`,
+      label: tab.name,
       icon: <LinkIcon size={15} />,
-      url: t.url,
+      url: tab.url,
       eigen: true,
     })),
   ];
@@ -127,7 +128,7 @@ export function TeamView({ spaceId, windowId }: { spaceId: string; windowId: str
           <span className={styles.titel}>{space.name}</span>
           <span className={styles.unterzeile}>
             <UsersIcon size={12} />
-            {kanaele.length} {kanaele.length === 1 ? "Kanal" : "Kanäle"}
+            {t("teamView.channels", { count: kanaele.length })}
           </span>
         </div>
       </div>
@@ -143,20 +144,20 @@ export function TeamView({ spaceId, windowId }: { spaceId: string; windowId: str
               <span>{r.label}</span>
             </button>
             {r.eigen && offen?.id === r.id && (
-              <button className={styles.reiterWeg} onClick={() => entfernen(r.label)} title="Reiter entfernen">
+              <button className={styles.reiterWeg} onClick={() => entfernen(r.label)} title={t("teamView.removeTab")}>
                 <XIcon size={12} />
               </button>
             )}
           </span>
         ))}
-        <button className={styles.plus} onClick={() => setDialog(true)} title="Reiter hinzufügen">
+        <button className={styles.plus} onClick={() => setDialog(true)} title={t("teamView.addTab")}>
           <PlusIcon size={15} />
         </button>
       </div>
 
       <div className={styles.inhalt}>
         {!offen ? (
-          <div className={styles.leer}>Für dieses Team ist noch nichts eingerichtet.</div>
+          <div className={styles.leer}>{t("teamView.nothingYet")}</div>
         ) : offen.id === "files" && teamOrdner ? (
           <DateienView startPfad={teamOrdner} />
         ) : offen.id === "calendar" ? (
@@ -164,9 +165,9 @@ export function TeamView({ spaceId, windowId }: { spaceId: string; windowId: str
         ) : istAppReiter(offen.id) ? (
           (() => {
             const Comp = appComponents[appIdAusReiter(offen.id)];
-            if (!Comp) return <div className={styles.leer}>Diese App steht hier nicht zur Verfügung.</div>;
+            if (!Comp) return <div className={styles.leer}>{t("teamView.notAvailable")}</div>;
             return (
-              <Suspense fallback={<div className={styles.leer}>Wird geladen …</div>}>
+              <Suspense fallback={<div className={styles.leer}>{t("teamView.loading")}</div>}>
                 <Comp windowId={windowId} />
               </Suspense>
             );
@@ -185,30 +186,30 @@ export function TeamView({ spaceId, windowId }: { spaceId: string; windowId: str
       {dialog && (
         <div className={styles.overlay} onClick={() => setDialog(false)}>
           <div className={styles.dialog} onClick={(e) => e.stopPropagation()}>
-            <h3>Reiter hinzufügen</h3>
+            <h3>{t("teamView.addTab")}</h3>
             <div className={styles.artWahl}>
               <button
                 type="button"
                 className={art === "app" ? styles.artAktiv : styles.art}
                 onClick={() => setArt("app")}
-              >{getBrand().product}-App</button>
+              >{t("teamView.productApp")}</button>
               <button
                 type="button"
                 className={art === "url" ? styles.artAktiv : styles.art}
                 onClick={() => setArt("url")}
-              >Web-Adresse</button>
+              >{t("teamView.webAddress")}</button>
             </div>
             {art === "app" ? (
               <>
                 <select autoFocus value={appId} onChange={(e) => setAppId(e.target.value)}>
                   {waehlbar.length === 0 ? (
-                    <option value="">Alle geeigneten Apps sind schon Reiter</option>
+                    <option value="">{t("teamView.allTabs")}</option>
                   ) : (
                     waehlbar.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)
                   )}
                 </select>
                 <input
-                  placeholder="Name im Reiter (leer = App-Name)"
+                  placeholder={t("teamView.tabName")}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && hinzufuegen()}
@@ -216,7 +217,7 @@ export function TeamView({ spaceId, windowId }: { spaceId: string; windowId: str
               </>
             ) : (
               <>
-                <input autoFocus placeholder="Name (z. B. Doku)" value={name}
+                <input autoFocus placeholder={t("teamView.namePlaceholder")} value={name}
                        onChange={(e) => setName(e.target.value)} />
                 <input placeholder="https://…" value={url}
                        onChange={(e) => setUrl(e.target.value)}
@@ -228,8 +229,8 @@ export function TeamView({ spaceId, windowId }: { spaceId: string; windowId: str
                 className={styles.ok}
                 onClick={hinzufuegen}
                 disabled={art === "app" ? !appId : !name.trim() || !url.trim()}
-              >Hinzufügen</button>
-              <button className={styles.abbruch} onClick={() => setDialog(false)}>Abbrechen</button>
+              >{t("teamView.add")}</button>
+              <button className={styles.abbruch} onClick={() => setDialog(false)}>{t("teamView.cancel")}</button>
             </div>
           </div>
         </div>

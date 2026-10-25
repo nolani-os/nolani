@@ -5,7 +5,7 @@ import styles from "../../ideas/IdeasApp.module.css";
 import kStyles from "../Knowledge.module.css";
 import { ideasApi } from "../../ideas/api";
 import type { KbObjectSlim } from "../../ideas/types";
-import { regionLocale } from "@claraos/core";
+import { regionLocale, useTranslation } from "@claraos/core";
 
 const PIPELINE_TYPES = new Set(["idea", "vision"]);
 
@@ -14,6 +14,7 @@ interface Props {
 }
 
 export function SearchView({ onOpen }: Props) {
+  const { t } = useTranslation("wissen");
   const [q, setQ] = useState("");
   const [results, setResults] = useState<KbObjectSlim[]>([]);
   const [busy, setBusy] = useState(false);
@@ -51,12 +52,12 @@ export function SearchView({ onOpen }: Props) {
       <div className={kStyles.searchBar}>
         <input
           className={styles.input}
-          placeholder="Wissensdatenbank durchsuchen…"
+          placeholder={t("search.placeholder")}
           value={q}
           autoFocus
           onChange={(e) => setQ(e.target.value)}
         />
-        <span className={kStyles.searchState}>{busy ? "Sucht…" : searched ? `${results.length} Treffer` : ""}</span>
+        <span className={kStyles.searchState}>{busy ? t("search.searching") : searched ? t("search.hits", { count: results.length }) : ""}</span>
       </div>
       {error && <div className={styles.error}>{error}</div>}
       <div className={styles.listRows}>
@@ -69,10 +70,10 @@ export function SearchView({ onOpen }: Props) {
           </button>
         ))}
         {searched && !busy && results.length === 0 && (
-          <div className={styles.empty}>Keine Treffer für „{q.trim()}".</div>
+          <div className={styles.empty}>{t("search.none", { q: q.trim() })}</div>
         )}
         {!searched && !busy && (
-          <div className={styles.empty}>Tippe mindestens 2 Zeichen — gesucht wird in Titel und Inhalt.</div>
+          <div className={styles.empty}>{t("search.minChars")}</div>
         )}
       </div>
     </div>

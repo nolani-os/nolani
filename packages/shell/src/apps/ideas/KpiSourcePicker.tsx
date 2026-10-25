@@ -6,14 +6,18 @@
 import type { ComponentType } from "react";
 import styles from "./IdeasApp.module.css";
 import type { KpiSource, KpiSourceKind } from "./types";
+import { useTranslation, i18n } from "@claraos/core";
 
 interface KindEntry { key: KpiSourceKind; label: string; hint: string }
 
-const KINDS: KindEntry[] = [
-  { key: "manual", label: "Von Hand", hint: "Du trägst die Werte selbst ein." },
-  { key: "planner", label: "Planner", hint: "Fortschritt eines Projekts: erledigte, offene oder Anteil erledigter Aufgaben." },
-  { key: "formula", label: "Formel", hint: "Aus anderen Kennzahlen gerechnet, z. B. ein Verhältnis." },
-];
+/** Built-in kinds read label and hint in the UI language (getters); site-specific
+ *  kinds below bring their own text. */
+const art = (key: KpiSourceKind): KindEntry => ({
+  key,
+  get label() { return i18n.t(`wissen:kpiSource.kinds.${key}`); },
+  get hint() { return i18n.t(`wissen:kpiSource.hints.${key}`); },
+});
+const KINDS: KindEntry[] = [art("manual"), art("planner"), art("formula")];
 
 // Optional site-specific data sources (heim/kpiSources.tsx): each kind is
 // inserted after the kind named by `after`, and its config form renders for
@@ -28,12 +32,7 @@ for (const k of heim?.heimKpiKinds ?? []) {
 }
 const HeimForm = heim?.HeimKpiSourceForm;
 
-const METRICS: { key: string; label: string }[] = [
-  { key: "done_ratio", label: "Anteil erledigt (%)" },
-  { key: "done", label: "erledigte Aufgaben" },
-  { key: "open", label: "offene Aufgaben" },
-  { key: "total", label: "Aufgaben gesamt" },
-];
+const METRICS = ["done_ratio", "done", "open", "total"];
 
 interface Props {
   value: KpiSource;
@@ -41,6 +40,7 @@ interface Props {
 }
 
 export function KpiSourcePicker({ value, onChange }: Props) {
+  const { t } = useTranslation("wissen");
   const cfg = (value.config ?? {}) as Record<string, string>;
   const setCfg = (patch: Record<string, unknown>) =>
     onChange({ ...value, config: { ...value.config, ...patch } });
@@ -64,33 +64,33 @@ export function KpiSourcePicker({ value, onChange }: Props) {
 
       {value.kind === "planner" && (
         <div className={styles.kpiForm}>
-          <label>Projekt-Nummer
-            <input className={styles.input} inputMode="numeric" placeholder="z. B. 12"
+          <label>{t("kpiSource.project")}
+            <input className={styles.input} inputMode="numeric" placeholder={t("kpiSource.projectPlaceholder")}
                    value={cfg.project_id ?? ""}
                    onChange={(e) => setCfg({ project_id: e.target.value })} />
           </label>
-          <label>Was zählen?
+          <label>{t("kpiSource.what")}
             <select className={styles.input} value={cfg.metric ?? "done_ratio"}
                     onChange={(e) => setCfg({ metric: e.target.value })}>
-              {METRICS.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
+              {METRICS.map((m) => <option key={m} value={m}>{t(`kpiSource.metrics.${m}`)}</option>)}
             </select>
           </label>
         </div>
       )}
 
       {value.kind === "formula" && (
-        <label className={styles.kpiFormRow}>Formel
+        <label className={styles.kpiFormRow}>{t("kpiSource.formula")}
           <input className={styles.input} placeholder='prop("a") / prop("b") * 100'
                  value={cfg.expression ?? ""}
                  onChange={(e) => setCfg({ expression: e.target.value })} />
           <span className={styles.metaHint}>
-            Die Eingangsgrößen werden nach dem Anlegen im Detail der Kennzahl zugeordnet.
+            {t("kpiSource.formulaHint")}
           </span>
         </label>
       )}
 
       {value.kind !== "manual" && (
-        <label className={styles.kpiFormRow}>Abrufen alle … Minuten
+        <label className={styles.kpiFormRow}>{t("kpiSource.every")}
           <input className={styles.input} inputMode="numeric" placeholder="60"
                  value={value.every_minutes ?? ""}
                  onChange={(e) => onChange({

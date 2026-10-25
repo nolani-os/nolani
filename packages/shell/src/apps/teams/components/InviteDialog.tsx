@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { heimSlots } from "../../../extensions";
 import styles from "./InviteDialog.module.css";
+import { useTranslation, i18n } from "@claraos/core";
 
 interface InviteResult {
   guest_username: string;
@@ -21,6 +22,7 @@ export function InviteDialog({
   roomName: string;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("teams");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<InviteResult | null>(null);
@@ -39,7 +41,7 @@ export function InviteDialog({
       });
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({ detail: resp.statusText }));
-        throw new Error(err.detail || "Invite failed");
+        throw new Error(err.detail || i18n.t("teams:invite.failed"));
       }
       setResult(await resp.json());
     } catch (e: any) {
@@ -53,17 +55,17 @@ export function InviteDialog({
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.dialog} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
-          <h3>Invite Guest to #{roomName}</h3>
-          <button aria-label="Schließen" title="Schließen" className={styles.closeBtn} onClick={onClose}>×</button>
+          <h3>{t("invite.title", { room: roomName })}</h3>
+          <button aria-label={t("common.close")} title={t("common.close")} className={styles.closeBtn} onClick={onClose}>×</button>
         </div>
 
         {!result ? (
           <div className={styles.body}>
-            <label className={styles.label}>Guest name</label>
+            <label className={styles.label}>{t("invite.guestName")}</label>
             <input
               autoFocus
               className={styles.input}
-              placeholder="z. B. Oma, Nachbarin…"
+              placeholder={t("invite.namePlaceholder")}
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleInvite()}
@@ -74,30 +76,30 @@ export function InviteDialog({
               onClick={handleInvite}
               disabled={loading || !name.trim()}
             >
-              {loading ? "Creating guest account..." : "Send Invite"}
+              {loading ? t("invite.creating") : t("invite.send")}
             </button>
           </div>
         ) : (
           <div className={styles.body}>
-            <div className={styles.success}>Gastzugang angelegt!</div>
+            <div className={styles.success}>{t("invite.created")}</div>
             <div className={styles.field}>
-              <span className={styles.fieldLabel}>Username:</span>
+              <span className={styles.fieldLabel}>{t("invite.username")}</span>
               <code>{result.guest_username}</code>
             </div>
             <div className={styles.field}>
-              <span className={styles.fieldLabel}>Matrix ID:</span>
+              <span className={styles.fieldLabel}>{t("invite.matrixId")}</span>
               <code>{result.matrix_user_id}</code>
             </div>
             {InviteResultExtra && <InviteResultExtra result={result as unknown as Record<string, unknown>} />}
             <div className={styles.instructions}>
-              <strong>Diese Anleitung an den Gast weitergeben:</strong>
+              <strong>{t("invite.instructions")}</strong>
               <pre>{result.instructions}</pre>
             </div>
             <button
               className={styles.copyBtn}
               onClick={() => navigator.clipboard.writeText(result.instructions)}
             >
-              Copy Instructions
+              {t("invite.copy")}
             </button>
           </div>
         )}

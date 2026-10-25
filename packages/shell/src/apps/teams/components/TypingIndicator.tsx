@@ -1,18 +1,19 @@
-import { useMatrixStore } from "@claraos/core";
+import { useMatrixStore, useTranslation } from "@claraos/core";
 import styles from "./TypingIndicator.module.css";
 
 const EMPTY: string[] = [];
 
 export function TypingIndicator({ roomId }: { roomId: string }) {
+  const { t } = useTranslation("teams");
   const typingUsers = useMatrixStore((s) => s.typing[roomId]) ?? EMPTY;
   if (typingUsers.length === 0) return null;
 
   const text =
     typingUsers.length === 1
-      ? `${typingUsers[0]} is typing`
+      ? t("typing.one", { name: typingUsers[0] })
       : typingUsers.length === 2
-        ? `${typingUsers[0]} and ${typingUsers[1]} are typing`
-        : `${typingUsers[0]} and ${typingUsers.length - 1} others are typing`;
+        ? t("typing.two", { a: typingUsers[0], b: typingUsers[1] })
+        : t("typing.many", { name: typingUsers[0], count: typingUsers.length - 1 });
 
   return (
     <div className={styles.typing}>

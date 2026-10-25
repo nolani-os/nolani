@@ -5,6 +5,8 @@
  * http helper turns that into text and throws the list away; but the UI needs
  * exactly that list to show "booked by <name>, 9–12".
  */
+import { i18n } from "@claraos/core";
+
 const BASE = "/api/claraos/planner";
 
 export interface Ressource {
@@ -49,7 +51,7 @@ async function http<T>(pfad: string, init: RequestInit = {}): Promise<T> {
   try { detail = (await r.json())?.detail; } catch { /* then without it */ }
   if (r.status === 409 && detail && typeof detail === "object" && "konflikte" in (detail as object)) {
     const d = detail as { meldung?: string; konflikte?: Belegung[] };
-    throw new BelegtError(d.konflikte ?? [], d.meldung ?? "Schon vergeben");
+    throw new BelegtError(d.konflikte ?? [], d.meldung ?? i18n.t("planner:business.alreadyTaken"));
   }
   throw new Error(typeof detail === "string" ? detail : `${r.status} ${r.statusText}`);
 }

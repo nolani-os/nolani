@@ -10,6 +10,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { i18n } from "@claraos/core";
 
 const BASE = "/api/claraos/chat/v2";
 const SDK_SRC = "/vendor/livekit-client.umd.min.js";
@@ -34,10 +35,10 @@ function loadSdk(): Promise<any> {
       s.onload = () =>
         window.LivekitClient
           ? resolve(window.LivekitClient)
-          : reject(new Error("LiveKit-SDK unvollständig geladen"));
+          : reject(new Error(i18n.t("chatWork:voice.sdkIncomplete")));
       s.onerror = () => {
         sdkPromise = null;
-        reject(new Error("LiveKit-SDK nicht ladbar"));
+        reject(new Error(i18n.t("chatWork:voice.sdkLoadFailed")));
       };
       document.head.appendChild(s);
     });
@@ -92,7 +93,7 @@ export function useLiveVoice(handlers: LiveVoiceHandlers = {}) {
     try {
       const lk = await loadSdk();
       const resp = await fetch(`${BASE}/voice/token`, { credentials: "include" });
-      if (!resp.ok) throw new Error(`Voice-Backend nicht erreichbar (${resp.status})`);
+      if (!resp.ok) throw new Error(i18n.t("chatWork:voice.backendUnreachable", { status: resp.status }));
       const { token, url } = await resp.json();
 
       const room = new lk.Room();

@@ -5,7 +5,8 @@ import { useMemo, useState } from "react";
 import styles from "../../ideas/IdeasApp.module.css";
 import { Icon, iconFuerEmoji, type IconName } from "../../../components/Icon";
 import type { KbObjectSlim, KbType } from "../../ideas/types";
-import { regionLocale } from "@claraos/core";
+import { typName } from "../../ideas/typName";
+import { regionLocale, useTranslation } from "@claraos/core";
 
 interface Props {
   objects: KbObjectSlim[];
@@ -27,6 +28,7 @@ function ObjektSymbol({ icon, ersatz = "document", size = 14 }: {
 }
 
 export function KnowledgeList({ objects, types, currentUser, fixedType = false, onOpen }: Props) {
+  const { t } = useTranslation("wissen");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [q, setQ] = useState("");
   const [mineOnly, setMineOnly] = useState(false);
@@ -51,7 +53,7 @@ export function KnowledgeList({ objects, types, currentUser, fixedType = false, 
       <div className={styles.listFilters}>
         <input
           className={styles.input}
-          placeholder="Filtern…"
+          placeholder={t("list.filter")}
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -61,15 +63,15 @@ export function KnowledgeList({ objects, types, currentUser, fixedType = false, 
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
           >
-            <option value="all">Alle Typen</option>
-            {types.map((t) => (
-              <option key={t.id} value={t.id}>{t.name}</option>
+            <option value="all">{t("list.allTypes")}</option>
+            {types.map((typ) => (
+              <option key={typ.id} value={typ.id}>{typName(typ)}</option>
             ))}
           </select>
         )}
         <label className={styles.checkLabel}>
           <input type="checkbox" checked={mineOnly} onChange={(e) => setMineOnly(e.target.checked)} />
-          Nur meine
+          {t("list.mineOnly")}
         </label>
       </div>
       <div className={styles.listRows}>
@@ -92,7 +94,7 @@ export function KnowledgeList({ objects, types, currentUser, fixedType = false, 
           );
         })}
         {filtered.length === 0 && (
-          <div className={styles.empty}>Nichts gefunden — leg mit „＋ Notiz" los.</div>
+          <div className={styles.empty}>{t("list.nothing")}</div>
         )}
       </div>
     </div>

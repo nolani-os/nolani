@@ -19,6 +19,7 @@ import { ideasApi } from "../ideas/api";
 import { FieldType } from "../ideas/types";
 import type { KbCollection, KbField } from "../ideas/types";
 import { AGGREGATE } from "./feldTypen";
+import { useTranslation, Trans } from "@claraos/core";
 
 interface Props {
   /** Column to be converted. */
@@ -33,6 +34,7 @@ interface Props {
 }
 
 export function FeldEinrichten({ feld, zielTyp, sammlungId, felder, onFertig, onAbbrechen }: Props) {
+  const { t } = useTranslation("wissen");
   const [sammlungen, setSammlungen] = useState<KbCollection[]>([]);
   const [ziel, setZiel] = useState<string>(String(feld.type_option?.target_collection ?? ""));
   const [relFeld, setRelFeld] = useState<string>(String(feld.type_option?.relation_field ?? ""));
@@ -68,21 +70,19 @@ export function FeldEinrichten({ feld, zielTyp, sammlungId, felder, onFertig, on
   return (
     <div className={geteilt.modalBackdrop} onClick={onAbbrechen}>
       <div className={geteilt.modal} onClick={(e) => e.stopPropagation()}>
-        <h3>{istVerknuepfung ? "Verknüpfung einrichten" : "Rollup einrichten"}</h3>
+        <h3>{istVerknuepfung ? t("fieldSetup.relationTitle") : t("fieldSetup.rollupTitle")}</h3>
         <p className={geteilt.metaHint}>
           {istVerknuepfung
-            ? `„${feld.name}" zeigt dann auf Einträge einer anderen Sammlung — wie ein `
-              + "Verweis von Rezept auf Zutat."
-            : `„${feld.name}" rechnet dann mit Werten aus den verknüpften Einträgen — `
-              + "zum Beispiel die Summe der Kosten."}
+            ? t("fieldSetup.relationHint", { name: feld.name })
+            : t("fieldSetup.rollupHint", { name: feld.name })}
         </p>
 
         {istVerknuepfung ? (
           <div className={styles.leisteFeld}>
-            <label className={geteilt.metaHint}>Zeigt auf die Sammlung</label>
+            <label className={geteilt.metaHint}>{t("fieldSetup.pointsTo")}</label>
             {sammlungen.length === 0 ? (
               <p className={geteilt.metaHint}>
-                Es gibt noch keine zweite Sammlung, auf die verwiesen werden könnte.
+                {t("fieldSetup.noOther")}
               </p>
             ) : (
               <div className={styles.leisteChips}>
@@ -99,11 +99,10 @@ export function FeldEinrichten({ feld, zielTyp, sammlungId, felder, onFertig, on
         ) : (
           <>
             <div className={styles.leisteFeld}>
-              <label className={geteilt.metaHint}>Über die Verknüpfung</label>
+              <label className={geteilt.metaHint}>{t("fieldSetup.via")}</label>
               {relSpalten.length === 0 ? (
                 <p className={geteilt.metaHint}>
-                  Diese Sammlung hat noch keine Verknüpfungsspalte. Lege zuerst eine an —
-                  ein Rollup rechnet immer <em>durch</em> eine Verknüpfung.
+                  <Trans t={t} i18nKey="fieldSetup.noRelation" components={{ i: <em /> }} />
                 </p>
               ) : (
                 <div className={styles.leisteChips}>
@@ -119,7 +118,7 @@ export function FeldEinrichten({ feld, zielTyp, sammlungId, felder, onFertig, on
             </div>
             {relFeld && (
               <div className={styles.leisteFeld}>
-                <label className={geteilt.metaHint}>Rechnet mit der Spalte</label>
+                <label className={geteilt.metaHint}>{t("fieldSetup.column")}</label>
                 <div className={styles.leisteChips}>
                   {zielFelder.map((f) => (
                     <button key={f.key}
@@ -129,14 +128,14 @@ export function FeldEinrichten({ feld, zielTyp, sammlungId, felder, onFertig, on
                     </button>
                   ))}
                   {zielFelder.length === 0 && (
-                    <span className={geteilt.metaHint}>Die verknüpfte Sammlung hat keine Spalten.</span>
+                    <span className={geteilt.metaHint}>{t("fieldSetup.noColumns")}</span>
                   )}
                 </div>
               </div>
             )}
             {zielFeld && (
               <div className={styles.leisteFeld}>
-                <label className={geteilt.metaHint}>Und zwar</label>
+                <label className={geteilt.metaHint}>{t("fieldSetup.how")}</label>
                 <div className={styles.leisteChips}>
                   {AGGREGATE.filter((a) => a.key).map((a) => (
                     <button key={a.key}
@@ -152,12 +151,12 @@ export function FeldEinrichten({ feld, zielTyp, sammlungId, felder, onFertig, on
         )}
 
         <div className={geteilt.modalFoot}>
-          <button className={geteilt.btnSecondary} onClick={onAbbrechen}>Abbrechen</button>
+          <button className={geteilt.btnSecondary} onClick={onAbbrechen}>{t("common.cancel")}</button>
           <button className={geteilt.btnPrimary} disabled={!bereit}
                   onClick={() => onFertig(zielTyp, istVerknuepfung
                     ? { target_collection: ziel }
                     : { relation_field: relFeld, target_field: zielFeld, aggregate: aggregat })}>
-            Übernehmen
+            {t("common.apply")}
           </button>
         </div>
       </div>

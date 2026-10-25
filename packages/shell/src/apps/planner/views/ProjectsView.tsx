@@ -1,6 +1,7 @@
 /** Projects — card overview + create + manage (rename, colour,
  * description, archive/reactivate, delete). */
 import { useState } from "react";
+import { useTranslation } from "@claraos/core";
 import styles from "../PlannerApp.module.css";
 import { plannerApi } from "../api";
 import type { VikProject } from "../types";
@@ -15,6 +16,7 @@ export function ProjectsView({
   onOpenProject: (p: VikProject) => void;
   onReload: () => void;
 }) {
+  const { t } = useTranslation("planner");
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
@@ -26,11 +28,11 @@ export function ProjectsView({
   const archived = projects.filter((p) => p.is_archived);
 
   const create = async () => {
-    const t = title.trim();
-    if (!t || busy) return;
+    const name = title.trim();
+    if (!name || busy) return;
     setBusy(true);
     try {
-      const p = await plannerApi.createProject(t);
+      const p = await plannerApi.createProject(name);
       setTitle("");
       setCreating(false);
       onReload();
@@ -48,7 +50,7 @@ export function ProjectsView({
             style={p.hex_color ? { background: `#${p.hex_color}` } : undefined} />
       <span className={styles.projectCardTitle}>{p.title}</span>
       {p.description && <span className={styles.projectCardDesc}>{p.description.replace(/<[^>]+>/g, "")}</span>}
-      <button className={styles.projectCardMenu} title="Projekt verwalten"
+      <button className={styles.projectCardMenu} title={t("projects.manage")}
               onClick={(e) => { e.stopPropagation(); setEditing(p); }}>
         ⋯
       </button>
@@ -58,29 +60,29 @@ export function ProjectsView({
   return (
     <div className={styles.view}>
       <header className={styles.viewHeader}>
-        <h2>📋 Projekte</h2>
+        <h2>📋 {t("nav.projects")}</h2>
         <div className={styles.viewTools}>
           {archived.length > 0 && (
             <button className={`${styles.btn} ${showArchived ? styles.btnActive : ""}`}
                     onClick={() => setShowArchived((s) => !s)}>
-              🗄 Archiv ({archived.length})
+              🗄 {t("projects.archiveCount", { count: archived.length })}
             </button>
           )}
-          <button className={styles.btnPrimary} onClick={() => setCreating(true)}>+ Neues Projekt</button>
+          <button className={styles.btnPrimary} onClick={() => setCreating(true)}>+ {t("projects.newProject")}</button>
         </div>
       </header>
       {error && (
         <div className={styles.errorBox}>
-          {error} <button className={styles.btn} onClick={() => setError(null)}>OK</button>
+          {error} <button className={styles.btn} onClick={() => setError(null)}>{t("actions.ok")}</button>
         </div>
       )}
       <div className={styles.projectGrid}>
         {active.map(card)}
-        {active.length === 0 && <div className={styles.empty}>Noch keine Projekte.</div>}
+        {active.length === 0 && <div className={styles.empty}>{t("projects.empty")}</div>}
       </div>
       {showArchived && archived.length > 0 && (
         <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>Archiviert</h3>
+          <h3 className={styles.sectionTitle}>{t("projects.archived")}</h3>
           <div className={styles.projectGrid}>{archived.map(card)}</div>
         </section>
       )}
@@ -88,13 +90,13 @@ export function ProjectsView({
       {creating && (
         <div className={styles.dialogOverlay} onClick={() => setCreating(false)}>
           <div className={styles.dialog} onClick={(e) => e.stopPropagation()}>
-            <h3>Neues Projekt</h3>
-            <input className={styles.input} autoFocus placeholder="Projektname"
+            <h3>{t("projects.newProject")}</h3>
+            <input className={styles.input} autoFocus placeholder={t("projects.namePlaceholder")}
                    value={title} onChange={(e) => setTitle(e.target.value)}
                    onKeyDown={(e) => e.key === "Enter" && create()} />
             <div className={styles.dialogActions}>
-              <button className={styles.btn} onClick={() => setCreating(false)}>Abbrechen</button>
-              <button className={styles.btnPrimary} disabled={!title.trim() || busy} onClick={create}>Anlegen</button>
+              <button className={styles.btn} onClick={() => setCreating(false)}>{t("actions.cancel")}</button>
+              <button className={styles.btnPrimary} disabled={!title.trim() || busy} onClick={create}>{t("actions.create")}</button>
             </div>
           </div>
         </div>
@@ -120,6 +122,7 @@ function ProjectEditDialog({
   onDone: () => void;
   onError: (msg: string) => void;
 }) {
+  const { t } = useTranslation("planner");
   const [title, setTitle] = useState(project.title);
   const [description, setDescription] = useState(project.description?.replace(/<[^>]+>/g, "") ?? "");
   const [color, setColor] = useState(project.hex_color ?? "");
@@ -148,51 +151,51 @@ function ProjectEditDialog({
   return (
     <div className={styles.dialogOverlay} onClick={onClose}>
       <div className={styles.dialog} onClick={(e) => e.stopPropagation()}>
-        <h3>Projekt verwalten</h3>
+        <h3>{t("projects.manage")}</h3>
         <div className={styles.fieldRow}>
-          <label>Name</label>
+          <label>{t("projects.name")}</label>
           <input className={styles.input} value={title} onChange={(e) => setTitle(e.target.value)} />
         </div>
         <div className={styles.fieldRow}>
-          <label>Beschreibung</label>
+          <label>{t("projects.description")}</label>
           <textarea className={styles.textarea} rows={2} value={description}
                     onChange={(e) => setDescription(e.target.value)} />
         </div>
         <div className={styles.fieldRow}>
-          <label>Farbe</label>
+          <label>{t("projects.color")}</label>
           <span className={styles.colorRow}>
             {COLORS.map((c) => (
               <button key={c || "none"}
                       className={`${styles.colorSwatch} ${color.replace(/^#/, "") === c ? styles.colorSwatchActive : ""}`}
                       style={c ? { background: `#${c}` } : undefined}
-                      title={c ? `#${c}` : "Keine Farbe"}
+                      title={c ? `#${c}` : t("projects.noColor")}
                       onClick={() => setColor(c)}>
                 {c ? "" : "∅"}
               </button>
             ))}
-            <input className={styles.inputSmall} placeholder="hex…" value={color}
+            <input className={styles.inputSmall} placeholder={t("projects.hexPlaceholder")} value={color}
                    onChange={(e) => setColor(e.target.value)} />
           </span>
         </div>
         <div className={styles.dialogActions}>
           <button className={styles.btn} disabled={busy}
                   onClick={() => run(() => plannerApi.updateProjectFields(project.id, { is_archived: !project.is_archived }))}>
-            {project.is_archived ? "♻ Reaktivieren" : "🗄 Archivieren"}
+            {project.is_archived ? `♻ ${t("projects.reactivate")}` : `🗄 ${t("projects.archive")}`}
           </button>
           {confirmDelete ? (
             <button className={styles.btnDanger} disabled={busy}
                     onClick={() => run(() => plannerApi.deleteProject(project.id))}>
-              Wirklich löschen? (alle Aufgaben!)
+              {t("projects.confirmDelete")}
             </button>
           ) : (
             <button className={styles.btnDanger} disabled={busy} onClick={() => setConfirmDelete(true)}>
-              Löschen
+              {t("actions.delete")}
             </button>
           )}
         </div>
         <div className={styles.dialogActions}>
-          <button className={styles.btn} onClick={onClose}>Abbrechen</button>
-          <button className={styles.btnPrimary} disabled={busy || !title.trim()} onClick={save}>Speichern</button>
+          <button className={styles.btn} onClick={onClose}>{t("actions.cancel")}</button>
+          <button className={styles.btnPrimary} disabled={busy || !title.trim()} onClick={save}>{t("actions.save")}</button>
         </div>
       </div>
     </div>

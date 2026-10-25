@@ -9,43 +9,46 @@
  */
 import { useEffect, useState, type ReactNode } from "react";
 import type { ClaraActivity } from "./api";
+import { i18n, useTranslation } from "@claraos/core";
 import styles from "./DenkZeile.module.css";
 import { statusFertig, statusLaeuft } from "./toolStatus";
 
-const PHASE: Record<string, string> = {
-  thinking: "Denkt nach",
-  planning: "Plant",
-  executing: "Arbeitet",
-  finalizing: "Formuliert",
-  done: "Fertig",
-};
+const PHASES = new Set(["thinking", "planning", "executing", "finalizing", "done"]);
+
+/** Short phase label, read at render time so a language switch applies. */
+function phaseLabel(phase: string): string {
+  return i18n.t(`chat:thinkingLine.phase.${PHASES.has(phase) ? phase : "executing"}`);
+}
 
 function sekunden(ms: number): string {
   const s = Math.max(0, Math.floor(ms / 1000));
-  return s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")} min` : `${s} s`;
+  return s >= 60
+    ? i18n.t("chat:thinkingLine.minutes", { time: `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}` })
+    : i18n.t("chat:thinkingLine.seconds", { count: s });
 }
 
 export function DenkZeile({ activity, children }: { activity: ClaraActivity; children?: ReactNode }) {
+  const { t } = useTranslation("chat");
   const [offen, setOffen] = useState(false);
   const [, setTick] = useState(0);
   const laeuft = activity.phase !== "done";
   useEffect(() => {
     if (!laeuft) return;
-    const t = window.setInterval(() => setTick((n) => n + 1), 500);
-    return () => window.clearInterval(t);
+    const timer = window.setInterval(() => setTick((n) => n + 1), 500);
+    return () => window.clearInterval(timer);
   }, [laeuft]);
 
   const dauer = (activity.finishedAt ?? Date.now()) - (activity.startedAt ?? Date.now());
   const tools = Object.values(activity.activeTools ?? {});
   const aktuell = tools[tools.length - 1];
   const anzahl = (activity.toolCalls ?? []).length;
-  const zuletzt = (activity.toolCalls ?? []).filter((t) => t.endedAt).slice(-1)[0];
+  const zuletzt = (activity.toolCalls ?? []).filter((tc) => tc.endedAt).slice(-1)[0];
   const schritt = aktuell
     ? `${aktuell.icon ? `${aktuell.icon} ` : ""}${statusLaeuft(aktuell.name, aktuell.argsSummary)}`
-    : zuletzt ? statusFertig(zuletzt.name, zuletzt.ok) : PHASE[activity.phase] || "Arbeitet";
+    : zuletzt ? statusFertig(zuletzt.name, zuletzt.ok) : phaseLabel(activity.phase);
   const text = laeuft
     ? `${schritt} · ${sekunden(dauer)}`
-    : `${anzahl ? `${anzahl} Werkzeug${anzahl === 1 ? "" : "e"} · ` : ""}${sekunden(dauer)}`;
+    : `${anzahl ? `${t("thinkingLine.tools", { count: anzahl })} · ` : ""}${sekunden(dauer)}`;
 
   return (
     <div className={styles.wrap} data-phase={activity.phase}>
@@ -54,7 +57,7 @@ export function DenkZeile({ activity, children }: { activity: ClaraActivity; chi
         className={styles.zeile}
         onClick={() => setOffen((o) => !o)}
         aria-expanded={offen}
-        title={offen ? "Schritte ausblenden" : "Schritte ansehen"}
+        title={offen ? t("thinkingLine.hideSteps") : t("thinkingLine.showSteps")}
       >
         <span className={`${styles.punkt} ${laeuft ? styles.punktAktiv : ""}`} aria-hidden="true" />
         <span className={styles.text}>{text}</span>

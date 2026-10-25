@@ -12,7 +12,7 @@ import styles from "./IdeasApp.module.css";
 import { Icon } from "../../components/Icon";
 import { ideasApi } from "./api";
 import type { ActionPlan } from "./types";
-import { useWindowsStore } from "@claraos/core";
+import { useWindowsStore, useTranslation, i18n } from "@claraos/core";
 import { dispatchLocalAction } from "../../Chat/actionBus";
 import { regionLocale } from "@claraos/core";
 
@@ -27,7 +27,7 @@ interface Props {
  *  The window is opened, then the existing action handler
  *  `planner.open_project` takes over; it also works if the window was already open. */
 function openInPlanner(projectId: number | null, taskId?: number) {
-  useWindowsStore.getState().openWindow("planner", { title: "Planner" });
+  useWindowsStore.getState().openWindow("planner");
   setTimeout(() => {
     if (taskId) dispatchLocalAction("planner", "open_task", { task_id: taskId });
     else if (projectId) dispatchLocalAction("planner", "open_project", { project_id: projectId });
@@ -35,6 +35,7 @@ function openInPlanner(projectId: number | null, taskId?: number) {
 }
 
 export function ActionPlanPanel({ goalId, canEdit, reloadTick }: Props) {
+  const { t } = useTranslation("wissen");
   const [plan, setPlan] = useState<ActionPlan | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +45,7 @@ export function ActionPlanPanel({ goalId, canEdit, reloadTick }: Props) {
       setPlan(await ideasApi.actionPlan(goalId));
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Aktionsplan nicht ladbar");
+      setError(e instanceof Error ? e.message : i18n.t("wissen:actionPlan.loadFailed"));
     }
   }, [goalId]);
 
@@ -57,7 +58,7 @@ export function ActionPlanPanel({ goalId, canEdit, reloadTick }: Props) {
       await ideasApi.createActionPlan(goalId);
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Anlegen fehlgeschlagen");
+      setError(e instanceof Error ? e.message : i18n.t("wissen:actionPlan.createFailed"));
     } finally {
       setBusy(false);
     }
@@ -70,16 +71,16 @@ export function ActionPlanPanel({ goalId, canEdit, reloadTick }: Props) {
   return (
     <div className={styles.planPanel}>
       <div className={styles.planHead}>
-        <span><Icon name="plan" size={16} className={styles.inlineIcon} />Aktionsplan</span>
+        <span><Icon name="plan" size={16} className={styles.inlineIcon} />{t("actionPlan.title")}</span>
         {plan.total > 0 && (
           <span className={styles.metaHint}>
-            {plan.done} von {plan.total} erledigt
-            {plan.next_due && ` · nächste Fälligkeit ${new Date(plan.next_due).toLocaleDateString(regionLocale())}`}
+            {t("actionPlan.progress", { done: plan.done, total: plan.total })}
+            {plan.next_due && t("actionPlan.nextDue", { date: new Date(plan.next_due).toLocaleDateString(regionLocale()) })}
           </span>
         )}
         {plan.project_id && (
           <button className={styles.linkBtn} onClick={() => openInPlanner(plan.project_id)}>
-            Im Planner öffnen
+            {t("actionPlan.openPlanner")}
           </button>
         )}
       </div>
@@ -89,17 +90,17 @@ export function ActionPlanPanel({ goalId, canEdit, reloadTick }: Props) {
       {error && <div className={styles.error}>{error}</div>}
 
       {plan.total > 0 && (
-        <div className={styles.planBar} title={`${plan.done}/${plan.total} Aufgaben erledigt`}>
+        <div className={styles.planBar} title={t("actionPlan.barTitle", { done: plan.done, total: plan.total })}>
           <span style={{ width: `${(plan.done / plan.total) * 100}%` }} />
         </div>
       )}
 
       {nothing && (
         <p className={styles.metaHint}>
-          Noch kein Aktionsplan.{" "}
+          {t("actionPlan.none")}{" "}
           {canEdit && (
             <button className={styles.linkBtn} disabled={busy} onClick={() => void create()}>
-              Projekt im Planner anlegen
+              {t("actionPlan.createProject")}
             </button>
           )}
         </p>
@@ -107,24 +108,24 @@ export function ActionPlanPanel({ goalId, canEdit, reloadTick }: Props) {
 
       {plan.tasks.length > 0 && (
         <ul className={styles.planTasks}>
-          {plan.tasks.slice(0, 6).map((t) => (
-            <li key={`${t.project_id}-${t.task_id}`} className={t.done ? styles.planDone : ""}>
-              <span><Icon name={t.done ? "done" : "blind"} size={15} /></span>
-              <button className={styles.linkBtn} onClick={() => openInPlanner(t.project_id, t.task_id)}>
-                {t.title}
+          {plan.tasks.slice(0, 6).map((task) => (
+            <li key={`${task.project_id}-${task.task_id}`} className={task.done ? styles.planDone : ""}>
+              <span><Icon name={task.done ? "done" : "blind"} size={15} /></span>
+              <button className={styles.linkBtn} onClick={() => openInPlanner(task.project_id, task.task_id)}>
+                {task.title}
               </button>
-              {t.missing && <span className={styles.metaHint}>(im Planner nicht gefunden)</span>}
-              {canEdit && t.project_id !== plan.project_id && (
-                <button className={styles.iconBtn} title="Verknüpfung lösen"
+              {task.missing && <span className={styles.metaHint}>{t("actionPlan.missing")}</span>}
+              {canEdit && task.project_id !== plan.project_id && (
+                <button className={styles.iconBtn} title={t("actionPlan.unlink")}
                         onClick={async () => {
-                          await ideasApi.unlinkTaskFromGoal(goalId, t.project_id, t.task_id);
+                          await ideasApi.unlinkTaskFromGoal(goalId, task.project_id, task.task_id);
                           await load();
-                        }}><Icon name="close" size={14} title="Entfernen" /></button>
+                        }}><Icon name="close" size={14} title={t("actionPlan.remove")} /></button>
               )}
             </li>
           ))}
           {plan.tasks.length > 6 && (
-            <li className={styles.metaHint}>… und {plan.tasks.length - 6} weitere</li>
+            <li className={styles.metaHint}>{t("actionPlan.more", { count: plan.tasks.length - 6 })}</li>
           )}
         </ul>
       )}

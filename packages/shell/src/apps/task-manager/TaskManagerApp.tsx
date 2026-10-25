@@ -4,6 +4,7 @@ import {
   useWorkspaceStore,
   useAppRegistryStore,
   useAuthStore,
+  useTranslation,
 } from "@claraos/core";
 import { AppIcon } from "../../components/AppIcon";
 import { widgetManifests } from "../../widgets/registry";
@@ -24,6 +25,7 @@ type Tab = "windows" | "widgets" | "containers" | "system";
  *      shared with the system monitor widget.
  */
 export default function TaskManagerApp({ windowId: _windowId }: { windowId: string }) {
+  const { t } = useTranslation("taskManager");
   const [tab, setTab] = useState<Tab>("windows");
   const windowsMap = useWindowsStore((s) => s.windows);
   const windowOrder = useWindowsStore((s) => s.windowOrder);
@@ -45,13 +47,13 @@ export default function TaskManagerApp({ windowId: _windowId }: { windowId: stri
           className={`${styles.tab} ${tab === "windows" ? styles.tabActive : ""}`}
           onClick={() => setTab("windows")}
         >
-          Anwendungen <span className={styles.count}>{visibleWindows.length}</span>
+          {t("tabs.windows")} <span className={styles.count}>{visibleWindows.length}</span>
         </button>
         <button
           className={`${styles.tab} ${tab === "widgets" ? styles.tabActive : ""}`}
           onClick={() => setTab("widgets")}
         >
-          Widgets <span className={styles.count}>{(activeWs.widgets ?? []).length}</span>
+          {t("tabs.widgets")} <span className={styles.count}>{(activeWs.widgets ?? []).length}</span>
         </button>
         {isAdmin && (
           <>
@@ -59,13 +61,13 @@ export default function TaskManagerApp({ windowId: _windowId }: { windowId: stri
               className={`${styles.tab} ${tab === "containers" ? styles.tabActive : ""}`}
               onClick={() => setTab("containers")}
             >
-              Container
+              {t("tabs.containers")}
             </button>
             <button
               className={`${styles.tab} ${tab === "system" ? styles.tabActive : ""}`}
               onClick={() => setTab("system")}
             >
-              System
+              {t("tabs.system")}
             </button>
           </>
         )}
@@ -80,23 +82,23 @@ export default function TaskManagerApp({ windowId: _windowId }: { windowId: stri
           <thead>
             <tr>
               <th></th>
-              <th>Name</th>
-              <th>App</th>
-              <th>Status</th>
-              <th>Aktion</th>
+              <th>{t("col.name")}</th>
+              <th>{t("col.app")}</th>
+              <th>{t("col.status")}</th>
+              <th>{t("col.action")}</th>
             </tr>
           </thead>
           <tbody>
             {visibleWindows.length === 0 && (
-              <tr><td colSpan={5} className={styles.empty}>Keine offenen Fenster</td></tr>
+              <tr><td colSpan={5} className={styles.empty}>{t("noWindows")}</td></tr>
             )}
             {visibleWindows.map((win) => {
               const app = apps[win.appId];
               const status = win.minimized
-                ? "minimiert"
+                ? t("state.minimized")
                 : win.maximized
-                  ? "maximiert"
-                  : "aktiv";
+                  ? t("state.maximized")
+                  : t("state.active");
               return (
                 <tr key={win.id}>
                   <td className={styles.iconCell}>
@@ -111,13 +113,13 @@ export default function TaskManagerApp({ windowId: _windowId }: { windowId: stri
                   <td className={styles.subCell}>{status}</td>
                   <td className={styles.actionCell}>
                     <button className={styles.actionBtn} onClick={() => focusWindow(win.id)}>
-                      Fokussieren
+                      {t("focus")}
                     </button>
                     <button
                       className={`${styles.actionBtn} ${styles.danger}`}
                       onClick={() => closeWindow(win.id)}
                     >
-                      Beenden
+                      {t("quit")}
                     </button>
                   </td>
                 </tr>
@@ -133,16 +135,16 @@ export default function TaskManagerApp({ windowId: _windowId }: { windowId: stri
         <table className={`${styles.table} ${styles.tableWidgets}`}>
           <thead>
             <tr>
-              <th>Typ</th>
-              <th>Workspace</th>
-              <th>Position</th>
-              <th>Größe</th>
-              <th>Aktion</th>
+              <th>{t("col.type")}</th>
+              <th>{t("col.workspace")}</th>
+              <th>{t("col.position")}</th>
+              <th>{t("col.size")}</th>
+              <th>{t("col.action")}</th>
             </tr>
           </thead>
           <tbody>
             {(activeWs.widgets ?? []).length === 0 && (
-              <tr><td colSpan={5} className={styles.empty}>Keine Widgets in diesem Workspace</td></tr>
+              <tr><td colSpan={5} className={styles.empty}>{t("noWidgets")}</td></tr>
             )}
             {(activeWs.widgets ?? []).map((w) => {
               const m = widgetManifests[w.type];
@@ -157,7 +159,7 @@ export default function TaskManagerApp({ windowId: _windowId }: { windowId: stri
                       className={`${styles.actionBtn} ${styles.danger}`}
                       onClick={() => removeWidget(w.id)}
                     >
-                      Entfernen
+                      {t("remove")}
                     </button>
                   </td>
                 </tr>

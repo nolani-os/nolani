@@ -4,14 +4,11 @@ import { useState } from "react";
 import styles from "./IdeasApp.module.css";
 import { Icon } from "../../components/Icon";
 import { ideasApi } from "./api";
+import { typName } from "./typName";
 import type { KbPropDef, KbType, Visibility } from "./types";
+import { useTranslation } from "@claraos/core";
 
-const KINDS: { v: KbPropDef["kind"]; label: string }[] = [
-  { v: "text", label: "Text" }, { v: "number", label: "Zahl" },
-  { v: "date", label: "Datum" }, { v: "select", label: "Auswahl" },
-  { v: "multi_select", label: "Mehrfach-Auswahl" }, { v: "url", label: "Link" },
-  { v: "checkbox", label: "Checkbox" },
-];
+const KINDS: KbPropDef["kind"][] = ["text", "number", "date", "select", "multi_select", "url", "checkbox"];
 
 interface Props {
   types: KbType[];
@@ -20,6 +17,7 @@ interface Props {
 }
 
 export function CollectionModal({ types, onDone, onClose }: Props) {
+  const { t } = useTranslation("wissen");
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("🗂️");
   const [visibility, setVisibility] = useState<Visibility>("private");
@@ -64,33 +62,33 @@ export function CollectionModal({ types, onDone, onClose }: Props) {
     <div className={styles.modalBackdrop} onClick={onClose}>
       <div className={`${styles.modal} ${styles.modalWide}`} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHead}>
-          <h3><Icon name="collections" size={16} className={styles.inlineIcon} />Neue Sammlung</h3>
-          <button className={styles.iconBtn} onClick={onClose}><Icon name="close" size={14} title="Schließen" /></button>
+          <h3><Icon name="collections" size={16} className={styles.inlineIcon} />{t("newCollection.title")}</h3>
+          <button className={styles.iconBtn} onClick={onClose}><Icon name="close" size={14} title={t("app.close")} /></button>
         </div>
         {error && <div className={styles.error}>{error}</div>}
         <div className={styles.formRow}>
           <input className={styles.input} style={{ width: 64 }} value={icon} maxLength={4}
-                 onChange={(e) => setIcon(e.target.value)} title="Icon (Emoji)" />
-          <input className={styles.input} style={{ flex: 1 }} placeholder="Name der Sammlung" autoFocus
+                 onChange={(e) => setIcon(e.target.value)} title={t("newCollection.icon")} />
+          <input className={styles.input} style={{ flex: 1 }} placeholder={t("newCollection.name")} autoFocus
                  value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div className={styles.formRow}>
-          <label className={styles.propLabel}>Einträge sind</label>
+          <label className={styles.propLabel}>{t("newCollection.entriesAre")}</label>
           <select className={styles.input} value={newType ? "__new__" : typeId}
                   onChange={(e) => {
                     if (e.target.value === "__new__") setNewType(true);
                     else { setNewType(false); setTypeId(e.target.value); }
                   }}>
-            {types.map((t) => (
-              <option key={t.id} value={t.id}>{t.icon ?? ""} {t.name}</option>
+            {types.map((typ) => (
+              <option key={typ.id} value={typ.id}>{typ.icon ?? ""} {typName(typ)}</option>
             ))}
-            <option value="__new__">＋ Neuer Typ…</option>
+            <option value="__new__">{t("newCollection.newType")}</option>
           </select>
           <div className={styles.segmented} style={{ flex: 1 }}>
             <button className={visibility === "private" ? styles.segActive : ""}
-                    onClick={() => setVisibility("private")}>🔒 Privat</button>
+                    onClick={() => setVisibility("private")}>{t("newCollection.private")}</button>
             <button className={visibility === "family" ? styles.segActive : ""}
-                    onClick={() => setVisibility("family")}>👪 Familie</button>
+                    onClick={() => setVisibility("family")}>{t("newCollection.family")}</button>
           </div>
         </div>
 
@@ -98,24 +96,24 @@ export function CollectionModal({ types, onDone, onClose }: Props) {
           <div className={styles.typeEditor}>
             <div className={styles.formRow}>
               <input className={styles.input} style={{ width: 64 }} value={ntIcon} maxLength={4}
-                     onChange={(e) => setNtIcon(e.target.value)} title="Typ-Icon" />
-              <input className={styles.input} style={{ flex: 1 }} placeholder="Typ-Name (z.B. Rezept)"
+                     onChange={(e) => setNtIcon(e.target.value)} title={t("newCollection.typeIcon")} />
+              <input className={styles.input} style={{ flex: 1 }} placeholder={t("newCollection.typeName")}
                      value={ntName} onChange={(e) => setNtName(e.target.value)} />
-              <input className={styles.input} style={{ width: 130 }} placeholder="Kürzel (automatisch)"
+              <input className={styles.input} style={{ width: 130 }} placeholder={t("newCollection.typeId")}
                      value={ntId} onChange={(e) => setNtId(e.target.value)} />
             </div>
-            <div className={styles.propLabel}>Eigenschaften</div>
+            <div className={styles.propLabel}>{t("newCollection.props")}</div>
             {props.map((p, i) => (
               <div key={i} className={styles.formRow}>
-                <input className={styles.input} style={{ flex: 1 }} placeholder="Label (z.B. Dauer)"
+                <input className={styles.input} style={{ flex: 1 }} placeholder={t("newCollection.propLabel")}
                        value={p.label}
                        onChange={(e) => setProps((ps) => ps.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))} />
                 <select className={styles.input} value={p.kind}
                         onChange={(e) => setProps((ps) => ps.map((x, j) => (j === i ? { ...x, kind: e.target.value as KbPropDef["kind"] } : x)))}>
-                  {KINDS.map((k) => <option key={k.v} value={k.v}>{k.label}</option>)}
+                  {KINDS.map((k) => <option key={k} value={k}>{t(`newCollection.kinds.${k}`)}</option>)}
                 </select>
                 {(p.kind === "select" || p.kind === "multi_select") && (
-                  <input className={styles.input} style={{ flex: 1 }} placeholder="Optionen, kommagetrennt"
+                  <input className={styles.input} style={{ flex: 1 }} placeholder={t("newCollection.options")}
                          value={(p.options ?? []).join(", ")}
                          onChange={(e) => setProps((ps) => ps.map((x, j) => (j === i
                            ? { ...x, options: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) } : x)))} />
@@ -126,7 +124,7 @@ export function CollectionModal({ types, onDone, onClose }: Props) {
             ))}
             <button className={styles.btnSecondary}
                     onClick={() => setProps((ps) => [...ps, { key: "", label: "", kind: "text" }])}>
-              ＋ Eigenschaft
+              {t("newCollection.addProp")}
             </button>
           </div>
         )}
@@ -135,7 +133,7 @@ export function CollectionModal({ types, onDone, onClose }: Props) {
           <button className={styles.btnPrimary}
                   disabled={!name.trim() || busy || (newType && !ntName.trim())}
                   onClick={() => void create()}>
-            {busy ? "…" : "Anlegen"}
+            {busy ? "…" : t("newCollection.create")}
           </button>
         </div>
       </div>

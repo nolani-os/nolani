@@ -24,6 +24,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   sucherMoeglich, starteSucher, beendeSucher, ausloesen, leuchteMoeglich, leuchte,
 } from "../apps/kamera/sucher";
+import { useTranslation } from "@claraos/core";
 import styles from "./KameraSheet.module.css";
 
 export { sucherMoeglich };
@@ -34,6 +35,7 @@ export function KameraSheet({ onFoto, onAbbrechen, onSystemkamera }: {
   /** Fallback: the previous `<input capture>` path (browser, or when the viewfinder fails). */
   onSystemkamera: () => void;
 }) {
+  const { t } = useTranslation("chat");
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
@@ -53,7 +55,7 @@ export function KameraSheet({ onFoto, onAbbrechen, onSystemkamera }: {
         setLeuchteDa(leuchteMoeglich(stream));
         setLaeuft(true);
       } catch (e) {
-        setFehler(e instanceof Error ? e.message : "Kamera lässt sich nicht öffnen.");
+        setFehler(e instanceof Error ? e.message : t("camera.openFailed"));
       }
     })();
     return () => {
@@ -76,11 +78,11 @@ export function KameraSheet({ onFoto, onAbbrechen, onSystemkamera }: {
         { type: blob.type || "image/jpeg" });
       onFoto(datei);
     } catch (e) {
-      setFehler(e instanceof Error ? e.message : "Aufnahme fehlgeschlagen.");
+      setFehler(e instanceof Error ? e.message : t("camera.captureFailed"));
     } finally {
       setSchiesst(false);
     }
-  }, [onFoto, schiesst]);
+  }, [onFoto, schiesst, t]);
 
   const leuchteSchalten = useCallback(async () => {
     const neu = !leuchteAn;
@@ -88,7 +90,7 @@ export function KameraSheet({ onFoto, onAbbrechen, onSystemkamera }: {
   }, [leuchteAn]);
 
   return (
-    <div className={styles.blatt} role="dialog" aria-modal="true" aria-label="Foto aufnehmen">
+    <div className={styles.blatt} role="dialog" aria-modal="true" aria-label={t("composer.takePhoto")}>
       <div className={styles.buehne}>
         <video
           ref={videoRef}
@@ -105,32 +107,32 @@ export function KameraSheet({ onFoto, onAbbrechen, onSystemkamera }: {
                 {fehler}
                 <br />
                 <button type="button" className={styles.ausweg} onClick={onSystemkamera}>
-                  Stattdessen die Systemkamera benutzen
+                  {t("camera.useSystemCamera")}
                 </button>
               </>
-            ) : "Kamera wird geöffnet …"}
+            ) : t("camera.opening")}
           </div>
         )}
       </div>
 
       <div className={styles.leiste}>
         <button type="button" className={styles.neben} onClick={onAbbrechen}
-                aria-label="Abbrechen">✕</button>
+                aria-label={t("camera.cancel")}>✕</button>
         <button
           type="button"
           className={styles.ausloeser}
           onClick={() => void schiessen()}
           disabled={!laeuft || schiesst}
-          aria-label="Foto aufnehmen"
+          aria-label={t("composer.takePhoto")}
         />
         {leuchteDa ? (
           <button type="button" className={styles.neben} onClick={() => void leuchteSchalten()}
-                  aria-pressed={leuchteAn} aria-label="Leuchte">
+                  aria-pressed={leuchteAn} aria-label={t("camera.torch")}>
             {leuchteAn ? "🔦" : "💡"}
           </button>
         ) : (
           <button type="button" className={styles.neben} onClick={onSystemkamera}
-                  aria-label="Systemkamera">📱</button>
+                  aria-label={t("camera.systemCamera")}>📱</button>
         )}
       </div>
     </div>

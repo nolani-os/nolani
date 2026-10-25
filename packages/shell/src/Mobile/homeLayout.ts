@@ -40,10 +40,11 @@ const LEGACY_WORKSPACES_KEY = "claraos.mobile.workspaces";
 const LEGACY_PINS_KEY = "claraos.mobile.pins";
 
 // Sensible first-run layout: a few core apps on page 0 + a dock.
-// Android-style favourites tray: Talk / Mail / Selkies + Settings. (These are
-// verified app-registry ids; the old "clara" id never existed and rendered an
-// empty slot — Clara now has its own assistant button, not a dock app.)
-export const DEFAULT_DOCK = ["nextcloud-talk", "bulwark-mail", "selkies-browser"];
+// Android-style favourites tray next to the fixed assistant button: the built-in
+// Teams and Post apps and the browser. It used to name nextcloud-talk and
+// bulwark-mail, which only exist in some installations — elsewhere (the demo
+// cell) the tray showed the browser alone.
+export const DEFAULT_DOCK = ["teams-workspace", "post", "selkies-browser"];
 // First-run icons; this installation sets its own (heim.config.ts).
 const heimConfig = import.meta.glob<{ MOBILE_DEFAULT_PAGE0?: string[] }>("../heim.config.ts", { eager: true });
 const DEFAULT_PAGE0: string[] = Object.values(heimConfig)[0]?.MOBILE_DEFAULT_PAGE0 ?? [

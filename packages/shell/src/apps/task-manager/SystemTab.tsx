@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import styles from "./TaskManagerApp.module.css";
 import { SYSTEM_LABELS } from "../../widgets/systemLabels";
+import { i18n, useTranslation } from "@claraos/core";
 
 interface Target {
   id: string;
@@ -22,7 +23,13 @@ interface TargetStats {
   uptime: number | null;
 }
 
-const KIND_LABEL: Record<string, string> = { node: SYSTEM_LABELS.nodeKind, vm: "VM", device: "Gerät" };
+/** Read on every render: a lookup table built at import time would freeze the language. */
+function kindLabel(kind: string): string {
+  if (kind === "node") return SYSTEM_LABELS.nodeKind;
+  if (kind === "vm") return i18n.t("taskManager:system.kindVm");
+  if (kind === "device") return i18n.t("taskManager:system.kindDevice");
+  return kind;
+}
 
 function fmtBytes(b: number | null | undefined): string {
   if (!b) return "—";
@@ -56,6 +63,7 @@ function Bar({ used, max }: { used: number | null; max: number | null }) {
 }
 
 export function SystemTab() {
+  const { t } = useTranslation("taskManager");
   const [targets, setTargets] = useState<Target[]>([]);
   const [pveConfigured, setPveConfigured] = useState(true);
   const [stats, setStats] = useState<Record<string, TargetStats>>({});
@@ -104,29 +112,29 @@ export function SystemTab() {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>Ziel</th>
-              <th>Typ</th>
-              <th>Status</th>
-              <th>CPU</th>
-              <th>RAM</th>
-              <th>Disk</th>
-              <th>Uptime</th>
+              <th>{t("col.target")}</th>
+              <th>{t("col.type")}</th>
+              <th>{t("col.status")}</th>
+              <th>{t("col.cpu")}</th>
+              <th>{t("col.ram")}</th>
+              <th>{t("col.disk")}</th>
+              <th>{t("col.uptime")}</th>
             </tr>
           </thead>
           <tbody>
             {targets.length === 0 && (
-              <tr><td colSpan={7} className={styles.empty}>{loading ? "Lade…" : "Keine Monitoring-Ziele verfügbar"}</td></tr>
+              <tr><td colSpan={7} className={styles.empty}>{loading ? t("loading") : t("system.noTargets")}</td></tr>
             )}
-            {targets.map((t) => {
-              const s = stats[t.id];
+            {targets.map((z) => {
+              const s = stats[z.id];
               const up = s?.status === "running" || s?.status === "online";
               return (
-                <tr key={t.id}>
+                <tr key={z.id}>
                   <td className={styles.titleCell}>
-                    <span className={up ? styles.dotUp : styles.dotDown}>●</span> {t.name}
-                    {t.node ? <span className={styles.subCell}> @ {t.node}</span> : null}
+                    <span className={up ? styles.dotUp : styles.dotDown}>●</span> {z.name}
+                    {z.node ? <span className={styles.subCell}> @ {z.node}</span> : null}
                   </td>
-                  <td className={styles.subCell}>{KIND_LABEL[t.kind] ?? t.kind}</td>
+                  <td className={styles.subCell}>{kindLabel(z.kind)}</td>
                   <td className={styles.subCell}>{s?.status ?? "—"}</td>
                   <td className={styles.subCell}>{s?.cpu != null ? `${s.cpu.toFixed(1)} %` : "—"}</td>
                   <td><Bar used={s?.mem ?? null} max={s?.maxmem ?? null} /></td>
@@ -138,7 +146,7 @@ export function SystemTab() {
           </tbody>
         </table>
       </div>
-      <p className={styles.footerLine}>Werte aktualisieren sich alle 15 s</p>
+      <p className={styles.footerLine}>{t("system.refreshNote")}</p>
     </div>
   );
 }

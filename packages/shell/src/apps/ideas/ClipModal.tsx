@@ -2,7 +2,7 @@
  * The fetch happens SERVER-SIDE (services/kb_clip.py); the browser only sends
  * the URL. The server rejects internal addresses; its message is shown here
  * unchanged instead of being swallowed. */
-import { getBrand } from "@claraos/core";
+import { i18n, useTranslation } from "@claraos/core";
 import { useEffect, useState } from "react";
 import styles from "./IdeasApp.module.css";
 import { Icon } from "../../components/Icon";
@@ -14,6 +14,7 @@ interface Props {
 }
 
 export function ClipModal({ onClipped, onClose }: Props) {
+  const { t } = useTranslation("wissen");
   const [url, setUrl] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -36,7 +37,7 @@ export function ClipModal({ onClipped, onClose }: Props) {
       const res = await ideasApi.clipPage({ url: url.trim(), note: note.trim() });
       if (res.warning) {
         // Object was created but the page could not be fetched; say so honestly
-        setError(`Gespeichert, aber: ${res.warning}`);
+        setError(i18n.t("wissen:clip.savedBut", { warning: res.warning }));
         setTimeout(() => onClipped(res.object.id), 1800);
       } else {
         onClipped(res.object.id);
@@ -52,8 +53,8 @@ export function ClipModal({ onClipped, onClose }: Props) {
     <div className={styles.modalBackdrop} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHead}>
-          <h3><Icon name="globe" size={16} className={styles.inlineIcon} />Webseite sichern</h3>
-          <button className={styles.iconBtn} onClick={onClose} title="Schließen"><Icon name="close" size={14} title="Schließen" /></button>
+          <h3><Icon name="globe" size={16} className={styles.inlineIcon} />{t("clip.title")}</h3>
+          <button className={styles.iconBtn} onClick={onClose} title={t("app.close")}><Icon name="close" size={14} title={t("app.close")} /></button>
         </div>
 
         <input
@@ -67,34 +68,33 @@ export function ClipModal({ onClipped, onClose }: Props) {
         <textarea
           className={styles.input}
           rows={2}
-          placeholder="Warum ist das wichtig? (optional)"
+          placeholder={t("clip.why")}
           value={note}
           onChange={(e) => setNote(e.target.value)}
         />
         {error && <div className={styles.error}>{error}</div>}
 
         <p className={styles.metaHint}>
-          Der Artikel wird serverseitig geholt und als Recherche-Objekt gespeichert —
-          nur öffentliche Adressen.
+          {t("clip.hint")}
         </p>
 
         {bookmarklet && (
           <p className={styles.metaHint}>
-            Für unterwegs:{" "}
+            {t("clip.onTheGo")}{" "}
             <a href={bookmarklet}
                className={styles.propLink}
                onClick={(e) => e.preventDefault()}
                draggable
-               title="In die Lesezeichenleiste ziehen — sichert dann die offene Seite samt Markierung"><Icon name="attachment" size={14} className={styles.inlineIcon} />In {getBrand().product} sichern
+               title={t("clip.bookmarkTitle")}><Icon name="attachment" size={14} className={styles.inlineIcon} />{t("clip.bookmark")}
             </a>{" "}
-            in die Lesezeichenleiste ziehen.
+            {t("clip.dragHint")}
           </p>
         )}
 
         <div className={styles.modalFoot}>
           <button className={styles.btnPrimary} disabled={!url.trim() || busy}
                   onClick={() => void submit()}>
-            {busy ? "Holt die Seite…" : "Sichern"}
+            {busy ? t("clip.fetching") : t("clip.save")}
           </button>
         </div>
       </div>

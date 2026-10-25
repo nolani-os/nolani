@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useMatrixStore } from "@claraos/core";
+import { useMatrixStore, useTranslation } from "@claraos/core";
 import type { MatrixMessage } from "@claraos/core";
 import { loadThreadTimeline, sendThreadReply } from "../matrixClient";
 import { sanitizeHtml } from "../sanitizeHtml";
@@ -17,6 +17,7 @@ function formatTime(ts: number): string {
 }
 
 export function ThreadPane({ roomId }: { roomId: string }) {
+  const { t } = useTranslation("teams");
   const rootId = useMatrixStore((s) => s.activeThreadRootId);
   const setActiveThreadRoot = useMatrixStore((s) => s.setActiveThreadRoot);
   const messages = useMatrixStore((s) => s.timeline[roomId]) ?? [];
@@ -57,7 +58,7 @@ export function ThreadPane({ roomId }: { roomId: string }) {
       </div>
       <div className={styles.body}>
         {msg.redacted ? (
-          <span className={styles.redacted}>[gelöscht]</span>
+          <span className={styles.redacted}>{t("thread.deleted")}</span>
         ) : msg.formattedBody ? (
           <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(msg.formattedBody) }} />
         ) : (
@@ -71,28 +72,28 @@ export function ThreadPane({ roomId }: { roomId: string }) {
     <div className={styles.pane}>
       <div className={styles.header}>
         <ThreadIcon size={15} />
-        <span className={styles.title}>Thread</span>
+        <span className={styles.title}>{t("thread.title")}</span>
         <span className={styles.count}>
-          {replies.length} {replies.length === 1 ? "Antwort" : "Antworten"}
+          {t("thread.replies", { count: replies.length })}
         </span>
-        <button className={styles.closeBtn} onClick={() => setActiveThreadRoot(null)} title="Schließen">
+        <button className={styles.closeBtn} onClick={() => setActiveThreadRoot(null)} title={t("common.close")}>
           <XIcon size={15} />
         </button>
       </div>
 
       <div className={styles.messages} ref={scrollRef}>
         {root && renderMsg(root, true)}
-        {loading && replies.length === 0 && <div className={styles.loading}>Lade Thread…</div>}
+        {loading && replies.length === 0 && <div className={styles.loading}>{t("thread.loading")}</div>}
         {replies.map((m) => renderMsg(m))}
         {!loading && replies.length === 0 && (
-          <div className={styles.empty}>Noch keine Antworten — starte den Thread.</div>
+          <div className={styles.empty}>{t("thread.empty")}</div>
         )}
       </div>
 
       <div className={styles.composer}>
         <textarea
           className={styles.input}
-          placeholder="Im Thread antworten…"
+          placeholder={t("thread.placeholder")}
           value={input}
           rows={1}
           onChange={(e) => setInput(e.target.value)}
@@ -103,7 +104,7 @@ export function ThreadPane({ roomId }: { roomId: string }) {
             }
           }}
         />
-        <button className={styles.sendBtn} onClick={handleSend} disabled={!input.trim()} title="Senden">
+        <button className={styles.sendBtn} onClick={handleSend} disabled={!input.trim()} title={t("thread.send")}>
           <SendIcon size={15} />
         </button>
       </div>

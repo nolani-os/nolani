@@ -7,7 +7,7 @@ import styles from "./IdeasApp.module.css";
 import { Icon } from "../../components/Icon";
 import { ideasApi } from "./api";
 import type { KbComment } from "./types";
-import { regionLocale, getBrand } from "@claraos/core";
+import { regionLocale, getBrand, useTranslation } from "@claraos/core";
 
 interface Props {
   objectId: string;
@@ -19,6 +19,7 @@ interface Props {
 }
 
 export function CommentsPanel({ objectId, currentUser, isOwner, selection, onClearSelection }: Props) {
+  const { t } = useTranslation("wissen");
   const [comments, setComments] = useState<KbComment[]>([]);
   const [showResolved, setShowResolved] = useState(false);
   const [draft, setDraft] = useState("");
@@ -58,20 +59,20 @@ export function CommentsPanel({ objectId, currentUser, isOwner, selection, onCle
   return (
     <section className={styles.comments}>
       <div className={styles.commentsHead}>
-        <h4><Icon name="comment" size={16} className={styles.inlineIcon} />Kommentare {roots.length > 0 && <span className={styles.metaHint}>({roots.length})</span>}</h4>
+        <h4><Icon name="comment" size={16} className={styles.inlineIcon} />{t("comments.title")} {roots.length > 0 && <span className={styles.metaHint}>({roots.length})</span>}</h4>
         <label className={styles.checkLabel}>
           <input type="checkbox" checked={showResolved}
                  onChange={(e) => setShowResolved(e.target.checked)} />
-          Erledigte zeigen
+          {t("comments.showResolved")}
         </label>
       </div>
 
       {selection && !replyTo && (
         <div className={styles.commentAnchorPreview}>
-          <span className={styles.metaHint}>Kommentar zu:</span>
+          <span className={styles.metaHint}>{t("comments.commentOn")}</span>
           <blockquote>„{selection.text.slice(0, 160)}“</blockquote>
-          <button className={styles.linkRemove} title="Auswahl verwerfen"
-                  onClick={onClearSelection}><Icon name="close" size={14} title="Schließen" /></button>
+          <button className={styles.linkRemove} title={t("comments.discardSelection")}
+                  onClick={onClearSelection}><Icon name="close" size={14} title={t("app.close")} /></button>
         </div>
       )}
 
@@ -79,7 +80,7 @@ export function CommentsPanel({ objectId, currentUser, isOwner, selection, onCle
         <textarea
           className={styles.input}
           rows={2}
-          placeholder={replyTo ? "Antworten…" : selection ? "Zur markierten Stelle…" : "Kommentar zum Objekt…"}
+          placeholder={replyTo ? t("comments.reply") : selection ? t("comments.atSelection") : t("comments.onObject")}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
@@ -89,12 +90,12 @@ export function CommentsPanel({ objectId, currentUser, isOwner, selection, onCle
         <div className={styles.commentDraftFoot}>
           {replyTo && (
             <button className={styles.btnSecondary} onClick={() => setReplyTo(null)}>
-              Antwort abbrechen
+              {t("comments.cancelReply")}
             </button>
           )}
           <button className={styles.btnPrimary} disabled={!draft.trim() || busy}
                   onClick={() => void submit()}>
-            {busy ? "…" : "Senden"}
+            {busy ? "…" : t("comments.send")}
           </button>
         </div>
       </div>
@@ -106,13 +107,13 @@ export function CommentsPanel({ objectId, currentUser, isOwner, selection, onCle
               <div className={styles.commentAnchor}>
                 <blockquote>„{c.anchor_text.slice(0, 120)}“</blockquote>
                 {c.anchor_status === "orphan" && (
-                  <span className={styles.anchorLost} title="Der zitierte Text wurde geändert oder gelöscht">
-                    Kontext verloren
+                  <span className={styles.anchorLost} title={t("comments.lostTitle")}>
+                    {t("comments.lost")}
                   </span>
                 )}
                 {c.anchor_status === "fuzzy" && (
-                  <span className={styles.anchorFuzzy} title="Stelle nur ungefähr wiedergefunden">
-                    ungefähre Stelle
+                  <span className={styles.anchorFuzzy} title={t("comments.fuzzyTitle")}>
+                    {t("comments.fuzzy")}
                   </span>
                 )}
               </div>
@@ -122,24 +123,24 @@ export function CommentsPanel({ objectId, currentUser, isOwner, selection, onCle
               <span className={styles.metaHint}>
                 {new Date(c.created_at).toLocaleString(regionLocale(), { dateStyle: "short", timeStyle: "short" })}
               </span>
-              {c.resolved && <span className={styles.metaHint}>· erledigt</span>}
+              {c.resolved && <span className={styles.metaHint}>{t("comments.resolved")}</span>}
             </div>
             <div className={styles.commentBody}>{c.body}</div>
             <div className={styles.commentActions}>
-              <button className={styles.linkBtn} onClick={() => setReplyTo(c.id)}>Antworten</button>
+              <button className={styles.linkBtn} onClick={() => setReplyTo(c.id)}>{t("comments.replyAction")}</button>
               {(c.author === currentUser || isOwner) && (
                 <button className={styles.linkBtn}
                         onClick={async () => {
                           await ideasApi.patchComment(c.id, { resolved: !c.resolved });
                           load();
                         }}>
-                  {c.resolved ? "Wieder öffnen" : "Erledigt"}
+                  {c.resolved ? t("comments.reopen") : t("comments.resolve")}
                 </button>
               )}
               {(c.author === currentUser || isOwner) && (
                 <button className={styles.linkBtn}
                         onClick={async () => { await ideasApi.deleteComment(c.id); load(); }}>
-                  Löschen
+                  {t("comments.delete")}
                 </button>
               )}
             </div>
@@ -162,7 +163,7 @@ export function CommentsPanel({ objectId, currentUser, isOwner, selection, onCle
         ))}
         {roots.length === 0 && (
           <li className={styles.metaHint}>
-            Noch keine Kommentare. Markiere Text im Editor, um eine Stelle zu kommentieren.
+            {t("comments.none")}
           </li>
         )}
       </ul>

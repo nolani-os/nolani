@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useMatrixStore } from "@claraos/core";
+import { useMatrixStore, useTranslation, i18n } from "@claraos/core";
 import { ClientWidgetApi, Widget } from "matrix-widget-api";
 import {
   buildElementCallUrl,
@@ -23,6 +23,7 @@ function initials(name: string): string {
 }
 
 export function CallsView() {
+  const { t } = useTranslation("teams");
   const rooms = useMatrixStore((s) => s.rooms);
 
   const activeCallRooms = useMemo(
@@ -112,7 +113,7 @@ export function CallsView() {
     let stopped = false;
     let readyTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
       readyTimer = null;
-      setCallError("Call failed to load. Click Retry to try again.");
+      setCallError(i18n.t("teams:calls.loadFailed"));
     }, 15000);
 
     const onReady = () => {
@@ -253,7 +254,7 @@ export function CallsView() {
         minute: "2-digit",
       });
       const newRoomId = await createAdHocRoom(`Meeting ${ts}`);
-      if (!newRoomId) throw new Error("Could not create meeting room");
+      if (!newRoomId) throw new Error(i18n.t("teams:calls.roomFailed"));
       await startCall(newRoomId);
       setActiveCallRoomId(newRoomId);
       setMode("in-call");
@@ -299,7 +300,7 @@ export function CallsView() {
             className={`${styles.btn} ${styles.btnDanger}`}
             onClick={handleLeave}
           >
-            Leave Call
+            {t("calls.leave")}
           </button>
         </div>
         {callError && (
@@ -323,7 +324,7 @@ export function CallsView() {
                 setIframeKey((k) => k + 1);
               }}
             >
-              Retry
+              {t("calls.retry")}
             </button>
           </div>
         )}
@@ -351,11 +352,11 @@ export function CallsView() {
 
   return (
     <div className={styles.callsView}>
-      <div className={styles.header}>Anrufe</div>
+      <div className={styles.header}>{t("calls.title")}</div>
 
-      <div className={styles.section}>Laufende Anrufe</div>
+      <div className={styles.section}>{t("calls.running")}</div>
       {activeCallRooms.length === 0 ? (
-        <div className={styles.empty}>Gerade läuft kein Anruf</div>
+        <div className={styles.empty}>{t("calls.none")}</div>
       ) : (
         activeCallRooms.map((room) => (
           <div key={room.roomId} className={styles.callRow}>
@@ -370,8 +371,7 @@ export function CallsView() {
               <span className={styles.roomName}>{room.name}</span>
               <span className={styles.subline}>
                 <span className={styles.liveDot} />
-                Live · {room.members.length} member
-                {room.members.length === 1 ? "" : "s"}
+                {t("calls.live", { count: room.members.length })}
               </span>
             </div>
             <button
@@ -379,7 +379,7 @@ export function CallsView() {
               className={`${styles.btn} ${styles.btnPrimary}`}
               onClick={() => handleJoin(room.roomId)}
             >
-              Join
+              {t("calls.join")}
             </button>
           </div>
         ))
@@ -387,7 +387,7 @@ export function CallsView() {
 
       <div className={styles.newCallPanel}>
         <div className={styles.section} style={{ padding: 0 }}>
-          Neuer Anruf
+          {t("calls.newCall")}
         </div>
         <button
           type="button"
@@ -395,15 +395,15 @@ export function CallsView() {
           onClick={handleInstantMeeting}
           disabled={busy}
         >
-          Sofortbesprechung starten
+          {t("calls.instant")}
         </button>
         <div className={styles.hint}>
-          Legt einen neuen privaten Raum an und startet dort einen Anruf.
+          {t("calls.instantHint")}
         </div>
 
         <div className={styles.divider} />
 
-        <div className={styles.hint}>Oder einen Anruf in einem vorhandenen Raum starten:</div>
+        <div className={styles.hint}>{t("calls.inRoom")}</div>
         <div className={styles.row}>
           <select
             className={styles.select}
@@ -412,7 +412,7 @@ export function CallsView() {
             disabled={busy || joinableRooms.length === 0}
           >
             {joinableRooms.length === 0 ? (
-              <option value="">Kein Raum verfügbar</option>
+              <option value="">{t("calls.noRoom")}</option>
             ) : (
               joinableRooms.map((r) => (
                 <option key={r.roomId} value={r.roomId}>
@@ -427,7 +427,7 @@ export function CallsView() {
             onClick={handleStartIn}
             disabled={busy || !selectedRoomId}
           >
-            Start
+            {t("calls.start")}
           </button>
         </div>
 

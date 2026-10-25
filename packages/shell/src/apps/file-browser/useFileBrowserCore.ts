@@ -4,7 +4,7 @@
  * their own presentation on top; the logic exists only once.
  */
 import { useCallback, useEffect } from "react";
-import { useFileStore, useWindowsStore, buildObjectUri, type FileNode } from "@claraos/core";
+import { i18n, useFileStore, useWindowsStore, buildObjectUri, type FileNode } from "@claraos/core";
 import { getFileAppId, getViewerSizeForFile, type ViewerAppId } from "../../lib/fileTypeRouter";
 import { NEW_FILE_TEMPLATES } from "../../lib/newFileTemplates";
 
@@ -83,9 +83,11 @@ export function useFileBrowserCore(windowId: string) {
     const tpl = NEW_FILE_TEMPLATES.find((t) => t.ext === ext);
     if (!tpl) return null;
     const base = (currentPath || "/").replace(/\/$/, "");
-    let name = `Neu${ext}`;
+    // Default name in the UI language ("Neu.txt" / "New.txt")
+    const stem = i18n.t("files:new.fileBaseName");
+    let name = `${stem}${ext}`;
     const taken = new Set((tree?.children ?? []).map((c: FileNode) => c.name.toLowerCase()));
-    for (let i = 2; taken.has(name.toLowerCase()) && i < 50; i++) name = `Neu-${i}${ext}`;
+    for (let i = 2; taken.has(name.toLowerCase()) && i < 50; i++) name = `${stem}-${i}${ext}`;
     const path = `${base}/${name}`;
     const ok = await useFileStore.getState().writeFile(activeSource, path, tpl.content, tpl.encoding);
     if (!ok) return null;

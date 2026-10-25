@@ -7,7 +7,7 @@
  * the Composer can hand them straight to the existing file-upload pipeline.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useFileStore, type FileNode, type FileSourceInfo, getBrand } from "@claraos/core";
+import { useFileStore, type FileNode, type FileSourceInfo, useTranslation } from "@claraos/core";
 import { XIcon } from "./icons";
 import { FileTypeIcon } from "../components/FileTypeIcon";
 import styles from "./FilePickerModal.module.css";
@@ -33,6 +33,14 @@ export interface PickedRef {
 
 const READ_API = "/api/claraos/files/v2";
 
+// /read returns no content type. Without one an image is not sent as an image (vision)
+// but uploaded as a document, where its bytes are read as text.
+const MIME_BY_EXT: Record<string, string> = {
+  png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp",
+  pdf: "application/pdf", txt: "text/plain", md: "text/markdown", csv: "text/csv",
+  json: "application/json", html: "text/html",
+};
+
 async function fetchFile(source: string, path: string): Promise<File | null> {
   try {
     const url = `${READ_API}/read?source=${encodeURIComponent(source)}&path=${encodeURIComponent(path)}`;
@@ -48,7 +56,8 @@ async function fetchFile(source: string, path: string): Promise<File | null> {
     } else {
       bytes = new TextEncoder().encode(data.content ?? "");
     }
-    return new File([bytes as BlobPart], name);
+    const ext = name.split(".").pop()?.toLowerCase() ?? "";
+    return new File([bytes as BlobPart], name, { type: MIME_BY_EXT[ext] ?? "" });
   } catch (err) {
     console.error("FilePickerModal fetchFile failed", err);
     return null;
@@ -56,6 +65,7 @@ async function fetchFile(source: string, path: string): Promise<File | null> {
 }
 
 export function FilePickerModal({ open, onClose, onPick, onPickRefs, mimePrefix }: Props) {
+  const { t } = useTranslation("chat");
   const sources = useFileStore((s) => s.sources);
   const loadSources = useFileStore((s) => s.loadSources);
   const [activeSource, setActiveSource] = useState<string>("");
@@ -80,8 +90,8 @@ export function FilePickerModal({ open, onClose, onPick, onPickRefs, mimePrefix 
       credentials: "include",
     })
       .then((r) => (r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`)))
-      .then((t) => {
-        if (!cancelled) setTree(t);
+      .then((data) => {
+        if (!cancelled) setTree(data);
       })
       .catch(() => undefined)
       .finally(() => {
@@ -168,8 +178,8 @@ export function FilePickerModal({ open, onClose, onPick, onPickRefs, mimePrefix 
     <div className={styles.overlay} onClick={close} role="dialog" aria-modal="true">
       <div className={styles.modal} onClick={(e) => e.stopPropagation()} data-no-drag>
         <header className={styles.header}>
-          <span className={styles.title}>Datei aus {getBrand().product} wählen</span>
-          <button type="button" className={styles.iconBtn} onClick={close} title="Schließen">
+          <span className={styles.title}>{t("picker.title")}</span>
+          <button type="button" className={styles.iconBtn} onClick={close} title={t("panel.close")}>
             <XIcon size={14} />
           </button>
         </header>
@@ -190,7 +200,7 @@ export function FilePickerModal({ open, onClose, onPick, onPickRefs, mimePrefix 
             </button>
           ))}
           {sources.length === 0 && (
-            <span className={styles.empty}>Lade Quellen …</span>
+            <span className={styles.empty}>{t("picker.loadingSources")}</span>
           )}
         </div>
 
@@ -202,9 +212,9 @@ export function FilePickerModal({ open, onClose, onPick, onPickRefs, mimePrefix 
         </div>
 
         <div className={styles.tree}>
-          {loading && <div className={styles.empty}>Lade …</div>}
+          {loading && <div className={styles.empty}>{t("picker.loading")}</div>}
           {!loading && visibleChildren.length === 0 && (
-            <div className={styles.empty}>Keine Einträge.</div>
+            <div className={styles.empty}>{t("picker.empty")}</div>
           )}
           {visibleChildren.map((node) => (
             <button
@@ -235,7 +245,7 @@ export function FilePickerModal({ open, onClose, onPick, onPickRefs, mimePrefix 
 
         <footer className={styles.footer}>
           <button type="button" className={styles.btnSecondary} onClick={close}>
-            Abbrechen
+            {t("camera.cancel")}
           </button>
           <button
             type="button"
@@ -243,7 +253,7 @@ export function FilePickerModal({ open, onClose, onPick, onPickRefs, mimePrefix 
             onClick={confirm}
             disabled={busy || selected.length === 0}
           >
-            {busy ? "Lädt …" : `Übernehmen${selected.length ? ` (${selected.length})` : ""}`}
+            {busy ? t("picker.busy") : selected.length ? t("picker.confirmCount", { count: selected.length }) : t("picker.confirm")}
           </button>
         </footer>
       </div>

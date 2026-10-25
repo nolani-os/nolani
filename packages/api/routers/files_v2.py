@@ -14,6 +14,7 @@ from fastapi import APIRouter, Request, HTTPException, UploadFile, File
 from pydantic import BaseModel
 
 from auth import get_current_user
+from sprache import Text, tx
 from database import get_pool
 import sftp_client
 
@@ -184,14 +185,14 @@ def _require_device_access(user: dict, src: dict) -> None:
         raise HTTPException(
             status_code=403,
             detail={"code": "device_forbidden",
-                    "message": "Dieses Gerät ist privat und nur für seinen Besitzer zugänglich."},
+                    "message": Text("files.devicePrivate")},
         )
     if user.get("role") == "admin":
         return
     raise HTTPException(
         status_code=403,
         detail={"code": "device_forbidden",
-                "message": "Auf Geräte des Hausnetzes hat nur die Verwaltung Zugriff."},
+                "message": Text("files.deviceAdmin")},
     )
 
 
@@ -410,7 +411,7 @@ async def _sftp_tree(src: dict, path: str) -> dict:
             if fb_children:
                 path, children = fb, fb_children
                 note = (getattr(_geraete, "FALLBACK_HINWEIS", "")
-                        or "Kein Speicherzugriff auf /sdcard — zeige das Home-Verzeichnis.")
+                        or await tx("files.noSdcard"))
         source_id = f"sftp:{src.get('lan_ip', src['host'])}"
         for c in children:
             c["source"] = source_id
@@ -765,7 +766,7 @@ class _Backend:
                 r = await client.get(_webdav_url(self.nc_user, path),
                                      headers=_auth_header(self.nc_user, self.nc_pass))
             if r.status_code != 200:
-                raise HTTPException(status_code=502, detail=f"Lesen fehlgeschlagen ({r.status_code}): {_leaf(path)}")
+                raise HTTPException(status_code=502, detail=Text("files.readFailed", status=r.status_code, name=_leaf(path)))
             return r.content
         return await sftp_client.read_file(*self._hpu(), path, **self._kw())
 
@@ -777,7 +778,7 @@ class _Backend:
                                               "Content-Type": "application/octet-stream"},
                                      content=data)
             if r.status_code not in (200, 201, 204):
-                raise HTTPException(status_code=502, detail=f"Schreiben fehlgeschlagen ({r.status_code}): {_leaf(path)}")
+                raise HTTPException(status_code=502, detail=Text("files.writeFailed", status=r.status_code, name=_leaf(path)))
             return
         await sftp_client.write_file(*self._hpu(), path, data, **self._kw())
 
@@ -787,7 +788,7 @@ class _Backend:
                 r = await client.request("MKCOL", _webdav_url(self.nc_user, path),
                                          headers=_auth_header(self.nc_user, self.nc_pass))
             if r.status_code not in (200, 201, 405):
-                raise HTTPException(status_code=502, detail=f"Ordner anlegen fehlgeschlagen ({r.status_code})")
+                raise HTTPException(status_code=502, detail=Text("files.mkdirFailed", status=r.status_code))
             return
         await sftp_client.mkdir(*self._hpu(), path, **self._kw())
 
@@ -797,7 +798,7 @@ class _Backend:
                 r = await client.delete(_webdav_url(self.nc_user, path),
                                         headers=_auth_header(self.nc_user, self.nc_pass))
             if r.status_code not in (200, 204, 404):
-                raise HTTPException(status_code=502, detail=f"Löschen fehlgeschlagen ({r.status_code})")
+                raise HTTPException(status_code=502, detail=Text("files.deleteFailed", status=r.status_code))
             return
         await sftp_client.delete(*self._hpu(), path, **self._kw())
 
@@ -863,7 +864,7 @@ def _guard_into_itself(src_path: str, dst_folder: str) -> None:
     s, d = _norm(src_path), _norm(dst_folder)
     if d == s or d.startswith(s.rstrip("/") + "/"):
         raise HTTPException(status_code=400, detail={
-            "code": "into_itself", "message": "Ein Ordner kann nicht in sich selbst kopiert/verschoben werden."})
+            "code": "into_itself", "message": Text("files.intoItself")})
 
 
 class _MoveBody(BaseModel):
@@ -893,7 +894,7 @@ async def move_item(request: Request, body: _MoveBody) -> dict:
         return {"src": body.src_path, "dst": final, "ok": True, "mode": "noop"}
     kind = await src.kind(body.src_path)
     if kind is None:
-        raise HTTPException(status_code=404, detail="Quelle nicht gefunden")
+        raise HTTPException(status_code=404, detail=Text("files.sourceNotFound"))
     if same and kind == "dir":
         _guard_into_itself(body.src_path, _parent(final))
     target, overwrite = await _resolve_target(dst, final, kind, body.on_conflict, same_folder=False)
@@ -938,7 +939,7 @@ async def cross_copy(request: Request, body: _CopyBody) -> dict:
     dst = src if body.dst_source == body.src_source else await _Backend.open(body.dst_source, user)
     kind = await src.kind(body.src_path)
     if kind is None:
-        raise HTTPException(status_code=404, detail="Quelle nicht gefunden")
+        raise HTTPException(status_code=404, detail=Text("files.sourceNotFound"))
     same = _same_backend(src.src, dst.src)
     if kind == "dir" and same:
         _guard_into_itself(body.src_path, body.dst_path)
@@ -971,6 +972,7 @@ async def cross_copy(request: Request, body: _CopyBody) -> dict:
 from fastapi import Query
 from fastapi.responses import StreamingResponse, Response
 from urllib.parse import quote as _urlq
+from services.download_policy import safe_media
 
 
 def _disposition(name: str) -> str:
@@ -992,10 +994,10 @@ async def _stream_nc(url: str, headers: dict, name: str, want_zip: bool,
         await resp.aclose()
         await client.aclose()
         if status == 404:
-            raise HTTPException(status_code=404, detail="Nicht gefunden")
+            raise HTTPException(status_code=404, detail=Text("files.notFound"))
         if want_zip and status == 200:
             return None
-        raise HTTPException(status_code=502, detail=f"Nextcloud-Download fehlgeschlagen ({status})")
+        raise HTTPException(status_code=502, detail=Text("files.ncDownloadFailed", status=status))
 
     async def body():
         try:
@@ -1006,16 +1008,18 @@ async def _stream_nc(url: str, headers: dict, name: str, want_zip: bool,
             await client.aclose()
 
     disp = _disposition(name)
+    if want_zip:
+        media_type, security = "application/zip", {"X-Content-Type-Options": "nosniff"}
+    else:
+        media_type, inline, security = safe_media(ctype, inline)
     out_headers = {"Content-Disposition": disp.replace("attachment", "inline", 1) if inline else disp,
-                   "Cache-Control": "private, max-age=0"}
+                   "Cache-Control": "private, max-age=0", **security}
     if resp.headers.get("content-length") and not resp.headers.get("content-encoding"):
         out_headers["Content-Length"] = resp.headers["content-length"]
     for h in ("content-range", "accept-ranges", "etag", "last-modified"):
         if resp.headers.get(h):
             out_headers[h.title()] = resp.headers[h]
-    return StreamingResponse(body(), status_code=resp.status_code,
-                             media_type="application/zip" if want_zip else (ctype or "application/octet-stream"),
-                             headers=out_headers)
+    return StreamingResponse(body(), status_code=resp.status_code, media_type=media_type, headers=out_headers)
 
 
 async def _zip_in_api(backend: "_Backend", paths: list[str], name: str) -> Response:
@@ -1037,7 +1041,7 @@ async def _zip_in_api(backend: "_Backend", paths: list[str], name: str) -> Respo
             total += len(data)
             count += 1
             if total > _ARCHIVE_MAX_BYTES or count > _ARCHIVE_MAX_FILES:
-                raise HTTPException(status_code=413, detail="Auswahl zu groß für ein ZIP (>500 MB oder >2000 Dateien)")
+                raise HTTPException(status_code=413, detail=Text("files.zipTooLarge"))
             zf.writestr(arc, data)
 
     with _zipfile.ZipFile(buf, "w", _zipfile.ZIP_DEFLATED) as zf:
@@ -1061,7 +1065,7 @@ async def download(request: Request, source: str = "nextcloud",
     single = len(paths) == 1
     kind = await backend.kind(paths[0]) if single else "multi"
     if kind is None:
-        raise HTTPException(status_code=404, detail="Nicht gefunden")
+        raise HTTPException(status_code=404, detail=Text("files.notFound"))
 
     if single and kind == "file":
         fname = name or _leaf(paths[0])
@@ -1106,10 +1110,10 @@ async def as_jpeg(request: Request, source: str = "nextcloud", path: str = "", s
     user = get_current_user(request)
     backend = await _Backend.open(source, user)
     if await backend.kind(path) != "file":
-        raise HTTPException(status_code=404, detail="Nicht gefunden")
+        raise HTTPException(status_code=404, detail=Text("files.notFound"))
     data = await backend.read(path)
     if len(data) > _PREVIEW_MAX_BYTES:
-        raise HTTPException(status_code=413, detail="Bild zu groß für die Umwandlung (>200 MB)")
+        raise HTTPException(status_code=413, detail=Text("files.imageTooLarge"))
     import io
     from PIL import Image, ImageOps
     try:
@@ -1126,7 +1130,7 @@ async def as_jpeg(request: Request, source: str = "nextcloud", path: str = "", s
         out = io.BytesIO()
         img.save(out, "JPEG", quality=90)
     except Exception as e:  # noqa: BLE001 — report unreadable formats honestly
-        raise HTTPException(status_code=415, detail=f"Bild lässt sich nicht umwandeln: {type(e).__name__}")
+        raise HTTPException(status_code=415, detail=Text("files.imageConvert", error=type(e).__name__))
     return Response(out.getvalue(), media_type="image/jpeg", headers={"Cache-Control": "private, max-age=300"})
 
 
@@ -1137,7 +1141,7 @@ async def upload_stream(request: Request, name: str, source: str = "nextcloud",
     streamed through, never fully loaded. Conflicts as in /copy (fail → 409)."""
     user = get_current_user(request)
     if not name or "/" in name or name in (".", ".."):
-        raise HTTPException(status_code=400, detail="Ungültiger Dateiname")
+        raise HTTPException(status_code=400, detail=Text("files.badName"))
     backend = await _Backend.open(source, user)
     target, overwrite = await _resolve_target(backend, _join(path, name), "file", on_conflict, same_folder=False)
     if target is None:
@@ -1157,7 +1161,7 @@ async def upload_stream(request: Request, name: str, source: str = "nextcloud",
                                           "Content-Type": request.headers.get("content-type", "application/octet-stream")},
                                  content=counted())
         if r.status_code not in (200, 201, 204):
-            raise HTTPException(status_code=502, detail=f"Nextcloud-Upload fehlgeschlagen ({r.status_code})")
+            raise HTTPException(status_code=502, detail=Text("files.ncUploadFailed", status=r.status_code))
     else:
         src = backend.src
         await sftp_client.write_stream(src["host"], src["port"], src["user"], target, counted(),
@@ -1304,7 +1308,7 @@ async def create_share(request: Request, body: _ShareBody) -> dict:
     """Create a public link — optionally with password and expiry date."""
     user = get_current_user(request)
     if _parse_source(body.source).get("type") != "nextcloud":
-        raise HTTPException(status_code=400, detail="Teilen geht nur für Nextcloud-Dateien.")
+        raise HTTPException(status_code=400, detail=Text("files.shareNcOnly"))
     nc_user, nc_pass = await _nc_credentials(user["username"])
 
     form = {
@@ -1442,7 +1446,7 @@ async def _collect_folder(nc_user: str, nc_pass: str, path: str) -> list[tuple[s
             content='<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/></d:prop></d:propfind>',
         )
         if head.status_code == 404:
-            raise HTTPException(status_code=404, detail="Pfad nicht gefunden")
+            raise HTTPException(status_code=404, detail=Text("files.pathNotFound"))
         is_dir = b"<d:collection" in head.content or b"collection" in head.content
         files = (await _walk_nc_files(client, nc_user, nc_pass, base)) if is_dir else [{"path": base, "size": 0}]
 
@@ -1455,7 +1459,7 @@ async def _collect_folder(nc_user: str, nc_pass: str, path: str) -> list[tuple[s
             data = resp.content
             total += len(data)
             if total > _ARCHIVE_MAX_BYTES:
-                raise HTTPException(status_code=413, detail="Ordner zu groß (>500 MB)")
+                raise HTTPException(status_code=413, detail=Text("files.folderTooLarge"))
             # Normalize paths: _parse_propfind returns '/Folder/x' while base may
             # arrive without a leading slash — a naive [len(base):] would strip
             # one character too few (yielding arcnames like 'b/hello.txt').
@@ -1497,7 +1501,7 @@ async def archive_folder(request: Request, body: _ArchiveBody) -> dict:
     """Store a folder/file as ZIP next to the original (Nextcloud only)."""
     user = get_current_user(request)
     if _parse_source(body.source)["type"] != "nextcloud":
-        raise HTTPException(status_code=400, detail="Archivieren nur für Nextcloud-Quellen")
+        raise HTTPException(status_code=400, detail=Text("files.archiveNcOnly"))
     nc_user, nc_pass = await _nc_credentials(user["username"])
     entries = await _collect_folder(nc_user, nc_pass, body.path)
     buf = _io.BytesIO()
@@ -1525,9 +1529,9 @@ async def encrypt_folder(request: Request, body: _EncryptBody) -> dict:
     import pyzipper  # lazy — keeps cold start lean
     user = get_current_user(request)
     if _parse_source(body.source)["type"] != "nextcloud":
-        raise HTTPException(status_code=400, detail="Verschlüsseln nur für Nextcloud-Quellen")
+        raise HTTPException(status_code=400, detail=Text("files.encryptNcOnly"))
     if len(body.password) < 4:
-        raise HTTPException(status_code=400, detail="Passwort zu kurz (min. 4 Zeichen)")
+        raise HTTPException(status_code=400, detail=Text("files.passwordShort"))
     nc_user, nc_pass = await _nc_credentials(user["username"])
     entries = await _collect_folder(nc_user, nc_pass, body.path)
     buf = _io.BytesIO()
@@ -1572,32 +1576,32 @@ async def extract_archive(request: Request, body: _ExtractBody) -> dict:
     import pyzipper  # lazy — keeps cold start lean
     user = get_current_user(request)
     if _parse_source(body.source)["type"] != "nextcloud":
-        raise HTTPException(status_code=400, detail="Entpacken nur für Nextcloud-Quellen")
+        raise HTTPException(status_code=400, detail=Text("files.extractNcOnly"))
     nc_user, nc_pass = await _nc_credentials(user["username"])
 
     async with httpx.AsyncClient(timeout=120.0) as client:
         resp = await _dav_request(client, "GET", _webdav_url(nc_user, body.path), headers=_auth_header(nc_user, nc_pass))
         if resp.status_code == 404:
-            raise HTTPException(status_code=404, detail="Archiv nicht gefunden")
+            raise HTTPException(status_code=404, detail=Text("files.archiveNotFound"))
         if resp.status_code != 200:
             raise HTTPException(status_code=502, detail=f"Download fehlgeschlagen: {resp.status_code}")
         raw = resp.content
     if len(raw) > _ARCHIVE_MAX_BYTES:
-        raise HTTPException(status_code=413, detail="Archiv zu groß (>500 MB)")
+        raise HTTPException(status_code=413, detail=Text("files.archiveTooLarge"))
 
     try:
         zf = pyzipper.AESZipFile(_io.BytesIO(raw))
         members = [i for i in zf.infolist() if not i.is_dir()]
     except Exception:
-        raise HTTPException(status_code=400, detail="Keine gültige ZIP-Datei")
+        raise HTTPException(status_code=400, detail=Text("files.notZip"))
     if not members:
-        raise HTTPException(status_code=400, detail="Archiv enthält keine Dateien")
+        raise HTTPException(status_code=400, detail=Text("files.archiveEmpty"))
     if sum(i.file_size for i in members) > _ARCHIVE_MAX_BYTES:
-        raise HTTPException(status_code=413, detail="Entpackter Inhalt zu groß (>500 MB)")
+        raise HTTPException(status_code=413, detail=Text("files.extractedTooLarge"))
 
     if any(i.flag_bits & 0x1 for i in members):
         if not body.password:
-            raise HTTPException(status_code=400, detail="Archiv ist verschlüsselt — Passwort erforderlich")
+            raise HTTPException(status_code=400, detail=Text("files.archiveEncrypted"))
         zf.setpassword(body.password.encode("utf-8"))
 
     # Zip-slip protection: only relative paths without '..'; normalize backslashes
@@ -1622,7 +1626,7 @@ async def extract_archive(request: Request, body: _ExtractBody) -> dict:
     except RuntimeError:
         raise HTTPException(status_code=400, detail="Falsches Passwort")
     except Exception:
-        raise HTTPException(status_code=400, detail="Archiv nicht lesbar (beschädigt?)")
+        raise HTTPException(status_code=400, detail=Text("files.archiveBroken"))
 
     # Target folder next to the archive: foo.zip → foo/, foo.verschluesselt.zip → foo/
     stem = body.path.rstrip("/")
@@ -1663,7 +1667,7 @@ async def extract_archive(request: Request, body: _ExtractBody) -> dict:
                 raise HTTPException(status_code=400, detail="Falsches Passwort")
             total += len(data)
             if total > _ARCHIVE_MAX_BYTES:
-                raise HTTPException(status_code=413, detail="Entpackter Inhalt zu groß (>500 MB)")
+                raise HTTPException(status_code=413, detail=Text("files.extractedTooLarge"))
             await _ensure_dir(rel.rpartition("/")[0])
             resp = await _dav_request(
                 client, "PUT", _webdav_url(nc_user, f"{target}/{rel}"),
@@ -1687,7 +1691,7 @@ async def _nc_fileid(nc_user: str, nc_pass: str, path: str) -> str:
             content=body,
         )
     if resp.status_code == 404:
-        raise HTTPException(status_code=404, detail="Datei nicht gefunden")
+        raise HTTPException(status_code=404, detail=Text("files.fileNotFound"))
     if resp.status_code not in (200, 207):
         raise HTTPException(status_code=502, detail=f"Nextcloud error: {resp.status_code}")
     import re as _re
@@ -1720,7 +1724,7 @@ async def list_versions(request: Request, source: str = "nextcloud", path: str =
     """Previous versions of a file (PROPFIND on versions/<fileid>)."""
     user = get_current_user(request)
     if _parse_source(source)["type"] != "nextcloud":
-        raise HTTPException(status_code=400, detail="Versionen nur für Nextcloud-Quellen")
+        raise HTTPException(status_code=400, detail=Text("files.versionsNcOnly"))
     nc_user, nc_pass = await _nc_credentials(user["username"])
     file_id = await _nc_fileid(nc_user, nc_pass, path)
     body = ('<?xml version="1.0"?>'
@@ -1780,7 +1784,7 @@ async def restore_version(request: Request, body: _RestoreVersionBody) -> dict:
             },
         )
     if resp.status_code not in (201, 204):
-        raise HTTPException(status_code=502, detail=f"Wiederherstellen fehlgeschlagen: {resp.status_code}")
+        raise HTTPException(status_code=502, detail=Text("files.restoreFailed", status=resp.status_code))
     return {"status": "ok", "path": body.path, "restored": body.version}
 
 
@@ -1799,7 +1803,7 @@ async def download_version(request: Request, path: str = "", version: str = ""):
             headers=_auth_header(nc_user, nc_pass),
         )
     if resp.status_code != 200:
-        raise HTTPException(status_code=502, detail=f"Version nicht ladbar: {resp.status_code}")
+        raise HTTPException(status_code=502, detail=Text("files.versionUnloadable", status=resp.status_code))
     name = path.rstrip("/").split("/")[-1] or "version"
     return FastAPIResponse(
         content=resp.content,
@@ -1897,7 +1901,7 @@ async def restore_trash_item(request: Request, body: _TrashRestoreBody) -> dict:
             },
         )
     if resp.status_code not in (200, 201, 204):
-        raise HTTPException(status_code=502, detail=f"Wiederherstellen fehlgeschlagen: {resp.status_code}")
+        raise HTTPException(status_code=502, detail=Text("files.restoreFailed", status=resp.status_code))
     return {"ok": True}
 
 
@@ -1915,7 +1919,7 @@ async def purge_trash_item(request: Request, path: str) -> dict:
             headers=_auth_header(nc_user, nc_pass),
         )
     if resp.status_code not in (200, 204):
-        raise HTTPException(status_code=502, detail=f"Löschen fehlgeschlagen: {resp.status_code}")
+        raise HTTPException(status_code=502, detail=Text("files.deleteFailed2", status=resp.status_code))
     return {"ok": True}
 
 
@@ -1930,7 +1934,7 @@ async def empty_trash(request: Request) -> dict:
             headers=_auth_header(nc_user, nc_pass),
         )
     if resp.status_code not in (200, 204):
-        raise HTTPException(status_code=502, detail=f"Leeren fehlgeschlagen: {resp.status_code}")
+        raise HTTPException(status_code=502, detail=Text("files.emptyFailed", status=resp.status_code))
     return {"ok": True}
 
 
@@ -1949,7 +1953,7 @@ async def search_files(request: Request, q: str, source: str = "nextcloud",
     user = get_current_user(request)
     q = q.strip()
     if not q:
-        raise HTTPException(status_code=400, detail="Suchbegriff fehlt")
+        raise HTTPException(status_code=400, detail=Text("files.searchMissing"))
     limit = max(1, min(limit, 500))
     src = _parse_source(source)
 

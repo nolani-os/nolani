@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "../PlannerApp.module.css";
 import { plannerApi } from "../api";
 import { hasDate, type VikProject, type VikTask } from "../types";
-import { regionLocale } from "@claraos/core";
+import { regionLocale, useTranslation } from "@claraos/core";
 
 const DAY_W = 30;
 const ROW_H = 34;
@@ -26,6 +26,7 @@ function dayFloor(d: Date): number {
 }
 
 export function GanttView({ project, onOpen }: { project: VikProject; onOpen: (t: VikTask) => void }) {
+  const { t } = useTranslation("planner");
   const [tasks, setTasks] = useState<VikTask[]>([]);
   const [unscheduled, setUnscheduled] = useState<VikTask[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -37,16 +38,16 @@ export function GanttView({ project, onOpen }: { project: VikProject; onOpen: (t
     try {
       setError(null);
       let list = await plannerApi.listProjectTasks(project.id);
-      list = (list || []).filter((t) => !t.done);
+      list = (list || []).filter((x) => !x.done);
       // List responses may omit related_tasks → load details
-      if (list.length && list.every((t) => !t.related_tasks)) {
+      if (list.length && list.every((x) => !x.related_tasks)) {
         const details = await Promise.all(
-          list.slice(0, 40).map((t) => plannerApi.getTask(t.id).catch(() => t)),
+          list.slice(0, 40).map((x) => plannerApi.getTask(x.id).catch(() => x)),
         );
         list = details;
       }
-      setTasks(list.filter((t) => hasDate(t.due_date) || hasDate(t.start_date)));
-      setUnscheduled(list.filter((t) => !hasDate(t.due_date) && !hasDate(t.start_date)));
+      setTasks(list.filter((x) => hasDate(x.due_date) || hasDate(x.start_date)));
+      setUnscheduled(list.filter((x) => !hasDate(x.due_date) && !hasDate(x.start_date)));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -60,27 +61,27 @@ export function GanttView({ project, onOpen }: { project: VikProject; onOpen: (t
     const today = dayFloor(new Date());
     let lo = today, hi = today + 7;
     const ends = new Map<number, { s: number; e: number }>();
-    tasks.forEach((t) => {
-      const due = hasDate(t.due_date) ? dayFloor(new Date(t.due_date!)) : null;
-      const start = hasDate(t.start_date) ? dayFloor(new Date(t.start_date!)) : null;
+    tasks.forEach((x) => {
+      const due = hasDate(x.due_date) ? dayFloor(new Date(x.due_date!)) : null;
+      const start = hasDate(x.start_date) ? dayFloor(new Date(x.start_date!)) : null;
       const s = start ?? (due != null ? due : today);
       const e = due != null ? Math.max(due, s) : s + 1;
-      ends.set(t.id, { s, e });
+      ends.set(x.id, { s, e });
       lo = Math.min(lo, s);
       hi = Math.max(hi, e);
     });
     lo -= 2; hi += 3;
-    const doneIds = new Set(tasks.filter((t) => t.done).map((t) => t.id));
-    const bars: Bar[] = tasks.map((t, i) => {
-      const { s, e } = ends.get(t.id)!;
-      const blockers = t.related_tasks?.blocked ?? [];
+    const doneIds = new Set(tasks.filter((x) => x.done).map((x) => x.id));
+    const bars: Bar[] = tasks.map((x, i) => {
+      const { s, e } = ends.get(x.id)!;
+      const blockers = x.related_tasks?.blocked ?? [];
       return {
-        task: t,
+        task: x,
         startDay: s - lo,
         days: Math.max(1, e - s + 1),
         row: i,
         blockedByOpen: blockers.some((b) => !b.done && !doneIds.has(b.id)),
-        hasRealDates: hasDate(t.due_date) || hasDate(t.start_date),
+        hasRealDates: hasDate(x.due_date) || hasDate(x.start_date),
       };
     });
     const rowOf = new Map<number, Bar>();
@@ -100,16 +101,16 @@ export function GanttView({ project, onOpen }: { project: VikProject; onOpen: (t
     const bar = bars.find((b) => b.task.id === drag.id);
     setDrag(null);
     if (!bar) return;
-    const t = bar.task;
+    const task = bar.task;
     try {
       if (drag.mode === "move") {
         const patch: Partial<VikTask> = {};
-        if (hasDate(t.start_date)) patch.start_date = new Date(new Date(t.start_date!).getTime() + drag.deltaDays * MS_DAY).toISOString();
-        if (hasDate(t.due_date)) patch.due_date = new Date(new Date(t.due_date!).getTime() + drag.deltaDays * MS_DAY).toISOString();
-        await plannerApi.updateTaskFields(t.id, patch);
+        if (hasDate(task.start_date)) patch.start_date = new Date(new Date(task.start_date!).getTime() + drag.deltaDays * MS_DAY).toISOString();
+        if (hasDate(task.due_date)) patch.due_date = new Date(new Date(task.due_date!).getTime() + drag.deltaDays * MS_DAY).toISOString();
+        await plannerApi.updateTaskFields(task.id, patch);
       } else {
-        const base = hasDate(t.due_date) ? new Date(t.due_date!) : new Date();
-        await plannerApi.updateTaskFields(t.id, {
+        const base = hasDate(task.due_date) ? new Date(task.due_date!) : new Date();
+        await plannerApi.updateTaskFields(task.id, {
           due_date: new Date(base.getTime() + drag.deltaDays * MS_DAY).toISOString(),
         });
       }
@@ -138,7 +139,7 @@ export function GanttView({ project, onOpen }: { project: VikProject; onOpen: (t
     return { i, d, isToday: rangeStart + i === dayFloor(new Date()), isWeekend: [0, 6].includes(d.getDay()), isFirst: d.getDate() === 1 || i === 0 };
   }), [rangeStart, totalDays]);
 
-  if (loading) return <div className={styles.loading}>Lade Gantt…</div>;
+  if (loading) return <div className={styles.loading}>{t("gantt.loading")}</div>;
 
   const chartW = totalDays * DAY_W;
   const chartH = bars.length * ROW_H;
@@ -146,7 +147,7 @@ export function GanttView({ project, onOpen }: { project: VikProject; onOpen: (t
   return (
     <div className={styles.ganttWrap}>
       {error && <div className={styles.errorBox}>{error}</div>}
-      {bars.length === 0 && <div className={styles.empty}>Keine terminierten Aufgaben — Fälligkeiten setzen, dann erscheinen sie hier.</div>}
+      {bars.length === 0 && <div className={styles.empty}>{t("gantt.empty")}</div>}
       {bars.length > 0 && (
         <div className={styles.ganttScroll} ref={scrollRef}>
           <div className={styles.ganttGrid} style={{ width: LABEL_W + chartW }}>
@@ -172,7 +173,7 @@ export function GanttView({ project, onOpen }: { project: VikProject; onOpen: (t
                 <div key={b.task.id} className={styles.ganttLabel}
                      style={{ top: b.row * ROW_H, width: LABEL_W, height: ROW_H }}
                      onClick={() => onOpen(b.task)} title={b.task.title}>
-                  {b.blockedByOpen && <span title="wird blockiert">⛔ </span>}{b.task.title}
+                  {b.blockedByOpen && <span title={t("gantt.blocked")}>⛔ </span>}{b.task.title}
                 </div>
               ))}
               {/* Bars */}
@@ -190,7 +191,7 @@ export function GanttView({ project, onOpen }: { project: VikProject; onOpen: (t
                          setDrag({ id: b.task.id, mode: "move", startX: e.clientX, deltaDays: 0 });
                        }}
                        onDoubleClick={() => onOpen(b.task)}
-                       title={`${b.task.title} — Doppelklick: Details, Ziehen: verschieben`}>
+                       title={t("gantt.barTitle", { title: b.task.title })}>
                     <span className={styles.ganttBarText}>{b.task.title}</span>
                     <span className={styles.ganttResize}
                           onMouseDown={(e) => {
@@ -228,9 +229,9 @@ export function GanttView({ project, onOpen }: { project: VikProject; onOpen: (t
       )}
       {unscheduled.length > 0 && (
         <div className={styles.ganttUnscheduled}>
-          <span className={styles.sectionTitle}>Ohne Termin:</span>
-          {unscheduled.map((t) => (
-            <button key={t.id} className={styles.labelChip} onClick={() => onOpen(t)}>{t.title}</button>
+          <span className={styles.sectionTitle}>{t("gantt.unscheduled")}</span>
+          {unscheduled.map((x) => (
+            <button key={x.id} className={styles.labelChip} onClick={() => onOpen(x)}>{x.title}</button>
           ))}
         </div>
       )}

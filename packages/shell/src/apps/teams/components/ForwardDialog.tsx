@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useMatrixStore } from "@claraos/core";
+import { useMatrixStore, useTranslation } from "@claraos/core";
 import type { MatrixMessage } from "@claraos/core";
 import { forwardMessage } from "../matrixClient";
 import styles from "./ForwardDialog.module.css";
 
 export function ForwardDialog({ msg, onClose }: { msg: MatrixMessage; onClose: () => void }) {
+  const { t } = useTranslation("teams");
   const rooms = useMatrixStore((s) => s.rooms);
   const [filter, setFilter] = useState("");
   const [sending, setSending] = useState(false);
@@ -23,13 +24,13 @@ export function ForwardDialog({ msg, onClose }: { msg: MatrixMessage; onClose: (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.dialog} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
-          <h3>Nachricht weiterleiten</h3>
-          <button aria-label="Schließen" title="Schließen" className={styles.closeBtn} onClick={onClose}>×</button>
+          <h3>{t("forward.title")}</h3>
+          <button aria-label={t("common.close")} title={t("common.close")} className={styles.closeBtn} onClick={onClose}>×</button>
         </div>
         <input
           autoFocus
           className={styles.search}
-          placeholder="Kanäle suchen…"
+          placeholder={t("forward.search")}
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         />

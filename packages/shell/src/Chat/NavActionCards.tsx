@@ -8,7 +8,7 @@
  * Clara uses (action bus → shell opens/aligns the app window).
  */
 import { useState } from "react";
-import { useAuthStore } from "@claraos/core";
+import { useAuthStore, useTranslation } from "@claraos/core";
 import type { ClaraToolCall } from "./api";
 import styles from "./NavActionCards.module.css";
 
@@ -27,6 +27,7 @@ function cardLabel(nav: NonNullable<ClaraToolCall["navArgs"]>): string {
 }
 
 export function NavActionCards({ toolCalls }: { toolCalls: ClaraToolCall[] }) {
+  const { t } = useTranslation("chat");
   const username = useAuthStore((s) => s.user?.username);
   const [busy, setBusy] = useState<string>("");
 
@@ -77,7 +78,7 @@ export function NavActionCards({ toolCalls }: { toolCalls: ClaraToolCall[] }) {
           >
             <span className={styles.icon}>🔗</span>
             <span className={styles.label}>{cardLabel(nav)}</span>
-            <span className={styles.action}>{busy === key ? "…" : "öffnen"}</span>
+            <span className={styles.action}>{busy === key ? "…" : t("nav.open")}</span>
           </button>
         );
       })}

@@ -13,7 +13,7 @@
  *     decodable as a prefix-complete concatenation, so always from chunk 0)
  *   * distinguishable mic errors (permission / no device) → onError
  */
-import { getBrand } from "@claraos/core";
+import { i18n } from "@claraos/core";
 import { transcribe as transcribeApi } from "./api";
 
 export interface VoiceRecorderCallbacks {
@@ -47,15 +47,15 @@ const DEFAULTS: Required<Omit<VoiceRecorderOptions, "language" | "noInterims">> 
 function micErrorMessage(err: unknown): string {
   const name = (err as { name?: string } | null)?.name;
   if (name === "NotAllowedError" || name === "PermissionDeniedError") {
-    return "Mikrofon nicht erlaubt — bitte im Browser freigeben.";
+    return i18n.t("chatWork:voice.micDenied");
   }
   if (name === "NotFoundError" || name === "DevicesNotFoundError") {
-    return "Kein Mikrofon gefunden.";
+    return i18n.t("chatWork:voice.micNotFound");
   }
   if (name === "NotReadableError") {
-    return "Mikrofon ist durch eine andere App belegt.";
+    return i18n.t("chatWork:voice.micBusy");
   }
-  return `Mikrofon-Fehler: ${err}`;
+  return i18n.t("chatWork:voice.micError", { error: String(err) });
 }
 
 export class VoiceRecorderSession {
@@ -105,7 +105,7 @@ export class VoiceRecorderSession {
     this.cb.onState("arming");
     if (!navigator.mediaDevices?.getUserMedia) {
       // mediaDevices exists only in secure contexts (HTTPS / localhost)
-      this.cb.onError(`Mikrofon hier nicht verfügbar — ${getBrand().product} über HTTPS öffnen.`);
+      this.cb.onError(i18n.t("chatWork:voice.micInsecure"));
       return;
     }
     let stream: MediaStream;
@@ -139,7 +139,7 @@ export class VoiceRecorderSession {
         : new MediaRecorder(stream);
     } catch (err) {
       this.cleanupMedia();
-      this.cb.onError(`Aufnahme nicht möglich: ${err}`);
+      this.cb.onError(i18n.t("chatWork:voice.recordFailed", { error: String(err) }));
       return;
     }
 
@@ -302,7 +302,7 @@ export class VoiceRecorderSession {
       this.cb.onFinal((result.text ?? "").trim(), { hadSpeech: true });
     } catch (err) {
       if (this.disposed) return;
-      this.cb.onError(`Transkription fehlgeschlagen: ${err}`);
+      this.cb.onError(i18n.t("chatWork:voice.transcribeFailed", { error: String(err) }));
       this.cb.onFinal("", { hadSpeech: false });
     }
   }

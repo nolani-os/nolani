@@ -1,4 +1,4 @@
-import { useMatrixStore } from "@claraos/core";
+import { useMatrixStore, useTranslation } from "@claraos/core";
 import type { RailView } from "@claraos/core";
 import {
   BellIcon, MessageIcon, UsersIcon, CalendarIcon, PhoneIcon, FolderIcon, SearchIcon,
@@ -21,6 +21,7 @@ export function LeftRail({
   onSearchToggle: () => void;
   searchActive: boolean;
 }) {
+  const { t } = useTranslation("teams");
   const railView = useMatrixStore((s) => s.railView);
   const setRailView = useMatrixStore((s) => s.setRailView);
   const rooms = useMatrixStore((s) => s.rooms);
@@ -32,10 +33,10 @@ export function LeftRail({
       <button
         className={`${styles.railItem} ${searchActive ? styles.active : ""}`}
         onClick={onSearchToggle}
-        title="Suchen (Strg+K)"
+        title={t("rail.searchTitle")}
       >
         <span className={styles.icon}><SearchIcon size={20} /></span>
-        <span className={styles.label}>Suche</span>
+        <span className={styles.label}>{t("rail.search")}</span>
       </button>
 
       <div className={styles.divider} />
@@ -48,10 +49,10 @@ export function LeftRail({
             if (searchActive) onSearchToggle();
             setRailView(item.id);
           }}
-          title={item.label}
+          title={t(`rail.${item.id}`)}
         >
           <span className={styles.icon}>{item.icon}</span>
-          <span className={styles.label}>{item.label}</span>
+          <span className={styles.label}>{t(`rail.${item.id}`)}</span>
           {item.id === "activity" && totalUnread > 0 && (
             <span className={styles.badge}>{totalUnread > 99 ? "99+" : totalUnread}</span>
           )}

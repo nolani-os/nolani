@@ -1,0 +1,38 @@
+{
+  "common": {
+    "backToFiles": "Zurück zu den Dateien",
+    "back": "Zurück",
+    "open": "Öffnen"
+  },
+  "video": {
+    "openOther": "Anderes Video öffnen",
+    "restart": "Von vorn",
+    "fullscreen": "Vollbild",
+    "cannotPlay": "„{{name}}“ lässt sich nicht abspielen",
+    "loading": "Video wird geladen",
+    "emptyTitle": "Video öffnen, um es abzuspielen",
+    "emptyFormats": "MP4, WebM und MOV laufen im Browser; MKV und AVI nur, wenn ihr Inhalt es zulässt",
+    "pick": "Video auswählen"
+  },
+  "pdf": {
+    "loadFailed": "PDF ließ sich nicht laden.",
+    "pickPdf": "Bitte eine PDF-Datei wählen.",
+    "open": "PDF öffnen",
+    "newTab": "In neuem Reiter öffnen",
+    "title": "PDF-Betrachter",
+    "emptyTitle": "PDF öffnen, um sie anzusehen",
+    "pick": "PDF auswählen",
+    "cannotOpenDetail": "PDF lässt sich nicht öffnen: {{error}}",
+    "loading": "PDF wird geladen …",
+    "cannotOpen": "PDF lässt sich nicht öffnen."
+  },
+  "office": {
+    "noFile": "Keine Datei übergeben — Office-Dokumente über die Dateien-App öffnen.",
+    "nextcloudOnly": "Office-Dokumente können nur aus Nextcloud geöffnet werden.",
+    "cannotOpen": "Dokument konnte nicht geöffnet werden: {{error}}",
+    "loading": "Collabora wird geladen …",
+    "frameTitle": "Office-Dokument (Collabora)",
+    "notifyTitle": "Office",
+    "noDocument": "Kein Office-Dokument geöffnet — Einfügen nicht möglich."
+  }
+}

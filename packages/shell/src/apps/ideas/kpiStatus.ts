@@ -6,7 +6,7 @@
  * colors. */
 import type { KpiStatus } from "./types";
 import type { IconName } from "../../components/Icon";
-import { regionLocale } from "@claraos/core";
+import { regionLocale, i18n } from "@claraos/core";
 
 export interface StatusDef {
   key: KpiStatus;
@@ -18,16 +18,19 @@ export interface StatusDef {
   color: string;
 }
 
+const zustand = (key: KpiStatus, rest: Omit<StatusDef, "key" | "label">): StatusDef =>
+  ({ key, ...rest, get label() { return i18n.t(`wissen:kpiStatus.${key}`); } });
+
 export const KPI_STATUS: StatusDef[] = [
-  { key: "done", label: "Erreicht", icon: "✅", iconName: "done", color: "#16a34a" },
-  { key: "on_track", label: "Auf Kurs", icon: "🟢", iconName: "on_track", color: "#22c55e" },
-  { key: "at_risk", label: "Wackelt", icon: "🟡", iconName: "at_risk", color: "#eab308" },
-  { key: "blind", label: "Blind", icon: "⚪", iconName: "blind", color: "#94a3b8" },
-  { key: "behind", label: "Hinterher", icon: "🔴", iconName: "behind", color: "#ef4444" },
+  zustand("done", { icon: "✅", iconName: "done", color: "#16a34a" }),
+  zustand("on_track", { icon: "🟢", iconName: "on_track", color: "#22c55e" }),
+  zustand("at_risk", { icon: "🟡", iconName: "at_risk", color: "#eab308" }),
+  zustand("blind", { icon: "⚪", iconName: "blind", color: "#94a3b8" }),
+  zustand("behind", { icon: "🔴", iconName: "behind", color: "#ef4444" }),
   // Important: "observing" is NOT "blind". The KPI is measuring but still
   // collecting baseline values. Without this entry `statusOf()` fell back to
   // "Blind" and mislabeled exactly the distinction that matters.
-  { key: "observing", label: "In Beobachtung", icon: "🔵", iconName: "blind", color: "#38bdf8" },
+  zustand("observing", { icon: "🔵", iconName: "blind", color: "#38bdf8" }),
 ];
 
 export const STATUS_BY_KEY: Record<string, StatusDef> =

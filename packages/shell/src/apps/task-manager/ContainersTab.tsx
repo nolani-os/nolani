@@ -1,4 +1,4 @@
-import { getBrand } from "@claraos/core";
+import { i18n, useTranslation } from "@claraos/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./TaskManagerApp.module.css";
 
@@ -23,6 +23,7 @@ interface ContainerRow {
 }
 
 export function ContainersTab({ isAdmin }: { isAdmin: boolean }) {
+  const { t } = useTranslation("taskManager");
   const [hosts, setHosts] = useState<DockerHost[]>([]);
   const [activeHost, setActiveHost] = useState<string | null>(null);
   const [rows, setRows] = useState<ContainerRow[]>([]);
@@ -43,7 +44,7 @@ export function ContainersTab({ isAdmin }: { isAdmin: boolean }) {
         const first = d.hosts.find((h) => h.reachable);
         if (first) setActiveHost((cur) => cur ?? first.id);
       })
-      .catch((e) => setError(`Hosts nicht ladbar: ${(e as Error).message}`));
+      .catch((e) => setError(i18n.t("taskManager:containers.hostsFailed", { error: (e as Error).message })));
   }, []);
 
   const loadContainers = useCallback(async (hostId: string) => {
@@ -73,7 +74,7 @@ export function ContainersTab({ isAdmin }: { isAdmin: boolean }) {
 
   const restart = async (name: string) => {
     if (!activeHost) return;
-    if (!confirm(`Container "${name}" neu starten?`)) return;
+    if (!confirm(t("containers.confirmRestart", { name }))) return;
     setBusy(name); setActionMsg(null);
     try {
       const r = await fetch(`/api/claraos/containers/${activeHost}/${encodeURIComponent(name)}/restart`, {
@@ -81,7 +82,7 @@ export function ContainersTab({ isAdmin }: { isAdmin: boolean }) {
       });
       const body = await r.json();
       if (!r.ok) throw new Error(body.detail || `HTTP ${r.status}`);
-      setActionMsg({ ok: true, text: `"${name}" neu gestartet ✓` });
+      setActionMsg({ ok: true, text: t("containers.restarted", { name }) });
       loadContainers(activeHost);
     } catch (e) {
       setActionMsg({ ok: false, text: (e as Error).message });
@@ -101,7 +102,7 @@ export function ContainersTab({ isAdmin }: { isAdmin: boolean }) {
             key={h.id}
             className={`${styles.hostChip} ${activeHost === h.id ? styles.hostChipActive : ""} ${!h.reachable ? styles.hostChipDown : ""}`}
             onClick={() => h.reachable && setActiveHost(h.id)}
-            title={h.hint ?? `${h.container_count} Container`}
+            title={h.hint ?? t("containers.hostCount", { count: h.container_count })}
             disabled={!h.reachable}
           >
             <span className={h.reachable ? styles.dotUp : styles.dotDown}>●</span> {h.label}
@@ -110,18 +111,18 @@ export function ContainersTab({ isAdmin }: { isAdmin: boolean }) {
         ))}
         <input
           className={styles.filterInput}
-          placeholder="Filtern…"
+          placeholder={t("containers.filter")}
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         />
         <button className={styles.actionBtn} onClick={() => activeHost && loadContainers(activeHost)} disabled={loading}>
-          {loading ? "…" : "Aktualisieren"}
+          {loading ? "…" : t("containers.refresh")}
         </button>
       </div>
 
       {hosts.some((h) => !h.reachable) && (
         <p className={styles.hostHint}>
-          Nicht erreichbare Hosts: SSH-Key fehlt — über Network Manager → Host → „Setup SSH Key" einrichten.
+          {t("containers.unreachable")}
         </p>
       )}
       {error && <p className={styles.errorLine}>⚠ {error}</p>}
@@ -129,25 +130,25 @@ export function ContainersTab({ isAdmin }: { isAdmin: boolean }) {
         <p className={actionMsg.ok ? styles.okLine : styles.errorLine}>{actionMsg.text}</p>
       )}
       {!statsOk && !error && (
-        <p className={styles.hostHint}>CPU/RAM-Werte gerade nicht verfügbar (docker stats langsam/fehlgeschlagen).</p>
+        <p className={styles.hostHint}>{t("containers.statsMissing")}</p>
       )}
 
       <div className={styles.tableWrap}>
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>Container</th>
-              <th>Image</th>
-              <th>Status</th>
-              <th>CPU</th>
-              <th>RAM</th>
-              {isAdmin && <th>Aktion</th>}
+              <th>{t("col.container")}</th>
+              <th>{t("col.image")}</th>
+              <th>{t("col.status")}</th>
+              <th>{t("col.cpu")}</th>
+              <th>{t("col.ram")}</th>
+              {isAdmin && <th>{t("col.action")}</th>}
             </tr>
           </thead>
           <tbody>
             {visible.length === 0 && (
               <tr><td colSpan={isAdmin ? 6 : 5} className={styles.empty}>
-                {loading ? "Lade…" : rows.length ? "Kein Treffer für den Filter" : "Keine Container"}
+                {loading ? t("loading") : rows.length ? t("containers.noMatch") : t("containers.none")}
               </td></tr>
             )}
             {visible.map((c) => (
@@ -155,7 +156,7 @@ export function ContainersTab({ isAdmin }: { isAdmin: boolean }) {
                 <td className={styles.titleCell}>
                   <span className={c.state === "running" ? styles.dotUp : styles.dotDown}>●</span>{" "}
                   {c.name}
-                  {c.protected && <span className={styles.protectedBadge} title={`Neustart gesperrt — würde ${getBrand().product} selbst treffen`}>geschützt</span>}
+                  {c.protected && <span className={styles.protectedBadge} title={t("containers.protectedTitle")}>{t("containers.protected")}</span>}
                 </td>
                 <td className={styles.subCell} title={c.image}>{c.image.length > 42 ? c.image.slice(0, 40) + "…" : c.image}</td>
                 <td className={styles.subCell}>{c.status}</td>
@@ -168,7 +169,7 @@ export function ContainersTab({ isAdmin }: { isAdmin: boolean }) {
                       onClick={() => restart(c.name)}
                       disabled={busy !== null || c.protected}
                     >
-                      {busy === c.name ? "…" : "Neustart"}
+                      {busy === c.name ? "…" : t("containers.restart")}
                     </button>
                   </td>
                 )}
@@ -178,7 +179,7 @@ export function ContainersTab({ isAdmin }: { isAdmin: boolean }) {
         </table>
       </div>
       <p className={styles.footerLine}>
-        {running}/{rows.length} laufen · Werte aktualisieren sich alle 20 s
+        {t("containers.footer", { running, total: rows.length })}
       </p>
     </div>
   );

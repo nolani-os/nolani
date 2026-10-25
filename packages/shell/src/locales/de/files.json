@@ -1,0 +1,371 @@
+{
+  "actions": {
+    "cancel": "Abbrechen",
+    "close": "Schließen",
+    "closeWindow": "Fenster schließen",
+    "copy": "Kopieren",
+    "create": "Anlegen",
+    "cut": "Ausschneiden",
+    "delete": "Löschen",
+    "deletePermanently": "Endgültig löschen",
+    "download": "Herunterladen",
+    "emptyConfirm": "Leeren",
+    "emptyTrash": "Papierkorb leeren",
+    "extract": "Entpacken",
+    "more": "Aktionen",
+    "move": "Verschieben",
+    "moveToTrash": "In Papierkorb verschieben",
+    "ok": "OK",
+    "paste": "Einfügen",
+    "pasteHere": "Hier einfügen",
+    "properties": "Eigenschaften",
+    "refresh": "Aktualisieren",
+    "rename": "Umbenennen",
+    "restore": "Wiederherstellen",
+    "retry": "Erneut versuchen",
+    "selectAll": "Alle auswählen",
+    "upload": "Hochladen",
+    "uploadFiles": "Dateien hochladen"
+  },
+  "app": {
+    "title": "Dateien"
+  },
+  "archive": {
+    "archiveFailed": "Archivieren fehlgeschlagen: {{detail}}",
+    "encryptFailed": "Verschlüsseln fehlgeschlagen: {{detail}}",
+    "encryptPrompt": "Passwort für „{{name}}“ — ohne Passwort ist das Archiv nicht lesbar:",
+    "extractFailed": "Entpacken fehlgeschlagen: {{detail}}",
+    "passwordPrompt": "„{{name}}“ ist verschlüsselt — Passwort:",
+    "wrongPassword": "Falsches Passwort für „{{name}}“ — erneut versuchen:"
+  },
+  "clipboard": {
+    "clear": "Zwischenablage leeren",
+    "copied_one": "{{count}} Element kopiert",
+    "copied_other": "{{count}} Elemente kopiert",
+    "cut_one": "{{count}} Element ausgeschnitten",
+    "cut_other": "{{count}} Elemente ausgeschnitten"
+  },
+  "confirm": {
+    "closeTabs_one": "{{count}} Tab ist geöffnet. Fenster trotzdem schließen?",
+    "closeTabs_other": "{{count}} Tabs sind geöffnet. Fenster trotzdem schließen?",
+    "deleteManyNoTrash_one": "{{count}} Element endgültig löschen? (kein Papierkorb)",
+    "deleteManyNoTrash_other": "{{count}} Elemente endgültig löschen? (kein Papierkorb)",
+    "deleteOneNoTrash": "„{{name}}“ endgültig löschen? (kein Papierkorb)",
+    "deletePermanentMany_one": "{{count}} Element endgültig löschen?",
+    "deletePermanentMany_other": "{{count}} Elemente endgültig löschen?",
+    "deletePermanentOne": "„{{name}}“ endgültig löschen?",
+    "emptyTrash_one": "Papierkorb leeren? {{count}} Element wird endgültig gelöscht.",
+    "emptyTrash_other": "Papierkorb leeren? {{count}} Elemente werden endgültig gelöscht.",
+    "extractHere": "„{{name}}“ nach hier entpacken?",
+    "noTrash": "(kein Papierkorb)",
+    "purge": "„{{name}}“ endgültig löschen? Das kann nicht rückgängig gemacht werden.",
+    "restore": "„{{name}}“ wiederherstellen?",
+    "skipsTrash": "Der Papierkorb wird übersprungen.",
+    "trashMany_one": "{{count}} Element in den Papierkorb verschieben?",
+    "trashMany_other": "{{count}} Elemente in den Papierkorb verschieben?",
+    "trashOne": "„{{name}}“ in den Papierkorb verschieben?"
+  },
+  "count": {
+    "hidden_one": "({{count}} ausgeblendet)",
+    "hidden_other": "({{count}} ausgeblendet)",
+    "items_one": "{{count}} Element",
+    "items_other": "{{count}} Elemente",
+    "selected_one": "{{count}} ausgewählt",
+    "selected_other": "{{count}} ausgewählt"
+  },
+  "details": {
+    "modified": "Geändert",
+    "name": "Name",
+    "path": "Pfad",
+    "size": "Größe",
+    "source": "Quelle",
+    "text": "{{name}}\n\nPfad: {{path}}\nGröße: {{size}}\nGeändert: {{modified}}",
+    "type": "Typ"
+  },
+  "empty": {
+    "folder": "Ordner ist leer",
+    "folderHint": "Dateien hierher ziehen oder hochladen.",
+    "folderShort": "Leerer Ordner",
+    "noFavorites": "Noch keine Favoriten",
+    "noFavoritesHint": "Im Menü einer Datei oder eines Ordners „Zu Favoriten hinzufügen“.",
+    "noHits": "Keine Treffer",
+    "nothingFound": "Nichts gefunden",
+    "nothingFoundHint": "Enter sucht auch in Unterordnern.",
+    "searchSubfolders": "In Unterordnern suchen",
+    "trash": "Papierkorb ist leer",
+    "trashHint": "Gelöschtes aus Nextcloud landet hier und lässt sich wiederherstellen."
+  },
+  "errors": {
+    "lastSeen": "Zuletzt gesehen: {{date}}",
+    "loadFolder": "Ordner konnte nicht geladen werden",
+    "offline": "{{device}} ist offline / nicht erreichbar",
+    "offlineShort": "{{device}} ist offline",
+    "sshdDown": "{{device}} ist erreichbar, aber SSH läuft nicht",
+    "sshdDownShort": "{{device}} erreichbar, aber SSH läuft nicht"
+  },
+  "groups": {
+    "date": {
+      "earlier": "Früher",
+      "thisMonth": "Dieser Monat",
+      "thisWeek": "Diese Woche",
+      "today": "Heute",
+      "unknown": "Unbekannt",
+      "yesterday": "Gestern"
+    }
+  },
+  "keys": {
+    "ctrl": "Strg",
+    "del": "Entf",
+    "shift": "Umschalt"
+  },
+  "menu": {
+    "addFavorite": "Zu Favoriten hinzufügen",
+    "addToPlaces": "Zu Orten hinzufügen",
+    "analyze": "Mit {{assistant}} analysieren",
+    "archive": "Als ZIP archivieren",
+    "defaultApp": "{{label}} (Standard)",
+    "desktopShortcut": "Auf Desktop verknüpfen",
+    "downloadZip": "Als ZIP herunterladen",
+    "encrypt": "Verschlüsseln (AES-ZIP) …",
+    "moreActions": "Weitere Aktionen",
+    "open": "Öffnen",
+    "openInNewTab": "In neuem Tab öffnen",
+    "openInSplit": "In geteilter Ansicht öffnen",
+    "openWith": "Öffnen mit …",
+    "pasteInto": "Hier hinein einfügen",
+    "print": "Drucken …",
+    "removeFavorite": "Aus Favoriten entfernen",
+    "share": "Teilen …",
+    "versions": "Frühere Versionen …"
+  },
+  "mobile": {
+    "all": "Alle",
+    "endSelection": "Auswahl beenden",
+    "parentFolder": "Übergeordneter Ordner",
+    "starred_one": "{{count}} markiert",
+    "starred_other": "{{count}} markiert"
+  },
+  "new": {
+    "fab": "Neu / Hochladen",
+    "file": "Neue Datei",
+    "fileBaseName": "Neu",
+    "fileNamePrompt": "Dateiname:",
+    "folder": "Neuer Ordner",
+    "folderPlaceholder": "Ordnername …",
+    "folderPrompt": "Name des neuen Ordners:",
+    "folderShort": "Ordner",
+    "title": "Neu"
+  },
+  "openWith": {
+    "always": "Immer mit dieser App öffnen (.{{ext}})",
+    "noDefault": "Für diesen Dateityp gibt es keine Standard-App.",
+    "title": "„{{name}}“ öffnen mit…"
+  },
+  "ops": {
+    "alreadyExists": "gibt es schon",
+    "applyToAll": "Für alle weiteren Konflikte übernehmen",
+    "conflict": {
+      "overwrite": "Ersetzen",
+      "rename": "Beide behalten",
+      "skip": "Überspringen"
+    },
+    "connectionLost": "Verbindung abgebrochen",
+    "deleteFailed": "Löschen fehlgeschlagen",
+    "existsHere": "„{{name}}“ gibt es in diesem Ordner schon.",
+    "existsInTarget": "„{{name}}“ gibt es im Zielordner schon.",
+    "failedHeader": "Nicht geklappt:",
+    "summary": {
+      "copied": "{{done}} von {{total}} kopiert.",
+      "deleted": "{{done}} von {{total}} gelöscht.",
+      "moved": "{{done}} von {{total}} verschoben.",
+      "uploaded": "{{done}} von {{total}} hochgeladen."
+    }
+  },
+  "places": {
+    "addCurrent": "Aktuellen Ordner zu Orten hinzufügen",
+    "desktop": "Schreibtisch",
+    "documents": "Dokumente",
+    "downloads": "Downloads",
+    "hide": "Eintrag verstecken",
+    "hideHiddenAgain": "Versteckte wieder ausblenden",
+    "homeFolder": "Persönlicher Ordner",
+    "moveDown": "Nach unten",
+    "moveUp": "Nach oben",
+    "remove": "Entfernen",
+    "rename": "Umbenennen …",
+    "renamePrompt": "Ort umbenennen:",
+    "showAll": "Alle Einträge anzeigen",
+    "unhide": "Eintrag wieder anzeigen"
+  },
+  "print": {
+    "color": "Farbe",
+    "colorOption": {
+      "auto": "Automatisch",
+      "color": "Farbe",
+      "monochrome": "Schwarzweiß"
+    },
+    "copies": "Anzahl",
+    "error": "Fehler {{status}}",
+    "loadFailed": "Druckerliste nicht abrufbar.",
+    "noPrinter": "Kein Drucker eingerichtet. Drucker werden in der Geräte-App verwaltet.",
+    "noResponse": "Drucker antwortet nicht.",
+    "printer": "Drucker",
+    "probing": "Drucker wird geprüft …",
+    "readFailed": "Datei konnte nicht gelesen werden",
+    "reading": "Datei wird gelesen …",
+    "sending": "Auftrag wird gesendet …",
+    "sent": "Druckauftrag gesendet.",
+    "sides": "Seiten",
+    "sidesOption": {
+      "one-sided": "Einseitig",
+      "two-sided-long-edge": "Beidseitig (lange Kante)",
+      "two-sided-short-edge": "Beidseitig (kurze Kante)"
+    },
+    "submit": "Drucken",
+    "title": "Drucken: {{name}}"
+  },
+  "rename": {
+    "prompt": "„{{name}}“ umbenennen:"
+  },
+  "search": {
+    "clear": "Suche leeren",
+    "in": "In „{{name}}“ suchen …",
+    "label": "Suchen",
+    "openParent": "Enthaltenden Ordner öffnen",
+    "searching": "Suche…",
+    "searchingMobile": "Suche …",
+    "truncated": "Ergebnis begrenzt — nicht alle Treffer angezeigt."
+  },
+  "sections": {
+    "favorites": "Favoriten",
+    "files": "Dateien",
+    "more": "Mehr",
+    "places": "Orte",
+    "sources": "Quellen",
+    "trash": "Papierkorb"
+  },
+  "share": {
+    "allowUpload": "Hochladen und Ändern erlauben",
+    "copied": "Kopiert ✓",
+    "copyFailed": "Kopieren ging nicht — Link bitte von Hand markieren.",
+    "create": "Link erstellen",
+    "createFailed": "Link konnte nicht erstellt werden.",
+    "expires": "Läuft ab am (optional)",
+    "loadFailed": "Freigaben konnten nicht geladen werden.",
+    "loading": "Freigaben werden geladen…",
+    "noPassword": "ohne Passwort",
+    "none": "Noch kein Link vorhanden.",
+    "noticeAccount": "Der Empfänger braucht kein Konto — der Link fragt höchstens das hier gesetzte Passwort ab.",
+    "noticeInternet": "Der Link ist aus dem Internet erreichbar — ein Passwort ist deshalb sinnvoll.",
+    "password": "Passwort (optional)",
+    "remove": "Entfernen",
+    "revoke": "Link zurückziehen",
+    "title": "„{{name}}“ teilen",
+    "until": "bis {{date}}",
+    "uploadAllowed": "Hochladen erlaubt",
+    "withPassword": "🔒 mit Passwort"
+  },
+  "sidebar": {
+    "refreshFolder": "Ordner aktualisieren",
+    "reloadSources": "Quellen neu laden",
+    "switchSource": "Quelle wechseln"
+  },
+  "sort": {
+    "asc": "Aufsteigend",
+    "by": "Sortieren nach",
+    "desc": "Absteigend",
+    "dirsFirst": "Ordner zuerst",
+    "modified": "Änderungsdatum",
+    "name": "Name",
+    "size": "Größe",
+    "title": "Sortieren",
+    "type": "Typ"
+  },
+  "source": {
+    "noAccess": "kein Zugang hinterlegt",
+    "noAccessShort": "kein Zugang",
+    "offline": "offline",
+    "online": "online",
+    "sshOff": "SSH aus"
+  },
+  "status": {
+    "loading": "Wird geladen…",
+    "loadingMobile": "Laden …",
+    "loadingShort": "Laden…"
+  },
+  "tabs": {
+    "ariaLabel": "Ordner-Tabs",
+    "autoName": "Automatischer Name",
+    "close": "Tab schließen",
+    "new": "Neuer Tab",
+    "newTitle": "Neuer Tab ({{shortcut}})",
+    "rename": "Tab umbenennen …",
+    "renamePrompt": "Tab umbenennen (leer = automatischer Name):",
+    "reopen": "Geschlossenen Tab wiederherstellen",
+    "reopenTitle": "Geschlossenen Tab wiederherstellen ({{shortcut}})"
+  },
+  "toolbar": {
+    "back": "Zurück (Alt+←)",
+    "copyPath": "Pfad kopieren",
+    "enterPath": "Pfad eingeben",
+    "enterPathTitle": "Pfad eingeben (F6)",
+    "forward": "Vor (Alt+→)",
+    "pasteCopied_one": "Einfügen ({{count}} kopiert)",
+    "pasteCopied_other": "Einfügen ({{count}} kopiert)",
+    "pasteCut_one": "Einfügen ({{count}} ausgeschnitten)",
+    "pasteCut_other": "Einfügen ({{count}} ausgeschnitten)",
+    "search": "Suchen…",
+    "showIntermediate": "Zwischenordner anzeigen"
+  },
+  "trash": {
+    "back": "Zurück",
+    "count_one": "{{count}} Element im Papierkorb",
+    "count_other": "{{count}} Elemente im Papierkorb",
+    "deleted": "Gelöscht",
+    "from": "aus {{folder}}",
+    "originalLocation": "Originalort",
+    "restorable_one": "{{count}} Element · wiederherstellbar",
+    "restorable_other": "{{count}} Elemente · wiederherstellbar"
+  },
+  "upload": {
+    "desktop": "Lädt hoch: {{name}}",
+    "desktopCount": "Lädt hoch ({{index}}/{{total}}): {{name}}",
+    "mobile": "Lädt hoch · {{name}}",
+    "mobileCount": "Lädt hoch {{index}}/{{total}} · {{name}}"
+  },
+  "versions": {
+    "ariaLabel": "Frühere Versionen von „{{name}}“",
+    "download": "Laden",
+    "loading": "Versionen werden geladen…",
+    "none": "Keine früheren Versionen vorhanden.",
+    "restoreConfirm": "„{{name}}“ auf den Stand vom {{when}} zurücksetzen? Der aktuelle Inhalt wird selbst zur Version.",
+    "title": "Frühere Versionen — „{{name}}“"
+  },
+  "view": {
+    "asGrid": "Als Raster anzeigen",
+    "asList": "Als Liste anzeigen",
+    "copyHint": "Zum Kopieren in die andere Ansicht erst etwas auswählen.",
+    "details": "Details",
+    "groupBy": "Gruppieren nach",
+    "hiddenFiles": "Versteckte Dateien",
+    "icons-large": "Große Symbole",
+    "icons-small": "Kleine Symbole",
+    "list": "Liste",
+    "moveHint": "Zum Verschieben in die andere Ansicht erst etwas auswählen.",
+    "noGrouping": "Keine Gruppierung",
+    "splitCloseLeft": "Linke Ansicht schließen",
+    "splitCloseRight": "Rechte Ansicht schließen",
+    "splitDivider": "Ansichten-Teiler",
+    "splitFocusOther": "Andere Ansicht fokussieren",
+    "splitOpen": "Ansicht teilen",
+    "title": "Ansicht"
+  },
+  "viewers": {
+    "image-viewer": "Bildbetrachter",
+    "model-viewer": "3D-Viewer",
+    "office-viewer": "Office (Collabora)",
+    "pdf-viewer": "PDF-Viewer",
+    "text-editor": "Text-Editor",
+    "video-player": "Videoplayer"
+  }
+}

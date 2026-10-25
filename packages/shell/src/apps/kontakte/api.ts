@@ -6,6 +6,8 @@
  * it on save.
  */
 
+import { i18n } from "@claraos/core";
+
 const BASE = "/api/claraos/contacts";
 
 export interface Mail { wert: string; label?: string; pref?: boolean }
@@ -133,7 +135,7 @@ export const kontakteApi = {
     const fd = new FormData();
     fd.append("datei", datei);
     const r = await fetch(`${BASE}/import/vcf`, { method: "POST", credentials: "include", body: fd });
-    if (!r.ok) throw new Error(await fehlertext(r, "Import fehlgeschlagen"));
+    if (!r.ok) throw new Error(await fehlertext(r, i18n.t("kontakte:msg.importFailed")));
     return r.json();
   },
 

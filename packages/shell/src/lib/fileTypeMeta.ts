@@ -6,6 +6,7 @@
  * category table that drives <FileTypeIcon> (color + glyph + label)
  * and stays alongside fileTypeRouter (which owns ext → viewer app).
  */
+import { i18n } from "@claraos/core";
 
 export type FileCategory =
   | "pdf"
@@ -33,33 +34,55 @@ export type FileCategory =
 export interface CategoryMeta {
   /** Accent color for the label pill / glyph (clara-glass palette). */
   color: string;
-  /** German name for tooltips/properties. */
-  name: string;
+  /** Display name for tooltips/properties, in the UI language
+   *  (`common:fileTypes.<category>`, resolved on every read). */
+  readonly name: string;
 }
 
-export const CATEGORY_META: Record<FileCategory, CategoryMeta> = {
-  pdf:     { color: "#F87171", name: "PDF-Dokument" },
-  text:    { color: "#38BDF8", name: "Textdatei" },
-  doc:     { color: "#60A5FA", name: "Dokument" },
-  sheet:   { color: "#4ADE80", name: "Tabelle" },
-  slides:  { color: "#FB923C", name: "Präsentation" },
-  image:   { color: "#A78BFA", name: "Bild" },
-  video:   { color: "#F472B6", name: "Video" },
-  audio:   { color: "#2DD4BF", name: "Audio" },
-  archive: { color: "#FBBF24", name: "Archiv" },
-  code:    { color: "#93C5FD", name: "Code" },
-  data:    { color: "#7DD3FC", name: "Daten" },
-  model3d: { color: "#E879F9", name: "3D-Modell" },
-  mail:     { color: "#818CF8", name: "E-Mail" },
-  calendar: { color: "#F97316", name: "Termin" },
-  contact:  { color: "#34D399", name: "Kontakt" },
-  geo:      { color: "#22C55E", name: "Karte / Strecke" },
-  ebook:    { color: "#FACC15", name: "E-Book" },
-  font:     { color: "#C4B5FD", name: "Schrift" },
-  package:  { color: "#94A3B8", name: "Programm / Abbild" },
-  design:   { color: "#F472B6", name: "Grafik-Projekt" },
-  unknown: { color: "#8C93A8", name: "Datei" },
+const CATEGORY_COLORS: Record<FileCategory, string> = {
+  pdf:      "#F87171",
+  text:     "#38BDF8",
+  doc:      "#60A5FA",
+  sheet:    "#4ADE80",
+  slides:   "#FB923C",
+  image:    "#A78BFA",
+  video:    "#F472B6",
+  audio:    "#2DD4BF",
+  archive:  "#FBBF24",
+  code:     "#93C5FD",
+  data:     "#7DD3FC",
+  model3d:  "#E879F9",
+  mail:     "#818CF8",
+  calendar: "#F97316",
+  contact:  "#34D399",
+  geo:      "#22C55E",
+  ebook:    "#FACC15",
+  font:     "#C4B5FD",
+  package:  "#94A3B8",
+  design:   "#F472B6",
+  unknown:  "#8C93A8",
 };
+
+/** Display name of a category in the UI language. */
+export function categoryName(category: FileCategory): string {
+  return i18n.t(`common:fileTypes.${category}`);
+}
+
+/** Display name for folders (same group as the category names). */
+export function folderTypeName(): string {
+  return i18n.t("common:fileTypes.folder");
+}
+
+export const CATEGORY_META: Record<FileCategory, CategoryMeta> = Object.fromEntries(
+  (Object.keys(CATEGORY_COLORS) as FileCategory[]).map((category) => [
+    category,
+    {
+      color: CATEGORY_COLORS[category],
+      // Getter: the language can change at runtime, so never cache the text
+      get name() { return categoryName(category); },
+    },
+  ]),
+) as Record<FileCategory, CategoryMeta>;
 
 const EXT_TO_CATEGORY: Record<string, FileCategory> = {
   pdf: "pdf",
@@ -127,7 +150,7 @@ export interface FileTypeInfo {
   color: string;
   /** Short uppercase label for the icon pill (max 4 chars), e.g. "PDF". */
   label: string;
-  /** German category name. */
+  /** Category name in the UI language. */
   name: string;
 }
 

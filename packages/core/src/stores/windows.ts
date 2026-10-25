@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useAppRegistryStore } from "./appregistry";
 import { persist, createJSONStorage, subscribeWithSelector } from "zustand/middleware";
 import { idbStorage } from "./persist";
 import type { WindowInstance } from "../types";
@@ -90,7 +91,10 @@ export const useWindowsStore = create<WindowsStore>()(
           const win: WindowInstance = {
             id,
             appId,
-            title: opts?.title ?? appId,
+            // Without an explicit title, use the app's (translated) display name —
+            // callers like Clara's open_window action pass none, and the raw id
+            // ("planner") then stood in the title bar.
+            title: opts?.title ?? useAppRegistryStore.getState().getApp(appId)?.name ?? appId,
             icon: opts?.icon,
             x: opts?.x ?? 100 + (nextWindowId % 10) * 30,
             y: opts?.y ?? 80 + (nextWindowId % 10) * 30,

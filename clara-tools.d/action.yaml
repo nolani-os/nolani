@@ -1,0 +1,166 @@
+# CELL ONLY — the assistant drives the user's own screen (routers/actions.py, /clara/*).
+# The brain offers these under the home names `claraos_action_<tool>`, so chat hints and
+# instructions written for them apply unchanged. The screen is always the one of the
+# user of the running chat turn; nothing here can address another user.
+tools:
+  - name: open_window
+    description: |
+      Open a ClaraOS app in a window next to the chat. Use it whenever the user asks to
+      open, start or show an app ("öffne Teams", "zeig mir meine Mails"). App ids:
+      planner (tasks AND calendar — for the calendar use navigate_to planner/calendar),
+      post (mail), kontakte (contacts), teams-workspace (chat, calls), files, knowledge,
+      ideas, immich (photos), paperless (documents), mastodon, peertube (videos),
+      vaultwarden (passwords), services-hub (services), clara-routinen (routines),
+      settings, user-admin, task-manager, text-editor, selkies-browser (the user's
+      browser — there is no app "browser").
+      Unsure about an id? Call it anyway: an unknown id answers with the matching tiles.
+      opts are app specific: viewers {path, source}; text-editor {path?, content?,
+      language?}; files {source, path}.
+      The answer's `rendered` says whether the browser confirmed it — 0 means the user
+      sees nothing; say so instead of claiming success.
+    endpoint: "http://localhost:8090/api/claraos/actions/clara/open_window"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        app_id: { type: string, description: "ClaraOS app id, e.g. planner" }
+        opts: { type: object, description: "App-specific options" }
+      required: [app_id]
+
+  - name: close_window
+    description: |
+      Close an app on the user's screen (every window of it), e.g. when asked to close
+      it or to restart it (close, then open_window). "*" closes every app window; the
+      chat stays.
+    endpoint: "http://localhost:8090/api/claraos/actions/clara/close_window"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        app_id: { type: string }
+      required: [app_id]
+
+  - name: navigate_files
+    description: |
+      Drive the Files app to a folder, optionally highlighting a file (opens Files if
+      needed). This only BROWSES — to SHOW a file use open_in_viewer.
+    endpoint: "http://localhost:8090/api/claraos/actions/clara/navigate_files"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        source: { type: string, description: "File source, default nextcloud" }
+        path: { type: string, description: "Folder path" }
+        select_filename: { type: string, description: "File to highlight" }
+      required: [path]
+
+  - name: open_in_viewer
+    description: |
+      Open a file in the matching viewer next to the chat (image, PDF, video, office
+      document, 3D model, text; an .html page RUNS in the viewer). Find the exact path
+      first (files_list_directory / files_search_files). viewer_hint forces one of
+      image-viewer, pdf-viewer, video-player, text-editor, office-viewer, model-viewer.
+    endpoint: "http://localhost:8090/api/claraos/actions/clara/open_in_viewer"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        path: { type: string }
+        source: { type: string, description: "File source, default nextcloud" }
+        viewer_hint: { type: string }
+      required: [path]
+
+  - name: read_screen
+    description: |
+      Look at what the user really has on screen right now: device, every open window
+      (app, title, file, in front or minimised), the visible text of the front window,
+      and any error shown. Use it to check your own work, when asked to look or verify,
+      and whenever another UI tool returned rendered: 0.
+    endpoint: "http://localhost:8090/api/claraos/actions/clara/read_screen"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties: {}
+
+  - name: show_artifact
+    description: |
+      Show generated content in the viewer next to the chat. A complete HTML page
+      (kind "html") RUNS there — the right tool for a generated game, chart or mini app.
+      Other kinds are shown as source. Held in memory only; for something to keep, write
+      a file first and open it with open_in_viewer.
+    endpoint: "http://localhost:8090/api/claraos/actions/clara/show_artifact"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        kind: { type: string, enum: [html, code, data, markdown, url] }
+        content: { type: string }
+        mime: { type: string }
+        title: { type: string }
+      required: [kind, content]
+
+  - name: office_insert
+    description: |
+      Insert text LIVE into the office document the user has open ("füge ein", "schreib
+      in mein Dokument") — at the cursor, or with position "end" at the end of the
+      document ("add … at the end"). Markdown (headings, lists, bold) arrives formatted;
+      mime "text/html" for explicit formatting. save: true saves right after. For a NEW document use the
+      office create_document tool, then open_in_viewer. Never write the open file with
+      files_write_file.
+    endpoint: "http://localhost:8090/api/claraos/actions/clara/office_insert"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        content: { type: string }
+        mime: { type: string }
+        save: { type: boolean }
+        position: { type: string, enum: [cursor, end] }
+        window_id: { type: string }
+      required: [content]
+
+  - name: navigate_to
+    description: |
+      Jump an app's window straight to a record (opens the window if needed) — right
+      after a lookup tool returned its id. The app tile signs the user in; never open
+      such an app address in the browser. Views: planner calendar/calendar_date {date:
+      YYYY-MM-DD, e.g. Monday of "next week"}/myday/tasks/task {id}/project {id}/gantt {id}; knowledge collections/collection {id}/object {id}/search;
+      ideas board/list/object {id}; paperless document {id}/search; immich album/photo/
+      person {id}, people; peertube video/channel/search; mastodon profile/status/search.
+      On an unknown view the answer lists the valid ones.
+    endpoint: "http://localhost:8090/api/claraos/actions/clara/navigate_to"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        app_id: { type: string }
+        pattern_key: { type: string }
+        id: { type: string, description: "Shortcut for params {id}" }
+        params: { type: object }
+      required: [app_id, pattern_key]
+
+  - name: dispatch
+    description: |
+      Send an app-specific action to an open app when no tool above fits — e.g.
+      shell set_mobile_view {app_id}, shell set_tray_popover {id}, image-viewer rotate.
+      The answer says whether the app accepted it.
+    endpoint: "http://localhost:8090/api/claraos/actions/clara/dispatch"
+    method: POST
+    auth: none
+    schema:
+      type: object
+      properties:
+        app_id: { type: string }
+        action: { type: string }
+        args: { type: object }
+        instance_id: { type: string }
+        window_id: { type: string }
+      required: [app_id, action]

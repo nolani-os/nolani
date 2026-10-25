@@ -6,13 +6,14 @@ import styles from "../PlannerApp.module.css";
 import { plannerApi } from "../api";
 import type { CostsOverview, VikTask } from "../types";
 import { fmtEur, fmtMins, fmtTokens } from "../shared";
+import { useTranslation } from "@claraos/core";
 
-const RANGES = [
-  { days: 7, label: "7 Tage" },
-  { days: 30, label: "30 Tage" },
-  { days: 90, label: "90 Tage" },
-  { days: 3650, label: "Gesamt" },
-];
+/** Technical name of the cost-tracking service (not translated). */
+const COST_SERVICE = "clara-agent";
+
+/** Period options in days; 3650 = "all time". */
+const RANGES = [7, 30, 90, 3650];
+const RANGE_ALL = 3650;
 
 export function CostsOverviewView({
   allTasks, onOpenTask, onOpenProject,
@@ -21,6 +22,7 @@ export function CostsOverviewView({
   onOpenTask: (t: VikTask) => void;
   onOpenProject: (projectId: number) => void;
 }) {
+  const { t } = useTranslation("planner");
   const [days, setDays] = useState(30);
   const [data, setData] = useState<CostsOverview | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,11 +41,11 @@ export function CostsOverviewView({
 
   useEffect(() => { setLoading(true); load(); }, [load]);
 
-  const taskTitle = (id: number) => allTasks.find((t) => t.id === id)?.title ?? `#${id}`;
+  const taskTitle = (id: number) => allTasks.find((task) => task.id === id)?.title ?? `#${id}`;
   const openTask = (projectId: number, taskId: number) =>
     onOpenTask({ id: taskId, project_id: projectId, title: taskTitle(taskId) } as VikTask);
 
-  if (loading) return <div className={styles.loading}>Lade Kosten…</div>;
+  if (loading) return <div className={styles.loading}>{t("costs.loading")}</div>;
 
   const totalWorked = (data?.projects ?? []).reduce((s, p) => s + (p.worked_minutes || 0), 0);
   const totalEstimate = (data?.projects ?? []).reduce((s, p) => s + (p.estimate_eur || 0), 0);
@@ -51,53 +53,56 @@ export function CostsOverviewView({
   return (
     <div className={styles.view} style={{ maxWidth: "none" }}>
       <header className={styles.viewHeader}>
-        <h2>💶 Kosten</h2>
+        <h2>💶 {t("costs.overview.title")}</h2>
         <div className={styles.viewTools}>
           <select className={styles.select} value={days} onChange={(e) => setDays(Number(e.target.value))}>
-            {RANGES.map((r) => <option key={r.days} value={r.days}>{r.label}</option>)}
+            {RANGES.map((d) => (
+              <option key={d} value={d}>
+                {d === RANGE_ALL ? t("costs.overview.rangeAll") : t("costs.overview.rangeDays", { count: d })}
+              </option>
+            ))}
           </select>
-          <button className={styles.btn} onClick={() => { setLoading(true); load(); }} title="Aktualisieren">↻</button>
+          <button className={styles.btn} onClick={() => { setLoading(true); load(); }} title={t("costs.refresh")}>↻</button>
         </div>
       </header>
-      {error && <div className={styles.errorBox}>{error} <button aria-label="Neu laden" title="Neu laden" className={styles.btn} onClick={load}>↻</button></div>}
+      {error && <div className={styles.errorBox}>{error} <button aria-label={t("costs.reload")} title={t("costs.reload")} className={styles.btn} onClick={load}>↻</button></div>}
       {data && (
         <>
           <div className={styles.costsCards}>
             <div className={styles.costCard}>
-              <span className={styles.costCardLabel}>Kosten (Zeitraum)</span>
+              <span className={styles.costCardLabel}>{t("costs.overview.costRange")}</span>
               <span className={styles.costCardValue}>
-                {data.cost_available ? fmtEur(data.range_total?.cost_eur ?? 0) : "nicht verfügbar"}
+                {data.cost_available ? fmtEur(data.range_total?.cost_eur ?? 0) : t("costs.unavailable")}
               </span>
               {data.cost_available && data.range_total && (
                 <span className={styles.costCardSub}>
-                  {fmtTokens(data.range_total.tokens)} Tokens · {data.range_total.events} Läufe
+                  {t("costs.usage", { tokens: fmtTokens(data.range_total.tokens), count: data.range_total.events })}
                 </span>
               )}
             </div>
             <div className={styles.costCard}>
-              <span className={styles.costCardLabel}>Kosten gesamt</span>
+              <span className={styles.costCardLabel}>{t("costs.overview.costTotal")}</span>
               <span className={styles.costCardValue}>
                 {data.cost_available ? fmtEur(data.total?.cost_eur ?? 0) : "—"}
               </span>
               {data.cost_available && data.total && (
-                <span className={styles.costCardSub}>{fmtTokens(data.total.tokens)} Tokens</span>
+                <span className={styles.costCardSub}>{t("costs.tokens", { tokens: fmtTokens(data.total.tokens) })}</span>
               )}
             </div>
             <div className={styles.costCard}>
-              <span className={styles.costCardLabel}>Gearbeitete Zeit</span>
+              <span className={styles.costCardLabel}>{t("costs.overview.worked")}</span>
               <span className={styles.costCardValue}>{fmtMins(totalWorked)}</span>
-              <span className={styles.costCardSub}>aus Worklog (alle Projekte)</span>
+              <span className={styles.costCardSub}>{t("costs.overview.fromWorklogAll")}</span>
             </div>
             <div className={styles.costCard}>
-              <span className={styles.costCardLabel}>Schätzungen gesamt</span>
+              <span className={styles.costCardLabel}>{t("costs.overview.estimatesTotal")}</span>
               <span className={styles.costCardValue}>{totalEstimate > 0 ? fmtEur(totalEstimate) : "—"}</span>
             </div>
           </div>
 
           {!data.cost_available && (
             <div className={styles.hint}>
-              Die Kostenerfassung (clara-agent) ist gerade nicht erreichbar — Schätzungen und
-              Zeiten werden trotzdem angezeigt.
+              {t("costs.unavailableHint", { service: COST_SERVICE })}
             </div>
           )}
 
@@ -105,12 +110,12 @@ export function CostsOverviewView({
             <table className={styles.costsTable}>
               <thead>
                 <tr>
-                  <th>Projekt</th>
-                  <th className={styles.num}>€ (Zeitraum)</th>
-                  <th className={styles.num}>€ gesamt</th>
-                  <th className={styles.num}>Tokens</th>
-                  <th className={styles.num}>Schätzung €</th>
-                  <th className={styles.num}>Zeit</th>
+                  <th>{t("costs.col.project")}</th>
+                  <th className={styles.num}>{t("costs.col.eurRange")}</th>
+                  <th className={styles.num}>{t("costs.col.eurTotal")}</th>
+                  <th className={styles.num}>{t("costs.col.tokens")}</th>
+                  <th className={styles.num}>{t("costs.col.estimateEur")}</th>
+                  <th className={styles.num}>{t("costs.col.time")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -118,7 +123,7 @@ export function CostsOverviewView({
                   <tr key={p.project_id} className={styles.costRow} onClick={() => onOpenProject(p.project_id)}>
                     <td className={styles.costTitle}>
                       {p.title}{p.is_archived ? " 🗄" : ""}
-                      {p.open_sessions > 0 && <span className={styles.costWorking}>● arbeitet</span>}
+                      {p.open_sessions > 0 && <span className={styles.costWorking}>● {t("costs.working")}</span>}
                     </td>
                     <td className={styles.num}>{fmtEur(p.range_cost_eur)}</td>
                     <td className={styles.num}>{fmtEur(p.cost_eur)}</td>
@@ -133,20 +138,23 @@ export function CostsOverviewView({
 
           {data.top_tasks.length > 0 && (
             <section className={styles.section}>
-              <h3 className={styles.sectionTitle}>Top-Aufgaben (gesamt)</h3>
+              <h3 className={styles.sectionTitle}>{t("costs.overview.topTasks")}</h3>
               <div className={styles.costsTableWrap}>
                 <table className={styles.costsTable}>
                   <thead>
-                    <tr><th>Aufgabe</th><th className={styles.num}>€</th><th className={styles.num}>Tokens</th><th className={styles.num}>Läufe</th></tr>
+                    <tr>
+                      <th>{t("costs.col.task")}</th><th className={styles.num}>{t("costs.col.eur")}</th>
+                      <th className={styles.num}>{t("costs.col.tokens")}</th><th className={styles.num}>{t("costs.col.runs")}</th>
+                    </tr>
                   </thead>
                   <tbody>
-                    {data.top_tasks.map((t) => (
-                      <tr key={`${t.project_id}-${t.task_id}`} className={styles.costRow}
-                          onClick={() => openTask(t.project_id, t.task_id)}>
-                        <td className={styles.costTitle}>{taskTitle(t.task_id)}</td>
-                        <td className={styles.num}>{fmtEur(t.cost_eur)}</td>
-                        <td className={styles.num}>{fmtTokens(t.tokens)}</td>
-                        <td className={styles.num}>{t.events ?? "—"}</td>
+                    {data.top_tasks.map((tt) => (
+                      <tr key={`${tt.project_id}-${tt.task_id}`} className={styles.costRow}
+                          onClick={() => openTask(tt.project_id, tt.task_id)}>
+                        <td className={styles.costTitle}>{taskTitle(tt.task_id)}</td>
+                        <td className={styles.num}>{fmtEur(tt.cost_eur)}</td>
+                        <td className={styles.num}>{fmtTokens(tt.tokens)}</td>
+                        <td className={styles.num}>{tt.events ?? "—"}</td>
                       </tr>
                     ))}
                   </tbody>

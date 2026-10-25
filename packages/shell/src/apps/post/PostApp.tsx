@@ -24,27 +24,43 @@ import {
   postRegeln, postSchlummern, postBusiness, type Konto,
 } from "./api";
 import Composer, { type ComposerStart } from "./Composer";
+import { sanitizeMailHtml } from "./mailHtml";
 import { RegelnDialog, AbwesenheitDialog, AufraeumenDialog } from "./Regeln";
 import { FreigabenDialog, VerzeichnisDialog, VerteilerDialog } from "./Business";
 import { MeinTag } from "./MeinTag";
 import { SucheDialog, ProfilKarte } from "./Fenster";
-import { regionLocale, getBrand } from "@claraos/core";
+import { regionLocale, getBrand, i18n, useTranslation } from "@claraos/core";
 
 const SEITE = 50;
 const POLL_MS = 300_000;   // fallback — normally push arrives via /post/events
 
 type Filter = "alle" | "ungelesen" | "markiert" | "dateien";
 
+/** Texts for module-level helpers that run outside a component. */
+const tr = (key: string, opts?: Record<string, unknown>): string => i18n.t(`post:${key}`, opts);
+
+/** Shorthands the snooze endpoint understands (post.py). */
+const SCHLUMMER = ["later", "evening", "tomorrow", "weekend", "nextweek"];
+
+/** Default for "→ Event". The server parses "heute/morgen HH:MM" or an ISO date —
+ *  German words only, so other languages get tomorrow as a date. */
+function terminVorschlag(): string {
+  if ((i18n.resolvedLanguage ?? i18n.language ?? "de").startsWith("de")) return "morgen 09:00";
+  const d = new Date(); d.setDate(d.getDate() + 1);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} 09:00`;
+}
+
 /** Day headers in the list, as in Outlook: today · yesterday · weekday · date. */
 function tagesGruppe(iso: string | null): string {
-  if (!iso) return "Ohne Datum";
+  if (!iso) return tr("list.noDate");
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "Ohne Datum";
+  if (Number.isNaN(d.getTime())) return tr("list.noDate");
   const heute = new Date(); heute.setHours(0, 0, 0, 0);
   const tag = new Date(d); tag.setHours(0, 0, 0, 0);
   const diff = Math.round((heute.getTime() - tag.getTime()) / 86_400_000);
-  if (diff <= 0) return "Heute";
-  if (diff === 1) return "Gestern";
+  if (diff <= 0) return tr("day.today");
+  if (diff === 1) return tr("day.yesterday");
   if (diff < 7) return d.toLocaleDateString(regionLocale(), { weekday: "long" });
   if (d.getFullYear() === heute.getFullYear()) return d.toLocaleDateString(regionLocale(), { day: "numeric", month: "long" });
   return d.toLocaleDateString(regionLocale(), { day: "numeric", month: "long", year: "numeric" });
@@ -63,30 +79,23 @@ const WISCH_ICON: Record<WischAktion, IconName> = {
   archiv: "archive", loeschen: "trash", gelesen: "mail", markieren: "flag",
   aufgabe: "check", keine: "close",
 };
-const WISCH_WAHL: [WischAktion, string][] = [
-  ["archiv", "Archivieren"], ["loeschen", "Löschen"],
-  ["gelesen", "Gelesen/Ungelesen"], ["markieren", "Kennzeichnen"],
-  ["aufgabe", "Kennzeichnen + Aufgabe"], ["keine", "(nichts)"],
-];
+const WISCH_AKTIONEN: WischAktion[] = ["archiv", "loeschen", "gelesen", "markieren", "aufgabe", "keine"];
+const wischWahl = (): [WischAktion, string][] => WISCH_AKTIONEN.map((a) => [a, tr(`swipe.option.${a}`)]);
 function wischText(a: WischAktion, z: MailZeile): string {
   switch (a) {
-    case "archiv": return "Archivieren";
-    case "loeschen": return "Löschen";
-    case "gelesen": return z.unread ? "Gelesen" : "Ungelesen";
-    case "markieren": return z.flagged ? "Kennzeichen weg" : "Kennzeichnen";
-    case "aufgabe": return "Aufgabe";
+    case "archiv": return tr("actions.archive");
+    case "loeschen": return tr("actions.delete");
+    case "gelesen": return z.unread ? tr("swipe.read") : tr("swipe.unread");
+    case "markieren": return z.flagged ? tr("swipe.unflag") : tr("actions.flag");
+    case "aufgabe": return tr("swipe.task");
     default: return "";
   }
 }
 
-const FILTER_NAMEN: Record<Filter, string> = {
-  alle: "Alle", ungelesen: "Ungelesen", markiert: "Markiert", dateien: "Mit Dateien",
-};
+const filterName = (f: Filter): string => tr(`filter.${f}`);
 /** Only the fields JMAP can actually sort by — rationale in post.py. */
-const SORT_NAMEN: [SortFeld, string][] = [
-  ["datum", "Datum"], ["von", "Von"], ["betreff", "Betreff"],
-  ["groesse", "Größe"], ["kennzeichen", "Kennzeichnung"],
-];
+const SORT_FELDER: SortFeld[] = ["datum", "von", "betreff", "groesse", "kennzeichen"];
+const sortNamen = (): [SortFeld, string][] => SORT_FELDER.map((f) => [f, tr(`sort.field.${f}`)]);
 
 /** Important: "descending" is not always what users expect: for date and size
  *  yes (newest/largest first), but for names and subject people want A→Z. Picking
@@ -99,10 +108,10 @@ const SORT_STANDARD_AB: Record<SortFeld, boolean> = {
 /** Labels for the two directions, per field — [descending, ascending]. */
 function richtungNamen(f: SortFeld): [string, string] {
   switch (f) {
-    case "von": case "betreff": return ["Z → A", "A → Z"];
-    case "groesse": return ["Größte zuerst", "Kleinste zuerst"];
-    case "kennzeichen": return ["Gekennzeichnete zuerst", "Übrige zuerst"];
-    default: return ["Neueste zuerst", "Älteste zuerst"];
+    case "von": case "betreff": return [tr("sort.dir.za"), tr("sort.dir.az")];
+    case "groesse": return [tr("sort.dir.largest"), tr("sort.dir.smallest")];
+    case "kennzeichen": return [tr("sort.dir.flaggedFirst"), tr("sort.dir.othersFirst")];
+    default: return [tr("sort.dir.newest"), tr("sort.dir.oldest")];
   }
 }
 
@@ -165,6 +174,7 @@ function htmlDokument(m: Mail, bilder: boolean, dunkel: boolean, kontoId?: strin
 
 export default function PostApp({ windowId }: { windowId: string }) {
   void windowId;
+  const { t } = useTranslation("post");
   const mobil = useIsMobile();
   const [ordner, setOrdner] = useState<Ordner[]>([]);
   const [adresse, setAdresse] = useState("");
@@ -264,8 +274,8 @@ export default function PostApp({ windowId }: { windowId: string }) {
     postBusiness.konten(neu).then((r) => {
       setKonten(r.konten);
       if (neu) melde(r.konten.length > 1
-        ? `${r.konten.length} Postfächer gefunden`
-        : "Nur dein eigenes Postfach — niemand hat dir etwas freigegeben.");
+        ? t("mailboxes.found", { count: r.konten.length })
+        : t("mailboxes.onlyOwn"));
     }).catch(() => setKonten([]));
   }, [melde]);
 
@@ -308,7 +318,7 @@ export default function PostApp({ windowId }: { windowId: string }) {
       //    it does not actually deliver.
       if (r.sort_unsupported) {
         setSortFeld("datum"); setSortAb(true);
-        melde("Diese Sortierung unterstützt das Postfach nicht — zurück auf Datum.", true);
+        melde(t("sort.unsupported"), true);
       }
     } catch (e) {
       melde(e instanceof Error ? e.message : String(e), true);
@@ -397,13 +407,13 @@ export default function PostApp({ windowId }: { windowId: string }) {
   }, [ordner, mobil]);
 
   const sucheSpeichern = useCallback(async () => {
-    const name = window.prompt("Name für den Suchordner:", sucheAktiv || FILTER_NAMEN[filter]);
+    const name = window.prompt(t("savedSearch.namePrompt"), sucheAktiv || filterName(filter));
     if (!name) return;
     const neu: GespeicherteSuche = { id: Math.random().toString(36).slice(2, 10), name: name.trim(), q: sucheAktiv || undefined,
       unread: filter === "ungelesen" || undefined, flagged: filter === "markiert" || undefined,
       has_attachment: filter === "dateien" || undefined, mailbox: sucheAktiv ? null : aktuellerOrdner?.id ?? null };
     const p = { ...prefs, saved_searches: [...(prefs.saved_searches ?? []), neu] };
-    try { await postSchreiben.prefsSpeichern(p); setPrefs(p); melde(`Suchordner „${neu.name}“ gespeichert`); }
+    try { await postSchreiben.prefsSpeichern(p); setPrefs(p); melde(t("savedSearch.saved", { name: neu.name })); }
     catch (e) { melde(e instanceof Error ? e.message : String(e), true); }
   }, [sucheAktiv, filter, aktuellerOrdner, prefs, melde]);
 
@@ -500,17 +510,17 @@ export default function PostApp({ windowId }: { windowId: string }) {
     try {
       const imPapierkorb = aktuellerOrdner?.role === "trash";
       switch (was) {
-        case "archiv": await postApi.setzen({ account_id: kontoId || undefined, ids, move_to_role: "archive" }); nachAktion(ids, true); melde(`${ids.length === 1 ? "Mail" : ids.length + " Mails"} archiviert`); break;
+        case "archiv": await postApi.setzen({ account_id: kontoId || undefined, ids, move_to_role: "archive" }); nachAktion(ids, true); melde(t("actions.archived", { count: ids.length })); break;
         case "loeschen":
           if (imPapierkorb) {
-            if (!window.confirm(`${ids.length === 1 ? "Diese Mail" : ids.length + " Mails"} endgültig löschen?`)) break;
+            if (!window.confirm(t("actions.confirmDestroy", { count: ids.length }))) break;
             await postApi.setzen({ account_id: kontoId || undefined, ids, destroy: true });
           } else {
             await postApi.setzen({ account_id: kontoId || undefined, ids, move_to_role: "trash" });
           }
-          nachAktion(ids, true); melde(imPapierkorb ? "Endgültig gelöscht" : "In den Papierkorb verschoben"); break;
-        case "spam": await postApi.setzen({ account_id: kontoId || undefined, ids, move_to_role: "junk", add_keywords: ["$junk"] }); nachAktion(ids, true); melde("Als Spam abgelegt"); break;
-        case "posteingang": await postApi.setzen({ account_id: kontoId || undefined, ids, move_to_role: "inbox", remove_keywords: ["$junk"] }); nachAktion(ids, true); melde("In den Posteingang verschoben"); break;
+          nachAktion(ids, true); melde(imPapierkorb ? t("actions.destroyed") : t("actions.trashed")); break;
+        case "spam": await postApi.setzen({ account_id: kontoId || undefined, ids, move_to_role: "junk", add_keywords: ["$junk"] }); nachAktion(ids, true); melde(t("actions.junked")); break;
+        case "posteingang": await postApi.setzen({ account_id: kontoId || undefined, ids, move_to_role: "inbox", remove_keywords: ["$junk"] }); nachAktion(ids, true); melde(t("actions.toInbox")); break;
         case "gelesen": await postApi.setzen({ account_id: kontoId || undefined, ids, add_keywords: ["$seen"] }); setZeilen((alt) => alt.map((z) => (ids.includes(z.id) ? { ...z, unread: false } : z))); nachAktion(ids, false); break;
         case "ungelesen": await postApi.setzen({ account_id: kontoId || undefined, ids, remove_keywords: ["$seen"] }); setZeilen((alt) => alt.map((z) => (ids.includes(z.id) ? { ...z, unread: true } : z))); nachAktion(ids, false); break;
         case "markieren": await postApi.setzen({ account_id: kontoId || undefined, ids, add_keywords: ["$flagged"] }); setZeilen((alt) => alt.map((z) => (ids.includes(z.id) ? { ...z, flagged: true } : z))); if (mail && ids.includes(mail.id)) setMail({ ...mail, flagged: true }); setAuswahl(new Set()); break;
@@ -571,7 +581,7 @@ export default function PostApp({ windowId }: { windowId: string }) {
     try {
       await postApi.setzen({ account_id: kontoId || undefined, ids, move_to: ziel.id });
       nachAktion(ids, ziel.id !== aktuellerOrdner?.id);
-      melde(`Nach „${ziel.name}“ verschoben`);
+      melde(t("actions.moved", { folder: ziel.name }));
     } catch (e) {
       melde(e instanceof Error ? e.message : String(e), true);
     }
@@ -580,14 +590,14 @@ export default function PostApp({ windowId }: { windowId: string }) {
   const brueckeAus = useCallback(async (art: "task" | "event" | "contact" | "note", id: string) => {
     let when: string | undefined;
     if (art === "event") {
-      const w = window.prompt("Wann? („morgen 09:00“, „heute 15:30“, „2026-09-12 14:00“; leer = nächste volle Stunde)", "morgen 09:00");
+      const w = window.prompt(t("bridge.whenPrompt"), terminVorschlag());
       if (w === null) return;
       when = w.trim();
     }
     setBeschaeftigt(art);
     try {
       const r = await postApi.bruecke(art, { email_id: id, when });
-      melde(r.message || "Erledigt");
+      melde(r.message || t("bridge.done"));
     } catch (e) {
       melde(e instanceof Error ? e.message : String(e), true);
     } finally {
@@ -650,7 +660,7 @@ export default function PostApp({ windowId }: { windowId: string }) {
         if (!z.flagged) await aktion("markieren", z.id);
         try {
           const r = await postApi.bruecke("task", { email_id: z.id });
-          melde(r.message || "Aufgabe aus der Mail angelegt");
+          melde(r.message || t("bridge.taskCreated"));
         } catch (e) {
           melde(e instanceof Error ? e.message : String(e), true);
         }
@@ -742,72 +752,72 @@ export default function PostApp({ windowId }: { windowId: string }) {
   const kopf = (
     <div className={styles.kopf}>
       {mobil && !mobilLesen && (
-        <button className={styles.iconKnopf} title="Ordner" onClick={() => setOrdnerOffen((v) => !v)}><Icon name="list" size={20} /></button>
+        <button className={styles.iconKnopf} title={t("folders.title")} onClick={() => setOrdnerOffen((v) => !v)}><Icon name="list" size={20} /></button>
       )}
       {mobilLesen && (
-        <button className={styles.iconKnopf} title="Zurück" onClick={() => { setGewaehltId(null); setMail(null); }}><Icon name="back" size={20} /></button>
+        <button className={styles.iconKnopf} title={t("common.back")} onClick={() => { setGewaehltId(null); setMail(null); }}><Icon name="back" size={20} /></button>
       )}
       {/* Mobile reading pane: like Outlook Mobile, three icons at the top plus an
           overflow menu. The desktop button wall (19 buttons over five rows) left
           too little height for the mail text on a phone. */}
       {mobilLesen && mail && !composer && (
         <div className={styles.leseLeisteOben}>
-          <button className={styles.iconKnopf} title="Archivieren" disabled={!!beschaeftigt}
+          <button className={styles.iconKnopf} title={t("actions.archive")} disabled={!!beschaeftigt}
                   onClick={() => void aktion("archiv", mail.id)}><Icon name="archive" size={19} /></button>
-          <button className={styles.iconKnopf} title="Löschen" disabled={!!beschaeftigt}
+          <button className={styles.iconKnopf} title={t("actions.delete")} disabled={!!beschaeftigt}
                   onClick={() => void aktion("loeschen", mail.id)}><Icon name="trash" size={19} /></button>
-          <button className={styles.iconKnopf} title={mail.flagged ? "Kennzeichen entfernen" : "Kennzeichnen"} disabled={!!beschaeftigt}
+          <button className={styles.iconKnopf} title={mail.flagged ? t("actions.unflag") : t("actions.flag")} disabled={!!beschaeftigt}
                   onClick={() => void aktion(mail.flagged ? "entmarkieren" : "markieren", mail.id)}><Icon name="star" size={19} /></button>
-          <button className={styles.iconKnopf} title="Mehr"
+          <button className={styles.iconKnopf} title={t("common.more")}
                   onClick={(e) => oeffneKontext(mail.id, e.clientX, e.clientY)}><Icon name="more" size={19} /></button>
         </div>
       )}
-      <h2 className={styles.titel}>{mobilLesen ? "" : (sucheAktiv ? `Suche: ${sucheAktiv}` : geplantAnsicht ? "Geplant" : labelFilter ? `Label: ${labelFilter}` : aktuellerOrdner?.name ?? "Post")}</h2>
+      <h2 className={styles.titel}>{mobilLesen ? "" : (sucheAktiv ? t("header.search", { term: sucheAktiv }) : geplantAnsicht ? t("folders.snoozed") : labelFilter ? t("header.label", { label: labelFilter }) : aktuellerOrdner?.name ?? t("app.title"))}</h2>
       {mobil && !mobilLesen && filter !== "alle" && (
-        <button className={`${styles.chip} ${styles.chipAktiv}`} onClick={() => setFilter("alle")} title="Filter aufheben">
-          {FILTER_NAMEN[filter]} ✕
+        <button className={`${styles.chip} ${styles.chipAktiv}`} onClick={() => setFilter("alle")} title={t("filter.clear")}>
+          {filterName(filter)} ✕
         </button>
       )}
       {/* A non-default sort order must be VISIBLE — otherwise one later searches
           in vain for the missing newest mail. */}
       {mobil && !mobilLesen && (sortFeld !== "datum" || !sortAb) && (
         <button className={styles.chip} onClick={() => { setSortFeld("datum"); setSortAb(true); }}
-                title="Sortierung zurücksetzen">
-          {SORT_NAMEN.find(([k]) => k === sortFeld)?.[1]} {sortAb ? "↓" : "↑"} ✕
+                title={t("sort.reset")}>
+          {sortNamen().find(([k]) => k === sortFeld)?.[1]} {sortAb ? "↓" : "↑"} ✕
         </button>
       )}
-      {!mobilLesen && pushStatus === "fehler" && <span className={styles.hinweis} title="Live-Aktualisierung läuft nicht — Abfrage alle 5 Minuten">kein Push</span>}
+      {!mobilLesen && pushStatus === "fehler" && <span className={styles.hinweis} title={t("push.offTitle")}>{t("push.off")}</span>}
 
       {/* Desktop: search, compose and filters stay in the header as before. */}
       {!mobil && (
         <>
           <form className={styles.sucheForm} onSubmit={(e) => { e.preventDefault(); setSucheAktiv(suche.trim()); }}>
-            <input type="search" className={styles.suche} placeholder="Suchen (Betreff, Absender, Text)…" value={suche}
+            <input type="search" className={styles.suche} placeholder={t("search.listPlaceholder")} value={suche}
                    onChange={(e) => setSuche(e.target.value)} />
-            {sucheAktiv && <button type="button" className={styles.iconKnopf} title="Suche schließen" onClick={() => { setSuche(""); setSucheAktiv(""); }}><Icon name="close" size={16} /></button>}
+            {sucheAktiv && <button type="button" className={styles.iconKnopf} title={t("search.close")} onClick={() => { setSuche(""); setSucheAktiv(""); }}><Icon name="close" size={16} /></button>}
             <button type="button" className={styles.chip}
-                    title="Überall suchen — auch in Kontakten, Aufgaben und Terminen"
+                    title={t("search.everywhereTitle")}
                     onClick={() => setUeberallOffen(suche.trim() || sucheAktiv || "")}>
-              Überall
+              {t("search.everywhere")}
             </button>
           </form>
           {!kontoFehlt && (
-            <button className={`${styles.chip} ${styles.chipAktiv}`} onClick={() => void oeffneComposer("neu")} title="Neue E-Mail (n)"><Icon name="pen" size={14} /> Neue E-Mail</button>
+            <button className={`${styles.chip} ${styles.chipAktiv}`} onClick={() => void oeffneComposer("neu")} title={t("header.newMailTitle")}><Icon name="pen" size={14} /> {t("composer.new")}</button>
           )}
           <div className={styles.filterLeiste}>
             {(["alle", "ungelesen", "markiert", "dateien"] as Filter[]).map((f) => (
               <button key={f} className={`${styles.chip} ${filter === f ? styles.chipAktiv : ""}`} onClick={() => setFilter(f)}>
-                {FILTER_NAMEN[f]}
+                {filterName(f)}
               </button>
             ))}
             {/* Sorting — two menus above the list, as in Outlook. */}
             <span className={styles.bausteinAnker}>
-              <button className={styles.iconKnopf} title="Sortieren" onClick={() => setSortOffen((v) => !v)}>
+              <button className={styles.iconKnopf} title={t("sort.title")} onClick={() => setSortOffen((v) => !v)}>
                 <Icon name="list" size={16} />
               </button>
               {sortOffen && (
                 <div className={styles.vorschlagListe} style={{ minWidth: 210 }}>
-                  {SORT_NAMEN.map(([k, l]) => (
+                  {sortNamen().map(([k, l]) => (
                     <button type="button" key={k} className={styles.vorschlag}
                             onMouseDown={(e) => { e.preventDefault(); setSortFeld(k); setSortAb(SORT_STANDARD_AB[k]); setSortOffen(false); }}>
                       {sortFeld === k ? "✓ " : ""}{l}
@@ -826,13 +836,13 @@ export default function PostApp({ windowId }: { windowId: string }) {
               )}
             </span>
             {(sucheAktiv || filter !== "alle") && !kontoFehlt && (
-              <button className={styles.iconKnopf} title="Diese Suche als Suchordner speichern" onClick={() => void sucheSpeichern()}><Icon name="star" size={16} /></button>
+              <button className={styles.iconKnopf} title={t("savedSearch.saveTitle")} onClick={() => void sucheSpeichern()}><Icon name="star" size={16} /></button>
             )}
-            <button className={styles.iconKnopf} title="Aktualisieren" onClick={() => { void ladeOrdner(); void ladeListe(false); void ladeAusgang(); }}>
+            <button className={styles.iconKnopf} title={t("common.refresh")} onClick={() => { void ladeOrdner(); void ladeListe(false); void ladeAusgang(); }}>
               <Icon name="reload" size={16} />
             </button>
             <button className={`${styles.iconKnopf} ${meinTagOffen ? styles.iconKnopfAktiv : ""}`}
-                    title="Mein Tag — Termine und Aufgaben neben der Mail (Mails lassen sich hineinziehen)"
+                    title={t("header.myDayTitle")}
                     onClick={() => {
                       const an = !meinTagOffen;
                       setMeinTagOffen(an);
@@ -841,7 +851,7 @@ export default function PostApp({ windowId }: { windowId: string }) {
                     }}>
               <Icon name="today" size={16} />
             </button>
-            <button className={styles.iconKnopf} title="Einstellungen (Signatur, Absender, Rückgängig-Frist)" onClick={() => setEinstellungenOffen(true)}>
+            <button className={styles.iconKnopf} title={t("header.settingsTitle")} onClick={() => setEinstellungenOffen(true)}>
               <Icon name="gear" size={16} />
             </button>
           </div>
@@ -855,10 +865,10 @@ export default function PostApp({ windowId }: { windowId: string }) {
           "More" sheet. */}
       {mobil && !mobilLesen && (
         <>
-          <button className={styles.iconKnopf} title="Suchen" onClick={() => setSucheOffen((v) => !v)}>
+          <button className={styles.iconKnopf} title={t("search.button")} onClick={() => setSucheOffen((v) => !v)}>
             <Icon name="search" size={20} />
           </button>
-          <button className={styles.iconKnopf} title="Mehr" onClick={() => setMehrOffen(true)}>
+          <button className={styles.iconKnopf} title={t("common.more")} onClick={() => setMehrOffen(true)}>
             <Icon name="more" size={20} />
           </button>
         </>
@@ -868,9 +878,9 @@ export default function PostApp({ windowId }: { windowId: string }) {
 
   const sucheZeile = mobil && sucheOffen && !mobilLesen ? (
     <form className={styles.sucheZeile} onSubmit={(e) => { e.preventDefault(); setSucheAktiv(suche.trim()); }}>
-      <input ref={sucheRef} type="search" className={styles.suche} placeholder="Suchen (Betreff, Absender, Text)…"
+      <input ref={sucheRef} type="search" className={styles.suche} placeholder={t("search.listPlaceholder")}
              value={suche} onChange={(e) => setSuche(e.target.value)} />
-      <button type="button" className={styles.iconKnopf} title="Suche schließen"
+      <button type="button" className={styles.iconKnopf} title={t("search.close")}
               onClick={() => { setSuche(""); setSucheAktiv(""); setSucheOffen(false); }}><Icon name="close" size={18} /></button>
     </form>
   ) : null;
@@ -879,23 +889,23 @@ export default function PostApp({ windowId }: { windowId: string }) {
     <nav className={`${styles.ordner} ${mobil ? styles.ordnerMobil : ""} ${ordnerOffen ? "" : styles.ordnerZu}`}>
       <div className={styles.kontoZeile}>
         {konten.length > 1 ? (
-          <select className={styles.kontoWahl} value={kontoId} title="Postfach wechseln"
+          <select className={styles.kontoWahl} value={kontoId} title={t("mailboxes.switch")}
                   onChange={(e) => kontoWechseln(e.target.value)}>
             {konten.map((k) => (
               <option key={k.id} value={k.eigenes ? "" : k.id}>
-                {k.eigenes ? k.name : `${k.name}${k.nur_lesen ? " (nur lesen)" : ""}`}
+                {k.eigenes ? k.name : `${k.name}${k.nur_lesen ? t("mailboxes.readOnly") : ""}`}
               </option>
             ))}
           </select>
         ) : (
           <div className={styles.konto} title={adresse}>{adresse || "…"}</div>
         )}
-        <button className={styles.iconKnopf} title="Nach freigegebenen Postfächern suchen"
+        <button className={styles.iconKnopf} title={t("mailboxes.findShared")}
                 onClick={() => ladeKonten(true)}><Icon name="reload" size={13} /></button>
       </div>
       {kontoId && (
         <div className={styles.fremdesKonto}>
-          <Icon name="people" size={13} /> Gemeinsames Postfach
+          <Icon name="people" size={13} /> {t("mailboxes.shared")}
         </div>
       )}
       {ordner.map((o) => (
@@ -907,13 +917,13 @@ export default function PostApp({ windowId }: { windowId: string }) {
           {o.unread > 0 && <span className={styles.badge}>{o.unread}</span>}
         </button>
       ))}
-      {!kontoId && <button className={`${styles.ordnerEintrag} ${geplantAnsicht ? styles.ordnerAktiv : ""}`} title="Geschlummerte Mails — kommen zur Weckzeit zurück"
+      {!kontoId && <button className={`${styles.ordnerEintrag} ${geplantAnsicht ? styles.ordnerAktiv : ""}`} title={t("folders.snoozedTitle")}
               onClick={() => { setSucheAktiv(""); setSuche(""); setLabelFilter(null); setGeplantAnsicht(true); if (mobil) setOrdnerOffen(false); }}>
-        <Icon name="moon" size={16} /><span className={styles.ordnerName}>Geplant</span>
+        <Icon name="moon" size={16} /><span className={styles.ordnerName}>{t("folders.snoozed")}</span>
       </button>}
       {(prefs.labels ?? []).length > 0 && (
         <div className={styles.ausgang}>
-          <div className={styles.unterhaltungTitel}>Labels</div>
+          <div className={styles.unterhaltungTitel}>{t("folders.labels")}</div>
           {(prefs.labels ?? []).map((l) => (
             <button key={l} className={`${styles.ordnerEintrag} ${labelFilter === l ? styles.ordnerAktiv : ""}`}
                     onClick={() => { setSucheAktiv(""); setSuche(""); setGeplantAnsicht(false); setLabelFilter(labelFilter === l ? null : l); if (mobil) setOrdnerOffen(false); }}>
@@ -924,34 +934,34 @@ export default function PostApp({ windowId }: { windowId: string }) {
       )}
       {ausgang.length > 0 && (
         <div className={styles.ausgang}>
-          <div className={styles.unterhaltungTitel}>Ausgang ({ausgang.length})</div>
+          <div className={styles.unterhaltungTitel}>{t("folders.outbox", { count: ausgang.length })}</div>
           {ausgang.map((a) => (
             <div key={a.submission_id} className={styles.ausgangEintrag} title={a.subject}>
-              <span className={styles.ordnerName}>{a.subject || "(ohne Betreff)"}</span>
+              <span className={styles.ordnerName}>{a.subject || t("list.noSubject")}</span>
               <span className={styles.hinweis}>{a.send_at ? datumKurz(a.send_at) : ""}</span>
-              <button className={styles.link} onClick={async () => { try { const r = await postSchreiben.rueckgaengig(a.submission_id); melde(r.message); void ladeAusgang(); void ladeOrdner(); } catch (e) { melde(e instanceof Error ? e.message : String(e), true); } }}>Zurückholen</button>
+              <button className={styles.link} onClick={async () => { try { const r = await postSchreiben.rueckgaengig(a.submission_id); melde(r.message); void ladeAusgang(); void ladeOrdner(); } catch (e) { melde(e instanceof Error ? e.message : String(e), true); } }}>{t("folders.recall")}</button>
             </div>
           ))}
         </div>
       )}
       {(prefs.saved_searches ?? []).length > 0 && (
         <div className={styles.ausgang}>
-          <div className={styles.unterhaltungTitel}>Suchordner</div>
+          <div className={styles.unterhaltungTitel}>{t("folders.savedSearches")}</div>
           {(prefs.saved_searches ?? []).map((g) => (
             <div key={g.id} className={styles.ausgangEintrag}>
               <button className={styles.link} style={{ textDecoration: "none", flex: 1, textAlign: "left" }} onClick={() => suchordnerAnwenden(g)}><Icon name="search" size={13} /> {g.name}</button>
-              <button className={styles.iconKnopf} title="Suchordner entfernen" onClick={() => void sucheLoeschen(g.id)}><Icon name="close" size={12} /></button>
+              <button className={styles.iconKnopf} title={t("savedSearch.remove")} onClick={() => void sucheLoeschen(g.id)}><Icon name="close" size={12} /></button>
             </div>
           ))}
         </div>
       )}
       <div className={styles.ausgang}>
-        {!kontoId && <button className={styles.ordnerEintrag} onClick={() => setRegelnOffen(true)} title="Regeln laufen auf dem Mailserver"><Icon name="matrix" size={16} /><span className={styles.ordnerName}>Regeln</span></button>}
-        {!kontoId && <button className={styles.ordnerEintrag} onClick={() => setAbwesenheitOffen(true)}><Icon name="moon" size={16} /><span className={styles.ordnerName}>Abwesenheit</span></button>}
-        <button className={styles.ordnerEintrag} onClick={() => setUeberallOffen("")} title="Mail, Kontakte, Aufgaben und Termine in einem Feld"><Icon name="search" size={16} /><span className={styles.ordnerName}>Überall suchen</span></button>
-        <button className={styles.ordnerEintrag} onClick={() => setFreigabenOffen(true)} title="Eigene Ordner für andere öffnen"><Icon name="share" size={16} /><span className={styles.ordnerName}>Freigaben</span></button>
-        <button className={styles.ordnerEintrag} onClick={() => setVerzeichnisOffen(true)} title="Alle Postfächer und Kontakte durchsuchen"><Icon name="people" size={16} /><span className={styles.ordnerName}>Verzeichnis</span></button>
-        <button className={styles.ordnerEintrag} onClick={() => setVerteilerOffen(true)} title="Eigene Empfängergruppen"><Icon name="collections" size={16} /><span className={styles.ordnerName}>Verteiler</span></button>
+        {!kontoId && <button className={styles.ordnerEintrag} onClick={() => setRegelnOffen(true)} title={t("folders.rulesTitle")}><Icon name="matrix" size={16} /><span className={styles.ordnerName}>{t("rules.title")}</span></button>}
+        {!kontoId && <button className={styles.ordnerEintrag} onClick={() => setAbwesenheitOffen(true)}><Icon name="moon" size={16} /><span className={styles.ordnerName}>{t("vacation.title")}</span></button>}
+        <button className={styles.ordnerEintrag} onClick={() => setUeberallOffen("")} title={t("folders.everywhereTitle")}><Icon name="search" size={16} /><span className={styles.ordnerName}>{t("search.title")}</span></button>
+        <button className={styles.ordnerEintrag} onClick={() => setFreigabenOffen(true)} title={t("folders.sharingTitle")}><Icon name="share" size={16} /><span className={styles.ordnerName}>{t("sharing.title")}</span></button>
+        <button className={styles.ordnerEintrag} onClick={() => setVerzeichnisOffen(true)} title={t("folders.directoryTitle")}><Icon name="people" size={16} /><span className={styles.ordnerName}>{t("directory.title")}</span></button>
+        <button className={styles.ordnerEintrag} onClick={() => setVerteilerOffen(true)} title={t("folders.listsTitle")}><Icon name="collections" size={16} /><span className={styles.ordnerName}>{t("lists.title")}</span></button>
         {/* The "Mail-App (alt)" entry has been removed: the legacy Bulwark tile
             can be hidden (`claraos_apps.enabled = FALSE`) while the module keeps
             running. An entry that opens a hidden app is a dead end. To restore it,
@@ -985,7 +995,7 @@ export default function PostApp({ windowId }: { windowId: string }) {
                //    fallback so that dragging outside at least drops the
                //    subject instead of nothing.
                e.dataTransfer.setData("application/x-claraos-mail", z.id);
-               e.dataTransfer.setData("text/plain", z.subject || "(ohne Betreff)");
+               e.dataTransfer.setData("text/plain", z.subject || t("list.noSubject"));
                e.dataTransfer.effectAllowed = "copy";
              }}
              style={dx ? { transform: `translateX(${dx}px)`, transition: "none" } : undefined}
@@ -1010,24 +1020,24 @@ export default function PostApp({ windowId }: { windowId: string }) {
           </span>
           <div className={styles.zeileText}>
             <div className={styles.zeileKopf}>
-              <span className={styles.absender}>{anzeigeName(von) || "(unbekannt)"}</span>
+              <span className={styles.absender}>{anzeigeName(von) || t("list.unknown")}</span>
               <span className={styles.zeileRechts}>
-                {z.pinned && <span title="Angeheftet">📌</span>}
+                {z.pinned && <span title={t("list.pinned")}>📌</span>}
                 {z.has_attachment && <Icon name="attachment" size={13} />}
                 {z.flagged && <span className={styles.flagge}>⚑</span>}
-                {geplantAnsicht && weckzeiten[z.id] && <span className={styles.hinweis} title="Weckzeit">⏰ {datumKurz(weckzeiten[z.id])}</span>}
+                {geplantAnsicht && weckzeiten[z.id] && <span className={styles.hinweis} title={t("list.wakeTime")}>⏰ {datumKurz(weckzeiten[z.id])}</span>}
                 <span className={styles.datum}>{datumKurz(z.received_at)}</span>
               </span>
             </div>
-            <div className={styles.betreff}>{z.subject || "(ohne Betreff)"}</div>
+            <div className={styles.betreff}>{z.subject || t("list.noSubject")}</div>
             <div className={styles.vorschau}>{z.preview}</div>
             {z.labels.length > 0 && <div className={styles.labels}>{z.labels.map((l) => <span key={l} className={styles.label} style={{ borderLeft: `3px solid ${farbe(l)}` }}>{l}</span>)}</div>}
           </div>
           <div className={styles.schnell} onClick={(e) => e.stopPropagation()}>
-            <button title={z.unread ? "Als gelesen markieren" : "Als ungelesen markieren"} onClick={() => void aktion(z.unread ? "gelesen" : "ungelesen", z.id)}><Icon name="mail" size={14} /></button>
-            <button title={z.flagged ? "Markierung entfernen" : "Markieren"} onClick={() => void aktion(z.flagged ? "entmarkieren" : "markieren", z.id)}><Icon name="flag" size={14} /></button>
-            <button title="Archivieren" onClick={() => void aktion("archiv", z.id)}><Icon name="archive" size={14} /></button>
-            <button title="Löschen" onClick={() => void aktion("loeschen", z.id)}><Icon name="trash" size={14} /></button>
+            <button title={z.unread ? t("actions.markRead") : t("actions.markUnread")} onClick={() => void aktion(z.unread ? "gelesen" : "ungelesen", z.id)}><Icon name="mail" size={14} /></button>
+            <button title={z.flagged ? t("actions.unmark") : t("actions.mark")} onClick={() => void aktion(z.flagged ? "entmarkieren" : "markieren", z.id)}><Icon name="flag" size={14} /></button>
+            <button title={t("actions.archive")} onClick={() => void aktion("archiv", z.id)}><Icon name="archive" size={14} /></button>
+            <button title={t("actions.delete")} onClick={() => void aktion("loeschen", z.id)}><Icon name="trash" size={14} /></button>
           </div>
         </div>
       </div>
@@ -1038,25 +1048,25 @@ export default function PostApp({ windowId }: { windowId: string }) {
     <div className={`${styles.liste} ${mobilLesen ? styles.versteckt : ""}`} ref={listeRef}>
       {auswahl.size > 0 && (
         <div className={styles.auswahlLeiste}>
-          <span>{auswahl.size} ausgewählt</span>
-          <button className={styles.chip} onClick={() => void aktion("archiv")}>Archivieren</button>
-          <button className={styles.chip} onClick={() => void aktion("loeschen")}>Löschen</button>
-          <button className={styles.chip} onClick={() => void aktion("gelesen")}>Gelesen</button>
-          <button className={styles.chip} onClick={() => setVerschiebeOffen(true)}>Verschieben…</button>
-          <button className={styles.chip} onClick={() => setAuswahl(new Set())}>Aufheben</button>
+          <span>{t("list.selected", { count: auswahl.size })}</span>
+          <button className={styles.chip} onClick={() => void aktion("archiv")}>{t("actions.archive")}</button>
+          <button className={styles.chip} onClick={() => void aktion("loeschen")}>{t("actions.delete")}</button>
+          <button className={styles.chip} onClick={() => void aktion("gelesen")}>{t("actions.read")}</button>
+          <button className={styles.chip} onClick={() => setVerschiebeOffen(true)}>{t("actions.moveEllipsis")}</button>
+          <button className={styles.chip} onClick={() => setAuswahl(new Set())}>{t("list.clearSelection")}</button>
         </div>
       )}
       {kontoFehlt && (
         <div className={styles.leer}>
-          <div><strong>Kein Postfach verbunden.</strong></div>
+          <div><strong>{t("account.missing")}</strong></div>
           <div className={styles.hinweis}>{kontoFehlt}</div>
           <button className={styles.chip} style={{ marginTop: "0.6rem" }} onClick={() => void ausfuehrenLokal("open_window", { app_id: "services-hub" })}>
-            Postfach in „Dienste“ verbinden
+            {t("account.connect")}
           </button>
         </div>
       )}
       {!kontoFehlt && zeilen.length === 0 && !laedtListe && (
-        <div className={styles.leer}>{sucheAktiv ? "Nichts gefunden." : "Keine Mails hier."}</div>
+        <div className={styles.leer}>{sucheAktiv ? t("list.nothingFound") : t("list.empty")}</div>
       )}
       {(() => {
         const sortiert = [...zeilen].sort((a, b) => Number(b.pinned) - Number(a.pinned));
@@ -1076,9 +1086,9 @@ export default function PostApp({ windowId }: { windowId: string }) {
         const zeigtEmpfaenger = aktuellerOrdner?.role === "sent" || aktuellerOrdner?.role === "drafts";
         const nachAbsender = sortFeld === "von" && !zeigtEmpfaenger;
         for (const [i, z] of sortiert.entries()) {
-          const gruppe = z.pinned ? "Angeheftet"
+          const gruppe = z.pinned ? t("list.pinned")
             : nachTagen ? tagesGruppe(z.received_at)
-            : nachAbsender ? (anzeigeName(z.from[0]) || "(ohne Absender)")
+            : nachAbsender ? (anzeigeName(z.from[0]) || t("list.noSender"))
             : "";
           if (gruppe && gruppe !== letzteGruppe) {
             // Key includes the position: the same weekday can occur twice, and
@@ -1093,10 +1103,10 @@ export default function PostApp({ windowId }: { windowId: string }) {
       })()}
       {gesamt != null && zeilen.length < gesamt && (
         <button className={styles.mehr} disabled={laedtListe} onClick={() => void ladeListe(true)}>
-          {laedtListe ? "Lädt…" : `Mehr laden (${zeilen.length} von ${gesamt})`}
+          {laedtListe ? t("common.loading") : t("list.loadMore", { loaded: zeilen.length, total: gesamt })}
         </button>
       )}
-      {laedtListe && zeilen.length === 0 && <div className={styles.leer}>Lädt…</div>}
+      {laedtListe && zeilen.length === 0 && <div className={styles.leer}>{t("common.loading")}</div>}
     </div>
   );
 
@@ -1110,11 +1120,11 @@ export default function PostApp({ windowId }: { windowId: string }) {
       {!composer && !mail && !laedtMail && (
         <div className={styles.leerLesen}>
           <Icon name="mail" size={40} />
-          <div>Zu lesende E-Mail auswählen</div>
-          <div className={styles.hinweis}>{kontoFehlt ? "" : unreadInbox > 0 ? `${unreadInbox} ungelesen im Posteingang` : "Alles gelesen."}</div>
+          <div>{t("read.pick")}</div>
+          <div className={styles.hinweis}>{kontoFehlt ? "" : unreadInbox > 0 ? t("read.unreadInbox", { count: unreadInbox }) : t("read.allRead")}</div>
         </div>
       )}
-      {!composer && laedtMail && <div className={styles.leerLesen}>Lädt…</div>}
+      {!composer && laedtMail && <div className={styles.leerLesen}>{t("common.loading")}</div>}
       {!composer && mail && !laedtMail && (
         <>
           {/* On mobile, the header toolbar plus the "More" sheet replace
@@ -1122,36 +1132,36 @@ export default function PostApp({ windowId }: { windowId: string }) {
           {!mobil && (<>
           <div className={styles.aktionen}>
             {mail.draft ? (
-              <button className={`${styles.chip} ${styles.chipAktiv}`} onClick={() => oeffneEntwurf(mail)}><Icon name="pen" size={14} /> Entwurf bearbeiten</button>
+              <button className={`${styles.chip} ${styles.chipAktiv}`} onClick={() => oeffneEntwurf(mail)}><Icon name="pen" size={14} /> {t("read.editDraft")}</button>
             ) : (
               <>
-                <button className={styles.chip} onClick={() => void oeffneComposer("reply", mail)} title="Antworten (r)"><Icon name="back" size={14} /> Antworten</button>
-                <button className={styles.chip} onClick={() => void oeffneComposer("all", mail)} title="Allen antworten (a)">Allen antworten</button>
-                <button className={styles.chip} onClick={() => void oeffneComposer("forward", mail)} title="Weiterleiten (f)"><Icon name="export" size={14} /> Weiterleiten</button>
+                <button className={styles.chip} onClick={() => void oeffneComposer("reply", mail)} title={t("read.replyTitle")}><Icon name="back" size={14} /> {t("read.reply")}</button>
+                <button className={styles.chip} onClick={() => void oeffneComposer("all", mail)} title={t("read.replyAllTitle")}>{t("read.replyAll")}</button>
+                <button className={styles.chip} onClick={() => void oeffneComposer("forward", mail)} title={t("read.forwardTitle")}><Icon name="export" size={14} /> {t("read.forward")}</button>
               </>
             )}
             <span className={styles.trenner} />
-            <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void aktion("archiv")}><Icon name="archive" size={14} /> Archivieren</button>
-            <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void aktion("loeschen")}><Icon name="trash" size={14} /> Löschen</button>
-            <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => setVerschiebeOffen(true)}><Icon name="folder" size={14} /> Verschieben</button>
-            <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void aktion(mail.flagged ? "entmarkieren" : "markieren")}><Icon name="flag" size={14} /> {mail.flagged ? "Markierung weg" : "Markieren"}</button>
-            <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void aktion("ungelesen")}><Icon name="mail" size={14} /> Ungelesen</button>
+            <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void aktion("archiv")}><Icon name="archive" size={14} /> {t("actions.archive")}</button>
+            <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void aktion("loeschen")}><Icon name="trash" size={14} /> {t("actions.delete")}</button>
+            <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => setVerschiebeOffen(true)}><Icon name="folder" size={14} /> {t("actions.move")}</button>
+            <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void aktion(mail.flagged ? "entmarkieren" : "markieren")}><Icon name="flag" size={14} /> {mail.flagged ? t("actions.unmarkShort") : t("actions.mark")}</button>
+            <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void aktion("ungelesen")}><Icon name="mail" size={14} /> {t("actions.unread")}</button>
             {mail.snoozed
-              ? <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void wecken()} title="Zurück in den Posteingang"><Icon name="bell" size={14} /> Jetzt wecken</button>
+              ? <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void wecken()} title={t("snooze.wakeTitle")}><Icon name="bell" size={14} /> {t("snooze.wakeNow")}</button>
               : <span className={styles.bausteinAnker}>
-                  <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => setSchlummerOffen((v) => !v)} title="Erneut erinnern: Mail verschwindet bis zur Weckzeit"><Icon name="moon" size={14} /> Schlummern</button>
+                  <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => setSchlummerOffen((v) => !v)} title={t("snooze.title")}><Icon name="moon" size={14} /> {t("snooze.button")}</button>
                   {schlummerOffen && (
                     <div className={styles.vorschlagListe} style={{ minWidth: 200 }}>
-                      {([["later", "In 3 Stunden"], ["evening", "Heute Abend 18:00"], ["tomorrow", "Morgen 09:00"], ["weekend", "Samstag 09:00"], ["nextweek", "Montag 09:00"]] as [string, string][]).map(([k, l]) => (
+                      {SCHLUMMER.map((k): [string, string] => [k, t(`snooze.option.${k}`)]).map(([k, l]) => (
                         <button type="button" key={k} className={styles.vorschlag} onMouseDown={(e) => { e.preventDefault(); void schlummern(k); }}>{l}</button>
                       ))}
-                      <button type="button" className={styles.vorschlag} onMouseDown={(e) => { e.preventDefault(); const w = window.prompt("Weckzeit (JJJJ-MM-TT HH:MM):"); if (w) void schlummern(w.replace(" ", "T")); }}>Eigene Zeit…</button>
+                      <button type="button" className={styles.vorschlag} onMouseDown={(e) => { e.preventDefault(); const w = window.prompt(t("snooze.customPrompt")); if (w) void schlummern(w.replace(" ", "T")); }}>{t("snooze.custom")}</button>
                     </div>
                   )}
                 </span>}
-            <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void anheften(!mail.pinned)} title="Oben in der Liste halten">📌 {mail.pinned ? "Lösen" : "Anheften"}</button>
+            <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void anheften(!mail.pinned)} title={t("pin.title")}>📌 {mail.pinned ? t("pin.unpin") : t("pin.pin")}</button>
             <span className={styles.bausteinAnker}>
-              <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => setLabelOffen((v) => !v)} title="Kategorie/Label setzen"><Icon name="flag" size={14} /> Label</button>
+              <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => setLabelOffen((v) => !v)} title={t("label.title")}><Icon name="flag" size={14} /> {t("label.button")}</button>
               {labelOffen && (
                 <div className={styles.vorschlagListe} style={{ minWidth: 200 }}>
                   {Array.from(new Set([...(prefs.labels ?? []), ...mail.labels])).sort().map((l) => (
@@ -1159,41 +1169,41 @@ export default function PostApp({ windowId }: { windowId: string }) {
                       <span className={styles.labelPunkt} style={{ background: farbe(l) }} /> {l} {mail.labels.includes(l) ? "✓" : ""}
                     </button>
                   ))}
-                  <button type="button" className={styles.vorschlag} onMouseDown={(e) => { e.preventDefault(); const n = window.prompt("Neues Label:"); if (n?.trim()) void labelSetzen(n.trim(), true); setLabelOffen(false); }}>+ Neues Label…</button>
+                  <button type="button" className={styles.vorschlag} onMouseDown={(e) => { e.preventDefault(); const n = window.prompt(t("label.newPrompt")); if (n?.trim()) void labelSetzen(n.trim(), true); setLabelOffen(false); }}>{t("label.new")}</button>
                 </div>
               )}
             </span>
             {aktuellerOrdner?.role === "junk"
-              ? <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void aktion("posteingang")}>Kein Spam</button>
-              : <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void aktion("spam")}><Icon name="blocked" size={14} /> Spam</button>}
+              ? <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void aktion("posteingang")}>{t("actions.notJunk")}</button>
+              : <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void aktion("spam")}><Icon name="blocked" size={14} /> {t("actions.junk")}</button>}
             {mail.from[0]?.email && (
               <>
-                <button className={styles.chip} disabled={!!beschaeftigt} title="Alle Mails dieses Absenders in diesem Ordner löschen oder archivieren" onClick={() => setAufraeumen(mail.from[0].email)}><Icon name="scissors" size={14} /> Aufräumen</button>
-                <button className={styles.chip} disabled={!!beschaeftigt} title="Absender blockieren: künftige Mails werden verworfen" onClick={async () => {
+                <button className={styles.chip} disabled={!!beschaeftigt} title={t("read.sweepTitle")} onClick={() => setAufraeumen(mail.from[0].email)}><Icon name="scissors" size={14} /> {t("sweep.action")}</button>
+                <button className={styles.chip} disabled={!!beschaeftigt} title={t("read.blockTitle")} onClick={async () => {
                   const adr = mail.from[0].email;
-                  if (!window.confirm(`${adr} blockieren? Künftige Mails werden verworfen, vorhandene landen im Papierkorb.`)) return;
+                  if (!window.confirm(t("read.confirmBlock", { address: adr }))) return;
                   try { const r = await postRegeln.blockieren(adr); melde(r.message); void ladeOrdner(); void ladeListe(false); setMail(null); setGewaehltId(null); }
                   catch (e) { melde(e instanceof Error ? e.message : String(e), true); }
-                }}><Icon name="blocked" size={14} /> Blockieren</button>
+                }}><Icon name="blocked" size={14} /> {t("read.block")}</button>
               </>
             )}
           </div>
           <div className={styles.claraLeiste}>
             <span className={styles.claraMarke}>{getBrand().product}</span>
-            <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void bruecke("task")} title="Aufgabe im Planner (Projekt Inbox)">→ Aufgabe</button>
-            <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void bruecke("event")} title="Termin im Kalender">→ Termin</button>
-            <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void bruecke("contact")} title="Absender in die Kontakte">→ Kontakt</button>
-            <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void bruecke("note")} title="Als Notiz in Wissen">→ Notiz</button>
+            <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void bruecke("task")} title={t("bridge.taskTitle")}>{t("bridge.task")}</button>
+            <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void bruecke("event")} title={t("bridge.eventTitle")}>{t("bridge.event")}</button>
+            <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void bruecke("contact")} title={t("bridge.contactTitle")}>{t("bridge.contact")}</button>
+            <button className={styles.chip} disabled={!!beschaeftigt} onClick={() => void bruecke("note")} title={t("bridge.noteTitle")}>{t("bridge.note")}</button>
           </div>
           </>)}
           <div className={styles.mailKopf}>
-            <h1 className={styles.mailBetreff}>{mail.subject || "(ohne Betreff)"}</h1>
+            <h1 className={styles.mailBetreff}>{mail.subject || t("list.noSubject")}</h1>
             <div className={styles.mailMeta}>
               <span className={styles.avatarGross} style={{ background: farbe(mail.from[0]?.email || "?") }}>{initialen(mail.from[0])}</span>
               <div className={styles.mailMetaText}>
                 <div className={styles.mailVon}>
                   <button className={styles.profilKnopf}
-                          title="Wer ist das? Kontakt, letzte Mails, gemeinsame Termine"
+                          title={t("read.profileTitle")}
                           onClick={() => mail.from[0]?.email && setProfilFuer({ email: mail.from[0].email, name: anzeigeName(mail.from[0]) })}>
                     <strong>{anzeigeName(mail.from[0])}</strong>
                   </button>
@@ -1203,14 +1213,14 @@ export default function PostApp({ windowId }: { windowId: string }) {
                     three lines of addresses would otherwise cost a sixth of the screen. */}
                 {mobil && !empfaengerOffen ? (
                   <button className={styles.mailAnKurz} onClick={() => setEmpfaengerOffen(true)}>
-                    An: {anzeigeName(mail.to[0]) || "—"}
+                    {t("read.to")} {anzeigeName(mail.to[0]) || "—"}
                     {mail.to.length + mail.cc.length > 1 && ` +${mail.to.length + mail.cc.length - 1}`}
                     <Icon name="chevronDown" size={14} />
                   </button>
                 ) : (
                   <div className={styles.mailAn}
                        onClick={() => { if (mobil) setEmpfaengerOffen(false); }}>
-                    An: {adressListe(mail.to) || "—"}{mail.cc.length > 0 && <> · Cc: {adressListe(mail.cc)}</>}
+                    {t("read.to")} {adressListe(mail.to) || "—"}{mail.cc.length > 0 && <> · {t("read.cc")} {adressListe(mail.cc)}</>}
                   </div>
                 )}
               </div>
@@ -1227,14 +1237,14 @@ export default function PostApp({ windowId }: { windowId: string }) {
             )}
             {mail.html && !bilder && /<img\b/i.test(mail.html) && (
               <div className={styles.bilderHinweis}>
-                Fremde Bilder sind blockiert. <button className={styles.link} onClick={() => setBilder(true)}>Bilder laden</button>
+                {t("read.imagesBlocked")} <button className={styles.link} onClick={() => setBilder(true)}>{t("read.loadImages")}</button>
               </div>
             )}
           </div>
           <div className={styles.mailKoerper}>
             {mail.html
-              ? <iframe className={styles.htmlRahmen} title="Nachricht" sandbox="allow-popups allow-popups-to-escape-sandbox" srcDoc={htmlDokument(mail, bilder, dunkel, kontoId || undefined)} />
-              : <pre className={styles.textKoerper}>{mail.text || "(kein Inhalt)"}</pre>}
+              ? <iframe className={styles.htmlRahmen} title={t("read.message")} sandbox="allow-popups allow-popups-to-escape-sandbox" srcDoc={htmlDokument(mail, bilder, dunkel, kontoId || undefined)} />
+              : <pre className={styles.textKoerper}>{mail.text || t("read.noContent")}</pre>}
           </div>
           {mail.thread.length > 1 && (
             <div className={`${styles.unterhaltung} ${mobil && !unterhaltungOffen ? styles.unterhaltungZu : ""}`}>
@@ -1242,11 +1252,11 @@ export default function PostApp({ windowId }: { windowId: string }) {
                   of the height — now it opens on tap. */}
               {mobil ? (
                 <button className={styles.unterhaltungTitel} onClick={() => setUnterhaltungOffen((v) => !v)}>
-                  Unterhaltung ({mail.thread.length})
+                  {t("read.conversation", { count: mail.thread.length })}
                   <Icon name={unterhaltungOffen ? "chevronDown" : "chevronRight"} size={14} />
                 </button>
               ) : (
-                <div className={styles.unterhaltungTitel}>Unterhaltung ({mail.thread.length})</div>
+                <div className={styles.unterhaltungTitel}>{t("read.conversation", { count: mail.thread.length })}</div>
               )}
               {(!mobil || unterhaltungOffen) && mail.thread.map((t) => (
                 <button key={t.id} className={`${styles.unterhaltungEintrag} ${t.id === mail.id ? styles.unterhaltungAktiv : ""}`} onClick={() => void oeffne(t.id)}>
@@ -1263,18 +1273,18 @@ export default function PostApp({ windowId }: { windowId: string }) {
             <div className={styles.leseLeisteUnten}>
               {mail.draft ? (
                 <button className={`${styles.chip} ${styles.chipAktiv}`} onClick={() => oeffneEntwurf(mail)}>
-                  <Icon name="pen" size={16} /> Entwurf bearbeiten
+                  <Icon name="pen" size={16} /> {t("read.editDraft")}
                 </button>
               ) : (
                 <>
                   <button className={styles.leseKnopf} onClick={() => void oeffneComposer("reply", mail)}>
-                    <Icon name="back" size={18} /> Antworten
+                    <Icon name="back" size={18} /> {t("read.reply")}
                   </button>
                   <button className={styles.leseKnopf} onClick={() => void oeffneComposer("all", mail)}>
-                    <Icon name="people" size={18} /> Allen
+                    <Icon name="people" size={18} /> {t("read.replyAllShort")}
                   </button>
                   <button className={styles.leseKnopf} onClick={() => void oeffneComposer("forward", mail)}>
-                    <Icon name="export" size={18} /> Weiterleiten
+                    <Icon name="export" size={18} /> {t("read.forward")}
                   </button>
                 </>
               )}
@@ -1319,15 +1329,15 @@ export default function PostApp({ windowId }: { windowId: string }) {
             <div className={styles.sheetKopf}>
               <span className={styles.avatar} style={{ background: farbe(abs?.email || "?") }}>{initialen(abs)}</span>
               <div className={styles.zeileText}>
-                <div className={styles.absender}>{anzeigeName(abs) || "(unbekannt)"}</div>
-                <div className={styles.vorschau}>{z.subject || "(ohne Betreff)"}</div>
+                <div className={styles.absender}>{anzeigeName(abs) || t("list.unknown")}</div>
+                <div className={styles.vorschau}>{z.subject || t("list.noSubject")}</div>
               </div>
             </div>
           )}
 
           {kontextUnter === "verschieben" && (
             <>
-              <div className={styles.sheetTitel}>Verschieben nach …</div>
+              <div className={styles.sheetTitel}>{t("actions.moveTo")}</div>
               {ordner.filter((o) => o.id !== aktuellerOrdner?.id).map((o) => (
                 <button key={o.id} className={styles.sheetEintrag}
                         onClick={() => { setVerschiebeFuer(z.id); kontextZu(); void verschiebe(o); }}>
@@ -1339,64 +1349,64 @@ export default function PostApp({ windowId }: { windowId: string }) {
 
           {kontextUnter === "schlummern" && (
             <>
-              <div className={styles.sheetTitel}>Erneut erinnern …</div>
-              {([["later", "In 3 Stunden"], ["evening", "Heute Abend 18:00"], ["tomorrow", "Morgen 09:00"], ["weekend", "Samstag 09:00"], ["nextweek", "Montag 09:00"]] as [string, string][]).map(([k, l]) => (
+              <div className={styles.sheetTitel}>{t("snooze.menuTitle")}</div>
+              {SCHLUMMER.map((k): [string, string] => [k, t(`snooze.option.${k}`)]).map(([k, l]) => (
                 <button key={k} className={styles.sheetEintrag} onClick={() => { kontextZu(); void schlummern(k, z.id); }}>
                   <Icon name="moon" size={18} />{l}
                 </button>
               ))}
-              <button className={styles.sheetEintrag} onClick={() => { kontextZu(); const w = window.prompt("Weckzeit (JJJJ-MM-TT HH:MM):"); if (w) void schlummern(w.replace(" ", "T"), z.id); }}>
-                <span className={styles.sheetPlatz} />Eigene Zeit…
+              <button className={styles.sheetEintrag} onClick={() => { kontextZu(); const w = window.prompt(t("snooze.customPrompt")); if (w) void schlummern(w.replace(" ", "T"), z.id); }}>
+                <span className={styles.sheetPlatz} />{t("snooze.custom")}
               </button>
             </>
           )}
 
           {kontextUnter === "label" && (
             <>
-              <div className={styles.sheetTitel}>Kategorisieren</div>
+              <div className={styles.sheetTitel}>{t("label.categorize")}</div>
               {Array.from(new Set([...(prefs.labels ?? []), ...z.labels])).sort().map((l) => (
                 <button key={l} className={styles.sheetEintrag} onClick={() => { kontextZu(); void labelSetzen(l, !z.labels.includes(l), z.id); }}>
                   <span className={styles.labelPunkt} style={{ background: farbe(l) }} />{l} {z.labels.includes(l) ? "✓" : ""}
                 </button>
               ))}
-              <button className={styles.sheetEintrag} onClick={() => { kontextZu(); const n = window.prompt("Neues Label:"); if (n?.trim()) void labelSetzen(n.trim(), true, z.id); }}>
-                <span className={styles.sheetPlatz} />+ Neues Label…
+              <button className={styles.sheetEintrag} onClick={() => { kontextZu(); const n = window.prompt(t("label.newPrompt")); if (n?.trim()) void labelSetzen(n.trim(), true, z.id); }}>
+                <span className={styles.sheetPlatz} />{t("label.new")}
               </button>
             </>
           )}
 
           {kontextUnter === null && (
             <>
-              <E icon="back" text="Antworten" tun={() => void antwortenAus("reply", z.id)} />
-              <E text="Allen antworten" tun={() => void antwortenAus("all", z.id)} />
-              <E icon="export" text="Weiterleiten" tun={() => void antwortenAus("forward", z.id)} />
+              <E icon="back" text={t("read.reply")} tun={() => void antwortenAus("reply", z.id)} />
+              <E text={t("read.replyAll")} tun={() => void antwortenAus("all", z.id)} />
+              <E icon="export" text={t("read.forward")} tun={() => void antwortenAus("forward", z.id)} />
               <div className={styles.sheetTrenner} />
-              <E icon="trash" text={aktuellerOrdner?.role === "trash" ? "Endgültig löschen" : "Löschen"} tun={() => void aktion("loeschen", z.id)} />
-              <E icon="archive" text="Archivieren" tun={() => void aktion("archiv", z.id)} />
+              <E icon="trash" text={aktuellerOrdner?.role === "trash" ? t("actions.destroy") : t("actions.delete")} tun={() => void aktion("loeschen", z.id)} />
+              <E icon="archive" text={t("actions.archive")} tun={() => void aktion("archiv", z.id)} />
               <button className={styles.sheetEintrag} onClick={() => setKontextUnter("verschieben")}>
-                <Icon name="folder" size={18} />Verschieben<span className={styles.sheetPfeil}><Icon name="chevronRight" size={16} /></span>
+                <Icon name="folder" size={18} />{t("actions.move")}<span className={styles.sheetPfeil}><Icon name="chevronRight" size={16} /></span>
               </button>
               <div className={styles.sheetTrenner} />
-              <E icon="mail" text={z.unread ? "Als gelesen markieren" : "Als ungelesen markieren"} tun={() => void aktion(z.unread ? "gelesen" : "ungelesen", z.id)} />
-              <E text={z.pinned ? "📌 Lösen" : "📌 Anheften"} tun={() => void anheften(!z.pinned, z.id)} />
+              <E icon="mail" text={z.unread ? t("actions.markRead") : t("actions.markUnread")} tun={() => void aktion(z.unread ? "gelesen" : "ungelesen", z.id)} />
+              <E text={`📌 ${z.pinned ? t("pin.unpin") : t("pin.pin")}`} tun={() => void anheften(!z.pinned, z.id)} />
               <button className={styles.sheetEintrag} onClick={() => setKontextUnter("label")}>
-                <Icon name="flag" size={18} />Kategorisieren<span className={styles.sheetPfeil}><Icon name="chevronRight" size={16} /></span>
+                <Icon name="flag" size={18} />{t("label.categorize")}<span className={styles.sheetPfeil}><Icon name="chevronRight" size={16} /></span>
               </button>
-              <E icon="star" text={z.flagged ? "Kennzeichen entfernen" : "Kennzeichnen"} tun={() => void aktion(z.flagged ? "entmarkieren" : "markieren", z.id)} />
+              <E icon="star" text={z.flagged ? t("actions.unflag") : t("actions.flag")} tun={() => void aktion(z.flagged ? "entmarkieren" : "markieren", z.id)} />
               {geplantAnsicht
-                ? <E icon="bell" text="Jetzt wecken" tun={() => void wecken(z.id)} />
+                ? <E icon="bell" text={t("snooze.wakeNow")} tun={() => void wecken(z.id)} />
                 : <button className={styles.sheetEintrag} onClick={() => setKontextUnter("schlummern")}>
-                    <Icon name="moon" size={18} />Erneut erinnern<span className={styles.sheetPfeil}><Icon name="chevronRight" size={16} /></span>
+                    <Icon name="moon" size={18} />{t("snooze.remind")}<span className={styles.sheetPfeil}><Icon name="chevronRight" size={16} /></span>
                   </button>}
               <div className={styles.sheetTrenner} />
-              <E icon="blocked" text="Als Spam melden" tun={() => void aktion("spam", z.id)} />
-              <E icon="scissors" text={`Alle von ${anzeigeName(abs) || "diesem Absender"} aufräumen…`}
+              <E icon="blocked" text={t("actions.reportJunk")} tun={() => void aktion("spam", z.id)} />
+              <E icon="scissors" text={t("sweep.allFrom", { name: anzeigeName(abs) || t("sweep.thisSender") })}
                  tun={() => setAufraeumen(abs?.email ?? "")} aus={!abs?.email} />
               <div className={styles.sheetTrenner} />
-              <E icon="check" text="→ Aufgabe" tun={() => void brueckeAus("task", z.id)} />
-              <E icon="calendar" text="→ Termin" tun={() => void brueckeAus("event", z.id)} />
-              <E icon="person" text="→ Kontakt" tun={() => void brueckeAus("contact", z.id)} />
-              <E icon="note" text="→ Notiz" tun={() => void brueckeAus("note", z.id)} />
+              <E icon="check" text={t("bridge.task")} tun={() => void brueckeAus("task", z.id)} />
+              <E icon="calendar" text={t("bridge.event")} tun={() => void brueckeAus("event", z.id)} />
+              <E icon="person" text={t("bridge.contact")} tun={() => void brueckeAus("contact", z.id)} />
+              <E icon="note" text={t("bridge.note")} tun={() => void brueckeAus("note", z.id)} />
             </>
           )}
         </div>
@@ -1420,7 +1430,7 @@ export default function PostApp({ windowId }: { windowId: string }) {
       {verschiebeOffen && (
         <div className={styles.dialogHinter} onClick={() => { setVerschiebeOffen(false); setVerschiebeFuer(null); }}>
           <div className={styles.dialog} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.dialogTitel}>Verschieben nach …</div>
+            <div className={styles.dialogTitel}>{t("actions.moveTo")}</div>
             {ordner.filter((o) => o.id !== aktuellerOrdner?.id).map((o) => (
               <button key={o.id} className={styles.ordnerEintrag} onClick={() => void verschiebe(o)}>
                 <Icon name={ordnerIcon(o.role)} size={16} /><span className={styles.ordnerName}>{o.name}</span>
@@ -1431,7 +1441,7 @@ export default function PostApp({ windowId }: { windowId: string }) {
       )}
       {undo && (
         <div className={styles.toast}>
-          {undo.text} · <button className={styles.link} onClick={() => void rueckgaengig()}>Rückgängig ({Math.max(0, Math.ceil((undo.bis - Date.now()) / 1000))} s)</button>
+          {undo.text} · <button className={styles.link} onClick={() => void rueckgaengig()}>{t("undo.button", { seconds: Math.max(0, Math.ceil((undo.bis - Date.now()) / 1000)) })}</button>
         </div>
       )}
       {ueberallOffen !== null && (
@@ -1460,30 +1470,30 @@ export default function PostApp({ windowId }: { windowId: string }) {
                            await postSchreiben.prefsSpeichern(p); setPrefs(p);
                            for (const [id, s] of Object.entries(sig)) await postSchreiben.identitaetAendern(id, { html_signature: s, text_signature: s.replace(/<br\s*\/?>/gi, "\n").replace(/<\/div>|<\/p>/gi, "\n").replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim() });
                            const i = await postSchreiben.identitaeten(); setIdentitaeten(i.identities);
-                           melde("Einstellungen gespeichert"); setEinstellungenOffen(false);
+                           melde(t("settings.saved")); setEinstellungenOffen(false);
                          } catch (e) { melde(e instanceof Error ? e.message : String(e), true); }
                        }} />
       )}
       {mobil && !mobilLesen && !composer && !kontoFehlt && !auswahl.size && (
         <button className={styles.fab} onClick={() => void oeffneComposer("neu")}
-                title="Neue E-Mail" aria-label="Neue E-Mail"><Icon name="pen" size={22} /></button>
+                title={t("composer.new")} aria-label={t("composer.new")}><Icon name="pen" size={22} /></button>
       )}
       {mehrOffen && (
         <div className={styles.dialogHinter} onClick={() => setMehrOffen(false)}>
           <div className={styles.sheet} onClick={(e) => e.stopPropagation()}>
             <div className={styles.sheetGriff} />
-            <div className={styles.sheetTitel}>Filter</div>
+            <div className={styles.sheetTitel}>{t("filter.title")}</div>
             <div className={styles.sheetChips}>
               {(["alle", "ungelesen", "markiert", "dateien"] as Filter[]).map((f) => (
                 <button key={f} className={`${styles.chip} ${filter === f ? styles.chipAktiv : ""}`}
                         onClick={() => { setFilter(f); setMehrOffen(false); }}>
-                  {FILTER_NAMEN[f]}
+                  {filterName(f)}
                 </button>
               ))}
             </div>
-            <div className={styles.sheetTitel}>Sortieren nach</div>
+            <div className={styles.sheetTitel}>{t("sort.by")}</div>
             <div className={styles.sheetChips}>
-              {SORT_NAMEN.map(([k, l]) => (
+              {sortNamen().map(([k, l]) => (
                 <button key={k} className={`${styles.chip} ${sortFeld === k ? styles.chipAktiv : ""}`}
                         onClick={() => { setSortFeld(k); setSortAb(SORT_STANDARD_AB[k]); setMehrOffen(false); }}>{l}</button>
               ))}
@@ -1495,13 +1505,13 @@ export default function PostApp({ windowId }: { windowId: string }) {
                       onClick={() => { setSortAb(false); setMehrOffen(false); }}>{richtungNamen(sortFeld)[1]}</button>
             </div>
             <div className={styles.sheetTrenner} />
-            <button className={styles.sheetEintrag} onClick={() => { setMehrOffen(false); void ladeOrdner(); void ladeListe(false); void ladeAusgang(); }}><Icon name="reload" size={18} /> Aktualisieren</button>
+            <button className={styles.sheetEintrag} onClick={() => { setMehrOffen(false); void ladeOrdner(); void ladeListe(false); void ladeAusgang(); }}><Icon name="reload" size={18} /> {t("common.refresh")}</button>
             {(sucheAktiv || filter !== "alle") && !kontoFehlt && (
-              <button className={styles.sheetEintrag} onClick={() => { setMehrOffen(false); void sucheSpeichern(); }}><Icon name="star" size={18} /> Als Suchordner speichern</button>
+              <button className={styles.sheetEintrag} onClick={() => { setMehrOffen(false); void sucheSpeichern(); }}><Icon name="star" size={18} /> {t("savedSearch.save")}</button>
             )}
-            <button className={styles.sheetEintrag} onClick={() => { setMehrOffen(false); setRegelnOffen(true); }}><Icon name="list" size={18} /> Regeln</button>
-            <button className={styles.sheetEintrag} onClick={() => { setMehrOffen(false); setAbwesenheitOffen(true); }}><Icon name="moon" size={18} /> Abwesenheit</button>
-            <button className={styles.sheetEintrag} onClick={() => { setMehrOffen(false); setEinstellungenOffen(true); }}><Icon name="gear" size={18} /> Einstellungen</button>
+            <button className={styles.sheetEintrag} onClick={() => { setMehrOffen(false); setRegelnOffen(true); }}><Icon name="list" size={18} /> {t("rules.title")}</button>
+            <button className={styles.sheetEintrag} onClick={() => { setMehrOffen(false); setAbwesenheitOffen(true); }}><Icon name="moon" size={18} /> {t("vacation.title")}</button>
+            <button className={styles.sheetEintrag} onClick={() => { setMehrOffen(false); setEinstellungenOffen(true); }}><Icon name="gear" size={18} /> {t("settings.short")}</button>
           </div>
         </div>
       )}
@@ -1517,38 +1527,39 @@ function Einstellungen({ identitaeten, prefs, onClose, onSave }: {
   identitaeten: Identitaet[]; prefs: PostPrefs; onClose: () => void;
   onSave: (p: PostPrefs, signaturen: Record<string, string>) => Promise<void>;
 }) {
+  const { t } = useTranslation("post");
   const [p, setP] = useState<PostPrefs>({ undo_s: 10, signature_on: true, ...prefs });
   const [sig, setSig] = useState<Record<string, string>>(() => Object.fromEntries(identitaeten.map((i) => [i.id, i.html_signature || i.text_signature.replace(/\n/g, "<br>")])));
   const [aktiv, setAktiv] = useState<string>(prefs.default_identity ?? identitaeten[0]?.id ?? "");
   return (
     <div className={styles.dialogHinter} onClick={onClose}>
       <div className={styles.dialog} style={{ minWidth: 420, maxWidth: "90%" }} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.dialogTitel}>Post-Einstellungen</div>
-        <label className={styles.einstZeile}>Standard-Absender
+        <div className={styles.dialogTitel}>{t("settings.title")}</div>
+        <label className={styles.einstZeile}>{t("settings.defaultSender")}
           <select className={styles.vonSelect} value={p.default_identity ?? ""} onChange={(e) => setP({ ...p, default_identity: e.target.value })}>
-            <option value="">(erste Identität)</option>
+            <option value="">{t("settings.firstIdentity")}</option>
             {identitaeten.map((i) => <option key={i.id} value={i.id}>{i.email}</option>)}
           </select>
         </label>
-        <label className={styles.einstZeile}>Senden rückgängig für
+        <label className={styles.einstZeile}>{t("settings.undoFor")}
           <select className={styles.vonSelect} value={String(p.undo_s ?? 10)} onChange={(e) => setP({ ...p, undo_s: Number(e.target.value) })}>
-            {[0, 5, 10, 20, 30, 60].map((n) => <option key={n} value={n}>{n === 0 ? "aus (sofort senden)" : `${n} Sekunden`}</option>)}
+            {[0, 5, 10, 20, 30, 60].map((n) => <option key={n} value={n}>{n === 0 ? t("settings.undoOff") : t("settings.seconds", { count: n })}</option>)}
           </select>
         </label>
-        <label className={styles.einstZeile}><input type="checkbox" checked={!!p.request_mdn} onChange={(e) => setP({ ...p, request_mdn: e.target.checked })} /> Lesebestätigung standardmäßig anfordern</label>
-        <label className={styles.einstZeile}><input type="checkbox" checked={p.signature_on !== false} onChange={(e) => setP({ ...p, signature_on: e.target.checked })} /> Signatur automatisch einfügen</label>
+        <label className={styles.einstZeile}><input type="checkbox" checked={!!p.request_mdn} onChange={(e) => setP({ ...p, request_mdn: e.target.checked })} /> {t("settings.mdnDefault")}</label>
+        <label className={styles.einstZeile}><input type="checkbox" checked={p.signature_on !== false} onChange={(e) => setP({ ...p, signature_on: e.target.checked })} /> {t("settings.signatureAuto")}</label>
         {/* Like Outlook's "customize actions": the list's two swipe gestures. */}
-        <label className={styles.einstZeile}>Wischen nach links
+        <label className={styles.einstZeile}>{t("settings.swipeLeft")}
           <select className={styles.vonSelect} value={p.swipe_links ?? "archiv"} onChange={(e) => setP({ ...p, swipe_links: e.target.value as WischAktion })}>
-            {WISCH_WAHL.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+            {wischWahl().map(([k, l]) => <option key={k} value={k}>{l}</option>)}
           </select>
         </label>
-        <label className={styles.einstZeile}>Wischen nach rechts
+        <label className={styles.einstZeile}>{t("settings.swipeRight")}
           <select className={styles.vonSelect} value={p.swipe_rechts ?? "aufgabe"} onChange={(e) => setP({ ...p, swipe_rechts: e.target.value as WischAktion })}>
-            {WISCH_WAHL.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+            {wischWahl().map(([k, l]) => <option key={k} value={k}>{l}</option>)}
           </select>
         </label>
-        <div className={styles.einstZeile}>Signatur für
+        <div className={styles.einstZeile}>{t("settings.signatureFor")}
           <select className={styles.vonSelect} value={aktiv} onChange={(e) => setAktiv(e.target.value)}>
             {identitaeten.map((i) => <option key={i.id} value={i.id}>{i.email}</option>)}
           </select>
@@ -1557,8 +1568,8 @@ function Einstellungen({ identitaeten, prefs, onClose, onSave }: {
           <SignaturEditor key={aktiv} html={sig[aktiv] ?? ""} onChange={(h) => setSig({ ...sig, [aktiv]: h })} />
         )}
         <div className={styles.composerFuss} style={{ borderTop: "none" }}>
-          <button className={`${styles.chip} ${styles.chipAktiv}`} onClick={() => void onSave(p, sig)}>Speichern</button>
-          <button className={styles.chip} onClick={onClose}>Abbrechen</button>
+          <button className={`${styles.chip} ${styles.chipAktiv}`} onClick={() => void onSave(p, sig)}>{t("common.save")}</button>
+          <button className={styles.chip} onClick={onClose}>{t("common.cancel")}</button>
         </div>
       </div>
     </div>
@@ -1568,17 +1579,18 @@ function Einstellungen({ identitaeten, prefs, onClose, onSave }: {
 
 /** Small HTML editor for the signature (bold, italic, link, line break). */
 function SignaturEditor({ html, onChange }: { html: string; onChange: (h: string) => void }) {
+  const { t } = useTranslation("post");
   const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => { if (ref.current && ref.current.innerHTML !== html) ref.current.innerHTML = html; /* eslint-disable-line react-hooks/exhaustive-deps */ }, []);
+  useEffect(() => { if (ref.current && ref.current.innerHTML !== html) ref.current.innerHTML = sanitizeMailHtml(html); /* eslint-disable-line react-hooks/exhaustive-deps */ }, []);
   const cmd = (n: string, a?: string) => { ref.current?.focus(); document.execCommand(n, false, a); onChange(ref.current?.innerHTML ?? ""); };
   return (
     <div className={styles.sigBox}>
       <div className={styles.editorLeiste} style={{ borderBottom: "none", padding: "0.2rem 0.3rem" }}>
-        <button type="button" onMouseDown={(e) => { e.preventDefault(); cmd("bold"); }}><b>F</b></button>
-        <button type="button" onMouseDown={(e) => { e.preventDefault(); cmd("italic"); }}><i>K</i></button>
-        <button type="button" onMouseDown={(e) => { e.preventDefault(); const u = window.prompt("Link-Adresse:", "https://"); if (u) cmd("createLink", u); }}>Link</button>
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); cmd("bold"); }}><b>{t("composer.boldLetter")}</b></button>
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); cmd("italic"); }}><i>{t("composer.italicLetter")}</i></button>
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); const u = window.prompt(t("composer.linkPrompt"), "https://"); if (u) cmd("createLink", u); }}>{t("composer.link")}</button>
         <button type="button" onMouseDown={(e) => { e.preventDefault(); cmd("removeFormat"); }}>T̶</button>
-        <span className={styles.hinweis} style={{ marginLeft: "auto" }}>Enter = neue Zeile</span>
+        <span className={styles.hinweis} style={{ marginLeft: "auto" }}>{t("settings.enterNewLine")}</span>
       </div>
       <div ref={ref} className={styles.sigEditor} contentEditable suppressContentEditableWarning
            onInput={() => onChange(ref.current?.innerHTML ?? "")}

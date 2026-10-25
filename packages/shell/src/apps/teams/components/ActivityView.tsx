@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useMatrixStore } from "@claraos/core";
+import { useMatrixStore, useTranslation, i18n } from "@claraos/core";
 import type { MatrixMessage } from "@claraos/core";
 import { Avatar } from "./Avatar";
 import styles from "./ActivityView.module.css";
@@ -11,20 +11,16 @@ type Filter = "all" | "unread" | "mentions" | "saved";
 
 function formatTimeAgo(ts: number): string {
   const diff = Date.now() - ts;
-  if (diff < 60000) return "gerade eben";
-  if (diff < 3600000) return `vor ${Math.floor(diff / 60000)}m`;
-  if (diff < 86400000) return `vor ${Math.floor(diff / 3600000)}h`;
-  return `vor ${Math.floor(diff / 86400000)}d`;
+  if (diff < 60000) return i18n.t("teams:activity.justNow");
+  if (diff < 3600000) return i18n.t("teams:activity.minutes", { count: Math.floor(diff / 60000) });
+  if (diff < 86400000) return i18n.t("teams:activity.hours", { count: Math.floor(diff / 3600000) });
+  return i18n.t("teams:activity.days", { count: Math.floor(diff / 86400000) });
 }
 
-const FILTERS: { id: Filter; label: string }[] = [
-  { id: "all", label: "Alle" },
-  { id: "unread", label: "Ungelesen" },
-  { id: "mentions", label: "@Erwähnungen" },
-  { id: "saved", label: "Gespeichert" },
-];
+const FILTERS: Filter[] = ["all", "unread", "mentions", "saved"];
 
 export function ActivityView() {
+  const { t } = useTranslation("teams");
   const rooms = useMatrixStore((s) => s.rooms);
   const timeline = useMatrixStore((s) => s.timeline);
   const userId = useMatrixStore((s) => s.userId);
@@ -91,16 +87,16 @@ export function ActivityView() {
 
   return (
     <div className={styles.activityView}>
-      <div className={styles.header}>Aktivität</div>
+      <div className={styles.header}>{t("activity.title")}</div>
       <div className={styles.pills}>
         {FILTERS.map((f) => (
           <button
-            key={f.id}
-            className={`${styles.pill} ${filter === f.id ? styles.activePill : ""}`}
-            onClick={() => setFilter(f.id)}
+            key={f}
+            className={`${styles.pill} ${filter === f ? styles.activePill : ""}`}
+            onClick={() => setFilter(f)}
           >
-            {f.label}
-            {f.id === "mentions" && mentions.length > 0 && (
+            {t(`activity.${f}`)}
+            {f === "mentions" && mentions.length > 0 && (
               <span className={styles.pillBadge}>{mentions.length}</span>
             )}
           </button>
@@ -109,13 +105,13 @@ export function ActivityView() {
 
       {filter === "mentions" ? (
         mentions.length === 0 ? (
-          <div className={styles.empty}>Keine Erwähnungen</div>
+          <div className={styles.empty}>{t("activity.noMentions")}</div>
         ) : (
           mentions.map((m) => renderMessageItem(m))
         )
       ) : filter === "saved" ? (
         savedMessages.length === 0 ? (
-          <div className={styles.empty}>Nichts gespeichert — Lesezeichen-Symbol an einer Nachricht nutzen.</div>
+          <div className={styles.empty}>{t("activity.noSaved")}</div>
         ) : (
           savedMessages.map((m) =>
             renderMessageItem(
@@ -124,13 +120,13 @@ export function ActivityView() {
                 className={styles.unsave}
                 onClick={(e) => { e.stopPropagation(); removeSavedMessage(m.eventId); }}
               >
-                Entfernen
+                {t("common.remove")}
               </span>,
             ),
           )
         )
       ) : roomList.length === 0 ? (
-        <div className={styles.empty}>{filter === "unread" ? "Alles gelesen ✓" : "Keine Aktivität"}</div>
+        <div className={styles.empty}>{filter === "unread" ? t("activity.allRead") : t("activity.none")}</div>
       ) : (
         roomList.map((room) => (
           <button key={room.roomId} className={styles.activityItem} onClick={() => openRoom(room.roomId)}>

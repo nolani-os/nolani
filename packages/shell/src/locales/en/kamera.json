@@ -1,0 +1,134 @@
+{
+  "modes": {
+    "foto": {
+      "name": "Photo",
+      "hint": ""
+    },
+    "dokument": {
+      "name": "Document",
+      "hint": "Get the whole sheet in the picture — the frame shows what is detected"
+    },
+    "essen": {
+      "name": "Food",
+      "hint": "Include a hand, card or coin in the picture — then it's logged automatically"
+    }
+  },
+  "archive": {
+    "paperless": "· Paperless no. {{nr}}",
+    "pending": "· being read into Paperless …"
+  },
+  "msg": {
+    "collected_one": "{{count}} page collected (+{{mb}} MB).",
+    "collected_other": "{{count}} pages collected (+{{mb}} MB).",
+    "error": "Error {{status}}",
+    "barcodeUnknown": "Barcode {{code}} is unknown.",
+    "arrived": "Picture arrived — being filed.",
+    "arrivedMany": "{{count}} pictures arrived — being filed.",
+    "cropped": " {{count}}× cropped.",
+    "sendFailed": "Sending failed.",
+    "pagesSent": "{{count}} pages sent as one document.",
+    "restored_one": "{{count}} page from earlier restored.",
+    "restored_other": "{{count}} pages from earlier restored.",
+    "browserNoCamera": "This browser can't open a camera.",
+    "cameraUnavailable": "Camera not available.",
+    "captureFailed": "Capture failed.",
+    "booked": "{{done}} of {{total}} logged",
+    "notFound": " — not found: {{list}}",
+    "quality": " (quality {{quality}}).",
+    "bookFailed": "Logging failed.",
+    "removed": "Picture removed.",
+    "removeFailed": "Removing failed.",
+    "needGrams": "Please enter an amount in grams.",
+    "diaryDone": "{{name}}: {{grams}} g in the food diary.",
+    "notBooked": "Not logged — {{reason}}",
+    "unknownReason": "unknown reason",
+    "multiPageStart": "Every picture becomes a page. Tap “Done” at the end."
+  },
+  "finder": {
+    "darkLight": "Too dark — turn on the light or add more light",
+    "dark": "Too dark — please add more light",
+    "tooSmall": "Move closer — the receipt should fill the picture lengthwise",
+    "sheet": "Sheet detected — being straightened and cropped",
+    "area": "Sheet detected — edges unclear, it will only be cropped",
+    "sending": "Sending …",
+    "inFlight": "{{count}} on the way — keep going",
+    "systemCameraHint": "It still works via “System camera”.",
+    "opening": "Opening the camera …"
+  },
+  "bar": {
+    "modes": "Capture mode",
+    "queue": "Queue and history",
+    "more": "More capture modes",
+    "lightOff": "Turn off the light",
+    "lightOn": "Turn on the light",
+    "shutter": "Capture"
+  },
+  "big": {
+    "unedited": " · unedited",
+    "showCropped": "Show cropped",
+    "showOriginal": "Show original",
+    "remove": "Remove",
+    "close": "Close"
+  },
+  "menu": {
+    "multiPage": "Multi-page document",
+    "tour3d": "Record a 3D walkthrough",
+    "gallery": "Choose from gallery",
+    "systemCamera": "System camera (best image quality)",
+    "installedHint": "In the installed app this may only open the gallery — then use the shutter above."
+  },
+  "collect": {
+    "pages_one": "{{count}} page collected",
+    "pages_other": "{{count}} pages collected",
+    "send": "Done — send",
+    "cancel": "Cancel"
+  },
+  "guide": {
+    "title": "How to get a good walkthrough",
+    "slow": "<b>Walk slowly.</b> Nerfstudio wants ~3 frames per second — measured: more frames make it <i>worse</i> (2668 frames gave 33 fragments). What counts is the movement, not the frame rate.",
+    "around": "<b>Around the object</b>, not towards it. The viewing angle has to change, otherwise there's no parallax.",
+    "steady": "<b>Pan smoothly.</b> Jerky pans cause motion blur, and COLMAP can't match blurry frames.",
+    "avoid": "<b>Avoid:</b> mirrors, glass, large white walls without texture, moving things. Those are the known killers.",
+    "duration": "<b>One to two minutes</b> are enough for a room.",
+    "start": "Got it — record walkthrough"
+  },
+  "product": {
+    "kcal": "{{kcal}} kcal per 100 g",
+    "grams": "Amount in grams",
+    "book": "Log",
+    "discard": "Discard"
+  },
+  "queue": {
+    "title": "Queue and history",
+    "inFlight": "{{count}} on the way",
+    "close": "Close",
+    "empty": "Nothing captured yet.",
+    "viewLarge": "View picture large",
+    "sorting": "⏳ being filed …",
+    "failed": "⚠️ not filed — {{reason}}",
+    "unknownReason": "reason unknown",
+    "meal": "Meal",
+    "quality": " · quality {{quality}}",
+    "nutrients_one": "{{count}} nutrient",
+    "nutrients_other": "{{count}} nutrients",
+    "source": "Source: {{source}} · searched as “{{term}}”",
+    "byGroup": " · matched only via the food group",
+    "autoBooked": "✓ logged automatically ({{done}} of {{total}})",
+    "notFound": "not found: {{list}}",
+    "booking": "Logging …",
+    "bookDiary": "Log in the diary",
+    "noEstimate": "🍽 Amounts not estimated — {{reason}}",
+    "delete": "Delete",
+    "keep": "Keep",
+    "remove": "Remove picture",
+    "footer": "Everything is in the <b>Posteingang</b> (inbox) folder — find it in “Files” and in Nextcloud. Filed wrongly? Just move it there."
+  },
+  "camera": {
+    "noBrowser": "This browser can't open a camera.",
+    "denied": "Camera access was denied.",
+    "notFound": "No camera found.",
+    "cannotOpen": "The camera can't be opened.",
+    "noImage": "No image from the viewfinder.",
+    "captureFailed": "Capture failed."
+  }
+}

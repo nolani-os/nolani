@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { fileUrl } from "../../lib/downloadFile";
-import { useWindowsStore, useFileStore, useMarkerStore, buildObjectUri, type FileNode, getBrand } from "@claraos/core";
+import { useWindowsStore, useFileStore, useMarkerStore, buildObjectUri, type FileNode, i18n, useTranslation } from "@claraos/core";
 import { prepareItems } from "../file-browser/listTransform";
 import MarkerOverlay, { computeBboxFromState } from "../../Marker/MarkerOverlay";
 import { holen, istHtml } from "../../lib/artefakte";
@@ -82,6 +82,7 @@ function bildUrl(source: string, path: string): string {
 }
 
 export default function ImageViewerApp({ windowId }: { windowId: string }) {
+  const { t } = useTranslation("imageViewer");
   const [imageUrl, setImageUrl] = useState<string>("");
   // Important: the blob: URL to clean up must live in a ref, not in state.
   // The load effect's cleanup saw `imageUrl` from THE render in which the
@@ -134,10 +135,7 @@ export default function ImageViewerApp({ windowId }: { windowId: string }) {
     if (winSource === "artefakt") {
       const a = holen(winPath);
       if (!a) {
-        setSeiteFehler(
-          "Dieses Artefakt ist nicht mehr da — die Seite wurde zwischendurch neu geladen. " +
-          `Bitte ${getBrand().assistant} noch einmal darum bitten.`,
-        );
+        setSeiteFehler(i18n.t("imageViewer:artifactGone"));
         setImageUrl("");
         meldeInhalt(windowId, false,
           "Das Artefakt lag nicht mehr im Speicher (Seite wurde neu geladen) — nichts zu sehen.");
@@ -149,7 +147,7 @@ export default function ImageViewerApp({ windowId }: { windowId: string }) {
       // as source instead of being executed as a page.
       setQuelltext(!istHtml(a.inhalt, a.mime));
       setImageUrl("");
-      setImageName(a.titel || "Artefakt");
+      setImageName(a.titel || i18n.t("imageViewer:artifact"));
       setNeustart((n) => n + 1);
       meldeInhalt(windowId, true, istHtml(a.inhalt, a.mime)
         ? `Die Seite "${a.titel || "Artefakt"}" laeuft jetzt im Betrachter.`
@@ -179,7 +177,7 @@ export default function ImageViewerApp({ windowId }: { windowId: string }) {
       setLaedt(false);
       if (!data) {
         if (ext === "html" || ext === "htm") {
-          setSeiteFehler(`Datei ${winPath} konnte nicht geladen werden.`);
+          setSeiteFehler(i18n.t("imageViewer:fileFailed", { path: winPath }));
         }
         meldeInhalt(windowId, false,
           `Die Datei ${winPath} liess sich nicht laden — der Betrachter ist leer.`);
@@ -422,7 +420,7 @@ export default function ImageViewerApp({ windowId }: { windowId: string }) {
       <div className={zeigtLeiste ? css.leiste : css.leisteAus}>
         {istHandy && (
           <button onClick={() => closeWindow(windowId)} className={css.knopf}
-            aria-label="Zurück zu den Dateien" title="Zurück">
+            aria-label={t("backToFiles")} title={t("back")}>
             <Icon name="back" size={20} />
           </button>
         )}
@@ -431,40 +429,40 @@ export default function ImageViewerApp({ windowId }: { windowId: string }) {
             ClaraOS. Now you pick in the ClaraOS file picker, the same on BOTH
             platforms. */}
         <button onClick={() => setWaehlerOffen(true)} className={css.knopf}
-          aria-label="Anderes Bild öffnen" title="Anderes Bild öffnen">
-          <Icon name="folder" size={18} />{!istHandy && "Öffnen"}
+          aria-label={t("openOther")} title={t("openOther")}>
+          <Icon name="folder" size={18} />{!istHandy && t("open")}
         </button>
         {zeigtSeite ? (
           <>
             <button onClick={() => setNeustart((n) => n + 1)} className={css.knopf}
-              title="Seite neu starten"><Icon name="reload" size={16} />Neu starten</button>
+              title={t("restartTitle")}><Icon name="reload" size={16} />{t("restart")}</button>
             <button onClick={() => setQuelltext((q) => !q)} className={css.knopf}>
-              {quelltext ? "Ansicht" : "Quelltext"}
+              {quelltext ? t("view") : t("source")}
             </button>
           </>
         ) : imageUrl && bildStatus !== "fehler" ? (
           <>
             <span className={css.gruppe}>
               <button onClick={() => zoomRef.current?.zoomOut()} className={css.knopf}
-                aria-label="Verkleinern" title="Verkleinern (−)">−</button>
+                aria-label={t("zoomOut")} title={t("zoomOutTitle")}>−</button>
               {/* Relative to fit: "Fit" is the normal state, not "100 %".
                   Previously this showed 100 % while only 5 % of the photo was visible. */}
               {!istHandy && (
                 <span className={css.zoomText}>
-                  {zoom <= 1.001 ? "Eingepasst" : `${Math.round(zoom * 100)} %`}
+                  {zoom <= 1.001 ? t("fitted") : `${Math.round(zoom * 100)} %`}
                 </span>
               )}
               <button onClick={() => zoomRef.current?.zoomIn()} className={css.knopf}
-                aria-label="Vergrößern" title="Vergrößern (+)">+</button>
+                aria-label={t("zoomIn")} title={t("zoomInTitle")}>+</button>
             </span>
             {/* On phones double tap fits — space is lacking there, and without
                 this omission the toolbar pushed name and position out of view. */}
             {!istHandy && (
               <>
                 <button onClick={() => zoomRef.current?.changeZoom(1)} className={css.knopf}
-                  title="Ganzes Bild zeigen">Einpassen</button>
+                  title={t("fitTitle")}>{t("fit")}</button>
                 <button onClick={einsZuEins} className={css.knopf}
-                  title="Originalgröße: ein Bildpixel pro Bildschirmpixel">1:1</button>
+                  title={t("oneToOneTitle")}>1:1</button>
               </>
             )}
           </>
@@ -492,7 +490,7 @@ export default function ImageViewerApp({ windowId }: { windowId: string }) {
           <iframe
             key={neustart}
             ref={rahmenRef}
-            title={imageName || "Seite"}
+            title={imageName || t("page")}
             srcDoc={seiteFertig}
             onLoad={() => rahmenRef.current?.focus()}
             // Without allow-same-origin: own, empty origin. The page can reach
@@ -506,10 +504,10 @@ export default function ImageViewerApp({ windowId }: { windowId: string }) {
           // (In the carousel the notice stays INSIDE the slide so you can keep paging.)
           <div className={css.hinweis} role="alert">
             <Icon name="warning" size={40} className={css.fehlerSymbol} />
-            <div className={css.hinweisTitel}>„{imageName}“ konnte nicht geladen werden</div>
+            <div className={css.hinweisTitel}>{t("couldNotLoad", { name: imageName })}</div>
             <div className={css.hinweisText}>{fehlerText}</div>
             <button className={css.hauptknopf} onClick={() => setWaehlerOffen(true)}>
-              Anderes Bild öffnen
+              {t("openOther")}
             </button>
           </div>
         ) : imageUrl && folge.length ? (
@@ -536,9 +534,9 @@ export default function ImageViewerApp({ windowId }: { windowId: string }) {
                     pinchZoomV4: true }}
             animation={{ swipe: 250, zoom: 200 }}
             labels={{
-              Previous: "Vorheriges Bild", Next: "Nächstes Bild",
-              "Zoom in": "Vergrößern", "Zoom out": "Verkleinern",
-              Carousel: "Bilder", Slide: "Bild", "Photo gallery": "Bilder im Ordner",
+              Previous: t("previous"), Next: t("next"),
+              "Zoom in": t("zoomIn"), "Zoom out": t("zoomOut"),
+              Carousel: t("carousel"), Slide: t("slide"), "Photo gallery": t("gallery"),
             }}
             render={{
               // Remove the plugin's zoom buttons: zooming happens via OUR toolbar.
@@ -548,11 +546,11 @@ export default function ImageViewerApp({ windowId }: { windowId: string }) {
                 <div className={css.hinweis} role="alert">
                   <Icon name="warning" size={32} className={css.fehlerSymbol} />
                   <div className={css.hinweisText}>
-                    {fehlerText || "Dieses Bild ließ sich nicht laden."}
+                    {fehlerText || t("imageFailed")}
                   </div>
                 </div>
               ),
-              iconLoading: () => <div className={css.kreisel} aria-label="Bild wird geladen" />,
+              iconLoading: () => <div className={css.kreisel} aria-label={t("imageLoading")} />,
               // On phones you swipe; arrow buttons only cover the image there.
               ...(istHandy || folge.length < 2
                 ? { buttonPrev: () => null, buttonNext: () => null } : {}),
@@ -564,7 +562,7 @@ export default function ImageViewerApp({ windowId }: { windowId: string }) {
           <div className={css.hinweis}>
             <div className={css.kreisel} />
             <div className={css.hinweisTitel}>
-              {(winPath || "").split("/").pop() || "Datei"} wird geladen …
+              {t("fileLoading", { name: (winPath || "").split("/").pop() || t("file") })}
             </div>
           </div>
         ) : (
@@ -572,15 +570,15 @@ export default function ImageViewerApp({ windowId }: { windowId: string }) {
             <Icon name={seiteFehler ? "warning" : "image"} size={48}
               className={seiteFehler ? css.fehlerSymbol : undefined} />
             <div className={css.hinweisTitel}>
-              {seiteFehler || "Bild oder Seite öffnen, um sie anzusehen"}
+              {seiteFehler || t("emptyTitle")}
             </div>
             {!seiteFehler && (
               <div className={css.hinweisText}>
-                JPG, PNG, GIF, WebP, HEIC, TIFF, SVG — und HTML-Seiten, die laufen
+                {t("emptyFormats")}
               </div>
             )}
             <button className={css.hauptknopf} onClick={() => setWaehlerOffen(true)}>
-              Bild auswählen
+              {t("pick")}
             </button>
           </div>
         )}

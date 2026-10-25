@@ -19,6 +19,7 @@ from urllib.parse import quote
 
 import httpx
 import domains_generated as domains
+from sprache import Text, fuer, sprache_fuer
 
 logger = logging.getLogger(__name__)
 
@@ -232,6 +233,20 @@ async def _publish_topic(client: httpx.AsyncClient, topic: str, title: str,
     return False
 
 
+def _fest(x: object) -> bool:
+    return isinstance(x, str) and not isinstance(x, Text)
+
+
+async def _in_sprache(username: str, title, message) -> tuple[str, str]:
+    """Title and message for one recipient. Plain text passes unchanged; a
+    `sprache.Text` or a `lang -> str` callable is resolved in the recipient's
+    language (looked up only then)."""
+    if _fest(title) and _fest(message):
+        return title, message
+    lang = await sprache_fuer(username)
+    return fuer(lang, title), fuer(lang, message)
+
+
 async def notify_users(usernames: list[str], title: str, message: str,
                        app_id: str | None = None, priority: str = "default",
                        click: str | None = None, action: str | None = None,
@@ -250,8 +265,9 @@ async def notify_users(usernames: list[str], title: str, message: str,
             for username in usernames:
                 if username not in valid:
                     continue
-                if await _publish_topic(client, _safe_ntfy_username(username), title,
-                                        message, app_id, priority, click, action, args):
+                kopf, text = await _in_sprache(username, title, message)
+                if await _publish_topic(client, _safe_ntfy_username(username), kopf,
+                                        text, app_id, priority, click, action, args):
                     sent += 1
     except Exception as exc:
         logger.warning("ntfy_publish: notify_users fehlgeschlagen: %s", exc)
@@ -285,8 +301,9 @@ async def notify_all_users(
             for username in await _list_human_usernames(client):
                 if username.lower() in exclude:
                     continue
-                if await _publish_topic(client, _safe_ntfy_username(username), title,
-                                        message, app_id, priority, click, action, args):
+                kopf, text = await _in_sprache(username, title, message)
+                if await _publish_topic(client, _safe_ntfy_username(username), kopf,
+                                        text, app_id, priority, click, action, args):
                     sent += 1
     except Exception as exc:
         logger.warning("ntfy_publish: Broadcast fehlgeschlagen: %s", exc)

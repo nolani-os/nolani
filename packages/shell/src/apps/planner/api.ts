@@ -1,6 +1,7 @@
 /** BFF client for the Planner (routers/planner.py).
  * Same pattern as routines/api.ts: own http<T> wrapper, cookie auth.
  * 424 = no Vikunja token stored → dedicated error type for onboarding. */
+import { i18n } from "@claraos/core";
 import type {
   CostsOverview, InWorkEntry, ProjectCosts, TaskMeta, VikAttachment, VikBucket, VikComment, VikLabel,
   VikProject, VikTask, VikUser,
@@ -49,11 +50,11 @@ async function http<T>(path: string, init: RequestInit = {}): Promise<T> {
     headers: { "Content-Type": "application/json", ...(init.headers || {}) },
   });
   if (r.status === 424) {
-    throw new NotConnectedError(await fehlertext(r, "Kein Vikunja-Token hinterlegt."));
+    throw new NotConnectedError(await fehlertext(r, i18n.t("planner:errors.noToken")));
   }
   if (r.status === 409) {
     throw new ConflictError(
-      await fehlertext(r, "Wurde zwischenzeitlich woanders geändert. Bitte neu laden."),
+      await fehlertext(r, i18n.t("planner:errors.conflict")),
     );
   }
   if (!r.ok) {
@@ -182,7 +183,7 @@ export const plannerApi = {
     });
     if (!r.ok) {
       const text = await r.text().catch(() => "");
-      throw new Error(`Upload fehlgeschlagen: ${r.status} ${text}`);
+      throw new Error(i18n.t("planner:errors.uploadFailed", { status: r.status, text }));
     }
   },
 

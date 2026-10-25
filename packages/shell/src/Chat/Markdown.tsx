@@ -15,6 +15,7 @@ import { useState, type ReactNode } from "react";
 import ReactMarkdown, { defaultUrlTransform, type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
+import { useTranslation } from "@claraos/core";
 import styles from "./Markdown.module.css";
 
 const SCHEMA = {
@@ -61,6 +62,7 @@ function ownImageSource(src: string): boolean {
 }
 
 function SafeImage({ src, alt }: { src?: string; alt?: string }) {
+  const { t } = useTranslation("chat");
   const href = typeof src === "string" ? src : "";
   if (ownImageSource(href)) {
     return <img src={href} alt={alt ?? ""} loading="lazy" referrerPolicy="no-referrer" />;
@@ -73,13 +75,16 @@ function SafeImage({ src, alt }: { src?: string; alt?: string }) {
   }
   return (
     <a href={href || undefined} target="_blank" rel="noopener noreferrer nofollow"
-      title="Externes Bild — aus Sicherheitsgründen nicht automatisch geladen">
-      🖼️ {alt || "Bild"} (externes Bild{host ? ` von ${host}` : ""}, nicht geladen — zum Öffnen tippen)
+      title={t("markdown.externalImageTitle")}>
+      🖼️ {host
+        ? t("markdown.externalImageFrom", { alt: alt || t("messages.image"), host })
+        : t("markdown.externalImage", { alt: alt || t("messages.image") })}
     </a>
   );
 }
 
 function CodeBlock({ children }: { children: ReactNode }) {
+  const { t } = useTranslation("chat");
   const [ok, setOk] = useState(false);
   const text = extractText(children);
   return (
@@ -93,9 +98,9 @@ function CodeBlock({ children }: { children: ReactNode }) {
             window.setTimeout(() => setOk(false), 1500);
           }).catch(() => undefined);
         }}
-        aria-label="Code kopieren"
+        aria-label={t("markdown.copyCode")}
       >
-        {ok ? "✓ Kopiert" : "Kopieren"}
+        {ok ? `✓ ${t("markdown.copied")}` : t("messages.copy")}
       </button>
       <pre>{children}</pre>
     </div>

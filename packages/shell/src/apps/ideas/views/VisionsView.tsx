@@ -7,6 +7,7 @@ import { Icon } from "../../../components/Icon";
 import { ideasApi } from "../api";
 import type { KbObject, KbObjectSlim } from "../types";
 import { STAGE_BY_KEY } from "../stages";
+import { useTranslation } from "@claraos/core";
 
 interface Props {
   objects: KbObjectSlim[];
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function VisionsView({ objects, currentUser, onOpen, onChanged }: Props) {
+  const { t } = useTranslation("wissen");
   const visions = objects.filter((o) => o.type === "vision");
   const [details, setDetails] = useState<Record<string, KbObject>>({});
   const [showCreate, setShowCreate] = useState(false);
@@ -50,14 +52,13 @@ export function VisionsView({ objects, currentUser, onOpen, onChanged }: Props) 
   return (
     <div className={styles.visions}>
       <div className={styles.visionsHead}>
-        <h3><Icon name="vision" size={16} className={styles.inlineIcon} />Visionen</h3>
-        <button className={styles.btnPrimary} onClick={() => setShowCreate(true)}>＋ Vision</button>
+        <h3><Icon name="vision" size={16} className={styles.inlineIcon} />{t("views.visions.title")}</h3>
+        <button className={styles.btnPrimary} onClick={() => setShowCreate(true)}>{t("views.visions.add")}</button>
       </div>
 
       {visions.length === 0 && !showCreate && (
         <div className={styles.empty}>
-          Noch keine Vision. Eine Vision bündelt Ideen zu einem großen Ziel —
-          verknüpfe Ideen im Detail über „Teil der Vision".
+          {t("views.visions.empty")}
         </div>
       )}
 
@@ -78,7 +79,7 @@ export function VisionsView({ objects, currentUser, onOpen, onChanged }: Props) 
               </button>
               {v.body_preview && <p className={styles.cardPreview}>{v.body_preview}</p>}
               {stages.length > 0 && (
-                <div className={styles.visionBar} title={`${stages.length} Ideen`}>
+                <div className={styles.visionBar} title={t("views.visions.ideas", { count: stages.length })}>
                   {["planned", "elaborated", "developing", "spark"].map((s) => {
                     const n = stages.filter((x) => (x ?? "spark") === s).length;
                     return n > 0 ? (
@@ -99,7 +100,7 @@ export function VisionsView({ objects, currentUser, onOpen, onChanged }: Props) 
                   </li>
                 ))}
                 {ideaLinks.length === 0 && (
-                  <li className={styles.metaHint}>Noch keine Ideen zugeordnet.</li>
+                  <li className={styles.metaHint}>{t("views.visions.noIdeas")}</li>
                 )}
               </ul>
             </div>
@@ -111,17 +112,17 @@ export function VisionsView({ objects, currentUser, onOpen, onChanged }: Props) 
         <div className={styles.modalBackdrop} onClick={() => setShowCreate(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHead}>
-              <h3><Icon name="vision" size={16} className={styles.inlineIcon} />Neue Vision</h3>
-              <button className={styles.iconBtn} onClick={() => setShowCreate(false)}><Icon name="close" size={14} title="Schließen" /></button>
+              <h3><Icon name="vision" size={16} className={styles.inlineIcon} />{t("views.visions.new")}</h3>
+              <button className={styles.iconBtn} onClick={() => setShowCreate(false)}><Icon name="close" size={14} title={t("app.close")} /></button>
             </div>
-            <input className={styles.input} placeholder="Wohin soll die Reise gehen?"
+            <input className={styles.input} placeholder={t("views.visions.where")}
                    value={title} onChange={(e) => setTitle(e.target.value)} autoFocus
                    onKeyDown={(e) => { if (e.key === "Enter") void create(); }} />
-            <textarea className={styles.input} rows={3} placeholder="Beschreibung (optional)"
+            <textarea className={styles.input} rows={3} placeholder={t("views.visions.desc")}
                       value={desc} onChange={(e) => setDesc(e.target.value)} />
             <div className={styles.modalFoot}>
               <button className={styles.btnPrimary} disabled={!title.trim()} onClick={() => void create()}>
-                Anlegen
+                {t("views.visions.create")}
               </button>
             </div>
           </div>

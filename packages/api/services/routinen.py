@@ -65,6 +65,7 @@ LESEN: dict[str, frozenset[str]] = {
     "immich": frozenset({"search_photos", "list_albums", "list_people", "photo_statistics"}),
     "mastodon": frozenset({"get_timeline", "get_local_timeline", "get_notifications",
                            "my_account", "account_statuses", "search"}),
+    "files": frozenset({"list_sources", "list_directory", "search_files", "read_file"}),
 }
 
 ANWEISUNG = (

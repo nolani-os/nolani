@@ -15,7 +15,7 @@
  * as equal-ranked buttons here, so delete is not one misclick away from a
  * secondary function.
  */
-import { getBrand } from "@claraos/core";
+import { useTranslation } from "@claraos/core";
 import { useMemo, useState } from "react";
 import styles from "./IdeasApp.module.css";
 import leiste from "../wissen/Wissen.module.css";
@@ -26,12 +26,7 @@ import { STAGES, STAGE_BY_KEY } from "./stages";
 import { PropertyFields } from "./PropertyFields";
 import { formatZeitpunkt } from "./format";
 
-const REL_LABEL: Record<string, string> = {
-  relates_to: "verwandt",
-  part_of_vision: "Teil der Vision",
-  inspired_by: "inspiriert von",
-  duplicates: "Duplikat",
-};
+const RELS = ["relates_to", "part_of_vision", "inspired_by", "duplicates"];
 
 const ART_SYMBOL: Record<string, string> = { vision: "🌅", idea: "💡" };
 
@@ -62,6 +57,7 @@ export function MetaSidebar({
   onSetStage, onSetVisibility, onAddShare, onRemoveShare,
   onLink, onUnlink, onOpenObject, breit,
 }: Props) {
+  const { t } = useTranslation("wissen");
   const [linkRel, setLinkRel] = useState("relates_to");
   const [suche, setSuche] = useState("");
   const [sucheOffen, setSucheOffen] = useState(false);
@@ -83,14 +79,14 @@ export function MetaSidebar({
 
   const isIdea = object.type === "idea";
   const sicht = object.visibility;
-  const sichtText = sicht === "family" ? "Familie"
-    : sicht === "shared" ? `${object.shares?.length ?? 0} Person(en)` : "Privat";
+  const sichtText = sicht === "family" ? t("meta.family")
+    : sicht === "shared" ? t("meta.people", { count: object.shares?.length ?? 0 }) : t("meta.private");
 
   return (
     <aside className={`${leiste.leiste} ${breit ? leiste.leisteBreit : ""}`}>
       {isIdea && (
         <div className={leiste.leisteGruppe}>
-          <h4 className={leiste.leisteTitel}>Reifegrad</h4>
+          <h4 className={leiste.leisteTitel}>{t("meta.maturity")}</h4>
           <div className={styles.stageStepper}>
             {STAGES.map((s) => (
               <button
@@ -110,7 +106,7 @@ export function MetaSidebar({
 
       {propSchema.length > 0 && onSaveProp && (
         <div className={leiste.leisteGruppe}>
-          <h4 className={leiste.leisteTitel}>Eigenschaften</h4>
+          <h4 className={leiste.leisteTitel}>{t("meta.props")}</h4>
           <div className={leiste.leisteFeld}>
             <PropertyFields schema={propSchema} properties={object.properties ?? {}}
                             readOnly={!schreib} onSaveProp={onSaveProp} />
@@ -119,9 +115,9 @@ export function MetaSidebar({
       )}
 
       <div className={leiste.leisteGruppe}>
-        <h4 className={leiste.leisteTitel}>Zugriff</h4>
+        <h4 className={leiste.leisteTitel}>{t("meta.access")}</h4>
         <button className={leiste.leisteZeile} disabled={!isOwner}
-                title={isOwner ? "Sichtbarkeit ändern" : undefined}
+                title={isOwner ? t("meta.changeVisibility") : undefined}
                 onClick={(e) => {
                   const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
                   setSichtMenue(sichtMenue ? null : { x: r.left, y: r.bottom + 4 });
@@ -129,7 +125,7 @@ export function MetaSidebar({
           <span className={leiste.leisteSymbol}>
             <Icon name={sicht === "private" ? "blind" : sicht === "family" ? "people" : "link"} size={14} />
           </span>
-          <span className={leiste.leisteName}>Sichtbar für</span>
+          <span className={leiste.leisteName}>{t("meta.visibleTo")}</span>
           <span className={leiste.leisteWert}>{sichtText}</span>
         </button>
         {sichtMenue && isOwner && (
@@ -137,15 +133,15 @@ export function MetaSidebar({
             x={sichtMenue.x} y={sichtMenue.y}
             onClose={() => setSichtMenue(null)}
             items={[
-              { id: "privat", label: "Nur ich", icon: <Icon name="blind" size={14} />,
+              { id: "privat", label: t("meta.onlyMe"), icon: <Icon name="blind" size={14} />,
                 checked: sicht === "private", onSelect: () => onSetVisibility("private") },
-              { id: "familie", label: "Familie", icon: <Icon name="people" size={14} />,
+              { id: "familie", label: t("meta.family"), icon: <Icon name="people" size={14} />,
                 checked: sicht === "family", onSelect: () => onSetVisibility("family") },
             ]}
           />
         )}
         {sicht === "family" && (
-          <p className={leiste.leisteText}>Die Familie kann lesen und kommentieren.</p>
+          <p className={leiste.leisteText}>{t("meta.familyCan")}</p>
         )}
 
         {(object.shares ?? []).map((u) => (
@@ -153,7 +149,7 @@ export function MetaSidebar({
             <span className={leiste.leisteSymbol}><Icon name="person" size={14} /></span>
             <span className={leiste.leisteName}>{u}</span>
             {isOwner && (
-              <button className={leiste.leisteWeg} title="Freigabe entfernen"
+              <button className={leiste.leisteWeg} title={t("meta.removeShare")}
                       onClick={() => onRemoveShare?.(u)}>×</button>
             )}
           </div>
@@ -161,7 +157,7 @@ export function MetaSidebar({
         {isOwner && onAddShare && (
           teilenOffen ? (
             <div className={leiste.leisteFeld}>
-              <input className={styles.input} autoFocus placeholder="Benutzername… (Enter)"
+              <input className={styles.input} autoFocus placeholder={t("meta.userPlaceholder")}
                      value={shareName}
                      onChange={(e) => setShareName(e.target.value)}
                      onKeyDown={(e) => {
@@ -169,21 +165,21 @@ export function MetaSidebar({
                        if (e.key === "Enter" && n) { onAddShare(n); setShareName(""); setTeilenOffen(false); }
                        if (e.key === "Escape") setTeilenOffen(false);
                      }} />
-              <p className={leiste.leisteText}>Sie können lesen und kommentieren.</p>
+              <p className={leiste.leisteText}>{t("meta.theyCan")}</p>
             </div>
           ) : (
             <button className={leiste.leisteZeile} onClick={() => setTeilenOffen(true)}>
               <span className={leiste.leisteSymbol}><Icon name="plus" size={14} /></span>
-              <span className={leiste.leisteName}>Einzelne Person einladen</span>
+              <span className={leiste.leisteName}>{t("meta.invite")}</span>
             </button>
           )
         )}
       </div>
 
       <div className={leiste.leisteGruppe}>
-        <h4 className={leiste.leisteTitel}>Verknüpfungen</h4>
+        <h4 className={leiste.leisteTitel}>{t("meta.links")}</h4>
         {object.links.length === 0 && !sucheOffen && (
-          <p className={leiste.leisteText}>Noch keine.</p>
+          <p className={leiste.leisteText}>{t("meta.noneYet")}</p>
         )}
         {object.links.map((l) => (
           <div key={l.id} className={leiste.leisteZeile} style={{ cursor: "default" }}>
@@ -191,9 +187,9 @@ export function MetaSidebar({
             <button className={leiste.leisteName}
                     style={{ border: "none", background: "none", color: "inherit", font: "inherit", textAlign: "left", cursor: "pointer", padding: 0 }}
                     onClick={() => onOpenObject(l.other_id)}>{l.other_title}</button>
-            <span className={leiste.leisteWert}>{REL_LABEL[l.rel] ?? "verwandt"}</span>
+            <span className={leiste.leisteWert}>{t(`meta.rel.${RELS.includes(l.rel) ? l.rel : "relates_to"}`)}</span>
             {isOwner && (
-              <button className={leiste.leisteWeg} title="Verknüpfung lösen"
+              <button className={leiste.leisteWeg} title={t("meta.unlink")}
                       onClick={() => onUnlink(l.id)}>×</button>
             )}
           </div>
@@ -201,14 +197,14 @@ export function MetaSidebar({
         {isOwner && (sucheOffen ? (
           <>
             <div className={leiste.leisteChips}>
-              {Object.entries(REL_LABEL).map(([key, label]) => (
+              {RELS.map((key) => (
                 <button key={key}
                         className={`${leiste.leisteChip} ${linkRel === key ? leiste.leisteChipAn : ""}`}
-                        onClick={() => setLinkRel(key)}>{label}</button>
+                        onClick={() => setLinkRel(key)}>{t(`meta.rel.${key}`)}</button>
               ))}
             </div>
             <div className={leiste.leisteFeld}>
-              <input className={styles.input} autoFocus placeholder="Eintrag suchen…"
+              <input className={styles.input} autoFocus placeholder={t("meta.searchEntry")}
                      value={suche}
                      onChange={(e) => setSuche(e.target.value)}
                      onKeyDown={(e) => { if (e.key === "Escape") { setSucheOffen(false); setSuche(""); } }} />
@@ -222,7 +218,7 @@ export function MetaSidebar({
             ))}
             {treffer.length === 0 && (
               <p className={leiste.leisteText}>
-                {candidates.length ? "Kein Treffer." : "Alles schon verknüpft."}
+                {candidates.length ? t("meta.noHit") : t("meta.allLinked")}
               </p>
             )}
           </>
@@ -230,7 +226,7 @@ export function MetaSidebar({
           <button className={leiste.leisteZeile} disabled={!candidates.length}
                   onClick={() => setSucheOffen(true)}>
             <span className={leiste.leisteSymbol}><Icon name="link" size={14} /></span>
-            <span className={leiste.leisteName}>Verknüpfen mit…</span>
+            <span className={leiste.leisteName}>{t("meta.linkWith")}</span>
           </button>
         ))}
       </div>
@@ -244,19 +240,19 @@ export function MetaSidebar({
               // Open the planner and navigate to the project once its
               // navigator is mounted (poll, same pattern as shell navigate_to)
               import("@claraos/core").then(({ useWindowsStore }) =>
-                useWindowsStore.getState().openWindow("planner", { title: "Planner" }));
+                useWindowsStore.getState().openWindow("planner"));
               import("../iframeNavigator").then(({ navigateIframe }) => {
                 let tries = 0;
-                const t = window.setInterval(() => {
+                const timer = window.setInterval(() => {
                   if (navigateIframe("planner", `/project/${pid}/gantt`) || ++tries > 20) {
-                    window.clearInterval(t);
+                    window.clearInterval(timer);
                   }
                 }, 250);
               });
             }}
           >
             <span className={leiste.leisteSymbol}><Icon name="plan" size={14} /></span>
-            <span className={leiste.leisteName}>Im Planner öffnen</span>
+            <span className={leiste.leisteName}>{t("meta.openPlanner")}</span>
           </button>
         </div>
       )}
@@ -264,9 +260,9 @@ export function MetaSidebar({
       <div className={leiste.leisteGruppe}>
         <p className={leiste.leisteText}>
           {STAGE_BY_KEY[object.stage ?? ""] ? `${STAGE_BY_KEY[object.stage!].label} · ` : ""}
-          von {object.owner}{object.created_by === "clara" ? ` (via ${getBrand().assistant} 🤖)` : ""}<br />
-          angelegt {formatZeitpunkt(object.created_at)}<br />
-          geändert {formatZeitpunkt(object.updated_at)}
+          {t("meta.by", { owner: object.owner })}{object.created_by === "clara" ? t("meta.viaAssistant") : ""}<br />
+          {t("meta.created", { when: formatZeitpunkt(object.created_at) })}<br />
+          {t("meta.changed", { when: formatZeitpunkt(object.updated_at) })}
         </p>
       </div>
     </aside>

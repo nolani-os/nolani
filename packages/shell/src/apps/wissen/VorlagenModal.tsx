@@ -11,7 +11,8 @@ import eigen from "./Wissen.module.css";
 import { Icon } from "../../components/Icon";
 import { CollectionModal } from "../ideas/CollectionModal";
 import type { KbType, Visibility } from "../ideas/types";
-import { VORLAGEN, vorlageAnwenden, type Vorlage } from "./vorlagen";
+import { vorlagen, vorlageAnwenden, type Vorlage } from "./vorlagen";
+import { useTranslation } from "@claraos/core";
 
 interface Props {
   types: KbType[];
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function VorlagenModal({ types, onDone, onOpenCollection, onClose }: Props) {
+  const { t } = useTranslation("wissen");
   const [visibility, setVisibility] = useState<Visibility>("private");
   const [leer, setLeer] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -43,7 +45,7 @@ export function VorlagenModal({ types, onDone, onOpenCollection, onClose }: Prop
       onOpenCollection(id);
       if (warnungen.length) {
         // Half succeeded is not succeeded — that must be said, not swallowed.
-        window.alert(`„${v.name}" ist angelegt, aber nicht ganz vollständig:\n\n`
+        window.alert(t("templatesModal.incomplete", { name: v.name })
           + warnungen.join("\n"));
       }
     } catch (e) {
@@ -58,27 +60,26 @@ export function VorlagenModal({ types, onDone, onOpenCollection, onClose }: Prop
         <div className={styles.modalHead}>
           <h3>
             <Icon name="collections" size={16} className={styles.inlineIcon} />
-            Womit fängst du an?
+            {t("templatesModal.title")}
           </h3>
           <button className={styles.iconBtn} onClick={onClose}>
-            <Icon name="close" size={14} title="Schließen" />
+            <Icon name="close" size={14} title={t("app.close")} />
           </button>
         </div>
 
         <p className={styles.metaHint}>
-          Jede Vorlage bringt fertige Spalten, passende Ansichten und zwei Beispiele mit.
-          Ändern kannst du danach alles.
+          {t("templatesModal.intro")}
         </p>
 
         {error && (
           <div className={styles.error}>
             <span>{error}</span>
-            <button className={styles.btnSecondary} onClick={() => setError(null)}>OK</button>
+            <button className={styles.btnSecondary} onClick={() => setError(null)}>{t("templatesModal.ok")}</button>
           </div>
         )}
 
         <div className={eigen.vorlagenGitter}>
-          {VORLAGEN.map((v) => (
+          {vorlagen().map((v) => (
             <button
               key={v.id}
               className={eigen.vorlagenKarte}
@@ -91,7 +92,7 @@ export function VorlagenModal({ types, onDone, onOpenCollection, onClose }: Prop
               <span className={eigen.vorlagenFelder}>
                 {v.felder.map((f) => f.name).join(" · ")}
               </span>
-              {busy === v.id && <span className={eigen.vorlagenBusy}>wird angelegt …</span>}
+              {busy === v.id && <span className={eigen.vorlagenBusy}>{t("templatesModal.creating")}</span>}
             </button>
           ))}
 
@@ -101,22 +102,22 @@ export function VorlagenModal({ types, onDone, onOpenCollection, onClose }: Prop
             onClick={() => setLeer(true)}
           >
             <span className={eigen.vorlagenIcon}>＋</span>
-            <span className={eigen.vorlagenName}>Leer anfangen</span>
+            <span className={eigen.vorlagenName}>{t("templatesModal.empty")}</span>
             <span className={eigen.vorlagenWofuer}>
-              Eigene Spalten festlegen — für alles, was oben nicht passt.
+              {t("templatesModal.emptyHint")}
             </span>
           </button>
         </div>
 
         <div className={styles.modalFoot}>
           <span className={styles.metaHint} style={{ marginRight: "auto" }}>
-            Wer darf hineinsehen?
+            {t("templatesModal.who")}
           </span>
           <div className={styles.segmented}>
             <button className={visibility === "private" ? styles.segActive : ""}
-                    onClick={() => setVisibility("private")}>🔒 Nur ich</button>
+                    onClick={() => setVisibility("private")}>{t("templatesModal.private")}</button>
             <button className={visibility === "family" ? styles.segActive : ""}
-                    onClick={() => setVisibility("family")}>👪 Familie</button>
+                    onClick={() => setVisibility("family")}>{t("templatesModal.family")}</button>
           </div>
         </div>
       </div>

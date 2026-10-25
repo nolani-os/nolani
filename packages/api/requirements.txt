@@ -1,13 +1,13 @@
 fastapi==0.142.2
 uvicorn[standard]==0.54.0
-asyncpg==0.31.0
+asyncpg==0.32.0
 aiofiles==24.1.0
 pydantic==2.13.5
-httpx==0.27.2
+httpx==0.28.1
 cryptography==50.0.2
 asyncssh>=2.24.0
 python-multipart>=0.0.9
-psutil>=5.9.0
+psutil>=7.2.2
 websockets>=17.1
 # uvicorn runs with --ws wsproto (Dockerfile.api): the websockets 16.x parser
 # rejects non-ASCII handshake headers, and Authentik sends X-Authentik-Name with
@@ -21,13 +21,16 @@ wsproto>=1.2
 # Warning: <3 — DBOS 3.0 removed `database_url`; an unpinned rebuild pulled 3.0.0
 # and the orchestrator no longer started (503). 2.26.0 works.
 dbos>=2.26,<3
-psycopg[binary]>=3.2.0
+psycopg[binary]>=3.3.6
 
 # Tool-call proxy validates module payloads against clara-tools.yaml schema
 jsonschema>=4.23
 mcp==2.3.0
 pyzipper
 
+
+# Allowlist HTML sanitiser (Rust ammonia) for mail HTML; bleach is deprecated.
+nh3==0.3.7
 
 # Markdown->HTML for Collabora convert-to (docx generation)
 markdown>=3.6
@@ -41,7 +44,7 @@ Pillow==12.3.0
 # iPhone photos (HEIC/HEIF) in the image viewer — browsers do not render HEIC
 # and Nextcloud generates no preview for it. /files/v2/as-jpeg converts;
 # pillow-heif registers the reader with Pillow.
-pillow-heif==1.8.0
+pillow-heif==1.8.1
 
 # LOCAL image editing ("brighten only here", "make only the sky blue").
 # That needs masks, and masks are arithmetic over whole pixel arrays —

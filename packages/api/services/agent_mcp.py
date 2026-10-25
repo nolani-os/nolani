@@ -69,7 +69,7 @@ try:
     from heim_werte import HEIM_NEVER_MODULES as _HEIM_NEVER_MODULES  # optional, deployment-specific
 except ImportError:
     _HEIM_NEVER_MODULES = frozenset()
-NEVER_MODULES = frozenset({"vault", "browser", "lernen", "dienste"}) | _HEIM_NEVER_MODULES
+NEVER_MODULES = frozenset({"vault", "browser", "lernen", "dienste", "action"}) | _HEIM_NEVER_MODULES
 
 # Modules an outside agent may only read (their writes act through the
 # cell's own brain, e.g. scheduling routines).

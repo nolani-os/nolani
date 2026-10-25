@@ -84,11 +84,37 @@ def bekannt(service: str) -> bool:
     return (service or "").strip().lower() in DIENSTE
 
 
-def katalog() -> list[dict[str, str]]:
+# Entries that share a hint use one catalog key (contacts.services.<key>.hint).
+_GLEICHER_HINWEIS = {"whatsapp": "bridge", "signal": "bridge", "telegram": "bridge",
+                     "facebook": "profileOnly", "instagram": "profileOnly", "github": "profileOnly",
+                     "xing": "profileOnly", "threema": "idOnly", "skype": "idOnly"}
+
+
+def texte(k: str, lang: str = "de") -> tuple[str, str, str, str]:
+    """(label, class, placeholder, hint) of a service in `lang`.
+
+    Brand names stay; generic labels, placeholders and hints are translated
+    (the German table text is the fallback). Unknown services: the id itself."""
+    from sprache import t
+
+    name, klasse, platzhalter, hinweis = DIENSTE.get(k, (k, VERWEIS, "", ""))
+
+    def txt(key: str, feld: str, roh: str) -> str:
+        return t(lang, f"contacts.services.{key}.{feld}", default=roh, product=PRODUCT_NAME) if roh else roh
+
+    if k not in DIENSTE:
+        return name, klasse, platzhalter, hinweis
+    return (txt(k, "label", name), klasse, txt(k, "placeholder", platzhalter),
+            txt(_GLEICHER_HINWEIS.get(k, k), "hint", hinweis))
+
+
+def katalog(lang: str = "de") -> list[dict[str, str]]:
     """For the selection list in the UI — sorted: what really works comes first."""
     rang = {FOEDERIERT: 0, BRIDGE: 1, VERWEIS: 2}
-    out = [{"id": k, "label": v[0], "klasse": v[1], "platzhalter": v[2], "hinweis": v[3]}
-           for k, v in DIENSTE.items()]
+    out = []
+    for k in DIENSTE:
+        label, klasse, platzhalter, hinweis = texte(k, lang)
+        out.append({"id": k, "label": label, "klasse": klasse, "platzhalter": platzhalter, "hinweis": hinweis})
     out.sort(key=lambda d: (rang[d["klasse"]], d["label"].lower()))
     return out
 

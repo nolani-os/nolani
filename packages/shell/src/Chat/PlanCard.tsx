@@ -14,6 +14,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import type { ClaraPendingPlan } from "./api";
+import { useTranslation } from "@claraos/core";
 import styles from "./PlanCard.module.css";
 
 interface PlanCardProps {
@@ -45,6 +46,7 @@ async function postPlanResponse(
 }
 
 export function PlanCard({ plan }: PlanCardProps) {
+  const { t } = useTranslation("chat");
   const [editing, setEditing] = useState(false);
   const [editedText, setEditedText] = useState(plan.plan);
   const [responded, setResponded] = useState(false);
@@ -57,10 +59,10 @@ export function PlanCard({ plan }: PlanCardProps) {
   // Countdown ticker
   useEffect(() => {
     if (responded) return;
-    const t = setInterval(() => {
+    const timer = setInterval(() => {
       setElapsedMs(Date.now() - startedAt.current);
     }, 200);
-    return () => clearInterval(t);
+    return () => clearInterval(timer);
   }, [responded]);
 
   const remainingMs = Math.max(0, totalMs - elapsedMs);
@@ -78,8 +80,8 @@ export function PlanCard({ plan }: PlanCardProps) {
     } else {
       setError(
         action === "approve"
-          ? "Aktion kam nicht durch — bitte nochmal versuchen."
-          : "Aktion kam nicht durch — der Plan startet ggf. automatisch. Bitte nochmal versuchen.",
+          ? t("plan.failedApprove")
+          : t("plan.failed"),
       );
     }
   };
@@ -87,7 +89,7 @@ export function PlanCard({ plan }: PlanCardProps) {
   return (
     <div className={styles.card} data-claraos-plan-card>
       <div className={styles.header}>
-        <span className={styles.title}>📋 Plan — startet in {Math.ceil(remainingMs / 1000)}s</span>
+        <span className={styles.title}>📋 {t("plan.startsIn", { seconds: Math.ceil(remainingMs / 1000) })}</span>
         <div className={styles.countdown}>
           <div className={styles.countdownBar}>
             <div className={styles.countdownFill} style={{ width: `${fillPct}%` }} />
@@ -112,21 +114,21 @@ export function PlanCard({ plan }: PlanCardProps) {
               onClick={() => void respond("approve")}
               disabled={responded || submitting}
             >
-              ⏵ Sofort starten
+              ⏵ {t("plan.startNow")}
             </button>
             <button
               className={styles.btn}
               onClick={() => setEditing(true)}
               disabled={responded || submitting}
             >
-              ✏️ Bearbeiten
+              ✏️ {t("plan.edit")}
             </button>
             <button
               className={`${styles.btn} ${styles.btnDanger}`}
               onClick={() => void respond("reject")}
               disabled={responded || submitting}
             >
-              ✕ Stop
+              ✕ {t("plan.stop")}
             </button>
           </>
         ) : (
@@ -136,14 +138,14 @@ export function PlanCard({ plan }: PlanCardProps) {
               onClick={() => void respond("edit", editedText)}
               disabled={responded || submitting}
             >
-              💾 Speichern + starten
+              💾 {t("plan.saveAndStart")}
             </button>
             <button
               className={styles.btn}
               onClick={() => { setEditing(false); setEditedText(plan.plan); }}
               disabled={submitting}
             >
-              Abbrechen
+              {t("camera.cancel")}
             </button>
           </>
         )}

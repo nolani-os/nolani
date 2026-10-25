@@ -20,7 +20,7 @@ import { Markdown } from "./Markdown";
 import { BlockRenderer } from "./blocks/BlockRenderer";
 import { DenkZeile } from "./DenkZeile";
 import styles from "./ClaraChatPanel.module.css";
-import { regionLocale, getBrand } from "@claraos/core";
+import { regionLocale, getBrand, useTranslation, i18n } from "@claraos/core";
 
 /**
  * Strip leading/trailing `<think>...</think>` blocks defensively. Backend
@@ -50,8 +50,8 @@ function tagLabel(ms: number): string {
   gestern.setDate(heute.getDate() - 1);
   const gleich = (a: Date, b: Date) =>
     a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-  if (gleich(d, heute)) return "Heute";
-  if (gleich(d, gestern)) return "Gestern";
+  if (gleich(d, heute)) return i18n.t("chat:messages.today");
+  if (gleich(d, gestern)) return i18n.t("chat:messages.yesterday");
   return d.toLocaleDateString(regionLocale(), { weekday: "long", day: "numeric", month: "long" });
 }
 
@@ -97,6 +97,7 @@ interface Props {
 }
 
 export function MessageList({ messages, streaming, emptyHint, onRetry, kompakt, onFollowup }: Props) {
+  const { t } = useTranslation("chat");
   const [quellenOffen, setQuellenOffen] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [liest, setLiest] = useState<number | null>(null);
@@ -137,17 +138,17 @@ export function MessageList({ messages, streaming, emptyHint, onRetry, kompakt, 
   };
 
   const teilen = async (text: string) => {
-    const t = nurText(text);
+    const plain = nurText(text);
     try {
       if (navigator.share) {
-        await navigator.share({ text: t });
+        await navigator.share({ text: plain });
         return;
       }
     } catch {
       /* aborted */
       return;
     }
-    navigator.clipboard?.writeText(t).catch(() => undefined);
+    navigator.clipboard?.writeText(plain).catch(() => undefined);
   };
 
   if (messages.length === 0) {
@@ -156,8 +157,8 @@ export function MessageList({ messages, streaming, emptyHint, onRetry, kompakt, 
         {emptyHint ?? (
           <div className={styles.welcome}>
             <div className={styles.welcomeIcon}><ClaraMark className={styles.welcomeMark} /></div>
-            <h3>Hallo! Ich bin {getBrand().assistant}.</h3>
-            <p>Wie kann ich dir helfen?</p>
+            <h3>{t("messages.emptyGreeting")}</h3>
+            <p>{t("welcome.howCanIHelp")}</p>
           </div>
         )}
       </div>
@@ -183,12 +184,12 @@ export function MessageList({ messages, streaming, emptyHint, onRetry, kompakt, 
         const msgCtxItems: ContextMenuItem[] = [
           {
             id: "copy",
-            label: "Nachricht kopieren",
+            label: t("messages.copyMessage"),
             disabled: !cleaned,
             onSelect: () => { navigator.clipboard?.writeText(cleaned).catch(() => undefined); },
           },
           ...(msg.role === "assistant" && isLast && onRetry && lastUserBefore?.content
-            ? [{ id: "retry", label: "Nochmal fragen", onSelect: () => onRetry(lastUserBefore.content) }]
+            ? [{ id: "retry", label: t("messages.askAgain"), onSelect: () => onRetry(lastUserBefore.content) }]
             : []),
         ];
 
@@ -218,7 +219,7 @@ export function MessageList({ messages, streaming, emptyHint, onRetry, kompakt, 
             className={`${styles.msg} ${styles[`msg_${msg.role}`] ?? ""}`}
           >
             <div className={styles.msgRole}>
-              {msg.role === "user" ? "Du" : msg.role === "assistant" ? getBrand().assistant : "System"}
+              {msg.role === "user" ? t("composer.you") : msg.role === "assistant" ? getBrand().assistant : t("messages.roleSystem")}
             </div>
             <div className={`${styles.msgContent} ${msg.role === "assistant" ? styles.msgMd : ""}`}>
               {msg.role === "assistant" && cleaned ? (
@@ -286,7 +287,7 @@ export function MessageList({ messages, streaming, emptyHint, onRetry, kompakt, 
                   aria-expanded={quellenOffen === i}
                   onClick={() => setQuellenOffen((q) => (q === i ? null : i))}
                 >
-                  {msg.sources.length} {msg.sources.length === 1 ? "Quelle" : "Quellen"} {quellenOffen === i ? "▾" : "▸"}
+                  {t("messages.sources", { count: msg.sources.length })} {quellenOffen === i ? "▾" : "▸"}
                 </button>
                 {quellenOffen === i && (
                   <ol className={styles.quellenListe}>
@@ -304,9 +305,9 @@ export function MessageList({ messages, streaming, emptyHint, onRetry, kompakt, 
               <div className={styles.msgFiles}>
                 {msg.files.map((f, j) => (
                   f.type === "image" && f.url ? (
-                    <img key={j} className={styles.msgImg} src={f.url} alt={f.name ?? "Bild"} />
+                    <img key={j} className={styles.msgImg} src={f.url} alt={f.name ?? t("messages.image")} />
                   ) : (
-                    <span key={j} className={styles.msgFile}>📎 {f.name ?? "Datei"}</span>
+                    <span key={j} className={styles.msgFile}>📎 {f.name ?? t("composer.plus.file")}</span>
                   )
                 ))}
               </div>
@@ -316,44 +317,44 @@ export function MessageList({ messages, streaming, emptyHint, onRetry, kompakt, 
                 <button
                   type="button"
                   className={styles.msgActionBtn}
-                  title="Antwort kopieren"
+                  title={t("messages.copyAnswer")}
                   onClick={() => {
                     navigator.clipboard?.writeText(cleaned).catch(() => undefined);
                   }}
                 >
-                  ⧉ Kopieren
+                  ⧉ {t("messages.copy")}
                 </button>
                 <button
                   type="button"
                   className={`${styles.msgActionBtn} ${liest === i ? styles.msgActionBtnOn : ""}`}
-                  title={liest === i ? "Vorlesen stoppen" : "Antwort vorlesen"}
+                  title={liest === i ? t("speaking.stopLabel") : t("messages.readAloudTitle")}
                   aria-pressed={liest === i}
                   onClick={() => { void vorlesen(i, cleaned); }}
                 >
-                  {liest === i ? "■ Stopp" : "🔊 Vorlesen"}
+                  {liest === i ? `■ ${t("speaking.stop")}` : `🔊 ${t("messages.readAloud")}`}
                 </button>
                 {isLast && onRetry && lastUserBefore?.content && (
                   <button
                     type="button"
                     className={styles.msgActionBtn}
-                    title="Frage erneut senden"
+                    title={t("messages.retryTitle")}
                     onClick={() => onRetry(lastUserBefore.content)}
                   >
-                    ↻ Nochmal
+                    ↻ {t("messages.retry")}
                   </button>
                 )}
                 <button
                   type="button"
                   className={styles.msgActionBtn}
-                  title="Antwort teilen"
+                  title={t("messages.shareTitle")}
                   onClick={() => { void teilen(cleaned); }}
                 >
-                  ↗ Teilen
+                  ↗ {t("messages.share")}
                 </button>
               </div>
             )}
             {msg.role === "assistant" && isLast && fertig && onFollowup && msg.suggestions && msg.suggestions.length > 0 && (
-              <div className={styles.folgeChips} aria-label="Folgefragen">
+              <div className={styles.folgeChips} aria-label={t("messages.followups")}>
                 {msg.suggestions.slice(0, 3).map((f, j) => (
                   <button key={j} type="button" className={styles.folgeChip} onClick={() => onFollowup(f)}>
                     {f}

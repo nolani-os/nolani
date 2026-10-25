@@ -13,7 +13,7 @@
  * App_LoadingStatus/Document_loaded → Host_PostmessageReady (bridge).
  */
 import { useEffect, useRef, useState } from "react";
-import { useWindowsStore, buildObjectUri } from "@claraos/core";
+import { useWindowsStore, buildObjectUri, i18n, useTranslation } from "@claraos/core";
 import {
   COLLABORA_ORIGIN,
   installOfficeViewerActionHandler,
@@ -35,6 +35,7 @@ interface WopiToken {
 }
 
 export default function OfficeViewerApp({ windowId }: { windowId: string }) {
+  const { t } = useTranslation("viewers");
   const winPath = useWindowsStore((s) => s.windows[windowId]?.path);
   const winSource = useWindowsStore((s) => s.windows[windowId]?.source);
   const isFocused = useWindowsStore((s) => s.windows[windowId]?.focused);
@@ -58,11 +59,11 @@ export default function OfficeViewerApp({ windowId }: { windowId: string }) {
   // 1) Mint the WOPI session token
   useEffect(() => {
     if (!winPath) {
-      setError("Keine Datei übergeben — Office-Dokumente über die Dateien-App öffnen.");
+      setError(i18n.t("viewers:office.noFile"));
       return;
     }
     if (winSource && winSource !== "nextcloud") {
-      setError("Office-Dokumente können nur aus Nextcloud geöffnet werden.");
+      setError(i18n.t("viewers:office.nextcloudOnly"));
       return;
     }
     let cancelled = false;
@@ -84,7 +85,7 @@ export default function OfficeViewerApp({ windowId }: { windowId: string }) {
           setError("");
         }
       } catch (err) {
-        if (!cancelled) setError(`Dokument konnte nicht geöffnet werden: ${err}`);
+        if (!cancelled) setError(i18n.t("viewers:office.cannotOpen", { error: String(err) }));
       }
     })();
     return () => {
@@ -167,7 +168,7 @@ export default function OfficeViewerApp({ windowId }: { windowId: string }) {
       {!token && (
         <div className={styles.state}>
           <span className={styles.spinner} aria-hidden="true" />
-          <p>Collabora wird geladen …</p>
+          <p>{t("office.loading")}</p>
         </div>
       )}
       <iframe
@@ -175,7 +176,7 @@ export default function OfficeViewerApp({ windowId }: { windowId: string }) {
         name={`office-frame-${windowId}`}
         className={styles.frame}
         style={token ? undefined : { display: "none" }}
-        title="Office-Dokument (Collabora)"
+        title={t("office.frameTitle")}
         allow="clipboard-read; clipboard-write; fullscreen"
       />
     </>

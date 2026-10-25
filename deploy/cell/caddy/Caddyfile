@@ -41,6 +41,22 @@
 home.{$ZELLE_DOMAIN} {
 	encode zstd gzip
 
+	# Larger bodies are refused at the edge; the API would otherwise spool them
+	# unbounded. Largest legitimate body: a document Collabora saves back via WOPI
+	# (512 MB, routers/wopi.py).
+	request_body {
+		max_size 600MB
+	}
+
+	# This origin holds the session. `?` sets a header only when the upstream did not:
+	# file downloads bring their own sandbox policy (services/download_policy.py).
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		?X-Content-Type-Options "nosniff"
+		?Referrer-Policy "strict-origin-when-cross-origin"
+		?Content-Security-Policy "frame-ancestors 'self'; object-src 'none'; base-uri 'self'"
+	}
+
 	# Authentik outpost (login callback) MUST come before forward_auth
 	route /outpost.goauthentik.io/* {
 		reverse_proxy authentik:9000
@@ -116,6 +132,10 @@ home.{$ZELLE_DOMAIN} {
 		}
 	}
 	handle {
+		# Full policy for the shell document, report-only until a cell runs it without
+		# violations (browser devtools, "Issues"). Then send it as Content-Security-Policy
+		# instead of the minimal one above; it already contains those directives.
+		header Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; font-src 'self' data:; connect-src 'self' https://*.{$ZELLE_DOMAIN} wss://*.{$ZELLE_DOMAIN}; frame-src 'self' https://*.{$ZELLE_DOMAIN}; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
 		reverse_proxy claraos-frontend:80
 	}
 }

@@ -640,60 +640,62 @@ async def cleanup_folders(request: Request) -> JSONResponse:
 # actions" are tool hints for Clara, not sentences for humans — hence a
 # curated list per app here. `sofort=True` means tapping sends immediately;
 # otherwise the text lands in the input as a draft (the sentence is incomplete).
+# `id` is unique across all lists: the shell translates label and prompt by it
+# (`chat:suggest.<id>`) and falls back to the German text here.
 _VORSCHLAEGE: dict[str, list[dict]] = {
     "planner": [
-        {"label": "Was ist heute überfällig?", "prompt": "Was ist heute überfällig? Fasse kurz zusammen.", "sofort": True},
-        {"label": "Aufgabe anlegen", "prompt": "Lege eine Aufgabe an: ", "sofort": False},
-        {"label": "Woche zusammenfassen", "prompt": "Fasse meine Woche zusammen: Termine und offene Aufgaben.", "sofort": True},
-        {"label": "Freien Termin finden", "prompt": "Finde mir diese Woche einen freien Termin für ", "sofort": False},
+        {"id": "overdue", "label": "Was ist heute überfällig?", "prompt": "Was ist heute überfällig? Fasse kurz zusammen.", "sofort": True},
+        {"id": "newTask", "label": "Aufgabe anlegen", "prompt": "Lege eine Aufgabe an: ", "sofort": False},
+        {"id": "weekSummary", "label": "Woche zusammenfassen", "prompt": "Fasse meine Woche zusammen: Termine und offene Aufgaben.", "sofort": True},
+        {"id": "freeSlot", "label": "Freien Termin finden", "prompt": "Finde mir diese Woche einen freien Termin für ", "sofort": False},
     ],
     "files": [
-        {"label": "Was liegt hier?", "prompt": "Was liegt in diesem Ordner? Gib mir einen kurzen Überblick.", "sofort": True},
-        {"label": "Datei finden", "prompt": "Finde die Datei ", "sofort": False},
-        {"label": "Zusammenfassen", "prompt": "Fasse die ausgewählte Datei zusammen.", "sofort": True},
+        {"id": "whatsHere", "label": "Was liegt hier?", "prompt": "Was liegt in diesem Ordner? Gib mir einen kurzen Überblick.", "sofort": True},
+        {"id": "findFile", "label": "Datei finden", "prompt": "Finde die Datei ", "sofort": False},
+        {"id": "summarize", "label": "Zusammenfassen", "prompt": "Fasse die ausgewählte Datei zusammen.", "sofort": True},
     ],
     "knowledge": [
-        {"label": "Was weiß ich dazu?", "prompt": "Was steht in meiner Wissens-App zu ", "sofort": False},
-        {"label": "Notiz anlegen", "prompt": "Lege eine Notiz an: ", "sofort": False},
-        {"label": "Sammlung zusammenfassen", "prompt": "Fasse die aktuelle Sammlung zusammen.", "sofort": True},
+        {"id": "whatDoIKnow", "label": "Was weiß ich dazu?", "prompt": "Was steht in meiner Wissens-App zu ", "sofort": False},
+        {"id": "newNote", "label": "Notiz anlegen", "prompt": "Lege eine Notiz an: ", "sofort": False},
+        {"id": "summarizeCollection", "label": "Sammlung zusammenfassen", "prompt": "Fasse die aktuelle Sammlung zusammen.", "sofort": True},
     ],
     "kontakte": [
-        {"label": "Kontakt suchen", "prompt": "Suche den Kontakt ", "sofort": False},
-        {"label": "Geburtstage", "prompt": "Wer hat in den nächsten 30 Tagen Geburtstag?", "sofort": True},
-        {"label": "Kontakt anlegen", "prompt": "Lege einen Kontakt an: ", "sofort": False},
+        {"id": "findContact", "label": "Kontakt suchen", "prompt": "Suche den Kontakt ", "sofort": False},
+        {"id": "birthdays", "label": "Geburtstage", "prompt": "Wer hat in den nächsten 30 Tagen Geburtstag?", "sofort": True},
+        {"id": "newContact", "label": "Kontakt anlegen", "prompt": "Lege einen Kontakt an: ", "sofort": False},
     ],
     "geraete": [
-        {"label": "Was ist an?", "prompt": "Welche Geräte sind gerade eingeschaltet?", "sofort": True},
-        {"label": "Licht", "prompt": "Schalte das Licht ", "sofort": False},
-        {"label": "Verbrauch heute", "prompt": "Wie hoch war der Stromverbrauch heute?", "sofort": True},
+        {"id": "whatsOn", "label": "Was ist an?", "prompt": "Welche Geräte sind gerade eingeschaltet?", "sofort": True},
+        {"id": "light", "label": "Licht", "prompt": "Schalte das Licht ", "sofort": False},
+        {"id": "usageToday", "label": "Verbrauch heute", "prompt": "Wie hoch war der Stromverbrauch heute?", "sofort": True},
     ],
     "kamera": [
-        {"label": "Was ist das?", "prompt": "Was ist auf dem Bild zu sehen?", "sofort": True},
-        {"label": "Beleg erfassen", "prompt": "Erfasse den Beleg auf dem Foto.", "sofort": True},
+        {"id": "whatIsThis", "label": "Was ist das?", "prompt": "Was ist auf dem Bild zu sehen?", "sofort": True},
+        {"id": "captureReceipt", "label": "Beleg erfassen", "prompt": "Erfasse den Beleg auf dem Foto.", "sofort": True},
     ],
     "image-viewer": [
-        {"label": "Bild beschreiben", "prompt": "Beschreibe das offene Bild.", "sofort": True},
-        {"label": "Heller machen", "prompt": "Mach das Bild etwas heller.", "sofort": True},
-        {"label": "Hintergrund entfernen", "prompt": "Entferne den Hintergrund.", "sofort": True},
+        {"id": "describeImage", "label": "Bild beschreiben", "prompt": "Beschreibe das offene Bild.", "sofort": True},
+        {"id": "brighten", "label": "Heller machen", "prompt": "Mach das Bild etwas heller.", "sofort": True},
+        {"id": "removeBackground", "label": "Hintergrund entfernen", "prompt": "Entferne den Hintergrund.", "sofort": True},
     ],
     "pdf-viewer": [
-        {"label": "Zusammenfassen", "prompt": "Fasse dieses Dokument zusammen.", "sofort": True},
-        {"label": "Frage zum Dokument", "prompt": "Was sagt das Dokument zu ", "sofort": False},
+        {"id": "summarizePdf", "label": "Zusammenfassen", "prompt": "Fasse dieses Dokument zusammen.", "sofort": True},
+        {"id": "askDocument", "label": "Frage zum Dokument", "prompt": "Was sagt das Dokument zu ", "sofort": False},
     ],
     "teams-workspace": [
-        {"label": "Wer ist da?", "prompt": "Wer aus dem Team ist gerade erreichbar?", "sofort": True},
-        {"label": "Nachricht entwerfen", "prompt": "Entwirf eine Nachricht an ", "sofort": False},
+        {"id": "whoIsAround", "label": "Wer ist da?", "prompt": "Wer aus dem Team ist gerade erreichbar?", "sofort": True},
+        {"id": "draftMessage", "label": "Nachricht entwerfen", "prompt": "Entwirf eine Nachricht an ", "sofort": False},
     ],
     "shopping": [
-        {"label": "Einkaufsliste", "prompt": "Was steht auf der Einkaufsliste?", "sofort": True},
-        {"label": "Hinzufügen", "prompt": "Setze auf die Einkaufsliste: ", "sofort": False},
+        {"id": "shoppingList", "label": "Einkaufsliste", "prompt": "Was steht auf der Einkaufsliste?", "sofort": True},
+        {"id": "addToList", "label": "Hinzufügen", "prompt": "Setze auf die Einkaufsliste: ", "sofort": False},
     ],
 }
 _VORSCHLAEGE_ALLGEMEIN: list[dict] = [
-    {"label": "Was steht heute an?", "prompt": "Was steht heute an? Termine und Aufgaben.", "sofort": True},
-    {"label": "Fotos finden", "prompt": "Suche Fotos von ", "sofort": False},
-    {"label": "Dokument zusammenfassen", "prompt": "Fasse mir dieses Dokument zusammen: ", "sofort": False},
-    {"label": "Etwas nachschlagen", "prompt": "Recherchiere für mich: ", "sofort": False},
+    {"id": "today", "label": "Was steht heute an?", "prompt": "Was steht heute an? Termine und Aufgaben.", "sofort": True},
+    {"id": "findPhotos", "label": "Fotos finden", "prompt": "Suche Fotos von ", "sofort": False},
+    {"id": "summarizeDocument", "label": "Dokument zusammenfassen", "prompt": "Fasse mir dieses Dokument zusammen: ", "sofort": False},
+    {"id": "research", "label": "Etwas nachschlagen", "prompt": "Recherchiere für mich: ", "sofort": False},
 ]
 
 
@@ -1040,6 +1042,19 @@ async def get_agent_response(request_id: str, request: Request) -> JSONResponse:
 # ---------------------------------------------------------------------------
 # Streaming completions (proxy to WebUI's chat/completions)
 # ---------------------------------------------------------------------------
+
+# Shell UI languages (core/src/i18n/languages.ts) as named for the model.
+_UI_LANGUAGE_NAMES = {"de": "German", "en": "English"}
+
+
+def _language_line(ui_language: object) -> str:
+    """Context line for the reply language; names the shell's UI language if known."""
+    ui_lang = _UI_LANGUAGE_NAMES.get(str(ui_language or "")[:2].lower())
+    return ("language: reply in the language of the user's latest message"
+            + (f" (the user's interface is in {ui_lang})" if ui_lang else "")
+            + ", whatever language this context, the instructions or the tool results "
+            "are written in.")
+
 
 @router.post("/completions")
 async def chat_completions(request: Request):
@@ -1409,11 +1424,28 @@ async def chat_completions(request: Request):
         # sheet disappeared and the user was left on the home screen.
         if surface == "quick":
             parts.append(
-                "Handy-Chat: Ergebnisse (Bilder, Dateien, Aufgaben) NICHT automatisch mit "
-                "claraos_action_open_in_viewer / open_window / set_mobile_view öffnen — "
-                "die Karte im Chat hat einen Öffnen-Knopf. Öffne nur, wenn der Nutzer "
-                "ausdrücklich 'öffne' oder 'zeig mir' sagt."
+                "quick chat: do not open results (images, files, tasks) on your own — the "
+                "card in the chat has an open button."
             )
+        # On every surface: asked to open something, Clara opens it. The start-menu
+        # chat sends surface "sidebar" and no app id, so it got no hint at all and
+        # "Open my calendar" produced a list. Trigger words listed in one language
+        # are taken literally — hence "in any language".
+        parts.append(
+            "opening on request: when the user asks to open, show or start something "
+            "(in any language: open, show me, öffne, zeig mir …), do it with "
+            "claraos_action_open_window / claraos_action_navigate_to / "
+            "claraos_action_open_in_viewer, and a requested chart, page or game with "
+            "claraos_action_show_artifact — a text list is not opening."
+        )
+
+        # The brain serves several installations, each with its own names.
+        parts.append(f"identity: you are {ASSISTANT_NAME}, the assistant of {PRODUCT_NAME}.")
+
+        # The context, tool texts and system prompt are partly German; "the
+        # language of the latest message" alone still gave German answers to
+        # English questions, so the shell's UI language is named explicitly.
+        parts.append(_language_line(meta.get("ui_language")))
 
         # Clara had no way to look at her own work: asked to "check it yourself
         # with screenshots", she ran docker_ps. And she reported success because

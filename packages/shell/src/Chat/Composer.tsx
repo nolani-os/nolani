@@ -24,7 +24,7 @@ import {
   SendIcon,
   PinIcon,
 } from "./icons";
-import { useVoiceStore, getBrand } from "@claraos/core";
+import { useVoiceStore, useTranslation } from "@claraos/core";
 import { KameraSheet, sucherMoeglich } from "./KameraSheet";
 import styles from "./ClaraChatPanel.module.css";
 
@@ -119,12 +119,14 @@ export function Composer({
   pinnedMarkerLabel,
   pinnedMarkerThumb,
   onClearPin,
-  placeholder = `Frag ${getBrand().assistant} …`,
+  placeholder: placeholderProp,
   compact,
   autoFocus,
   mobil,
   onVoiceVollbild,
 }: Props) {
+  const { t } = useTranslation("chat");
+  const placeholder = placeholderProp ?? t("composer.placeholder");
   // Level for the live pill's waves (leaf re-render only)
   const micLevel = useVoiceStore((s) => s.micLevel);
   const voiceFehler = useVoiceStore((s) => s.error);
@@ -190,9 +192,9 @@ export function Composer({
   }, [text]);
 
   const send = useCallback(() => {
-    const t = text.trim();
-    if (!t && pendingFiles.length === 0) return;
-    onSend(t, pendingFiles.length ? { files: pendingFiles } : undefined);
+    const msg = text.trim();
+    if (!msg && pendingFiles.length === 0) return;
+    onSend(msg, pendingFiles.length ? { files: pendingFiles } : undefined);
     setText("");
     setPendingFiles([]);
   }, [text, pendingFiles, onSend]);
@@ -219,9 +221,9 @@ export function Composer({
     if (liveTranscript.final && voiceAutoSend) {
       // voice mode: the finished utterance goes out immediately
       draftPrefixRef.current = "";
-      const t = combined.trim();
-      if (t || pendingFiles.length) {
-        onSend(t, pendingFiles.length ? { files: pendingFiles } : undefined);
+      const msg = combined.trim();
+      if (msg || pendingFiles.length) {
+        onSend(msg, pendingFiles.length ? { files: pendingFiles } : undefined);
         setText("");
         setPendingFiles([]);
       }
@@ -286,7 +288,7 @@ export function Composer({
                 type="button"
                 className={styles.pendingRemove}
                 onClick={() => setPendingFiles((prev) => prev.filter((_, j) => j !== i))}
-                title="Entfernen"
+                title={t("composer.remove")}
               >
                 <XIcon size={11} />
               </button>
@@ -296,7 +298,7 @@ export function Composer({
       )}
       {pinnedMarkerLabel && (
         <div className={styles.pendingFiles}>
-          <span className={styles.pendingFile} title={pinnedMarkerThumb ? "Markierte Region wird mit nächster Nachricht gesendet" : undefined}>
+          <span className={styles.pendingFile} title={pinnedMarkerThumb ? t("composer.pinnedTitle") : undefined}>
             {pinnedMarkerThumb && (
               <img
                 src={pinnedMarkerThumb}
@@ -310,7 +312,7 @@ export function Composer({
                 type="button"
                 className={styles.pendingRemove}
                 onClick={onClearPin}
-                title="Markierung lösen"
+                title={t("composer.clearPin")}
               >
                 <XIcon size={11} />
               </button>
@@ -320,7 +322,7 @@ export function Composer({
       )}
       {queuedText && (
         <div className={styles.queuedHint} title={queuedText}>
-          ⏳ Wird gesendet, sobald {getBrand().assistant} fertig ist: „{queuedText.length > 60 ? `${queuedText.slice(0, 57)}…` : queuedText}“
+          ⏳ {t("composer.queued", { text: queuedText.length > 60 ? `${queuedText.slice(0, 57)}…` : queuedText })}
         </div>
       )}
       {mobil && voiceMode ? (
@@ -328,21 +330,21 @@ export function Composer({
         {/* Transcript, max. three lines (Gemini pattern): what was spoken then appears as a message in the history */}
         <div className={styles.liveTranskript} aria-live="polite">
           {text
-            ? <><b>Du</b> · {text}</>
+            ? <><b>{t("composer.you")}</b> · {text}</>
             : voiceFehler
               ? <span className={styles.liveFehler}>{voiceFehler}</span>
-              : arming ? "Mikrofon wird geöffnet …"
-                : recording ? "Ich höre zu — sprich einfach."
-                  : transcribing ? "Verstehe …"
-                    : speaking ? `${getBrand().assistant} spricht — reinreden erlaubt.`
-                      : "Sprachmodus — tippe auf die Wellen zum Sprechen."}
+              : arming ? t("composer.voice.arming")
+                : recording ? t("composer.voice.listening")
+                  : transcribing ? t("composer.voice.transcribing")
+                    : speaking ? t("composer.voice.speaking")
+                      : t("composer.voice.idle")}
         </div>
         <div className={styles.livePille}>
-          <button type="button" className={styles.pilleBtn} aria-label="Foto aufnehmen" title={`Foto an ${getBrand().assistant}`} onClick={kameraOeffnen}>📷</button>
+          <button type="button" className={styles.pilleBtn} aria-label={t("composer.takePhoto")} title={t("composer.photoTo")} onClick={kameraOeffnen}>📷</button>
           <button
             type="button"
             className={styles.liveWellen}
-            aria-label={recording ? "Aufnahme beenden" : "Sprechen"}
+            aria-label={recording ? t("composer.stopRecordingLabel") : t("composer.speak")}
             onClick={recording ? stopRecording : startRecording}
             disabled={transcribing}
           >
@@ -351,9 +353,9 @@ export function Composer({
               return <i key={i} style={{ height: `${Math.round(4 + f * 18)}px` }} />;
             })}
           </button>
-          <button type="button" className={styles.pilleBtn} aria-label="Sprachmodus beenden" title="Sprachmodus beenden — zurück zum Tippen" onClick={toggleVoiceMode}>✕</button>
+          <button type="button" className={styles.pilleBtn} aria-label={t("composer.voiceModeEnd")} title={t("composer.voiceModeEndTitle")} onClick={toggleVoiceMode}>✕</button>
           {onVoiceVollbild && (
-            <button type="button" className={styles.pilleBtn} aria-label="Sprach-Vollbild" title="Sprach-Vollbild mit großem Orb" onClick={onVoiceVollbild}>⤢</button>
+            <button type="button" className={styles.pilleBtn} aria-label={t("composer.voiceFullscreen")} title={t("composer.voiceFullscreenTitle")} onClick={onVoiceVollbild}>⤢</button>
           )}
         </div>
         <input type="file" ref={kameraInputRef} style={{ display: "none" }} accept="image/*" capture="environment"
@@ -364,7 +366,7 @@ export function Composer({
         <button
           type="button"
           className={styles.pillePlus}
-          aria-label="Anhängen oder Werkzeug wählen"
+          aria-label={t("composer.plusLabel")}
           aria-expanded={plusOffen}
           onClick={() => setPlusOffen((o) => !o)}
         >
@@ -374,11 +376,11 @@ export function Composer({
           ref={inputRef}
           className={`${styles.composerInput} ${styles.pilleInput}`}
           placeholder={
-            arming ? "Mikrofon wird geöffnet …"
-              : recording ? "Sprich — ich schreibe mit …"
-                : transcribing ? "Verstehe …"
-                  : speaking ? `${getBrand().assistant} antwortet …`
-                    : voiceMode ? "Sprachmodus aktiv — sprich …"
+            arming ? t("composer.voice.arming")
+              : recording ? t("composer.voice.dictating")
+                : transcribing ? t("composer.voice.transcribing")
+                  : speaking ? t("composer.voice.answering")
+                    : voiceMode ? t("composer.voice.active")
                       : placeholder
           }
           value={text}
@@ -395,11 +397,11 @@ export function Composer({
         />
         {/* One button that morphs: stop (streaming) → send (content) → mic (empty) */}
         {streaming ? (
-          <button type="button" className={`${styles.pilleBtn} ${styles.pilleStop}`} onClick={onAbort} aria-label="Stoppen" title="Stoppen">
+          <button type="button" className={`${styles.pilleBtn} ${styles.pilleStop}`} onClick={onAbort} aria-label={t("composer.stop")} title={t("composer.stop")}>
             <StopIcon size={16} />
           </button>
         ) : hasContent ? (
-          <button type="button" className={`${styles.pilleBtn} ${styles.pilleSend}`} onClick={send} disabled={transcribing || recording} aria-label="Senden" title="Senden">
+          <button type="button" className={`${styles.pilleBtn} ${styles.pilleSend}`} onClick={send} disabled={transcribing || recording} aria-label={t("composer.send")} title={t("composer.send")}>
             <SendIcon size={16} />
           </button>
         ) : (
@@ -408,8 +410,8 @@ export function Composer({
             className={`${styles.pilleBtn} ${recording ? styles.pilleRec : ""}`}
             onClick={recording ? stopRecording : startRecording}
             disabled={transcribing || voiceMode}
-            aria-label={recording ? "Diktat beenden" : "Diktieren"}
-            title={recording ? "Diktat beenden" : "Diktieren"}
+            aria-label={recording ? t("composer.dictateEnd") : t("composer.dictate")}
+            title={recording ? t("composer.dictateEnd") : t("composer.dictate")}
           >
             {recording ? <StopIcon size={16} /> : <MicIcon size={16} />}
           </button>
@@ -423,21 +425,21 @@ export function Composer({
         {plusOffen && (
           <>
             <div className={styles.plusScrim} onClick={() => setPlusOffen(false)} aria-hidden="true" />
-            <div className={styles.plusSheet} role="menu" aria-label="Anhängen">
+            <div className={styles.plusSheet} role="menu" aria-label={t("composer.attach")}>
               <span className={styles.plusHandle} aria-hidden="true" />
               <div className={styles.plusTiles}>
                 <button type="button" role="menuitem" className={styles.plusTile} onClick={() => { setPlusOffen(false); kameraOeffnen(); }}>
-                  <span aria-hidden="true">📷</span>Kamera
+                  <span aria-hidden="true">📷</span>{t("composer.plus.camera")}
                 </button>
                 <button type="button" role="menuitem" className={styles.plusTile} onClick={() => { setPlusOffen(false); fotoInputRef.current?.click(); }}>
-                  <span aria-hidden="true">🖼️</span>Fotos
+                  <span aria-hidden="true">🖼️</span>{t("composer.plus.photos")}
                 </button>
                 <button type="button" role="menuitem" className={styles.plusTile} onClick={() => { setPlusOffen(false); fileInputRef.current?.click(); }}>
-                  <span aria-hidden="true">📄</span>Datei
+                  <span aria-hidden="true">📄</span>{t("composer.plus.file")}
                 </button>
                 {onPickFromClaraOS && (
                   <button type="button" role="menuitem" className={styles.plusTile} onClick={() => { setPlusOffen(false); onPickFromClaraOS(); }}>
-                    <span aria-hidden="true">🗂️</span>{getBrand().product}-Dateien
+                    <span aria-hidden="true">🗂️</span>{t("composer.plus.productFiles")}
                   </button>
                 )}
               </div>
@@ -445,13 +447,13 @@ export function Composer({
                 {onTogglePicking && (
                   <button type="button" role="menuitem" className={styles.plusZeile} onClick={() => { setPlusOffen(false); onTogglePicking(); }}>
                     <span><PinIcon size={16} /></span>
-                    <span><b>Bereich markieren</b><small>Etwas in der App einkreisen und dazu fragen.</small></span>
+                    <span><b>{t("composer.markArea")}</b><small>{t("composer.markAreaHint")}</small></span>
                   </button>
                 )}
                 {toggleLiveMode && (
                   <button type="button" role="menuitem" className={styles.plusZeile} onClick={() => { setPlusOffen(false); toggleLiveMode(); }} disabled={voiceMode || recording || transcribing}>
                     <span><LiveVoiceIcon size={16} /></span>
-                    <span><b>{liveMode ? "Live-Gespräch beenden" : "Live-Gespräch"}</b><small>{getBrand().assistant} hört zu, Reinreden erlaubt.</small></span>
+                    <span><b>{liveMode ? t("composer.liveEnd") : t("composer.live")}</b><small>{t("composer.liveHint")}</small></span>
                   </button>
                 )}
               </div>
@@ -467,11 +469,11 @@ export function Composer({
           ref={inputRef}
           className={styles.composerInput}
           placeholder={
-            arming ? "Mikrofon wird geöffnet …"
-              : recording ? "Sprich — ich schreibe mit …"
-                : transcribing ? "Verstehe …"
-                  : speaking ? `${getBrand().assistant} antwortet …`
-                    : voiceMode ? "Sprachmodus aktiv — sprich …"
+            arming ? t("composer.voice.arming")
+              : recording ? t("composer.voice.dictating")
+                : transcribing ? t("composer.voice.transcribing")
+                  : speaking ? t("composer.voice.answering")
+                    : voiceMode ? t("composer.voice.active")
                       : placeholder
           }
           value={text}
@@ -504,7 +506,7 @@ export function Composer({
               <button
                 type="button"
                 className={styles.composerAction}
-                title="Anhängen"
+                title={t("composer.attach")}
                 onClick={() => {
                   if (onPickFromClaraOS) {
                     setPickerOpen((o) => !o);
@@ -526,7 +528,7 @@ export function Composer({
                         onAttachCurrentObject();
                       }}
                     >
-                      📌 Aktuelles Objekt anhängen ({currentObjectName})
+                      📌 {t("composer.attachCurrent", { name: currentObjectName })}
                     </button>
                   )}
                   <button
@@ -537,7 +539,7 @@ export function Composer({
                       fileInputRef.current?.click();
                     }}
                   >
-                    Vom Gerät hochladen
+                    {t("composer.uploadFromDevice")}
                   </button>
                   {onPickFromClaraOS && (
                     <button
@@ -548,7 +550,7 @@ export function Composer({
                         onPickFromClaraOS();
                       }}
                     >
-                      Aus {getBrand().product}-Dateien …
+                      {t("composer.fromProductFiles")}
                     </button>
                   )}
                 </div>
@@ -558,7 +560,7 @@ export function Composer({
               <button
                 type="button"
                 className={`${styles.composerAction} ${markerPicking ? styles.composerActionActive : ""}`}
-                title={markerPicking ? "Markierung abbrechen" : "Bereich markieren"}
+                title={markerPicking ? t("composer.markCancel") : t("composer.markArea")}
                 onClick={onTogglePicking}
                 disabled={transcribing}
               >
@@ -571,7 +573,7 @@ export function Composer({
               <button
                 type="button"
                 className={`${styles.composerAction} ${recording ? styles.composerActionActive : ""}`}
-                title={recording ? "Aufnahme stoppen" : "Diktieren"}
+                title={recording ? t("composer.stopRecording") : t("composer.dictate")}
                 onClick={recording ? stopRecording : startRecording}
                 disabled={transcribing || voiceMode}
               >
@@ -582,7 +584,7 @@ export function Composer({
               <button
                 type="button"
                 className={`${styles.composerAction} ${voiceMode ? styles.composerActionActive : ""}`}
-                title={voiceMode ? "Sprachmodus beenden" : "Sprachmodus starten"}
+                title={voiceMode ? t("composer.voiceModeEnd") : t("composer.voiceModeStart")}
                 onClick={toggleVoiceMode}
                 disabled={liveMode || liveConnecting}
               >
@@ -595,8 +597,8 @@ export function Composer({
                 className={`${styles.composerAction} ${liveMode ? styles.composerActionActive : ""}`}
                 title={
                   liveMode
-                    ? "Live-Gespräch beenden"
-                    : `Live-Gespräch starten (${getBrand().assistant} hört zu, Reinreden erlaubt)`
+                    ? t("composer.liveEnd")
+                    : t("composer.liveStartTitle")
                 }
                 onClick={toggleLiveMode}
                 disabled={voiceMode || recording || transcribing}
@@ -609,7 +611,7 @@ export function Composer({
                 type="button"
                 className={styles.composerStop}
                 onClick={onAbort}
-                title="Stoppen"
+                title={t("composer.stop")}
               >
                 <StopIcon size={14} />
               </button>
@@ -619,7 +621,7 @@ export function Composer({
                 className={styles.composerSend}
                 onClick={send}
                 disabled={transcribing || recording}
-                title="Senden"
+                title={t("composer.send")}
               >
                 <SendIcon size={16} />
               </button>

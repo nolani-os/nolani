@@ -1,0 +1,69 @@
+{
+  "status": {
+    "laeuft": "running …",
+    "fertig": "done",
+    "wartet": "waiting for approval",
+    "fehler": "failed",
+    "erledigt": "completed"
+  },
+  "proposalStatus": {
+    "offen": "open",
+    "ausgefuehrt": "carried out",
+    "fehler": "failed",
+    "verworfen": "discarded"
+  },
+  "examples": [
+    {
+      "titel": "Good morning",
+      "auftrag": "Summarize my unread mails and my tasks due today in five sentences."
+    },
+    {
+      "titel": "Weekly review",
+      "auftrag": "Which tasks did I complete this week, which are overdue? Short list."
+    },
+    {
+      "titel": "End-of-day check",
+      "auftrag": "What's on my calendar tomorrow? Suggest a task for preparations if needed."
+    }
+  ],
+  "rhythm": {
+    "stuendlich": "hourly at minute {{minute}}",
+    "werktags": "weekdays at {{time}}",
+    "woechentlich": "every {{day}} at {{time}}",
+    "taeglich": "daily at {{time}}"
+  },
+  "rhythmOption": {
+    "taeglich": "daily",
+    "werktags": "weekdays",
+    "woechentlich": "weekly",
+    "stuendlich": "hourly"
+  },
+  "error": "Error {{status}}",
+  "confirmDelete": "Delete routine “{{title}}”?",
+  "started": "“{{title}}” is running — the result arrives as a notification.",
+  "proposal": "Proposal: {{tool}}",
+  "approve": "Approve",
+  "discard": "Discard",
+  "title": "Routines",
+  "new": "+ New routine",
+  "intro": "Recurring tasks for {{assistant}}. A routine only reads on its own — changing, sending or creating anything happens only once you approve the proposal here.",
+  "noBrain": "{{assistant}} is not connected in this environment — routines don't run.",
+  "waiting": "Waiting for your approval",
+  "waitingIntro": "{{assistant}} prepared this in the chat. Nothing happens until you approve it.",
+  "fieldTitle": "Title",
+  "fieldTask": "Task for {{assistant}}",
+  "fieldRhythm": "Schedule",
+  "fieldDay": "Day",
+  "fieldMinute": "Minute (hh:MM)",
+  "fieldTime": "Time",
+  "save": "Save",
+  "cancel": "Cancel",
+  "empty": "No routine yet. Create one — or take an example.",
+  "paused": " · paused",
+  "now": "Now",
+  "pause": "Pause",
+  "activate": "Activate",
+  "edit": "Edit",
+  "delete": "Delete",
+  "noRuns": "No run yet."
+}

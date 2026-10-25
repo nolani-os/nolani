@@ -15,6 +15,7 @@ import leiste from "./Wissen.module.css";
 import { Icon } from "../../components/Icon";
 import { ideasApi } from "../ideas/api";
 import type { CollPermission, KbCollection, KbCollectionShare } from "../ideas/types";
+import { useTranslation } from "@claraos/core";
 
 interface Person { username: string; name?: string | null; email?: string | null }
 
@@ -26,9 +27,10 @@ interface Props {
   onChanged: () => void;
 }
 
-const RECHT: Record<CollPermission, string> = { read: "Lesen", write: "Bearbeiten" };
+
 
 export function SammlungTeilen({ collection, currentUser, onClose, onChanged }: Props) {
+  const { t } = useTranslation("wissen");
   const isOwner = collection.owner === currentUser;
   const [shares, setShares] = useState<KbCollectionShare[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +51,7 @@ export function SammlungTeilen({ collection, currentUser, onClose, onChanged }: 
   // keystroke queries the server.
   useEffect(() => {
     if (!isOwner) return;
-    const t = window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
       const p = new URLSearchParams();
       if (suche.trim()) p.set("q", suche.trim());
       fetch(`/api/claraos/teams/personen?${p}`, { credentials: "include" })
@@ -57,7 +59,7 @@ export function SammlungTeilen({ collection, currentUser, onClose, onChanged }: 
         .then((liste: Person[]) => setPersonen(Array.isArray(liste) ? liste : []))
         .catch(() => setPersonen([]));
     }, 200);
-    return () => window.clearTimeout(t);
+    return () => window.clearTimeout(timer);
   }, [suche, isOwner]);
 
   const vorhanden = useMemo(() => new Set([collection.owner, ...(shares ?? []).map((s) => s.username)]), [shares, collection.owner]);
@@ -88,43 +90,43 @@ export function SammlungTeilen({ collection, currentUser, onClose, onChanged }: 
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHead}>
           <h3><Icon name="people" size={16} className={styles.inlineIcon} />
-            {isOwner ? "Sammlung teilen" : "Wer hat Zugriff?"}</h3>
-          <button className={styles.iconBtn} onClick={onClose}><Icon name="close" size={14} title="Schließen" /></button>
+            {isOwner ? t("share.title") : t("share.whoHasAccess")}</h3>
+          <button className={styles.iconBtn} onClick={onClose}><Icon name="close" size={14} title={t("common.close")} /></button>
         </div>
         <p className={styles.metaHint} style={{ margin: "0 0 10px" }}>
           {collection.icon ?? "🗂️"} {collection.name}
-          {collection.visibility === "family" ? " · für die Familie sichtbar" : ""}
+          {collection.visibility === "family" ? t("share.familyVisible") : ""}
         </p>
         {error && <div className={styles.error}>{error}</div>}
 
         {/* Owner */}
         <div className={leiste.leisteZeile} style={{ cursor: "default" }}>
           <span className={leiste.leisteSymbol}><Icon name="person" size={14} /></span>
-          <span className={leiste.leisteName}>{collection.owner}{collection.owner === currentUser ? " (ich)" : ""}</span>
-          <span className={leiste.leisteWert}>Besitzer</span>
+          <span className={leiste.leisteName}>{collection.owner}{collection.owner === currentUser ? t("share.me") : ""}</span>
+          <span className={leiste.leisteWert}>{t("share.owner")}</span>
         </div>
 
         {/* Members */}
-        {shares === null && !error && <p className={leiste.leisteText}>Lädt…</p>}
+        {shares === null && !error && <p className={leiste.leisteText}>{t("common.loading")}</p>}
         {(shares ?? []).map((s) => (
           <div key={s.username} className={leiste.leisteZeile} style={{ cursor: "default" }}>
             <span className={leiste.leisteSymbol}><Icon name="person" size={14} /></span>
-            <span className={leiste.leisteName}>{s.username}{s.username === currentUser ? " (ich)" : ""}</span>
+            <span className={leiste.leisteName}>{s.username}{s.username === currentUser ? t("share.me") : ""}</span>
             {isOwner ? (
               <select className={styles.input} style={{ width: "auto", padding: "2px 6px" }}
                       value={s.permission} disabled={busy}
-                      title="Recht ändern"
+                      title={t("share.changeRight")}
                       onChange={(e) => void mit(() =>
                         ideasApi.patchCollectionShare(collection.id, s.username, e.target.value as CollPermission))}>
-                <option value="read">{RECHT.read}</option>
-                <option value="write">{RECHT.write}</option>
+                <option value="read">{t("share.read")}</option>
+                <option value="write">{t("share.write")}</option>
               </select>
             ) : (
-              <span className={leiste.leisteWert}>{RECHT[s.permission]}</span>
+              <span className={leiste.leisteWert}>{t(`share.${s.permission}`)}</span>
             )}
             {(isOwner || s.username === currentUser) && (
               <button className={leiste.leisteWeg} disabled={busy}
-                      title={s.username === currentUser ? "Sammlung verlassen" : "Freigabe entfernen"}
+                      title={s.username === currentUser ? t("share.leave") : t("share.remove")}
                       onClick={() => void mit(async () => {
                         await ideasApi.removeCollectionShare(collection.id, s.username);
                         if (s.username === currentUser) onClose();
@@ -133,29 +135,29 @@ export function SammlungTeilen({ collection, currentUser, onClose, onChanged }: 
           </div>
         ))}
         {shares !== null && shares.length === 0 && (
-          <p className={leiste.leisteText}>Noch mit niemandem geteilt.</p>
+          <p className={leiste.leisteText}>{t("share.nobody")}</p>
         )}
 
         {/* Add people (owner only) */}
         {isOwner && (
           <div style={{ marginTop: 12 }}>
-            <div className={styles.propLabel}>Person dazuholen</div>
+            <div className={styles.propLabel}>{t("share.addPerson")}</div>
             <div className={styles.formRow}>
               <input className={styles.input} style={{ flex: 1 }} autoFocus
-                     placeholder="Name oder Benutzername…"
+                     placeholder={t("share.searchPlaceholder")}
                      value={suche}
                      onChange={(e) => { setSuche(e.target.value); setGewaehlt(""); }}
                      onKeyDown={(e) => { if (e.key === "Enter") hinzu(); if (e.key === "Escape") onClose(); }} />
               <div className={styles.segmented}>
                 <button className={recht === "read" ? styles.segActive : ""}
-                        title="Sehen und kommentieren"
-                        onClick={() => setRecht("read")}>Lesen</button>
+                        title={t("share.readTitle")}
+                        onClick={() => setRecht("read")}>{t("share.read")}</button>
                 <button className={recht === "write" ? styles.segActive : ""}
-                        title="Notizen ändern und anlegen, Spalten und Ansichten"
-                        onClick={() => setRecht("write")}>Bearbeiten</button>
+                        title={t("share.writeTitle")}
+                        onClick={() => setRecht("write")}>{t("share.write")}</button>
               </div>
               <button className={styles.btnPrimary} disabled={busy || !(gewaehlt || suche.trim())}
-                      onClick={hinzu}>Teilen</button>
+                      onClick={hinzu}>{t("share.share")}</button>
             </div>
             {kandidaten.length > 0 && (
               <div className={leiste.leisteChips} style={{ marginTop: 6 }}>
@@ -172,8 +174,7 @@ export function SammlungTeilen({ collection, currentUser, onClose, onChanged }: 
               </div>
             )}
             <p className={leiste.leisteText}>
-              Lesen = sehen und kommentieren. Bearbeiten = Notizen ändern und anlegen,
-              Spalten und Ansichten. Löschen und Teilen bleibt bei dir.
+              {t("share.explain")}
             </p>
           </div>
         )}

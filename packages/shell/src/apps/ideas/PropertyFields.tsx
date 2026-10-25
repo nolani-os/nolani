@@ -1,7 +1,7 @@
 /** Property input fields by type schema (kind: text|number|date|select|
  * multi_select|url|checkbox). Shared by MetaSidebar (detail) and
  * CollectionView (inline cells). Saves on blur/change. */
-import { getBrand } from "@claraos/core";
+import { useTranslation } from "@claraos/core";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import styles from "./IdeasApp.module.css";
 import plaketten from "../wissen/Wissen.module.css";
@@ -32,6 +32,7 @@ interface FieldProps {
 }
 
 export function PropertyField({ def, value, readOnly, compact, umbruch, onSave }: FieldProps) {
+  const { t } = useTranslation("wissen");
   // In the table the cell is text first; only a click opens the field.
   const [bearbeitet, setBearbeitet] = useState(false);
   const feldRef = useRef<HTMLInputElement>(null);
@@ -81,12 +82,12 @@ export function PropertyField({ def, value, readOnly, compact, umbruch, onSave }
     return (
       <span className={styles.propLinkZeile}>
         <a href={url} target="_blank" rel="noreferrer" className={styles.propLink}
-           title={`${url}\nKlick: im ${getBrand().assistant} Browser öffnen · Strg+Klick: im Browser-Tab`}
+           title={t("prop.linkTitle", { url })}
            onClick={oeffnen}>
-          {compact ? "Link ↗" : url}
+          {compact ? t("prop.linkShort") : url}
         </a>
         {!readOnly && (
-          <button type="button" className={styles.propLinkEdit} title="Adresse bearbeiten"
+          <button type="button" className={styles.propLinkEdit} title={t("prop.editUrl")}
                   onClick={() => setBearbeitet(true)}>✎</button>
         )}
       </span>
@@ -114,7 +115,7 @@ export function PropertyField({ def, value, readOnly, compact, umbruch, onSave }
           className={styles.cellText}
           style={{ textAlign: "left" }}
           disabled={readOnly}
-          title={readOnly ? undefined : "Zum Ändern klicken"}
+          title={readOnly ? undefined : t("prop.clickToChange")}
           onClick={() => setBearbeitet(true)}
         >
           {werte.length
@@ -132,7 +133,7 @@ export function PropertyField({ def, value, readOnly, compact, umbruch, onSave }
           + `${umbruch ? ` ${styles.cellUmbruch}` : ""}`}
         style={compact ? undefined : { textAlign: def.kind === "number" ? "right" : "left" }}
         disabled={readOnly}
-        title={readOnly ? undefined : "Zum Bearbeiten klicken"}
+        title={readOnly ? undefined : t("prop.clickToEdit")}
         onClick={() => setBearbeitet(true)}
       >
         {text}

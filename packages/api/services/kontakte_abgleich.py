@@ -29,6 +29,7 @@ from typing import Any
 
 from database import get_pool
 from services import kontakte_store as store
+from sprache import tx
 
 logger = logging.getLogger(__name__)
 
@@ -235,11 +236,7 @@ async def vorschlaege(owner: str, limit: int = 1000) -> list[dict[str, Any]]:
             "matched_on": merkmal,
             # The text explains WHAT the suggestion is based on. "Probably
             # matches" without a reason invites dismissing it.
-            "begruendung": {
-                "email": "gleiche E-Mail-Adresse",
-                "phone": "gleiche Telefonnummer (über Nextcloud abgeglichen)",
-                "name": "gleicher Name — nur ein Hinweis, bitte genau prüfen",
-            }[merkmal],
+            "begruendung": await tx(f"contacts.match.{merkmal}"),
             "schwach": merkmal == "name",
         })
     return out

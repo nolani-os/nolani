@@ -1,0 +1,59 @@
+{
+  "tabs": {
+    "windows": "Applications",
+    "widgets": "Widgets",
+    "containers": "Containers",
+    "system": "System"
+  },
+  "col": {
+    "name": "Name",
+    "app": "App",
+    "status": "Status",
+    "action": "Action",
+    "type": "Type",
+    "workspace": "Workspace",
+    "position": "Position",
+    "size": "Size",
+    "target": "Target",
+    "cpu": "CPU",
+    "ram": "RAM",
+    "disk": "Disk",
+    "uptime": "Uptime",
+    "container": "Container",
+    "image": "Image"
+  },
+  "noWindows": "No open windows",
+  "state": {
+    "minimized": "minimized",
+    "maximized": "maximized",
+    "active": "active"
+  },
+  "focus": "Focus",
+  "quit": "Quit",
+  "remove": "Remove",
+  "noWidgets": "No widgets in this workspace",
+  "loading": "Loading…",
+  "system": {
+    "kindVm": "VM",
+    "kindDevice": "Device",
+    "noTargets": "No monitoring targets available",
+    "refreshNote": "Values refresh every 15 s"
+  },
+  "containers": {
+    "hostsFailed": "Hosts could not be loaded: {{error}}",
+    "confirmRestart": "Restart container “{{name}}”?",
+    "restarted": "“{{name}}” restarted ✓",
+    "hostCount_one": "{{count}} container",
+    "hostCount_other": "{{count}} containers",
+    "filter": "Filter…",
+    "refresh": "Refresh",
+    "unreachable": "Unreachable hosts: SSH key missing — set it up via Network Manager → Host → “Setup SSH Key”.",
+    "statsMissing": "CPU/RAM values currently unavailable (docker stats slow/failed).",
+    "noMatch": "Nothing matches the filter",
+    "none": "No containers",
+    "protectedTitle": "Restart blocked — it would hit {{product}} itself",
+    "protected": "protected",
+    "restart": "Restart",
+    "footer": "{{running}}/{{total}} running · values refresh every 20 s"
+  }
+}

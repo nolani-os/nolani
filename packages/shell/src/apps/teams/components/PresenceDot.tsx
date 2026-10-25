@@ -1,4 +1,4 @@
-import { useMatrixStore } from "@claraos/core";
+import { useMatrixStore, i18n } from "@claraos/core";
 import { usePraesenz, type Zustand } from "../praesenzStore";
 import styles from "./PresenceDot.module.css";
 
@@ -21,14 +21,8 @@ import styles from "./PresenceDot.module.css";
  * exactly what colour-blind users cannot do.
  */
 
-const TITEL: Record<Zustand, string> = {
-  verfuegbar: "Verfügbar",
-  beschaeftigt: "Beschäftigt",
-  nicht_stoeren: "Nicht stören",
-  abwesend: "Abwesend",
-  offline: "Offline",
-  unbekannt: "Status unbekannt",
-};
+/** Read on every render — a table built at import time would freeze the language. */
+const titelVon = (z: Zustand): string => i18n.t(`teams:presence.${z}`);
 
 function Symbol({ zustand }: { zustand: Zustand }) {
   switch (zustand) {
@@ -73,8 +67,8 @@ export function PresenceDot({
   if (zustand === "unbekannt") return null;
 
   const titel = claraos?.selbst_gesetzt
-    ? `${TITEL[zustand]} (selbst gesetzt)`
-    : TITEL[zustand];
+    ? i18n.t("teams:presence.selfSet", { state: titelVon(zustand) })
+    : titelVon(zustand);
 
   return (
     <svg

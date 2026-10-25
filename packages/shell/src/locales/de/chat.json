@@ -1,0 +1,288 @@
+{
+  "activity": {
+    "done": "Fertig",
+    "doneCount_one": "{{count}} fertig",
+    "doneCount_other": "{{count}} fertig",
+    "executing": "{{assistant}} arbeitet …",
+    "finalizing": "{{assistant}} formuliert die Antwort …",
+    "moreTools_one": "+{{count}} weitere Tools laufen",
+    "moreTools_other": "+{{count}} weitere Tools laufen",
+    "plan": "Plan",
+    "planning": "{{assistant}} plant Schritte …",
+    "slow": "{{assistant}} arbeitet noch. Du kannst den Chat schließen, die Antwort wird gespeichert.",
+    "subAgent": "Sub-Agent: {{name}}",
+    "subAgentsDone_one": "{{count}} Sub-Agent fertig",
+    "subAgentsDone_other": "{{count}} Sub-Agents fertig",
+    "subAgentsParallel_one": "{{count}} Sub-Agents parallel",
+    "subAgentsParallel_other": "{{count}} Sub-Agents parallel",
+    "thinking": "{{assistant}} denkt nach …"
+  },
+  "agents": {
+    "collapse": "Liste einklappen",
+    "expand": "Liste aufklappen",
+    "focusSourceTitle": "Klick → Quell-Window fokussieren",
+    "hideStale_one": "{{count}} veraltete ausblenden",
+    "hideStale_other": "{{count}} veraltete ausblenden",
+    "openTaskTitle": "Klick → Task im Planner öffnen",
+    "regionLabel": "Aktive {{assistant}}-Aufgaben",
+    "showStale_one": "{{count}} veralteter Eintrag (>6 h) — anzeigen",
+    "showStale_other": "{{count}} veraltete Einträge (>6 h) — anzeigen",
+    "staleTitle": "Eintrag ist alt (>6h) — im Task-Detail zurücksetzbar. Klick → Task öffnen",
+    "stuck": "hängt (>6h)",
+    "title": "{{assistant}} arbeitet"
+  },
+  "camera": {
+    "cancel": "Abbrechen",
+    "captureFailed": "Aufnahme fehlgeschlagen.",
+    "openFailed": "Kamera lässt sich nicht öffnen.",
+    "opening": "Kamera wird geöffnet …",
+    "systemCamera": "Systemkamera",
+    "torch": "Leuchte",
+    "useSystemCamera": "Stattdessen die Systemkamera benutzen"
+  },
+  "composer": {
+    "attach": "Anhängen",
+    "attachCurrent": "Aktuelles Objekt anhängen ({{name}})",
+    "clearPin": "Markierung lösen",
+    "dictate": "Diktieren",
+    "dictateEnd": "Diktat beenden",
+    "fromProductFiles": "Aus {{product}}-Dateien …",
+    "live": "Live-Gespräch",
+    "liveEnd": "Live-Gespräch beenden",
+    "liveHint": "{{assistant}} hört zu, Reinreden erlaubt.",
+    "liveStartTitle": "Live-Gespräch starten ({{assistant}} hört zu, Reinreden erlaubt)",
+    "markArea": "Bereich markieren",
+    "markAreaHint": "Etwas in der App einkreisen und dazu fragen.",
+    "markCancel": "Markierung abbrechen",
+    "photoTo": "Foto an {{assistant}}",
+    "pinnedTitle": "Markierte Region wird mit nächster Nachricht gesendet",
+    "placeholder": "Frag {{assistant}} …",
+    "placeholderApp": "Frag {{assistant}} zu {{app}} …",
+    "placeholderQuick": "Nachricht an {{assistant}} …",
+    "plus": {
+      "camera": "Kamera",
+      "file": "Datei",
+      "photos": "Fotos",
+      "productFiles": "{{product}}-Dateien"
+    },
+    "plusLabel": "Anhängen oder Werkzeug wählen",
+    "queued": "Wird gesendet, sobald {{assistant}} fertig ist: „{{text}}“",
+    "remove": "Entfernen",
+    "send": "Senden",
+    "speak": "Sprechen",
+    "stop": "Stoppen",
+    "stopRecording": "Aufnahme stoppen",
+    "stopRecordingLabel": "Aufnahme beenden",
+    "takePhoto": "Foto aufnehmen",
+    "uploadFromDevice": "Vom Gerät hochladen",
+    "voice": {
+      "active": "Sprachmodus aktiv — sprich …",
+      "answering": "{{assistant}} antwortet …",
+      "arming": "Mikrofon wird geöffnet …",
+      "dictating": "Sprich — ich schreibe mit …",
+      "idle": "Sprachmodus — tippe auf die Wellen zum Sprechen.",
+      "listening": "Ich höre zu — sprich einfach.",
+      "speaking": "{{assistant}} spricht — reinreden erlaubt.",
+      "transcribing": "Verstehe …"
+    },
+    "voiceFullscreen": "Sprach-Vollbild",
+    "voiceFullscreenTitle": "Sprach-Vollbild mit großem Orb",
+    "voiceModeEnd": "Sprachmodus beenden",
+    "voiceModeEndTitle": "Sprachmodus beenden — zurück zum Tippen",
+    "voiceModeStart": "Sprachmodus starten",
+    "you": "Du"
+  },
+  "context": {
+    "app": "Zu dieser App",
+    "appOffTitle": "Ohne App-Bezug fragen",
+    "appOnTitle": "{{assistant}} sieht diese App als Kontext",
+    "label": "Kontext für {{assistant}}",
+    "screen": "Bildschirm lesen",
+    "screenTitle": "Hängt an die nächste Frage an, was gerade auf dem Bildschirm steht"
+  },
+  "dialog": {
+    "ok": "OK"
+  },
+  "folders": {
+    "actions": "Aktionen",
+    "cleanup": {
+      "action": "Aufräumen",
+      "confirm_one": "{{count}} leere Auto-Ordner werden gelöscht. Fortfahren?",
+      "confirm_other": "{{count}} leere Auto-Ordner werden gelöscht. Fortfahren?",
+      "done_one": "{{count}} Ordner aufgeräumt.",
+      "done_other": "{{count}} Ordner aufgeräumt.",
+      "failed": "Aufräumen fehlgeschlagen — siehe Console.",
+      "none": "Keine leeren Auto-Ordner zum Aufräumen."
+    },
+    "cleanupAuto": "Leere Auto-Ordner aufräumen",
+    "delete": "Löschen",
+    "deleteChatConfirm": "Chat „{{title}}“ löschen?",
+    "deleteChatConfirmUntitled": "Chat löschen?",
+    "deleteFolderConfirm": "Ordner „{{name}}“ samt enthaltenen Chats löschen?",
+    "folderActions": "Ordner-Aktionen",
+    "group": {
+      "older": "Älter",
+      "thisMonth": "Dieser Monat",
+      "thisWeek": "Diese Woche",
+      "today": "Heute",
+      "yesterday": "Gestern"
+    },
+    "moveToFolder": "In Ordner verschieben",
+    "namePrompt": "Ordnername:",
+    "newChat": "Neuer Chat",
+    "newChatHere": "Neuer Chat hier",
+    "newFolder": "Neuer Ordner",
+    "newSubfolder": "Neuer Unterordner",
+    "noChats": "Noch keine Chats.",
+    "noFolder": "Ohne Ordner",
+    "noFolders": "Keine Ordner mit Inhalt.",
+    "noResults": "Keine Treffer.",
+    "rename": "Umbenennen",
+    "renameChatPrompt": "Chat umbenennen:",
+    "renameFolderPrompt": "Ordner umbenennen:",
+    "searchPlaceholder": "Chats durchsuchen …",
+    "section": "Ordner",
+    "untitled": "(ohne Titel)"
+  },
+  "hooks": {
+    "forApp": "Für {{app}}",
+    "hide": "Modul-Aktionen ausblenden",
+    "label": "Modul-Aktionen",
+    "show": "Modul-Aktionen ({{count}})",
+    "showOthersTitle": "Aktionen aus anderen Modulen anzeigen"
+  },
+  "live": {
+    "connecting": "Live-Gespräch: verbinde …",
+    "end": "Beenden",
+    "endLabel": "Live-Gespräch beenden",
+    "error": "Live-Gespräch: {{error}}",
+    "errorFallback": "Fehler",
+    "listening": "Live-Gespräch: {{assistant}} hört zu …",
+    "speaking": "{{assistant}} spricht — du darfst reinreden"
+  },
+  "markdown": {
+    "copied": "Kopiert",
+    "copyCode": "Code kopieren",
+    "externalImage": "{{alt}} (externes Bild, nicht geladen — zum Öffnen tippen)",
+    "externalImageFrom": "{{alt}} (externes Bild von {{host}}, nicht geladen — zum Öffnen tippen)",
+    "externalImageTitle": "Externes Bild — aus Sicherheitsgründen nicht automatisch geladen"
+  },
+  "marker": {
+    "polygon": "Polygon (Karte)",
+    "region": "Region in {{tab}}",
+    "svgElement": "SVG-Element"
+  },
+  "messages": {
+    "askAgain": "Nochmal fragen",
+    "copy": "Kopieren",
+    "copyAnswer": "Antwort kopieren",
+    "copyMessage": "Nachricht kopieren",
+    "emptyGreeting": "Hallo! Ich bin {{assistant}}.",
+    "followups": "Folgefragen",
+    "image": "Bild",
+    "readAloud": "Vorlesen",
+    "readAloudTitle": "Antwort vorlesen",
+    "retry": "Nochmal",
+    "retryTitle": "Frage erneut senden",
+    "roleSystem": "System",
+    "share": "Teilen",
+    "shareTitle": "Antwort teilen",
+    "sources_one": "{{count}} Quelle",
+    "sources_other": "{{count}} Quellen",
+    "today": "Heute",
+    "yesterday": "Gestern"
+  },
+  "nav": {
+    "open": "öffnen"
+  },
+  "panel": {
+    "close": "Schließen",
+    "expand": "Im Vollbild öffnen"
+  },
+  "picker": {
+    "busy": "Lädt …",
+    "confirm": "Übernehmen",
+    "confirmCount_one": "Übernehmen ({{count}})",
+    "confirmCount_other": "Übernehmen ({{count}})",
+    "empty": "Keine Einträge.",
+    "loading": "Lade …",
+    "loadingSources": "Lade Quellen …",
+    "title": "Datei aus {{product}} wählen"
+  },
+  "plan": {
+    "edit": "Bearbeiten",
+    "failed": "Aktion kam nicht durch — der Plan startet ggf. automatisch. Bitte nochmal versuchen.",
+    "failedApprove": "Aktion kam nicht durch — bitte nochmal versuchen.",
+    "saveAndStart": "Speichern + starten",
+    "startNow": "Sofort starten",
+    "startsIn": "Plan — startet in {{seconds}}s",
+    "stop": "Stop"
+  },
+  "question": {
+    "hint": "Leere Felder: {{assistant}} nimmt etwas Sinnvolles an",
+    "hintRequired": "* Pflichtfeld · leere Felder: {{assistant}} nimmt etwas Sinnvolles an",
+    "missing": "Bitte noch ausfüllen: {{fields}}",
+    "received": "{{assistant}} hat deine Angaben",
+    "required": "Pflichtfeld",
+    "sendFailed": "Antwort konnte nicht gesendet werden — bitte nochmal klicken oder direkt in den Chat tippen.",
+    "sending": "Sende…",
+    "sent": "Gesendet",
+    "submit": "Absenden"
+  },
+  "speaking": {
+    "label": "{{assistant}} spricht …",
+    "stop": "Stopp",
+    "stopLabel": "Vorlesen stoppen"
+  },
+  "subAgent": {
+    "error": "error",
+    "ok": "ok",
+    "title": "Sub-Agent #{{number}}",
+    "tools_one": "{{count}} Tool",
+    "tools_other": "{{count}} Tools"
+  },
+  "thinkingLine": {
+    "hideSteps": "Schritte ausblenden",
+    "minutes": "{{time}} min",
+    "phase": {
+      "done": "Fertig",
+      "executing": "Arbeitet",
+      "finalizing": "Formuliert",
+      "planning": "Plant",
+      "thinking": "Denkt nach"
+    },
+    "seconds_one": "{{count}} s",
+    "seconds_other": "{{count}} s",
+    "showSteps": "Schritte ansehen",
+    "tools_one": "{{count}} Werkzeug",
+    "tools_other": "{{count}} Werkzeuge"
+  },
+  "welcome": {
+    "askForHelp": "Frag {{assistant}} nach Hilfe oder lass etwas erledigen.",
+    "chips": {
+      "photos": {
+        "label": "Fotos finden",
+        "prompt": "Suche in Immich nach Fotos von "
+      },
+      "planDay": {
+        "label": "Tag planen",
+        "prompt": "Hilf mir, meinen Tag zu planen. Heute steht an: "
+      },
+      "summarize": {
+        "label": "Dokument zusammenfassen",
+        "prompt": "Fasse mir dieses Dokument zusammen: "
+      }
+    },
+    "continueTitle": "Letzte Konversation fortsetzen",
+    "continueWith": "Weiter mit:",
+    "greeting": "Hallo {{name}}!",
+    "greetingAnon": "Hallo!",
+    "greetingMobile": "Hallo {{name}}.",
+    "greetingMobileAnon": "Hallo.",
+    "howCanIHelp": "Wie kann ich dir helfen?",
+    "lastChat": "Letzter Chat",
+    "seesApp": "Ich sehe {{app}}. Was soll ich tun?",
+    "whatCanIDo": "Was kann ich für dich tun?",
+    "workingWith": "Du arbeitest mit <code>{{object}}</code>."
+  }
+}

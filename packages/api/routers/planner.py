@@ -44,6 +44,7 @@ from routers.nc_pim import (
 )
 
 from auth import clara_agent_headers, is_service_call, require_caller
+from sprache import Text, tx
 from services import localtime
 
 logger = logging.getLogger(__name__)
@@ -158,8 +159,7 @@ async def _vikunja_token(username: str) -> str:
             return str(token).strip()
     raise HTTPException(
         status_code=424,
-        detail="Kein Vikunja-API-Token hinterlegt. Einstellungen → App-Verbindungen → Planner (Vikunja): "
-               "Token aus der Vikunja-UI (Einstellungen → API-Tokens) eintragen.",
+        detail=Text("planner.noToken"),
     )
 
 
@@ -820,7 +820,7 @@ async def schedule_task(task_id: int, body: ScheduleBody, request: Request):
     nc_user, nc_pass = await _nc_credentials(user)
     cals = await _calendars(nc_user, nc_pass, "VEVENT")
     if not cals:
-        raise HTTPException(status_code=404, detail="Kein NC-Kalender (VEVENT) gefunden")
+        raise HTTPException(status_code=404, detail=Text("planner.noCalendar"))
 
     old_uid, old_cal = await _sidecar_event(user, body.project_id, task_id)
     if old_uid:
@@ -1313,7 +1313,7 @@ async def _principal_email(nc_user: str, nc_pass: str) -> str | None:
 async def _cals_for(nc_user: str, nc_pass: str, calendar: str | None) -> list[dict]:
     cals = await _calendars(nc_user, nc_pass, "VEVENT")
     if not cals:
-        raise HTTPException(status_code=404, detail="Kein NC-Kalender (VEVENT) gefunden")
+        raise HTTPException(status_code=404, detail=Text("planner.noCalendar"))
     if calendar:
         f = [c for c in cals if c["name"] == calendar]
         if f:
@@ -1394,7 +1394,7 @@ async def get_event(uid: str, request: Request, calendar: str | None = None):
     for blk in _blocks(raw, "VEVENT"):
         if _first(blk, "UID") == uid:
             return _event_out(blk, cal)
-    raise HTTPException(status_code=404, detail=f"Event {uid} nicht gefunden")
+    raise HTTPException(status_code=404, detail=Text("planner.eventNotFound"))
 
 
 @router.post("/events")
@@ -1404,18 +1404,17 @@ async def create_event(body: EventCreate, request: Request):
     nc_user, nc_pass = await _nc_credentials(user)
     cals = await _calendars(nc_user, nc_pass, "VEVENT")
     if not cals:
-        raise HTTPException(status_code=404, detail="Kein NC-Kalender (VEVENT) gefunden")
+        raise HTTPException(status_code=404, detail=Text("planner.noCalendar"))
     target = _default_target(cals, body.calendar)
     if not target.get("writable", True):
-        raise HTTPException(status_code=403, detail=f"Kalender „{target['name']}“ ist schreibgeschützt")
+        raise HTTPException(status_code=403, detail=Text("planner.calendarReadOnly", name=target["name"]))
 
     organizer_email = None
     warning = None
     if body.attendees:
         organizer_email = await _principal_email(nc_user, nc_pass)
         if not organizer_email:
-            warning = ("Teilnehmer nicht gespeichert: keine Kalender-E-Mail-Adresse am "
-                       "Nextcloud-Konto gefunden (iMIP braucht ORGANIZER).")
+            warning = await tx("planner.attendeesNotSaved")
             body = body.model_copy(update={"attendees": []})
 
     uid = str(uuid.uuid4())
@@ -1511,7 +1510,7 @@ async def update_event(uid: str, body: EventUpdate, request: Request, calendar: 
     if body.attendees:
         organizer_email = await _principal_email(nc_user, nc_pass)
         if not organizer_email:
-            warning = "Teilnehmer unverändert gelassen: keine Kalender-E-Mail-Adresse gefunden."
+            warning = await tx("planner.attendeesUnchanged")
     if body.attendees and organizer_email:
         patched = _replace_multi(patched, {"ATTENDEE", "ORGANIZER"},
                                  _attendee_lines(organizer_email, nc_user, body.attendees))

@@ -13,6 +13,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { fetchUiHooks, hooksForApp, type ClaraUiHook } from "./toolsApi";
+import { useTranslation } from "@claraos/core";
 import styles from "./UiHookButtons.module.css";
 
 interface Props {
@@ -68,6 +69,7 @@ function HookChip({
 }
 
 export function UiHookButtons({ appId, appContext, onHookSelected }: Props) {
+  const { t } = useTranslation("chat");
   const [hooks, setHooks] = useState<ClaraUiHook[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [expandAll, setExpandAll] = useState(false);
@@ -107,11 +109,11 @@ export function UiHookButtons({ appId, appContext, onHookSelected }: Props) {
     onHookSelected(h, resolveHookContext(h, appContext));
 
   return (
-    <div className={styles.container} aria-label="Module actions">
+    <div className={styles.container} aria-label={t("hooks.label")}>
       {matched.length > 0 && (
         <div className={styles.row}>
           <span className={styles.label}>
-            {appId ? `Für ${appId}` : "Aktionen"}
+            {appId ? t("hooks.forApp", { app: appId }) : t("folders.actions")}
           </span>
           {matched.map(h => (
             <HookChip key={`${h.module}:${h.location}:${h.label}`}
@@ -126,10 +128,10 @@ export function UiHookButtons({ appId, appContext, onHookSelected }: Props) {
             type="button"
             className={styles.expandToggle}
             onClick={() => setExpandAll(v => !v)}
-            title="Aktionen aus anderen Modulen anzeigen"
+            title={t("hooks.showOthersTitle")}
           >
             <span className={styles.expandIcon}>{expandAll ? "▾" : "▸"}</span>
-            <span>{expandAll ? "Modul-Aktionen ausblenden" : `🧩 Modul-Aktionen (${otherModuleCount})`}</span>
+            <span>{expandAll ? t("hooks.hide") : `🧩 ${t("hooks.show", { count: otherModuleCount })}`}</span>
           </button>
           {expandAll && (
             <div className={styles.modulesGrid}>

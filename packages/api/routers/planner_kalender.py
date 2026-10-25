@@ -370,7 +370,12 @@ class RespondIn(BaseModel):
     calendar: str | None = None
 
 
-_PARTSTAT_DE = {"ACCEPTED": "zugesagt", "TENTATIVE": "mit Vorbehalt zugesagt", "DECLINED": "abgesagt"}
+_PARTSTAT_KEY = {"ACCEPTED": "accepted", "TENTATIVE": "tentative", "DECLINED": "declined"}
+
+
+def _tagzeit(lang: str) -> str:
+    """Short day + time for push texts ("24.10. 14:00" / "24 Oct 14:00")."""
+    return "%d.%m. %H:%M" if lang == "de" else "%d %b %H:%M"
 
 
 @router.post("/events/{uid}/respond")
@@ -415,15 +420,17 @@ async def respond(uid: str, body: RespondIn, request: Request):
         for p in await _people():
             if organizer in await _addresses_of(p["username"]) and p["username"] != me:
                 from services.ntfy_publish import notify_users
-                msg = f"{me} hat „{summary}“ {_PARTSTAT_DE[body.partstat]}."
+                from sprache import sprache_fuer, t as _t
+                lang = await sprache_fuer(p["username"])
+                msg = _t(lang, f"calendar.{_PARTSTAT_KEY[body.partstat]}", me=me, summary=summary)
                 if body.proposed_start:
-                    ps = _iso_to_dt(body.proposed_start).astimezone(_TZ).strftime("%d.%m. %H:%M")
+                    ps = _iso_to_dt(body.proposed_start).astimezone(_TZ).strftime(_tagzeit(lang))
                     pe = _iso_to_dt(body.proposed_end).astimezone(_TZ).strftime("%H:%M") if body.proposed_end else ""
-                    msg += f" Vorschlag: {ps}{'–' + pe if pe else ''}."
+                    msg += _t(lang, "calendar.proposal", when=f"{ps}{'–' + pe if pe else ''}")
                 if body.comment:
                     msg += f" „{body.comment.strip()[:200]}“"
                 try:
-                    notified = bool(await notify_users([p["username"]], "Antwort auf Einladung", msg, app_id="planner"))
+                    notified = bool(await notify_users([p["username"]], _t(lang, "calendar.rsvpTitle"), msg, app_id="planner"))
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("planner_kalender respond notify: %s", exc)
                 break
@@ -729,6 +736,8 @@ async def _reminder_tick(username: str, since: datetime, now: datetime) -> int:
     if not events:
         return 0
     from services.ntfy_publish import notify_users
+    from sprache import sprache_fuer, t as _t
+    lang = await sprache_fuer(username)
     for ev in events:
         trig = _trigger_at(ev)
         if trig is None or not (since < trig <= now):
@@ -741,13 +750,15 @@ async def _reminder_tick(username: str, since: datetime, now: datetime) -> int:
         if not ins.endswith("1"):
             continue
         if ev["all_day"]:
-            when = datetime.fromisoformat(ev["start"][:10]).strftime("%d.%m.") + " (ganztägig)"
+            tag = "%d.%m." if lang == "de" else "%d %b"
+            when = datetime.fromisoformat(ev["start"][:10]).strftime(tag) + " " + _t(lang, "calendar.allDay")
         else:
             s = _iso_to_dt(ev["start"]).astimezone(_TZ)
-            when = s.strftime("%d.%m. %H:%M") if s.date() != now.astimezone(_TZ).date() else f"heute {s.strftime('%H:%M')}"
+            when = (s.strftime(_tagzeit(lang)) if s.date() != now.astimezone(_TZ).date()
+                    else _t(lang, "calendar.today", time=s.strftime("%H:%M")))
         msg = when + (f" · {ev['location']}" if ev.get("location") else "")
         try:
-            sent += await notify_users([username], f"🗓 {ev['summary'] or 'Termin'}", msg, app_id="planner")
+            sent += await notify_users([username], f"🗓 {ev['summary'] or _t(lang, 'calendar.event')}", msg, app_id="planner")
         except Exception as exc:  # noqa: BLE001
             logger.warning("[planner-reminder] %s: %s", username, exc)
     return sent

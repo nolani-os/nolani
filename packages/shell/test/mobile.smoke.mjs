@@ -32,7 +32,9 @@ const src = (rel) => resolve(here, "..", "src", rel);
 // it exists, otherwise the glob is empty.
 globalThis.__smokeGlobs = {};
 const CORE_STUB = "data:text/javascript;base64," + Buffer.from(
-  'export const getBrand = () => ({ product: "NolaniOS", assistant: "Nolani" });',
+  'export const getBrand = () => ({ product: "NolaniOS", assistant: "Nolani" });' +
+    // Translations resolve to their keys, so assertions stay language-neutral.
+    "export const i18n = { t: (k) => k.replace(/^[a-zA-Z]+:/, '') };",
 ).toString("base64");
 let globCount = 0;
 async function loadTs(relPath) {
@@ -119,8 +121,8 @@ ok("isOnHome dock", H.isOnHome(d, "a") === true);
 ok("isOnHome false", H.isOnHome(L0, "a") === false);
 const def = H.loadHomeLayout();
 ok("default layout dock has 3 (Clara button = column 1)", Array.isArray(def.dock) && def.dock.length === 3);
-ok("default dock = talk/mail/selkies",
-  eq(def.dock, ["nextcloud-talk", "bulwark-mail", "selkies-browser"]));
+ok("default dock = teams/post/selkies (built-in apps every installation has)",
+  eq(def.dock, ["teams-workspace", "post", "selkies-browser"]));
 ok("default dock has no dead 'clara' id", !def.dock.includes("clara"));
 ok("default page1 has open-webui (page0 = widgets)", def.pages[1].includes("open-webui"));
 store["claraos.mobile.workspaces"] = JSON.stringify({ main: ["immich", "paperless", "element", "files", "post"] });

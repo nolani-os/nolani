@@ -1,0 +1,371 @@
+{
+  "actions": {
+    "cancel": "Cancel",
+    "close": "Close",
+    "closeWindow": "Close window",
+    "copy": "Copy",
+    "create": "Create",
+    "cut": "Cut",
+    "delete": "Delete",
+    "deletePermanently": "Delete permanently",
+    "download": "Download",
+    "emptyConfirm": "Empty",
+    "emptyTrash": "Empty trash",
+    "extract": "Extract",
+    "more": "Actions",
+    "move": "Move",
+    "moveToTrash": "Move to trash",
+    "ok": "OK",
+    "paste": "Paste",
+    "pasteHere": "Paste here",
+    "properties": "Properties",
+    "refresh": "Refresh",
+    "rename": "Rename",
+    "restore": "Restore",
+    "retry": "Try again",
+    "selectAll": "Select all",
+    "upload": "Upload",
+    "uploadFiles": "Upload files"
+  },
+  "app": {
+    "title": "Files"
+  },
+  "archive": {
+    "archiveFailed": "Compressing failed: {{detail}}",
+    "encryptFailed": "Encryption failed: {{detail}}",
+    "encryptPrompt": "Password for “{{name}}” — without it, the archive cannot be opened:",
+    "extractFailed": "Extraction failed: {{detail}}",
+    "passwordPrompt": "“{{name}}” is encrypted — password:",
+    "wrongPassword": "Wrong password for “{{name}}” — try again:"
+  },
+  "clipboard": {
+    "clear": "Clear clipboard",
+    "copied_one": "{{count}} item copied",
+    "copied_other": "{{count}} items copied",
+    "cut_one": "{{count}} item cut",
+    "cut_other": "{{count}} items cut"
+  },
+  "confirm": {
+    "closeTabs_one": "{{count}} tab is open. Close the window anyway?",
+    "closeTabs_other": "{{count}} tabs are open. Close the window anyway?",
+    "deleteManyNoTrash_one": "Permanently delete {{count}} item? (no trash)",
+    "deleteManyNoTrash_other": "Permanently delete {{count}} items? (no trash)",
+    "deleteOneNoTrash": "Permanently delete “{{name}}”? (no trash)",
+    "deletePermanentMany_one": "Permanently delete {{count}} item?",
+    "deletePermanentMany_other": "Permanently delete {{count}} items?",
+    "deletePermanentOne": "Permanently delete “{{name}}”?",
+    "emptyTrash_one": "Empty the trash? {{count}} item will be permanently deleted.",
+    "emptyTrash_other": "Empty the trash? {{count}} items will be permanently deleted.",
+    "extractHere": "Extract “{{name}}” here?",
+    "noTrash": "(no trash)",
+    "purge": "Permanently delete “{{name}}”? This can't be undone.",
+    "restore": "Restore “{{name}}”?",
+    "skipsTrash": "The trash is skipped.",
+    "trashMany_one": "Move {{count}} item to the trash?",
+    "trashMany_other": "Move {{count}} items to the trash?",
+    "trashOne": "Move “{{name}}” to the trash?"
+  },
+  "count": {
+    "hidden_one": "({{count}} hidden)",
+    "hidden_other": "({{count}} hidden)",
+    "items_one": "{{count}} item",
+    "items_other": "{{count}} items",
+    "selected_one": "{{count}} selected",
+    "selected_other": "{{count}} selected"
+  },
+  "details": {
+    "modified": "Modified",
+    "name": "Name",
+    "path": "Path",
+    "size": "Size",
+    "source": "Source",
+    "text": "{{name}}\n\nPath: {{path}}\nSize: {{size}}\nModified: {{modified}}",
+    "type": "Type"
+  },
+  "empty": {
+    "folder": "Folder is empty",
+    "folderHint": "Drag files here or upload them.",
+    "folderShort": "Empty folder",
+    "noFavorites": "No favorites yet",
+    "noFavoritesHint": "Choose “Add to favorites” in the menu of a file or folder.",
+    "noHits": "No results",
+    "nothingFound": "Nothing found",
+    "nothingFoundHint": "Press Enter to search subfolders too.",
+    "searchSubfolders": "Search subfolders",
+    "trash": "Trash is empty",
+    "trashHint": "Items deleted from Nextcloud end up here and can be restored."
+  },
+  "errors": {
+    "lastSeen": "Last seen: {{date}}",
+    "loadFolder": "Couldn't load the folder",
+    "offline": "{{device}} is offline / unreachable",
+    "offlineShort": "{{device}} is offline",
+    "sshdDown": "{{device}} is reachable, but SSH is not running",
+    "sshdDownShort": "{{device}} reachable, but SSH is not running"
+  },
+  "groups": {
+    "date": {
+      "earlier": "Earlier",
+      "thisMonth": "This month",
+      "thisWeek": "This week",
+      "today": "Today",
+      "unknown": "Unknown",
+      "yesterday": "Yesterday"
+    }
+  },
+  "keys": {
+    "ctrl": "Ctrl",
+    "del": "Del",
+    "shift": "Shift"
+  },
+  "menu": {
+    "addFavorite": "Add to favorites",
+    "addToPlaces": "Add to Places",
+    "analyze": "Analyze with {{assistant}}",
+    "archive": "Compress to ZIP",
+    "defaultApp": "{{label}} (default)",
+    "desktopShortcut": "Create desktop shortcut",
+    "downloadZip": "Download as ZIP",
+    "encrypt": "Encrypt (AES ZIP) …",
+    "moreActions": "More actions",
+    "open": "Open",
+    "openInNewTab": "Open in new tab",
+    "openInSplit": "Open in split view",
+    "openWith": "Open with …",
+    "pasteInto": "Paste into folder",
+    "print": "Print …",
+    "removeFavorite": "Remove from favorites",
+    "share": "Share …",
+    "versions": "Previous versions …"
+  },
+  "mobile": {
+    "all": "All",
+    "endSelection": "Exit selection",
+    "parentFolder": "Parent folder",
+    "starred_one": "{{count}} starred",
+    "starred_other": "{{count}} starred"
+  },
+  "new": {
+    "fab": "New / Upload",
+    "file": "New file",
+    "fileBaseName": "New",
+    "fileNamePrompt": "File name:",
+    "folder": "New folder",
+    "folderPlaceholder": "Folder name …",
+    "folderPrompt": "Name of the new folder:",
+    "folderShort": "Folder",
+    "title": "New"
+  },
+  "openWith": {
+    "always": "Always open with this app (.{{ext}})",
+    "noDefault": "There is no default app for this file type.",
+    "title": "Open “{{name}}” with…"
+  },
+  "ops": {
+    "alreadyExists": "already exists",
+    "applyToAll": "Apply to all remaining conflicts",
+    "conflict": {
+      "overwrite": "Replace",
+      "rename": "Keep both",
+      "skip": "Skip"
+    },
+    "connectionLost": "Connection lost",
+    "deleteFailed": "Delete failed",
+    "existsHere": "“{{name}}” already exists in this folder.",
+    "existsInTarget": "“{{name}}” already exists in the destination folder.",
+    "failedHeader": "Failed:",
+    "summary": {
+      "copied": "{{done}} of {{total}} copied.",
+      "deleted": "{{done}} of {{total}} deleted.",
+      "moved": "{{done}} of {{total}} moved.",
+      "uploaded": "{{done}} of {{total}} uploaded."
+    }
+  },
+  "places": {
+    "addCurrent": "Add current folder to Places",
+    "desktop": "Desktop",
+    "documents": "Documents",
+    "downloads": "Downloads",
+    "hide": "Hide entry",
+    "hideHiddenAgain": "Hide hidden entries again",
+    "homeFolder": "Home",
+    "moveDown": "Move down",
+    "moveUp": "Move up",
+    "remove": "Remove",
+    "rename": "Rename …",
+    "renamePrompt": "Rename place:",
+    "showAll": "Show all entries",
+    "unhide": "Show entry again"
+  },
+  "print": {
+    "color": "Color",
+    "colorOption": {
+      "auto": "Automatic",
+      "color": "Color",
+      "monochrome": "Black and white"
+    },
+    "copies": "Copies",
+    "error": "Error {{status}}",
+    "loadFailed": "Couldn't load the printer list.",
+    "noPrinter": "No printer set up. Printers are managed in the Devices app.",
+    "noResponse": "Printer is not responding.",
+    "printer": "Printer",
+    "probing": "Checking printer …",
+    "readFailed": "Couldn't read the file",
+    "reading": "Reading file …",
+    "sending": "Sending job …",
+    "sent": "Print job sent.",
+    "sides": "Sides",
+    "sidesOption": {
+      "one-sided": "One-sided",
+      "two-sided-long-edge": "Two-sided (long edge)",
+      "two-sided-short-edge": "Two-sided (short edge)"
+    },
+    "submit": "Print",
+    "title": "Print: {{name}}"
+  },
+  "rename": {
+    "prompt": "Rename “{{name}}”:"
+  },
+  "search": {
+    "clear": "Clear search",
+    "in": "Search in “{{name}}” …",
+    "label": "Search",
+    "openParent": "Open containing folder",
+    "searching": "Searching…",
+    "searchingMobile": "Searching …",
+    "truncated": "Results limited — not all matches are shown."
+  },
+  "sections": {
+    "favorites": "Favorites",
+    "files": "Files",
+    "more": "More",
+    "places": "Places",
+    "sources": "Sources",
+    "trash": "Trash"
+  },
+  "share": {
+    "allowUpload": "Allow uploading and editing",
+    "copied": "Copied ✓",
+    "copyFailed": "Copying didn't work — please select the link manually.",
+    "create": "Create link",
+    "createFailed": "Couldn't create the link.",
+    "expires": "Expires on (optional)",
+    "loadFailed": "Couldn't load shares.",
+    "loading": "Loading shares…",
+    "noPassword": "no password",
+    "none": "No links yet.",
+    "noticeAccount": "The recipient doesn't need an account — at most, the link asks for the password set here.",
+    "noticeInternet": "The link is reachable from the internet, so a password is a good idea.",
+    "password": "Password (optional)",
+    "remove": "Remove",
+    "revoke": "Revoke link",
+    "title": "Share “{{name}}”",
+    "until": "until {{date}}",
+    "uploadAllowed": "uploads allowed",
+    "withPassword": "🔒 password protected"
+  },
+  "sidebar": {
+    "refreshFolder": "Refresh folder",
+    "reloadSources": "Reload sources",
+    "switchSource": "Switch source"
+  },
+  "sort": {
+    "asc": "Ascending",
+    "by": "Sort by",
+    "desc": "Descending",
+    "dirsFirst": "Folders first",
+    "modified": "Date modified",
+    "name": "Name",
+    "size": "Size",
+    "title": "Sort",
+    "type": "Type"
+  },
+  "source": {
+    "noAccess": "no access configured",
+    "noAccessShort": "no access",
+    "offline": "offline",
+    "online": "online",
+    "sshOff": "SSH off"
+  },
+  "status": {
+    "loading": "Loading…",
+    "loadingMobile": "Loading …",
+    "loadingShort": "Loading…"
+  },
+  "tabs": {
+    "ariaLabel": "Folder tabs",
+    "autoName": "Automatic name",
+    "close": "Close tab",
+    "new": "New tab",
+    "newTitle": "New tab ({{shortcut}})",
+    "rename": "Rename tab …",
+    "renamePrompt": "Rename tab (empty = automatic name):",
+    "reopen": "Reopen closed tab",
+    "reopenTitle": "Reopen closed tab ({{shortcut}})"
+  },
+  "toolbar": {
+    "back": "Back (Alt+←)",
+    "copyPath": "Copy path",
+    "enterPath": "Enter path",
+    "enterPathTitle": "Enter path (F6)",
+    "forward": "Forward (Alt+→)",
+    "pasteCopied_one": "Paste ({{count}} copied)",
+    "pasteCopied_other": "Paste ({{count}} copied)",
+    "pasteCut_one": "Paste ({{count}} cut)",
+    "pasteCut_other": "Paste ({{count}} cut)",
+    "search": "Search…",
+    "showIntermediate": "Show intermediate folders"
+  },
+  "trash": {
+    "back": "Back",
+    "count_one": "{{count}} item in the trash",
+    "count_other": "{{count}} items in the trash",
+    "deleted": "Deleted",
+    "from": "from {{folder}}",
+    "originalLocation": "Original location",
+    "restorable_one": "{{count}} item · restorable",
+    "restorable_other": "{{count}} items · restorable"
+  },
+  "upload": {
+    "desktop": "Uploading: {{name}}",
+    "desktopCount": "Uploading ({{index}}/{{total}}): {{name}}",
+    "mobile": "Uploading · {{name}}",
+    "mobileCount": "Uploading {{index}}/{{total}} · {{name}}"
+  },
+  "versions": {
+    "ariaLabel": "Previous versions of “{{name}}”",
+    "download": "Download",
+    "loading": "Loading versions…",
+    "none": "No previous versions.",
+    "restoreConfirm": "Restore “{{name}}” to the version from {{when}}? The current content becomes a version itself.",
+    "title": "Previous versions — “{{name}}”"
+  },
+  "view": {
+    "asGrid": "Show as grid",
+    "asList": "Show as list",
+    "copyHint": "Select something first to copy it to the other view.",
+    "details": "Details",
+    "groupBy": "Group by",
+    "hiddenFiles": "Hidden files",
+    "icons-large": "Large icons",
+    "icons-small": "Small icons",
+    "list": "List",
+    "moveHint": "Select something first to move it to the other view.",
+    "noGrouping": "No grouping",
+    "splitCloseLeft": "Close left view",
+    "splitCloseRight": "Close right view",
+    "splitDivider": "View divider",
+    "splitFocusOther": "Focus other view",
+    "splitOpen": "Split view",
+    "title": "View"
+  },
+  "viewers": {
+    "image-viewer": "Image viewer",
+    "model-viewer": "3D viewer",
+    "office-viewer": "Office (Collabora)",
+    "pdf-viewer": "PDF viewer",
+    "text-editor": "Text editor",
+    "video-player": "Video player"
+  }
+}

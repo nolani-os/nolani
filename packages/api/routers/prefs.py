@@ -9,6 +9,7 @@ import json
 import logging
 from fastapi import APIRouter, Request
 from auth import get_current_user
+from betriebsprofil import NC_FOLDER
 from database import user_tx
 from models import UserPrefs, DesktopState
 
@@ -113,7 +114,7 @@ async def save_desktop_state(request: Request, state: DesktopState) -> dict:
 
 
 async def _nc_backup_state(username: str, state_json: str) -> None:
-    """Backup desktop state to Nextcloud ClaraOS/Desktop/state.json (best-effort)."""
+    """Backup desktop state to Nextcloud <NC_FOLDER>/Desktop/state.json (best-effort)."""
     try:
         from routers.files import _nc_credentials, _webdav_url, _auth_header
         import httpx
@@ -121,14 +122,14 @@ async def _nc_backup_state(username: str, state_json: str) -> None:
         nc_user, nc_pass = await _nc_credentials(username)
         headers = {**_auth_header(nc_user, nc_pass), "Content-Type": "application/json"}
 
-        # Ensure ClaraOS/Desktop/ directory exists
-        for folder in ["ClaraOS", "ClaraOS/Desktop"]:
+        # Ensure <NC_FOLDER>/Desktop/ directory exists
+        for folder in [NC_FOLDER, f"{NC_FOLDER}/Desktop"]:
             url = _webdav_url(nc_user, f"/{folder}")
             async with httpx.AsyncClient(timeout=5.0) as client:
                 await client.request("MKCOL", url, headers=_auth_header(nc_user, nc_pass))
 
         # Write state.json
-        url = _webdav_url(nc_user, "/ClaraOS/Desktop/state.json")
+        url = _webdav_url(nc_user, f"/{NC_FOLDER}/Desktop/state.json")
         async with httpx.AsyncClient(timeout=10.0) as client:
             await client.put(url, headers=headers, content=state_json.encode())
     except Exception as e:

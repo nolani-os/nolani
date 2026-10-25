@@ -73,6 +73,12 @@ for t in ${1:-login files planner post teams chat medien browser routinen social
     docker run --rm -e ZELLE_TEST_PW="$ZELLE_PW" -v "$PWD:/w" -w /w \
       mcr.microsoft.com/playwright/python:v1.52.0-noble \
       sh -c "pip install -q playwright==1.52.0 >/dev/null 2>&1; playwright install --with-deps chrome >/dev/null 2>&1; python3 sicht_test.py $DOM zelle-test /w/sicht" || rc=1
+  elif [ "$t" = oberflaeche ]; then
+    # The assistant opens and drives apps on request (needs the brain) — screenshots to ./oberflaeche/
+    rm -rf oberflaeche && mkdir -p oberflaeche
+    docker run --rm -e ZELLE_TEST_PW="$ZELLE_PW" -v "$PWD:/w" -w /w \
+      mcr.microsoft.com/playwright/python:v1.52.0-noble \
+      sh -c "pip install -q playwright==1.52.0 >/dev/null 2>&1; playwright install --with-deps chrome >/dev/null 2>&1; python3 oberflaeche_test.py $DOM zelle-test /w/oberflaeche" || rc=1
   elif [ "$t" = bedien ]; then
     # Operation check: click through every app like a user — screenshots to ./bedien/
     rm -rf bedien && mkdir -p bedien

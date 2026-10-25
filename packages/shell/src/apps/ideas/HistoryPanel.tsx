@@ -7,7 +7,7 @@ import styles from "./IdeasApp.module.css";
 import { Icon } from "../../components/Icon";
 import { ideasApi } from "./api";
 import type { KbDiffOp, KbHistoryEntry } from "./types";
-import { regionLocale, getBrand } from "@claraos/core";
+import { regionLocale, getBrand, useTranslation } from "@claraos/core";
 
 interface Props {
   objectId: string;
@@ -17,6 +17,7 @@ interface Props {
 }
 
 export function HistoryPanel({ objectId, isOwner, onRestored, onClose }: Props) {
+  const { t } = useTranslation("wissen");
   const [entries, setEntries] = useState<KbHistoryEntry[]>([]);
   const [openVersion, setOpenVersion] = useState<number | null>(null);
   const [ops, setOps] = useState<KbDiffOp[]>([]);
@@ -43,8 +44,8 @@ export function HistoryPanel({ objectId, isOwner, onRestored, onClose }: Props) 
     <div className={styles.modalBackdrop} onClick={onClose}>
       <div className={`${styles.modal} ${styles.historyModal}`} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHead}>
-          <h3>🕓 Versionen</h3>
-          <button className={styles.iconBtn} onClick={onClose} title="Schließen"><Icon name="close" size={14} title="Schließen" /></button>
+          <h3>{t("history.title")}</h3>
+          <button className={styles.iconBtn} onClick={onClose} title={t("app.close")}><Icon name="close" size={14} title={t("app.close")} /></button>
         </div>
 
         <div className={styles.historyBody}>
@@ -64,15 +65,15 @@ export function HistoryPanel({ objectId, isOwner, onRestored, onClose }: Props) 
                   <div className={styles.historyActions}>
                     <button className={styles.linkBtn}
                             onClick={async () => {
-                              const name = window.prompt("Name für diese Version?", h.name ?? "");
+                              const name = window.prompt(t("history.namePrompt"), h.name ?? "");
                               if (name === null) return;
                               await ideasApi.renameHistory(objectId, h.version, name);
                               load();
-                            }}>Benennen</button>
+                            }}>{t("history.rename")}</button>
                     <button className={styles.linkBtn}
                             disabled={busy}
                             onClick={async () => {
-                              if (!window.confirm(`Version ${h.version} wiederherstellen? Der aktuelle Stand wird vorher als neue Version gesichert.`)) return;
+                              if (!window.confirm(t("history.confirmRestore", { version: h.version }))) return;
                               setBusy(true);
                               try {
                                 await ideasApi.restoreHistory(objectId, h.version);
@@ -81,19 +82,19 @@ export function HistoryPanel({ objectId, isOwner, onRestored, onClose }: Props) 
                               } finally {
                                 setBusy(false);
                               }
-                            }}>Wiederherstellen</button>
+                            }}>{t("history.restore")}</button>
                   </div>
                 )}
               </li>
             ))}
-            {entries.length === 0 && <li className={styles.metaHint}>Noch keine Versionen.</li>}
+            {entries.length === 0 && <li className={styles.metaHint}>{t("history.none")}</li>}
           </ul>
 
           <div className={styles.diffPane}>
             {openVersion === null ? (
-              <div className={styles.metaHint}>Version links wählen, um die Änderungen zum aktuellen Stand zu sehen.</div>
+              <div className={styles.metaHint}>{t("history.pick")}</div>
             ) : ops.length === 0 ? (
-              <div className={styles.metaHint}>Keine Unterschiede zum aktuellen Stand.</div>
+              <div className={styles.metaHint}>{t("history.same")}</div>
             ) : (
               <pre className={styles.diffText}>
                 {ops.map((op, i) => (

@@ -9,7 +9,17 @@ import { Chip } from "../../components/Chip";
 import { hasDate, type VikTask } from "./types";
 import { checklistProgress, parseChecklist } from "./checklist";
 import { datumInWorten } from "../../lib/datumsWorte";
-import { regionLocale, getBrand } from "@claraos/core";
+import { regionLocale, i18n, useTranslation } from "@claraos/core";
+
+/** Translate at call time (never at module load: the language can change). */
+function tr(key: string, opts?: Record<string, unknown>): string {
+  return i18n.t(`planner:${key}`, opts);
+}
+
+/** Priority name (0–5) in the current UI language. */
+export function prioLabel(p: number): string {
+  return tr(`priority.level.${p}`);
+}
 
 export function ymd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -56,13 +66,12 @@ export function fmtMins(v: number | null | undefined): string {
   return `${h} h ${Math.round(v % 60)} min`;
 }
 
-const PRIO_LABELS: Record<number, string> = { 3: "Hoch", 4: "Dringend", 5: "SOFORT" };
-
 export function PrioBadge({ priority }: { priority?: number }) {
+  useTranslation("planner"); // re-render on language change
   if (!priority || priority < 3) return null;
   return (
     <span className={`${styles.prioBadge} ${priority >= 4 ? styles.prioUrgent : ""}`}>
-      <Icon name="flag" size={13} /> {PRIO_LABELS[priority] ?? priority}
+      <Icon name="flag" size={13} /> {priority <= 5 ? prioLabel(priority) : priority}
     </span>
   );
 }
@@ -85,21 +94,23 @@ export function LabelChips({ task }: { task: VikTask }) {
 }
 
 export function ChecklistBadge({ task }: { task: VikTask }) {
+  const { t } = useTranslation("planner");
   const { items } = parseChecklist(task.description);
   if (!items.length) return null;
   const p = checklistProgress(items);
   return (
-    <span className={styles.metaBadge} title="Checkliste">
+    <span className={styles.metaBadge} title={t("task.checklist")}>
       <Icon name="done" size={13} /> {p.done}/{p.total}
     </span>
   );
 }
 
 export function InWorkBadge({ task }: { task: VikTask }) {
+  const { t } = useTranslation("planner");
   if (!task._meta?.in_work_by) return null;
   return (
-    <span className={styles.inWorkBadge} title={`in Arbeit seit ${task._meta.in_work_since ?? "?"}`}>
-      ● {task._meta.in_work_by === "clara" || task._meta.in_work_by === "clara-agent" ? `${getBrand().assistant} arbeitet` : task._meta.in_work_by}
+    <span className={styles.inWorkBadge} title={t("task.inWorkSince", { since: task._meta.in_work_since ?? "?" })}>
+      ● {task._meta.in_work_by === "clara" || task._meta.in_work_by === "clara-agent" ? t("task.assistantWorking") : task._meta.in_work_by}
     </span>
   );
 }
@@ -118,10 +129,7 @@ function mitUhrzeit(tag: Date, bisher?: string): string {
 }
 
 const KEIN_DATUM = "0001-01-01T00:00:00Z";
-const PRIOS: { wert: number; label: string }[] = [
-  { wert: 0, label: "Keine" }, { wert: 1, label: "Niedrig" }, { wert: 2, label: "Mittel" },
-  { wert: 3, label: "Hoch" }, { wert: 4, label: "Dringend" }, { wert: 5, label: "SOFORT" },
-];
+const PRIO_WERTE = [0, 1, 2, 3, 4, 5];
 
 /** Warning: EVERY row used to contain a native `<select>` and an
  * `<input type="date">` — forty controls for twenty tasks, and the date was
@@ -132,30 +140,31 @@ const PRIOS: { wert: number; label: string }[] = [
 function PrioPlakette({ task, onInlineEdit }: {
   task: VikTask; onInlineEdit: (t: VikTask, patch: Partial<VikTask>) => void;
 }) {
+  const { t } = useTranslation("planner");
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const p = task.priority ?? 0;
   return (
     <>
       <Chip
         className={p >= 4 ? styles.prioUrgent : p >= 3 ? styles.prioHoch : ""}
-        title="Priorität ändern"
+        title={t("priority.change")}
         icon={p >= 1 ? <Icon name="flag" size={12} /> : undefined}
         onClick={(e) => {
           const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
           setPos({ x: r.left, y: r.bottom + 4 });
         }}
       >
-        {p >= 1 ? PRIOS[p].label : <span className={styles.zellLeer}>Prio</span>}
+        {p >= 1 ? prioLabel(p) : <span className={styles.zellLeer}>{t("priority.short")}</span>}
       </Chip>
       {pos && (
         <PopupMenu
           x={pos.x} y={pos.y}
           onClose={() => setPos(null)}
-          items={PRIOS.map((o) => ({
-            id: String(o.wert),
-            label: o.label,
-            checked: p === o.wert,
-            onSelect: () => onInlineEdit(task, { priority: o.wert }),
+          items={PRIO_WERTE.map((wert) => ({
+            id: String(wert),
+            label: prioLabel(wert),
+            checked: p === wert,
+            onSelect: () => onInlineEdit(task, { priority: wert }),
           }))}
         />
       )}
@@ -166,6 +175,7 @@ function PrioPlakette({ task, onInlineEdit }: {
 function DuePlakette({ task, onInlineEdit }: {
   task: VikTask; onInlineEdit: (t: VikTask, patch: Partial<VikTask>) => void;
 }) {
+  const { t } = useTranslation("planner");
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const [kalender, setKalender] = useState(false);
   const overdue = isOverdue(task);
@@ -203,7 +213,7 @@ function DuePlakette({ task, onInlineEdit }: {
     <>
       <Chip
         className={overdue ? styles.overdue : ""}
-        title="Fälligkeit ändern"
+        title={t("dates.changeDue")}
         icon={hasDate(task.due_date) ? <Icon name="calendar" size={12} /> : undefined}
         onClick={(e) => {
           const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -212,20 +222,20 @@ function DuePlakette({ task, onInlineEdit }: {
       >
         {hasDate(task.due_date)
           ? dueLabel(task.due_date)
-          : <span className={styles.zellLeer}>Kein Datum</span>}
+          : <span className={styles.zellLeer}>{t("dates.noDate")}</span>}
       </Chip>
       {pos && (
         <PopupMenu
           x={pos.x} y={pos.y}
           onClose={() => setPos(null)}
           items={[
-            { id: "heute", label: "Heute", icon: "•", onSelect: () => setzen(0) },
-            { id: "morgen", label: "Morgen", icon: "›", onSelect: () => setzen(1) },
-            { id: "woche", label: "Nächsten Montag", icon: "»", onSelect: naechsterMontag },
+            { id: "heute", label: t("dates.today"), icon: "•", onSelect: () => setzen(0) },
+            { id: "morgen", label: t("dates.tomorrow"), icon: "›", onSelect: () => setzen(1) },
+            { id: "woche", label: t("dates.nextMonday"), icon: "»", onSelect: naechsterMontag },
             { id: "sep", label: "---" },
-            { id: "waehlen", label: "Datum wählen…", onSelect: () => setKalender(true) },
+            { id: "waehlen", label: t("dates.pickDateEllipsis"), onSelect: () => setKalender(true) },
             {
-              id: "keins", label: "Kein Datum", variant: "destructive" as const,
+              id: "keins", label: t("dates.noDate"), variant: "destructive" as const,
               disabled: !hasDate(task.due_date),
               onSelect: () => onInlineEdit(task, { due_date: KEIN_DATUM }),
             },
@@ -248,6 +258,7 @@ export function TaskRow({
   onSelectToggle?: (t: VikTask) => void;
   onInlineEdit?: (t: VikTask, patch: Partial<VikTask>) => void;
 }) {
+  const { t } = useTranslation("planner");
   const overdue = isOverdue(task);
   return (
     <div className={`${styles.taskRow} ${task.done ? styles.taskDone : ""} ${selected ? styles.taskRowSelected : ""}`}>
@@ -256,14 +267,14 @@ export function TaskRow({
           type="checkbox"
           className={styles.selectCheck}
           checked={!!selected}
-          title="Auswählen"
+          title={t("actions.select")}
           onClick={(e) => e.stopPropagation()}
           onChange={() => onSelectToggle(task)}
         />
       )}
       <button
         className={`${styles.checkBtn} ${task.done ? styles.checkBtnDone : ""}`}
-        title={task.done ? "Als offen markieren" : "Erledigen"}
+        title={task.done ? t("actions.markOpen") : t("actions.complete")}
         onClick={(e) => { e.stopPropagation(); onToggle(task); }}
       >
         {task.done ? <Icon name="check" size={14} /> : null}
@@ -288,7 +299,7 @@ export function TaskRow({
               </span>
             )
           )}
-          {!!task.repeat_after && <span className={styles.metaBadge} title="wiederkehrend"><Icon name="repeat" size={12} title="wiederkehrend" /></span>}
+          {!!task.repeat_after && <span className={styles.metaBadge} title={t("dates.recurring")}><Icon name="repeat" size={12} title={t("dates.recurring")} /></span>}
           <ChecklistBadge task={task} />
           <LabelChips task={task} />
         </div>

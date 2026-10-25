@@ -5,9 +5,15 @@ import { useMemo, useState } from "react";
 import styles from "../../PlannerApp.module.css";
 import { Icon } from "../../../../components/Icon";
 import type { CalEventFull, CalTask } from "../../api";
-import { MS_DAY, ymdOf } from "./calLayout";
+import { addDays, ymdOf } from "./calLayout";
 import { busyClassOf } from "./EventBlock";
-import { regionLocale } from "@claraos/core";
+import { regionLocale, useTranslation } from "@claraos/core";
+
+/** Short weekday names Monday..Sunday in the region locale (2024-01-01 was a Monday). */
+function weekdayNames(): string[] {
+  const fmt = new Intl.DateTimeFormat(regionLocale(), { weekday: "short" });
+  return Array.from({ length: 7 }, (_, i) => fmt.format(new Date(2024, 0, 1 + i)));
+}
 
 export function MonthGrid({
   month, events, tasks, onEventClick, onTaskClick, onTaskDueMoved, onDayCreate, onDayTap,
@@ -22,17 +28,19 @@ export function MonthGrid({
   /** Mobile: tapping a cell opens the day list (chips are hidden). */
   onDayTap?: (day: Date) => void;
 }) {
+  const { t } = useTranslation("planner");
   const [dragTask, setDragTask] = useState<CalTask | null>(null);
   const [dropDay, setDropDay] = useState<string | null>(null);
 
   const gridStart = useMemo(() => {
     const first = new Date(month);
     const wd = (first.getDay() + 6) % 7; // Monday=0
-    return new Date(first.getTime() - wd * MS_DAY);
+    return addDays(first, -wd);
   }, [month]);
 
   const cells = useMemo(() => Array.from({ length: 42 }, (_, i) => {
-    const d = new Date(gridStart.getTime() + i * MS_DAY);
+    // Calendar days, not 24h steps: a DST day has 23 or 25 hours.
+    const d = addDays(gridStart, i);
     return { d, key: ymdOf(d), inMonth: d.getMonth() === month.getMonth(), isToday: ymdOf(d) === ymdOf(new Date()) };
   }), [gridStart, month]);
 
@@ -43,14 +51,14 @@ export function MonthGrid({
       return m.get(k)!;
     };
     events.forEach((e) => e.start && bucket(e.all_day ? e.start.slice(0, 10) : ymdOf(new Date(e.start))).events.push(e));
-    tasks.forEach((t) => t.due_date && bucket(ymdOf(new Date(t.due_date))).tasks.push(t));
+    tasks.forEach((task) => task.due_date && bucket(ymdOf(new Date(task.due_date))).tasks.push(task));
     return m;
   }, [events, tasks]);
 
   return (
     <div className={styles.calGrid}>
-      {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((w) => (
-        <div key={w} className={styles.calWeekday}>{w}</div>
+      {weekdayNames().map((w, i) => (
+        <div key={i} className={styles.calWeekday}>{w}</div>
       ))}
       {cells.map(({ d, key, inMonth, isToday }) => {
         const day = byDay.get(key);
@@ -75,8 +83,8 @@ export function MonthGrid({
                   <span key={`e${i}`} className={styles.calDot}
                         style={ev.color ? { background: ev.color } : undefined} />
                 ))}
-                {(day?.tasks ?? []).slice(0, 3).map((t) => (
-                  <span key={`t${t.id}`} className={`${styles.calDot} ${styles.calDotTask}`} />
+                {(day?.tasks ?? []).slice(0, 3).map((task) => (
+                  <span key={`t${task.id}`} className={`${styles.calDot} ${styles.calDotTask}`} />
                 ))}
               </span>
             )}
@@ -91,15 +99,15 @@ export function MonthGrid({
                 {ev.summary}
               </div>
             ))}
-            {(day?.tasks ?? []).slice(0, 3).map((t) => (
-              <div key={t.id}
-                   className={`${styles.calTask} ${t.done ? styles.taskDone : ""}`}
+            {(day?.tasks ?? []).slice(0, 3).map((task) => (
+              <div key={task.id}
+                   className={`${styles.calTask} ${task.done ? styles.taskDone : ""}`}
                    draggable
-                   onDragStart={(e) => { setDragTask(t); e.dataTransfer.setData("text/plain", String(t.id)); }}
+                   onDragStart={(e) => { setDragTask(task); e.dataTransfer.setData("text/plain", String(task.id)); }}
                    onDragEnd={() => { setDragTask(null); setDropDay(null); }}
-                   onClick={() => onTaskClick(t.id)}
-                   title={`${t.title} — ziehen um Fälligkeit zu verschieben`}>
-                <Icon name={t.done ? "done" : "blind"} size={12} /> {t.title}
+                   onClick={() => onTaskClick(task.id)}
+                   title={t("calendar.month.dragTaskHint", { title: task.title })}>
+                <Icon name={task.done ? "done" : "blind"} size={12} /> {task.title}
               </div>
             ))}
             {((day?.events.length ?? 0) > 3 || (day?.tasks.length ?? 0) > 3) && (

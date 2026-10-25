@@ -17,7 +17,7 @@
  * window here as everywhere else.
  */
 import { useCallback, useEffect, useState } from "react";
-import { useWindowsStore, type FileNode } from "@claraos/core";
+import { useWindowsStore, type FileNode, useTranslation, i18n } from "@claraos/core";
 import { getFileAppId, getViewerSizeForFile } from "../../../lib/fileTypeRouter";
 import { FolderIcon, PostsIcon } from "./icons";
 import styles from "./DateienView.module.css";
@@ -41,6 +41,7 @@ function datum(iso?: string): string {
 }
 
 export function DateienView({ startPfad = "/" }: { startPfad?: string }) {
+  const { t } = useTranslation("teams");
   const [pfad, setPfad] = useState(startPfad);
   const [eintraege, setEintraege] = useState<FileNode[]>([]);
   const [laedt, setLaedt] = useState(true);
@@ -57,7 +58,7 @@ export function DateienView({ startPfad = "/" }: { startPfad?: string }) {
         `/api/claraos/files/v2/tree?source=${QUELLE}&path=${encodeURIComponent(p)}`,
         { credentials: "include" },
       );
-      if (!r.ok) throw new Error(`Der Ordner ließ sich nicht lesen (HTTP ${r.status}).`);
+      if (!r.ok) throw new Error(i18n.t("teams:files.readFailed", { status: r.status }));
       const knoten = await r.json();
       const kinder: FileNode[] = knoten?.children ?? [];
       // Folders first, then alphabetical — as everywhere else in ClaraOS.
@@ -98,10 +99,10 @@ export function DateienView({ startPfad = "/" }: { startPfad?: string }) {
         <button
           className={styles.krumen}
           onClick={() => setPfad(startPfad || "/")}
-          title="Zum Anfang"
+          title={t("files.toStart")}
         >
           <FolderIcon size={15} />
-          <span>{wurzel ? wurzel.split("/").filter(Boolean).slice(-1)[0] : "Dateien"}</span>
+          <span>{wurzel ? wurzel.split("/").filter(Boolean).slice(-1)[0] : t("files.files")}</span>
         </button>
         {teile.map((t, i) => (
           <button
@@ -114,13 +115,13 @@ export function DateienView({ startPfad = "/" }: { startPfad?: string }) {
           </button>
         ))}
         <span className={styles.fueller} />
-        <button className={styles.aktualisieren} onClick={() => void laden(pfad)} title="Neu laden">↻</button>
+        <button className={styles.aktualisieren} onClick={() => void laden(pfad)} title={t("files.reload")}>↻</button>
       </div>
 
       {fehler && <div className={styles.meldung} style={{ color: "#f38ba8" }}>{fehler}</div>}
-      {laedt && !fehler && <div className={styles.meldung}>Wird geladen …</div>}
+      {laedt && !fehler && <div className={styles.meldung}>{t("files.loading")}</div>}
       {!laedt && !fehler && eintraege.length === 0 && (
-        <div className={styles.meldung}>Dieser Ordner ist leer.</div>
+        <div className={styles.meldung}>{t("files.empty")}</div>
       )}
 
       <div className={styles.liste}>

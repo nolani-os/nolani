@@ -30,11 +30,15 @@ async def benachrichtigen(username: str, job: dict) -> None:
         return
     try:
         from services.ntfy_publish import CLARAOS_PUBLIC_URL, notify_users
-        titel = job.get("titel") or "Auftrag"
+        from sprache import sprache_fuer, t
+        lang = await sprache_fuer(username)
+        titel = job.get("titel") or t(lang, "jobs.task")
         if job["status"] == "fertig":
-            kopf, text = f"{ASSISTANT_NAME} ist fertig", f"„{titel}“ ist erledigt."
+            kopf = t(lang, "jobs.doneTitle", assistant=ASSISTANT_NAME)
+            text = t(lang, "jobs.doneText", title=titel)
         else:
-            kopf, text = f"{ASSISTANT_NAME} kam nicht weiter", f"„{titel}“ ist fehlgeschlagen."
+            kopf = t(lang, "jobs.failedTitle", assistant=ASSISTANT_NAME)
+            text = t(lang, "jobs.failedText", title=titel)
             if job.get("fehler"):
                 text += f" {job['fehler'][:160]}"
         chat_id = job.get("chat_id") or ""

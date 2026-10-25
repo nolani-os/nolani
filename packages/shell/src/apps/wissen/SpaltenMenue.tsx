@@ -23,6 +23,7 @@ import { FieldType } from "../ideas/types";
 import type { KbField, KbView } from "../ideas/types";
 import { AGGREGATE, MIT_RUECKFRAGE, TYP_MARKE, UMSCHALTBAR } from "./feldTypen";
 import { gruppierbar } from "./gruppieren";
+import { useTranslation } from "@claraos/core";
 
 interface Props {
   feld: KbField;
@@ -57,6 +58,7 @@ export function SpaltenMenue({
   onGruppieren, onAusblenden, onEinfuegen, onDuplizieren, onFixieren, onUmbruch,
   onFaerben, onAnzeige, onLoeschen, onSchliessen, stil,
 }: Props) {
+  const { t } = useTranslation("wissen");
   const [name, setName] = useState(feld.name);
   const [typOffen, setTypOffen] = useState(false);
   const [aggOffen, setAggOffen] = useState(false);
@@ -137,7 +139,7 @@ export function SpaltenMenue({
                 ? <Icon name={TYP_MARKE[feld.field_type].icon!} size={14} />
                 : TYP_MARKE[feld.field_type]?.glyph}
             </span>
-            <span>Typ ändern</span>
+            <span>{t("colMenu.changeType")}</span>
             <span className={styles.menueWert}>{TYP_MARKE[feld.field_type]?.label}</span>
           </button>
           {typOffen && (
@@ -165,20 +167,20 @@ export function SpaltenMenue({
 
       <button className={styles.menueZeile} onClick={() => onSortieren("asc")}>
         <span className={styles.menueSymbol}><Icon name="arrowUp" size={14} /></span>
-        <span>Aufsteigend</span>
+        <span>{t("colMenu.asc")}</span>
         {meine?.dir !== "desc" && meine && <span className={styles.menueWert}>✓</span>}
       </button>
       <button className={styles.menueZeile} onClick={() => onSortieren("desc")}>
         <span className={styles.menueSymbol} style={{ transform: "rotate(180deg)" }}>
           <Icon name="arrowUp" size={14} />
         </span>
-        <span>Absteigend</span>
+        <span>{t("colMenu.desc")}</span>
         {meine?.dir === "desc" && <span className={styles.menueWert}>✓</span>}
       </button>
       {meine && (
         <button className={styles.menueZeile} onClick={() => onSortieren(null)}>
           <span className={styles.menueSymbol}><Icon name="close" size={13} /></span>
-          <span>Sortierung aufheben</span>
+          <span>{t("colMenu.clearSort")}</span>
         </button>
       )}
 
@@ -186,16 +188,16 @@ export function SpaltenMenue({
         <button className={styles.menueZeile}
                 onClick={() => { onGruppieren(!gruppiertHier); onSchliessen(); }}>
           <span className={styles.menueSymbol}><Icon name="list" size={14} /></span>
-          <span>{gruppiertHier ? "Gruppierung aufheben" : "Gruppieren"}</span>
+          <span>{gruppiertHier ? t("colMenu.ungroup") : t("colMenu.group")}</span>
           {gruppiertHier && <span className={styles.menueWert}>✓</span>}
         </button>
       )}
 
       <button className={styles.menueZeile} onClick={() => setAggOffen((v) => !v)}>
         <span className={styles.menueSymbol}>Σ</span>
-        <span>Berechnen</span>
+        <span>{t("colMenu.calculate")}</span>
         <span className={styles.menueWert}>
-          {AGGREGATE.find((a) => a.key === agg)?.label ?? "Nichts"}
+          {AGGREGATE.find((a) => a.key === agg)?.label ?? t("aggregate.none")}
         </span>
       </button>
       {aggOffen && (
@@ -216,18 +218,18 @@ export function SpaltenMenue({
       {/* ── Display ──────────────────────────────────────────────────── */}
       <button className={styles.menueZeile} onClick={() => { onFixieren(!fixiert); onSchliessen(); }}>
         <span className={styles.menueSymbol}>⇥</span>
-        <span>{fixiert ? "Fixierung aufheben" : "Fixieren"}</span>
+        <span>{fixiert ? t("colMenu.unfreeze") : t("colMenu.freeze")}</span>
         {fixiert && <span className={styles.menueWert}>✓</span>}
       </button>
       <button className={styles.menueZeile} onClick={() => { onUmbruch(!umbricht); onSchliessen(); }}>
         <span className={styles.menueSymbol}>↵</span>
-        <span>{umbricht ? "Inhalt nicht mehr umbrechen" : "Zeilenumbruch für Inhalte"}</span>
+        <span>{umbricht ? t("colMenu.nowrap") : t("colMenu.wrap")}</span>
         {umbricht && <span className={styles.menueWert}>✓</span>}
       </button>
       {feld.field_type === FieldType.Select && onFaerben && (
         <button className={styles.menueZeile} onClick={() => { onFaerben(!faerbt); onSchliessen(); }}>
           <span className={styles.menueSymbol}>◐</span>
-          <span>{faerbt ? "Zeilen nicht mehr einfärben" : "Zeilen danach einfärben"}</span>
+          <span>{faerbt ? t("colMenu.uncolor") : t("colMenu.color")}</span>
           {faerbt && <span className={styles.menueWert}>✓</span>}
         </button>
       )}
@@ -235,8 +237,8 @@ export function SpaltenMenue({
         <button className={styles.menueZeile}
                 onClick={() => { onAnzeige(zeigtAnzahl ? "namen" : "anzahl"); onSchliessen(); }}>
           <span className={styles.menueSymbol}><Icon name="graph" size={14} /></span>
-          <span>Anzeigen als</span>
-          <span className={styles.menueWert}>{zeigtAnzahl ? "Anzahl" : "Namen"}</span>
+          <span>{t("colMenu.showAs")}</span>
+          <span className={styles.menueWert}>{zeigtAnzahl ? t("colMenu.count") : t("colMenu.names")}</span>
         </button>
       )}
 
@@ -244,32 +246,31 @@ export function SpaltenMenue({
 
       <button className={styles.menueZeile} onClick={onAusblenden}>
         <span className={styles.menueSymbol}><Icon name="blind" size={14} /></span>
-        <span>Ausblenden</span>
+        <span>{t("colMenu.hide")}</span>
       </button>
       <button className={styles.menueZeile} onClick={() => onEinfuegen("links")}>
         <span className={styles.menueSymbol}><Icon name="plus" size={14} /></span>
-        <span>Spalte links einfügen</span>
+        <span>{t("colMenu.insertLeft")}</span>
       </button>
       <button className={styles.menueZeile} onClick={() => onEinfuegen("rechts")}>
         <span className={styles.menueSymbol}><Icon name="plus" size={14} /></span>
-        <span>Spalte rechts einfügen</span>
+        <span>{t("colMenu.insertRight")}</span>
       </button>
       <button className={styles.menueZeile} onClick={() => { onDuplizieren(); onSchliessen(); }}>
         <span className={styles.menueSymbol}>⧉</span>
-        <span>Spalte duplizieren</span>
+        <span>{t("colMenu.duplicate")}</span>
       </button>
       <button className={`${styles.menueZeile} ${styles.menueGefahr}`}
               onClick={() => {
                 if (window.confirm(
-                  `Spalte „${feld.name}" löschen?\n\n`
-                  + "Die Werte in dieser Spalte gehen dabei verloren.")) onLoeschen();
+                  t("columns.confirmDelete", { name: feld.name }))) onLoeschen();
               }}>
         <span className={styles.menueSymbol}><Icon name="trash" size={14} /></span>
-        <span>Spalte löschen</span>
+        <span>{t("colMenu.delete")}</span>
       </button>
 
       <div className={geteilt.metaHint} style={{ padding: "6px 10px 2px" }}>
-        Sortierung, Gruppierung und Berechnung gelten nur für diese Ansicht.
+        {t("colMenu.onlyThisView")}
       </div>
     </div>
   );

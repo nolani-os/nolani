@@ -25,6 +25,7 @@
 import { FieldType } from "../ideas/types";
 import type { ViewLayout, Visibility } from "../ideas/types";
 import { ideasApi } from "../ideas/api";
+import { i18n } from "@claraos/core";
 
 interface VorlagenFeld {
   key: string;
@@ -54,130 +55,141 @@ export interface Vorlage {
   beispiele: { titel: string; werte: Record<string, unknown> }[];
 }
 
-const STATUS = ["Idee", "Läuft", "Erledigt"];
+/** Template texts in the UI language — a collection is created in the language
+ *  of the person creating it, and from then on its names are ordinary data. */
+const tx = (key: string): string => i18n.t(`wissen:templates.${key}`);
 
-export const VORLAGEN: Vorlage[] = [
-  {
-    id: "haus",
-    icon: "🏡",
-    name: "Haus & Wohnung",
-    wofuer: "Was ansteht, was es kostet und wer sich darum kümmert.",
-    felder: [
-      { key: "kosten", name: "Kosten", typ: FieldType.Number },
-      { key: "status", name: "Status", typ: FieldType.Select, optionen: STATUS },
-      { key: "faellig", name: "Bis wann", typ: FieldType.Date },
-      { key: "wer", name: "Wer", typ: FieldType.Text },
-    ],
-    ansichten: [{ name: "Nach Status", layout: "board", gruppe: "status" }],
-    beispiele: [
-      { titel: "Beispiel: Heizung warten lassen",
-        werte: { kosten: 180, status: "Läuft", wer: "Firma Muster" } },
-      { titel: "Beispiel: Gartenhaus streichen",
-        werte: { kosten: 300, status: "Idee" } },
-    ],
-  },
-  {
-    id: "rezepte",
-    icon: "🍲",
-    name: "Rezepte",
-    wofuer: "Was bei euch gut ankommt — mit Dauer, Aufwand und Quelle.",
-    felder: [
-      { key: "dauer", name: "Dauer (Min.)", typ: FieldType.Number },
-      { key: "aufwand", name: "Aufwand", typ: FieldType.Select,
-        optionen: ["Schnell", "Mittel", "Aufwendig"] },
-      { key: "wer_mag", name: "Mag besonders", typ: FieldType.Text },
-      { key: "quelle", name: "Quelle", typ: FieldType.Url },
-      { key: "liebling", name: "Lieblingsrezept", typ: FieldType.Checkbox },
-    ],
-    ansichten: [{ name: "Nach Aufwand", layout: "board", gruppe: "aufwand" }],
-    beispiele: [
-      { titel: "Beispiel: Ofengemüse mit Feta",
-        werte: { dauer: 40, aufwand: "Schnell", liebling: true } },
-      { titel: "Beispiel: Sonntagsbraten",
-        werte: { dauer: 180, aufwand: "Aufwendig" } },
-    ],
-  },
-  {
-    id: "reisen",
-    icon: "🧳",
-    name: "Urlaub & Ausflüge",
-    wofuer: "Ideen sammeln, vergleichen und später wiederfinden.",
-    felder: [
-      { key: "wann", name: "Wann", typ: FieldType.Date },
-      { key: "kosten", name: "Kosten ca.", typ: FieldType.Number },
-      { key: "status", name: "Status", typ: FieldType.Select,
-        optionen: ["Idee", "Geplant", "Gebucht", "War schön"] },
-      { key: "mit_wem", name: "Mit wem", typ: FieldType.Text },
-    ],
-    ansichten: [
-      { name: "Nach Status", layout: "board", gruppe: "status" },
-      { name: "Kalender", layout: "calendar", datum: "wann" },
-    ],
-    beispiele: [
-      { titel: "Beispiel: Wochenende an der Ostsee",
-        werte: { kosten: 450, status: "Idee" } },
-      { titel: "Beispiel: Wandertag in den Bergen",
-        werte: { kosten: 60, status: "Geplant" } },
-    ],
-  },
-  {
-    id: "vertraege",
-    icon: "📑",
-    name: "Verträge & Versicherungen",
-    wofuer: "Wer, wie viel im Jahr — und bis wann man kündigen könnte.",
-    felder: [
-      { key: "anbieter", name: "Anbieter", typ: FieldType.Text },
-      { key: "nummer", name: "Vertragsnummer", typ: FieldType.Text },
-      { key: "jahreskosten", name: "Kosten/Jahr", typ: FieldType.Number },
-      { key: "kuendigen_bis", name: "Kündbar bis", typ: FieldType.Date },
-      { key: "pruefen", name: "Mal prüfen", typ: FieldType.Checkbox },
-    ],
-    beispiele: [
-      { titel: "Beispiel: Hausratversicherung",
-        werte: { anbieter: "Musterversicherung", jahreskosten: 180, pruefen: true } },
-      { titel: "Beispiel: Handytarif",
-        werte: { anbieter: "Musterfunk", jahreskosten: 240 } },
-    ],
-  },
-  {
-    id: "geschenke",
-    icon: "🎁",
-    name: "Geschenkideen",
-    wofuer: "Einfälle festhalten, bevor sie kurz vor dem Fest wieder weg sind.",
-    felder: [
-      { key: "fuer", name: "Für wen", typ: FieldType.Text },
-      { key: "anlass", name: "Anlass", typ: FieldType.Select,
-        optionen: ["Geburtstag", "Weihnachten", "Einfach so"] },
-      { key: "preis", name: "Preis ca.", typ: FieldType.Number },
-      { key: "besorgt", name: "Besorgt", typ: FieldType.Checkbox },
-    ],
-    ansichten: [{ name: "Nach Anlass", layout: "board", gruppe: "anlass" }],
-    beispiele: [
-      { titel: "Beispiel: Kochkurs zu zweit",
-        werte: { anlass: "Geburtstag", preis: 120 } },
-      { titel: "Beispiel: Fotobuch vom letzten Jahr",
-        werte: { anlass: "Weihnachten", preis: 40 } },
-    ],
-  },
-  {
-    id: "handwerker",
-    icon: "🔧",
-    name: "Handwerker & Dienste",
-    wofuer: "Wen man schon hatte, wofür — und ob man ihn nochmal nimmt.",
-    felder: [
-      { key: "gewerk", name: "Gewerk", typ: FieldType.Text },
-      { key: "telefon", name: "Telefon", typ: FieldType.Text },
-      { key: "zuletzt", name: "Zuletzt beauftragt", typ: FieldType.Date },
-      { key: "wieder", name: "Wieder nehmen", typ: FieldType.Checkbox },
-    ],
-    beispiele: [
-      { titel: "Beispiel: Elektro Muster",
-        werte: { gewerk: "Elektrik", telefon: "0123 456789", wieder: true } },
-      { titel: "Beispiel: Heizung Muster",
-        werte: { gewerk: "Heizung/Sanitär" } },
-    ],
-  },
-];
+/** Select options are listed by key; the label comes from the catalog. Example
+ *  values point at the same key, so they always match one of the options. */
+const optionen = (vorlage: string, feld: string, keys: string[]) =>
+  keys.map((k) => tx(`${vorlage}.opt.${feld}.${k}`));
+const option = (vorlage: string, feld: string, k: string) => tx(`${vorlage}.opt.${feld}.${k}`);
+
+export function vorlagen(): Vorlage[] {
+  return [
+    {
+      id: "haus",
+      icon: "🏡",
+      name: tx("haus.name"),
+      wofuer: tx("haus.purpose"),
+      felder: [
+        { key: "kosten", name: tx("haus.f.kosten"), typ: FieldType.Number },
+        { key: "status", name: tx("haus.f.status"), typ: FieldType.Select,
+          optionen: optionen("haus", "status", ["idee", "laeuft", "erledigt"]) },
+        { key: "faellig", name: tx("haus.f.faellig"), typ: FieldType.Date },
+        { key: "wer", name: tx("haus.f.wer"), typ: FieldType.Text },
+      ],
+      ansichten: [{ name: tx("haus.v.status"), layout: "board", gruppe: "status" }],
+      beispiele: [
+        { titel: tx("haus.ex1"),
+          werte: { kosten: 180, status: option("haus", "status", "laeuft"), wer: tx("haus.ex1Wer") } },
+        { titel: tx("haus.ex2"),
+          werte: { kosten: 300, status: option("haus", "status", "idee") } },
+      ],
+    },
+    {
+      id: "rezepte",
+      icon: "🍲",
+      name: tx("rezepte.name"),
+      wofuer: tx("rezepte.purpose"),
+      felder: [
+        { key: "dauer", name: tx("rezepte.f.dauer"), typ: FieldType.Number },
+        { key: "aufwand", name: tx("rezepte.f.aufwand"), typ: FieldType.Select,
+          optionen: optionen("rezepte", "aufwand", ["schnell", "mittel", "aufwendig"]) },
+        { key: "wer_mag", name: tx("rezepte.f.wer_mag"), typ: FieldType.Text },
+        { key: "quelle", name: tx("rezepte.f.quelle"), typ: FieldType.Url },
+        { key: "liebling", name: tx("rezepte.f.liebling"), typ: FieldType.Checkbox },
+      ],
+      ansichten: [{ name: tx("rezepte.v.aufwand"), layout: "board", gruppe: "aufwand" }],
+      beispiele: [
+        { titel: tx("rezepte.ex1"),
+          werte: { dauer: 40, aufwand: option("rezepte", "aufwand", "schnell"), liebling: true } },
+        { titel: tx("rezepte.ex2"),
+          werte: { dauer: 180, aufwand: option("rezepte", "aufwand", "aufwendig") } },
+      ],
+    },
+    {
+      id: "reisen",
+      icon: "🧳",
+      name: tx("reisen.name"),
+      wofuer: tx("reisen.purpose"),
+      felder: [
+        { key: "wann", name: tx("reisen.f.wann"), typ: FieldType.Date },
+        { key: "kosten", name: tx("reisen.f.kosten"), typ: FieldType.Number },
+        { key: "status", name: tx("reisen.f.status"), typ: FieldType.Select,
+          optionen: optionen("reisen", "status", ["idee", "geplant", "gebucht", "warSchoen"]) },
+        { key: "mit_wem", name: tx("reisen.f.mit_wem"), typ: FieldType.Text },
+      ],
+      ansichten: [
+        { name: tx("reisen.v.status"), layout: "board", gruppe: "status" },
+        { name: tx("reisen.v.kalender"), layout: "calendar", datum: "wann" },
+      ],
+      beispiele: [
+        { titel: tx("reisen.ex1"),
+          werte: { kosten: 450, status: option("reisen", "status", "idee") } },
+        { titel: tx("reisen.ex2"),
+          werte: { kosten: 60, status: option("reisen", "status", "geplant") } },
+      ],
+    },
+    {
+      id: "vertraege",
+      icon: "📑",
+      name: tx("vertraege.name"),
+      wofuer: tx("vertraege.purpose"),
+      felder: [
+        { key: "anbieter", name: tx("vertraege.f.anbieter"), typ: FieldType.Text },
+        { key: "nummer", name: tx("vertraege.f.nummer"), typ: FieldType.Text },
+        { key: "jahreskosten", name: tx("vertraege.f.jahreskosten"), typ: FieldType.Number },
+        { key: "kuendigen_bis", name: tx("vertraege.f.kuendigen_bis"), typ: FieldType.Date },
+        { key: "pruefen", name: tx("vertraege.f.pruefen"), typ: FieldType.Checkbox },
+      ],
+      beispiele: [
+        { titel: tx("vertraege.ex1"),
+          werte: { anbieter: tx("vertraege.ex1Anbieter"), jahreskosten: 180, pruefen: true } },
+        { titel: tx("vertraege.ex2"),
+          werte: { anbieter: tx("vertraege.ex2Anbieter"), jahreskosten: 240 } },
+      ],
+    },
+    {
+      id: "geschenke",
+      icon: "🎁",
+      name: tx("geschenke.name"),
+      wofuer: tx("geschenke.purpose"),
+      felder: [
+        { key: "fuer", name: tx("geschenke.f.fuer"), typ: FieldType.Text },
+        { key: "anlass", name: tx("geschenke.f.anlass"), typ: FieldType.Select,
+          optionen: optionen("geschenke", "anlass", ["geburtstag", "weihnachten", "einfachSo"]) },
+        { key: "preis", name: tx("geschenke.f.preis"), typ: FieldType.Number },
+        { key: "besorgt", name: tx("geschenke.f.besorgt"), typ: FieldType.Checkbox },
+      ],
+      ansichten: [{ name: tx("geschenke.v.anlass"), layout: "board", gruppe: "anlass" }],
+      beispiele: [
+        { titel: tx("geschenke.ex1"),
+          werte: { anlass: option("geschenke", "anlass", "geburtstag"), preis: 120 } },
+        { titel: tx("geschenke.ex2"),
+          werte: { anlass: option("geschenke", "anlass", "weihnachten"), preis: 40 } },
+      ],
+    },
+    {
+      id: "handwerker",
+      icon: "🔧",
+      name: tx("handwerker.name"),
+      wofuer: tx("handwerker.purpose"),
+      felder: [
+        { key: "gewerk", name: tx("handwerker.f.gewerk"), typ: FieldType.Text },
+        { key: "telefon", name: tx("handwerker.f.telefon"), typ: FieldType.Text },
+        { key: "zuletzt", name: tx("handwerker.f.zuletzt"), typ: FieldType.Date },
+        { key: "wieder", name: tx("handwerker.f.wieder"), typ: FieldType.Checkbox },
+      ],
+      beispiele: [
+        { titel: tx("handwerker.ex1"),
+          werte: { gewerk: tx("handwerker.ex1Gewerk"), telefon: "0123 456789", wieder: true } },
+        { titel: tx("handwerker.ex2"),
+          werte: { gewerk: tx("handwerker.ex2Gewerk") } },
+      ],
+    },
+  ];
+}
 
 /**
  * Creates the collection including columns, views and examples.
@@ -209,7 +221,7 @@ export async function vorlageAnwenden(
         type_option: f.optionen ? { options: f.optionen } : undefined,
       });
     } catch (e) {
-      warnungen.push(`Spalte „${f.name}" konnte nicht angelegt werden`);
+      warnungen.push(i18n.t("wissen:templates.apply.fieldFailed", { name: f.name }));
       console.warn("vorlage/feld", f.key, e);
     }
   }
@@ -223,7 +235,7 @@ export async function vorlageAnwenden(
         ...(a.datum ? { layout_setting: { date_field: a.datum } } : {}),
       });
     } catch (e) {
-      warnungen.push(`Ansicht „${a.name}" konnte nicht angelegt werden`);
+      warnungen.push(i18n.t("wissen:templates.apply.viewFailed", { name: a.name }));
       console.warn("vorlage/ansicht", a.name, e);
     }
   }
@@ -233,13 +245,13 @@ export async function vorlageAnwenden(
       const obj = await ideasApi.createObject({
         type: "note",
         title: b.titel,
-        body: "Beispielzeile aus der Vorlage — überschreib sie einfach oder wirf sie weg.\n",
+        body: i18n.t("wissen:templates.apply.exampleBody"),
         properties: b.werte,
         visibility,
       });
       await ideasApi.addToCollection(coll.id, obj.id, i + 1);
     } catch (e) {
-      warnungen.push("Ein Beispiel konnte nicht angelegt werden");
+      warnungen.push(i18n.t("wissen:templates.apply.exampleFailed"));
       console.warn("vorlage/beispiel", b.titel, e);
     }
   }

@@ -1,4 +1,11 @@
 {
+  "dateWords": {
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "yesterday": "Yesterday",
+    "daysAgo_one": "{{count}} day ago",
+    "daysAgo_other": "{{count}} days ago"
+  },
   "dnd": {
     "remaining": {
       "unlimited": "indefinitely",
@@ -14,6 +21,36 @@
       "tomorrow": "Until tomorrow morning",
       "off": "Until I turn it off"
     }
+  },
+  "fileTypes": {
+    "pdf": "PDF document",
+    "text": "Text file",
+    "doc": "Document",
+    "sheet": "Spreadsheet",
+    "slides": "Presentation",
+    "image": "Image",
+    "video": "Video",
+    "audio": "Audio",
+    "archive": "Archive",
+    "code": "Code",
+    "data": "Data",
+    "model3d": "3D model",
+    "mail": "Email",
+    "calendar": "Event",
+    "contact": "Contact",
+    "geo": "Map / track",
+    "ebook": "E-book",
+    "font": "Font",
+    "package": "Program / disk image",
+    "design": "Graphics project",
+    "unknown": "File",
+    "folder": "Folder"
+  },
+  "install": {
+    "shareLinkReach": "Links can only be reached on the local network, though.",
+    "mailSecretMissing": "⚠ Stalwart admin secret missing — mail is skipped.",
+    "deviceSshdDown": "Start the SSH service (sshd) on the device.",
+    "deviceOffline": "Switch the device on and connect it to the network, then try again."
   },
   "newFile": {
     "txt": "Text file",

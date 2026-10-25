@@ -7,12 +7,14 @@ import { ReactFlow, Background, Controls, type Edge, type Node } from "@xyflow/r
 import "@xyflow/react/dist/style.css";
 import styles from "../../ideas/IdeasApp.module.css";
 import { ideasApi } from "../../ideas/api";
+import { useTranslation } from "@claraos/core";
 
 interface Props {
   onOpen: (id: string) => void;
 }
 
 export function KnowledgeGraph({ onOpen }: Props) {
+  const { t } = useTranslation("wissen");
   const [data, setData] = useState<{
     nodes: { id: string; title: string; type: string; icon: string | null }[];
     edges: { from: string; to: string; kind: string }[];
@@ -58,16 +60,16 @@ export function KnowledgeGraph({ onOpen }: Props) {
   }, [data]);
 
   if (error) return <div className={styles.error}>{error}</div>;
-  if (!data) return <div className={styles.empty}>Lade Netz…</div>;
+  if (!data) return <div className={styles.empty}>{t("graph.loading")}</div>;
   if (!data.nodes.length) {
-    return <div className={styles.empty}>Noch keine Objekte im Netz.</div>;
+    return <div className={styles.empty}>{t("graph.empty")}</div>;
   }
 
   return (
     <div className={styles.graphWrap}>
       <div className={styles.metaHint}>
-        {data.nodes.length} Objekte · {data.edges.length} Verbindungen
-        {data.edges.length === 0 && " — verlinke Objekte mit @-Erwähnungen oder Verknüpfungs-Feldern"}
+        {t("graph.stats", { nodes: data.nodes.length, edges: data.edges.length })}
+        {data.edges.length === 0 && t("graph.noEdges")}
       </div>
       <div style={{ flex: 1, minHeight: 320 }}>
         <ReactFlow nodes={nodes} edges={edges} fitView

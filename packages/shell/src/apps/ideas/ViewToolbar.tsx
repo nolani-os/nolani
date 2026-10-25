@@ -9,52 +9,53 @@ import { AnsichtsMenue } from "../wissen/AnsichtsMenue";
 import { Icon } from "../../components/Icon";
 import type { KbField, KbFilterNode, KbView, ViewLayout } from "./types";
 import { FieldType } from "./types";
+import { useTranslation, i18n } from "@claraos/core";
 
 /** Operators per field type: mirror of the whitelist in kb_query.py.
  * Anything added there must also appear here (otherwise it is unusable),
  * but NEVER the other way round: the server remains the authority. */
 const OPS: Record<number, { op: string; label: string; noValue?: boolean }[]> = {
   [FieldType.Text]: [
-    { op: "contains", label: "enthält" }, { op: "not_contains", label: "enthält nicht" },
-    { op: "is", label: "ist" }, { op: "is_not", label: "ist nicht" },
-    { op: "starts_with", label: "beginnt mit" }, { op: "ends_with", label: "endet mit" },
-    { op: "is_empty", label: "ist leer", noValue: true },
-    { op: "is_not_empty", label: "ist nicht leer", noValue: true },
+    { op: "contains", get label() { return i18n.t("wissen:filterOp.contains"); } }, { op: "not_contains", get label() { return i18n.t("wissen:filterOp.not_contains"); } },
+    { op: "is", get label() { return i18n.t("wissen:filterOp.is"); } }, { op: "is_not", get label() { return i18n.t("wissen:filterOp.is_not"); } },
+    { op: "starts_with", get label() { return i18n.t("wissen:filterOp.starts_with"); } }, { op: "ends_with", get label() { return i18n.t("wissen:filterOp.ends_with"); } },
+    { op: "is_empty", get label() { return i18n.t("wissen:filterOp.is_empty"); }, noValue: true },
+    { op: "is_not_empty", get label() { return i18n.t("wissen:filterOp.is_not_empty"); }, noValue: true },
   ],
   [FieldType.Number]: [
     { op: "eq", label: "=" }, { op: "neq", label: "≠" }, { op: "gt", label: ">" },
     { op: "gte", label: "≥" }, { op: "lt", label: "<" }, { op: "lte", label: "≤" },
-    { op: "is_empty", label: "ist leer", noValue: true },
-    { op: "is_not_empty", label: "ist nicht leer", noValue: true },
+    { op: "is_empty", get label() { return i18n.t("wissen:filterOp.is_empty"); }, noValue: true },
+    { op: "is_not_empty", get label() { return i18n.t("wissen:filterOp.is_not_empty"); }, noValue: true },
   ],
   [FieldType.Date]: [
-    { op: "on", label: "am" }, { op: "before", label: "vor" }, { op: "after", label: "nach" },
-    { op: "on_or_before", label: "bis einschl." }, { op: "on_or_after", label: "ab" },
-    { op: "is_empty", label: "ist leer", noValue: true },
-    { op: "is_not_empty", label: "ist nicht leer", noValue: true },
+    { op: "on", get label() { return i18n.t("wissen:filterOp.on"); } }, { op: "before", get label() { return i18n.t("wissen:filterOp.before"); } }, { op: "after", get label() { return i18n.t("wissen:filterOp.after"); } },
+    { op: "on_or_before", get label() { return i18n.t("wissen:filterOp.on_or_before"); } }, { op: "on_or_after", get label() { return i18n.t("wissen:filterOp.on_or_after"); } },
+    { op: "is_empty", get label() { return i18n.t("wissen:filterOp.is_empty"); }, noValue: true },
+    { op: "is_not_empty", get label() { return i18n.t("wissen:filterOp.is_not_empty"); }, noValue: true },
   ],
   [FieldType.Select]: [
-    { op: "is", label: "ist" }, { op: "is_not", label: "ist nicht" },
-    { op: "is_empty", label: "ist leer", noValue: true },
-    { op: "is_not_empty", label: "ist nicht leer", noValue: true },
+    { op: "is", get label() { return i18n.t("wissen:filterOp.is"); } }, { op: "is_not", get label() { return i18n.t("wissen:filterOp.is_not"); } },
+    { op: "is_empty", get label() { return i18n.t("wissen:filterOp.is_empty"); }, noValue: true },
+    { op: "is_not_empty", get label() { return i18n.t("wissen:filterOp.is_not_empty"); }, noValue: true },
   ],
   [FieldType.MultiSelect]: [
-    { op: "contains_any", label: "enthält eines von" },
-    { op: "contains_all", label: "enthält alle" },
-    { op: "contains_none", label: "enthält keines von" },
-    { op: "is_empty", label: "ist leer", noValue: true },
+    { op: "contains_any", get label() { return i18n.t("wissen:filterOp.contains_any"); } },
+    { op: "contains_all", get label() { return i18n.t("wissen:filterOp.contains_all"); } },
+    { op: "contains_none", get label() { return i18n.t("wissen:filterOp.contains_none"); } },
+    { op: "is_empty", get label() { return i18n.t("wissen:filterOp.is_empty"); }, noValue: true },
   ],
   [FieldType.Checkbox]: [
-    { op: "is_checked", label: "ist gesetzt", noValue: true },
-    { op: "is_unchecked", label: "ist nicht gesetzt", noValue: true },
+    { op: "is_checked", get label() { return i18n.t("wissen:filterOp.is_checked"); }, noValue: true },
+    { op: "is_unchecked", get label() { return i18n.t("wissen:filterOp.is_unchecked"); }, noValue: true },
   ],
   [FieldType.Checklist]: [
-    { op: "is_complete", label: "ist vollständig", noValue: true },
-    { op: "is_incomplete", label: "ist offen", noValue: true },
+    { op: "is_complete", get label() { return i18n.t("wissen:filterOp.is_complete"); }, noValue: true },
+    { op: "is_incomplete", get label() { return i18n.t("wissen:filterOp.is_incomplete"); }, noValue: true },
   ],
   [FieldType.Relation]: [
-    { op: "is_empty", label: "ohne Verknüpfung", noValue: true },
-    { op: "is_not_empty", label: "mit Verknüpfung", noValue: true },
+    { op: "is_empty", get label() { return i18n.t("wissen:filterOp.relation_is_empty"); }, noValue: true },
+    { op: "is_not_empty", get label() { return i18n.t("wissen:filterOp.relation_is_not_empty"); }, noValue: true },
   ],
 };
 OPS[FieldType.Url] = OPS[FieldType.Text];
@@ -62,8 +63,8 @@ OPS[FieldType.Rollup] = OPS[FieldType.Number];
 OPS[FieldType.CreatedTime] = OPS[FieldType.Date];
 OPS[FieldType.UpdatedTime] = OPS[FieldType.Date];
 OPS[FieldType.Person] = OPS[FieldType.Select];
-OPS[FieldType.Media] = [{ op: "is_empty", label: "ohne Datei", noValue: true },
-                        { op: "is_not_empty", label: "mit Datei", noValue: true }];
+OPS[FieldType.Media] = [{ op: "is_empty", get label() { return i18n.t("wissen:filterOp.media_is_empty"); }, noValue: true },
+                        { op: "is_not_empty", get label() { return i18n.t("wissen:filterOp.media_is_not_empty"); }, noValue: true }];
 
 // The layout list lives in the view menu (`apps/wissen/AnsichtsMenue.tsx`),
 // not here. An unused copy would be a second source of truth that drifts
@@ -89,6 +90,7 @@ interface Props {
 }
 
 export function ViewToolbar({ mobile, views, activeView, fields, isOwner, onSelect, onCreate, onPatch, onDelete, onSpalten }: Props) {
+  const { t } = useTranslation("wissen");
   const [panel, setPanel] = useState<"none" | "filter" | "sort">("none");
   // Menu of the active view (layout, rename, delete); replaces a second
   // toolbar.
@@ -124,15 +126,15 @@ export function ViewToolbar({ mobile, views, activeView, fields, isOwner, onSele
                 onSelect(v.id);
               }
             }}
-            title={activeView?.id === v.id ? `${v.name} — Menü öffnen` : v.name}
+            title={activeView?.id === v.id ? t("toolbar.openMenu", { name: v.name }) : v.name}
           >
             {v.name}{activeView?.id === v.id && isOwner ? " ⌄" : ""}
           </button>
         ))}
         {isOwner && (
-          <button className={styles.viewTab} title="Neue Ansicht"
+          <button className={styles.viewTab} title={t("toolbar.newView")}
                   onClick={() => {
-                    const name = window.prompt("Name der Ansicht?", "Neue Ansicht");
+                    const name = window.prompt(t("toolbar.viewName"), t("toolbar.newView"));
                     if (name) onCreate(name, "table");
                   }}>＋</button>
         )}
@@ -144,14 +146,14 @@ export function ViewToolbar({ mobile, views, activeView, fields, isOwner, onSele
         {activeView && isOwner && !mobile && (
           <span className={styles.viewBarRechts}>
             <button className={`${styles.btnSecondary} ${conditions.length ? styles.badgeOn : ""}`}
-                    title="Filter"
+                    title={t("toolbar.filter")}
                     onClick={() => setPanel(panel === "filter" ? "none" : "filter")}>
-              ⚙ Filter{conditions.length ? ` (${conditions.length})` : ""}
+              ⚙ {t("toolbar.filter")}{conditions.length ? ` (${conditions.length})` : ""}
             </button>
             <button className={`${styles.btnSecondary} ${sorts.length ? styles.badgeOn : ""}`}
-                    title="Sortierung"
+                    title={t("toolbar.sort")}
                     onClick={() => setPanel(panel === "sort" ? "none" : "sort")}>
-              ↕ Sortierung{sorts.length ? ` (${sorts.length})` : ""}
+              ↕ {t("toolbar.sort")}{sorts.length ? ` (${sorts.length})` : ""}
             </button>
           </span>
         )}
@@ -206,13 +208,13 @@ export function ViewToolbar({ mobile, views, activeView, fields, isOwner, onSele
       {panel === "filter" && activeView && (
         <div className={styles.viewPanel}>
           <div className={styles.viewPanelHead}>
-            <span>Zeige Einträge, für die</span>
+            <span>{t("toolbar.showEntries")}</span>
             <select className={styles.input} value={groupOp}
                     onChange={(e) => writeFilters(conditions, e.target.value)}>
-              <option value="and">alle</option>
-              <option value="or">mindestens eine</option>
+              <option value="and">{t("toolbar.all")}</option>
+              <option value="or">{t("toolbar.any")}</option>
             </select>
-            <span>Regel(n) zutreffen:</span>
+            <span>{t("toolbar.rulesMatch")}</span>
           </div>
           {conditions.map((c, i) => {
             const field = fields.find((f) => f.key === c.key);
@@ -257,7 +259,7 @@ export function ViewToolbar({ mobile, views, activeView, fields, isOwner, onSele
                         type={field?.field_type === FieldType.Number ? "number"
                           : field?.field_type === FieldType.Date ? "date" : "text"}
                         defaultValue={String(c.value ?? "")}
-                        placeholder="Wert"
+                        placeholder={t("toolbar.value")}
                         onBlur={(e) => {
                           const next = [...conditions];
                           const raw = e.target.value;
@@ -270,8 +272,8 @@ export function ViewToolbar({ mobile, views, activeView, fields, isOwner, onSele
                       />
                     )
                 )}
-                <button className={styles.linkRemove} title="Regel entfernen"
-                        onClick={() => writeFilters(conditions.filter((_, j) => j !== i))}><Icon name="close" size={14} title="Schließen" /></button>
+                <button className={styles.linkRemove} title={t("toolbar.removeRule")}
+                        onClick={() => writeFilters(conditions.filter((_, j) => j !== i))}><Icon name="close" size={14} title={t("app.close")} /></button>
               </div>
             );
           })}
@@ -280,7 +282,7 @@ export function ViewToolbar({ mobile, views, activeView, fields, isOwner, onSele
                   onClick={() => {
                     const f = fields[0];
                     writeFilters([...conditions, { key: f.key, op: opsFor(f)[0].op, value: "" }]);
-                  }}>＋ Regel</button>
+                  }}>{t("toolbar.addRule")}</button>
         </div>
       )}
 
@@ -302,20 +304,20 @@ export function ViewToolbar({ mobile, views, activeView, fields, isOwner, onSele
                         next[i] = { ...s, dir: e.target.value as "asc" | "desc" };
                         onPatch({ sorts: next });
                       }}>
-                <option value="asc">aufsteigend</option>
-                <option value="desc">absteigend</option>
+                <option value="asc">{t("toolbar.asc")}</option>
+                <option value="desc">{t("toolbar.desc")}</option>
               </select>
-              <button className={styles.linkRemove} title="Sortierung entfernen"
-                      onClick={() => onPatch({ sorts: sorts.filter((_, j) => j !== i) })}><Icon name="close" size={14} title="Schließen" /></button>
+              <button className={styles.linkRemove} title={t("toolbar.removeSort")}
+                      onClick={() => onPatch({ sorts: sorts.filter((_, j) => j !== i) })}><Icon name="close" size={14} title={t("app.close")} /></button>
             </div>
           ))}
           <button className={styles.btnSecondary} disabled={!fields.length}
                   onClick={() => onPatch({ sorts: [...sorts, { key: fields[0].key, dir: "asc" }] })}>
-            ＋ Sortierung
+            {t("toolbar.addSort")}
           </button>
           {activeView.layout === "board" && (
             <div className={styles.filterRow}>
-              <span className={styles.metaHint}>Gruppieren nach</span>
+              <span className={styles.metaHint}>{t("toolbar.groupBy")}</span>
               <select className={styles.input}
                       value={String(activeView.group_setting?.key ?? "")}
                       onChange={(e) => onPatch({ group_setting: { key: e.target.value } })}>
@@ -326,7 +328,7 @@ export function ViewToolbar({ mobile, views, activeView, fields, isOwner, onSele
           {activeView.layout === "timeline" && (
             <>
               <div className={styles.filterRow}>
-                <span className={styles.metaHint}>Beginn</span>
+                <span className={styles.metaHint}>{t("toolbar.start")}</span>
                 <select className={styles.input}
                         value={String(activeView.layout_setting?.start_field ?? "")}
                         onChange={(e) => onPatch({ layout_setting: { ...activeView.layout_setting, start_field: e.target.value } })}>
@@ -335,7 +337,7 @@ export function ViewToolbar({ mobile, views, activeView, fields, isOwner, onSele
                 </select>
               </div>
               <div className={styles.filterRow}>
-                <span className={styles.metaHint}>Ende</span>
+                <span className={styles.metaHint}>{t("toolbar.end")}</span>
                 <select className={styles.input}
                         value={String(activeView.layout_setting?.end_field ?? "")}
                         onChange={(e) => onPatch({ layout_setting: { ...activeView.layout_setting, end_field: e.target.value } })}>
@@ -347,7 +349,7 @@ export function ViewToolbar({ mobile, views, activeView, fields, isOwner, onSele
           )}
           {activeView.layout === "calendar" && (
             <div className={styles.filterRow}>
-              <span className={styles.metaHint}>Datumsfeld</span>
+              <span className={styles.metaHint}>{t("toolbar.dateField")}</span>
               <select className={styles.input}
                       value={String(activeView.layout_setting?.date_field ?? "")}
                       onChange={(e) => onPatch({ layout_setting: { ...activeView.layout_setting, date_field: e.target.value } })}>

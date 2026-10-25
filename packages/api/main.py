@@ -14,6 +14,7 @@ import betriebsprofil
 from domains_generated import BASE_DOMAIN  # cell: CLARAOS_BASE_DOMAIN
 from auth import get_current_user
 from database import close_pool, get_pool
+import sprache
 import importlib
 
 from router_registry import ROUTERS
@@ -26,6 +27,10 @@ except ImportError:
     _heim = None
 
 logger = logging.getLogger(__name__)
+
+from log_redaction import RedactQueryTokens  # noqa: E402
+
+logging.getLogger("uvicorn.access").addFilter(RedactQueryTokens())
 
 AUTHENTIK_LOGOUT_URL = os.environ.get(
     "AUTHENTIK_LOGOUT_URL",
@@ -233,6 +238,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Server texts (error details, confirmations) in the caller's UI language.
+sprache.einbinden(app)
 
 
 async def _fetch_user_groups(username: str) -> str:

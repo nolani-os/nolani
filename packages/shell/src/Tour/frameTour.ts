@@ -14,6 +14,7 @@
  * the frame spotlight remains.
  */
 import { useAppRegistryStore, useUIStore, useWindowsStore } from "@claraos/core";
+import { iframeTargetOrigin } from "../Chat/iframeBridge";
 
 interface Rect { x: number; y: number; w: number; h: number }
 
@@ -101,7 +102,7 @@ export function ensureFrame(appId: string, selector: string | null,
     const send = () => {
       if (selector) {
         iframe.contentWindow?.postMessage(
-          { type: "claraos:tour-highlight", selector }, "*");
+          { type: "claraos:tour-highlight", selector }, iframeTargetOrigin(iframe));
       }
     };
     send();
@@ -115,7 +116,7 @@ export function ensureFrame(appId: string, selector: string | null,
       window.clearInterval(reposition);
       window.removeEventListener("message", onMsg);
       try {
-        iframe.contentWindow?.postMessage({ type: "claraos:tour-clear" }, "*");
+        iframe.contentWindow?.postMessage({ type: "claraos:tour-clear" }, iframeTargetOrigin(iframe));
       } catch { /* iframe may be gone */ }
       proxy.remove();
     };

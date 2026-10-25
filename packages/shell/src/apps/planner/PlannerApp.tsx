@@ -2,7 +2,7 @@
  * LeftRail (My Day / Tasks / Projects) + content + TaskDetail drawer.
  * Data source: BFF /api/claraos/planner, backend Vikunja. */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { appHost, getBrand } from "@claraos/core";
+import { appHost, i18n, useTranslation } from "@claraos/core";
 import styles from "./PlannerApp.module.css";
 import { Icon, type IconName } from "../../components/Icon";
 import { plannerApi, NotConnectedError } from "./api";
@@ -24,18 +24,23 @@ import BusinessView from "./views/BusinessView";
 
 type Rail = "myday" | "tasks" | "calendar" | "gemeinsam" | "projects" | "costs";
 
-const RAIL_ITEMS: { key: Rail; icon: IconName; label: string }[] = [
-  { key: "myday", icon: "today", label: "Mein Tag" },
-  { key: "tasks", icon: "check", label: "Aufgaben" },
-  { key: "calendar", icon: "calendar", label: "Kalender" },
+/** Rail entries; `label` is a getter, so it is always in the current UI language. */
+const railItem = (key: Rail, icon: IconName, labelKey: string) => ({
+  key, icon, get label() { return i18n.t(`planner:${labelKey}`); },
+});
+const RAIL_ITEMS: { readonly key: Rail; readonly icon: IconName; readonly label: string }[] = [
+  railItem("myday", "today", "nav.myDay"),
+  railItem("tasks", "check", "nav.tasks"),
+  railItem("calendar", "calendar", "nav.calendar"),
   // Resources, scheduling polls, meeting room — everything you arrange with
   // others instead of entering on your own.
-  { key: "gemeinsam", icon: "people", label: "Gemeinsam" },
-  { key: "projects", icon: "collections", label: "Projekte" },
-  { key: "costs", icon: "money", label: "Kosten" },
+  railItem("gemeinsam", "people", "nav.together"),
+  railItem("projects", "collections", "nav.projects"),
+  railItem("costs", "money", "nav.costs"),
 ];
 
 export default function PlannerApp({ windowId: _windowId }: { windowId: string }) {
+  const { t } = useTranslation("planner");
   const isMobile = useIsMobile();
   const [rail, setRail] = useState<Rail>("myday");
   const [projects, setProjects] = useState<VikProject[]>([]);
@@ -43,6 +48,7 @@ export default function PlannerApp({ windowId: _windowId }: { windowId: string }
   const [activeProject, setActiveProject] = useState<VikProject | null>(null);
   const [projView, setProjView] = useState<"board" | "gantt" | "costs">("board");
   const [detailTaskId, setDetailTaskId] = useState<number | null>(null);
+  const [calendarFocus, setCalendarFocus] = useState<Date | null>(null);
   const [notConnected, setNotConnected] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -131,6 +137,10 @@ export default function PlannerApp({ windowId: _windowId }: { windowId: string }
       openProject(Number(m[1]), "costs");
     } else if ((m = path.match(/^\/project\/(\d+)/))) {
       openProject(Number(m[1]), "board");
+    } else if ((m = path.match(/^\/calendar\/(\d{4})-(\d{2})-(\d{2})/))) {
+      setActiveProject(null);
+      setRail("calendar");
+      setCalendarFocus(new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
     } else if (path.startsWith("/myday") || path.startsWith("/tasks") || path.startsWith("/calendar") || path.startsWith("/costs")) {
       setActiveProject(null);
       setRail(path.slice(1).split("/")[0] as Rail);
@@ -154,14 +164,14 @@ export default function PlannerApp({ windowId: _windowId }: { windowId: string }
       <div className={styles.app}>
         <div className={styles.onboarding}>
           <div className={styles.onboardingIcon}><Icon name="collections" size={40} /></div>
-          <h2>Planner verbinden</h2>
+          <h2>{t("app.connect.title")}</h2>
           <p>{notConnected}</p>
           <ol>
-            <li>Planner-Backend öffnen: <code>{appHost("vikunja")}</code> → „{getBrand().product} Login“</li>
-            <li>Dort: Einstellungen → API-Tokens → Token erstellen</li>
-            <li>{getBrand().product}: Einstellungen → App-Verbindungen → „Planner (Vikunja)“ → Token eintragen</li>
+            <li>{t("app.connect.step1")} <code>{appHost("vikunja")}</code> → {t("app.connect.step1Login")}</li>
+            <li>{t("app.connect.step2")}</li>
+            <li>{t("app.connect.step3")}</li>
           </ol>
-          <button className={styles.btnPrimary} onClick={reload}>Erneut prüfen</button>
+          <button className={styles.btnPrimary} onClick={reload}>{t("actions.recheck")}</button>
         </div>
       </div>
     );
@@ -198,16 +208,16 @@ export default function PlannerApp({ windowId: _windowId }: { windowId: string }
       )}
 
       <main className={styles.content}>
-        {error && <div className={styles.errorBox}>{error} <button aria-label="Neu laden" title="Neu laden" onClick={reload}>↻</button></div>}
+        {error && <div className={styles.errorBox}>{error} <button aria-label={t("actions.reload")} title={t("actions.reload")} onClick={reload}>↻</button></div>}
         {loading ? (
-          <div className={styles.loading}>Lade…</div>
+          <div className={styles.loading}>{t("app.loading")}</div>
         ) : rail === "myday" ? (
           <MyDayView tasks={allTasks} projectTitles={projectTitles} onToggle={toggleDone} onOpen={openTask} onReload={reload} />
         ) : rail === "tasks" ? (
           <TasksView tasks={allTasks} projects={activeProjects} projectTitles={projectTitles}
                      onToggle={toggleDone} onOpen={openTask} onReload={reload} />
         ) : rail === "calendar" ? (
-          <CalendarView allTasks={allTasks} onOpenTask={openTask} onReloadTasks={reload} />
+          <CalendarView allTasks={allTasks} onOpenTask={openTask} onReloadTasks={reload} focusDate={calendarFocus} />
         ) : rail === "gemeinsam" ? (
           <BusinessView />
         ) : rail === "costs" ? (
@@ -224,17 +234,17 @@ export default function PlannerApp({ windowId: _windowId }: { windowId: string }
           <div className={styles.projWrap}>
             <div className={styles.projTabs}>
               {isMobile && (
-                <button className={styles.btn} title="Zurück zur Projektliste"
+                <button className={styles.btn} title={t("nav.backToProjects")}
                         onClick={() => setActiveProject(null)}>
                   ‹
                 </button>
               )}
               <button className={`${styles.projTab} ${projView === "board" ? styles.projTabActive : ""}`}
-                      onClick={() => setProjView("board")}>Board</button>
+                      onClick={() => setProjView("board")}>{t("nav.board")}</button>
               <button className={`${styles.projTab} ${projView === "gantt" ? styles.projTabActive : ""}`}
-                      onClick={() => setProjView("gantt")}>Gantt</button>
+                      onClick={() => setProjView("gantt")}>{t("nav.gantt")}</button>
               <button className={`${styles.projTab} ${projView === "costs" ? styles.projTabActive : ""}`}
-                      onClick={() => setProjView("costs")}>Kosten</button>
+                      onClick={() => setProjView("costs")}>{t("nav.costs")}</button>
             </div>
             {projView === "board" ? (
               <BoardView project={activeProject} onOpen={openTask} onBack={() => setActiveProject(null)} />
@@ -271,7 +281,7 @@ export default function PlannerApp({ windowId: _windowId }: { windowId: string }
             onClick: () => { setRail(it.key); if (it.key !== "projects") setActiveProject(null); },
           }))}
           fab={{
-            label: "Neue Aufgabe",
+            label: t("nav.newTask"),
             onClick: () => {
               setRail("myday"); setActiveProject(null);
               // MyDayView listens for this and puts the cursor into the input field.

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useFileStore } from "@claraos/core";
+import { useFileStore, i18n, useTranslation } from "@claraos/core";
 
 interface Eintrag {
   name: string;
@@ -35,6 +35,7 @@ function eltern(pfad: string): string {
  * (current folder, tabs); browsing here must not move the Files window along.
  */
 export default function SpeichernUnter({ source, startPfad, dateiname, onSpeichern, onAbbrechen }: Props) {
+  const { t } = useTranslation("textEditor");
   const [ordner, setOrdner] = useState(startPfad || "/");
   const [eintraege, setEintraege] = useState<Eintrag[]>([]);
   const [name, setName] = useState(dateiname);
@@ -58,7 +59,7 @@ export default function SpeichernUnter({ source, startPfad, dateiname, onSpeiche
     } catch {
       // A start folder that no longer exists falls back to the root once.
       if (pfad !== "/") return lade("/");
-      setFehler("Ordner lässt sich nicht lesen.");
+      setFehler(i18n.t("textEditor:dialog.folderUnreadable"));
     } finally {
       setLaedt(false);
     }
@@ -78,12 +79,12 @@ export default function SpeichernUnter({ source, startPfad, dateiname, onSpeiche
   const speichern = async () => {
     const n = name.trim();
     if (!n || /[\\/]/.test(n)) {
-      setFehler("Bitte einen Dateinamen ohne „/“ eingeben.");
+      setFehler(i18n.t("textEditor:dialog.noSlash"));
       return;
     }
     const vorhanden = eintraege.find((e) => e.name === n);
     if (vorhanden?.isDir) {
-      setFehler("Dort liegt ein Ordner mit diesem Namen.");
+      setFehler(i18n.t("textEditor:dialog.isFolder"));
       return;
     }
     if (vorhanden && !ueberschreiben) {
@@ -93,7 +94,7 @@ export default function SpeichernUnter({ source, startPfad, dateiname, onSpeiche
     setLaedt(true);
     const ok = await onSpeichern(source, verbinde(ordner, n));
     setLaedt(false);
-    if (!ok) setFehler("Speichern fehlgeschlagen.");
+    if (!ok) setFehler(i18n.t("textEditor:dialog.saveFailed"));
   };
 
   const ordnerAnlegen = async () => {
@@ -102,37 +103,37 @@ export default function SpeichernUnter({ source, startPfad, dateiname, onSpeiche
     const ok = await useFileStore.getState().createFolder(source, verbinde(ordner, n));
     setNeuerOrdner(null);
     if (ok) await lade(verbinde(ordner, n));
-    else setFehler("Ordner konnte nicht angelegt werden.");
+    else setFehler(i18n.t("textEditor:dialog.mkdirFailed"));
   };
 
   return (
     <div style={hintergrund} onKeyDown={(e) => { if (e.key === "Escape") onAbbrechen(); }}>
-      <div role="dialog" aria-label="Speichern unter" style={kasten}>
-        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8 }}>Speichern unter</div>
+      <div role="dialog" aria-label={t("dialog.title")} style={kasten}>
+        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8 }}>{t("dialog.title")}</div>
 
         <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}>
           <button style={knopf} disabled={ordner === "/" || laedt} onClick={() => lade(eltern(ordner))}
-            title="Übergeordneter Ordner" aria-label="Übergeordneter Ordner">↑</button>
+            title={t("dialog.parent")} aria-label={t("dialog.parent")}>↑</button>
           <span style={{ flex: 1, color: "#aaa", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
             title={ordner}>{ordner}</span>
-          <button style={knopf} onClick={() => setNeuerOrdner("")} disabled={laedt}>Neuer Ordner</button>
+          <button style={knopf} onClick={() => setNeuerOrdner("")} disabled={laedt}>{t("dialog.newFolder")}</button>
         </div>
 
         {neuerOrdner !== null && (
           <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-            <input autoFocus style={{ ...feld, flex: 1 }} placeholder="Ordnername" value={neuerOrdner}
+            <input autoFocus style={{ ...feld, flex: 1 }} placeholder={t("dialog.folderName")} value={neuerOrdner}
               onChange={(e) => setNeuerOrdner(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") ordnerAnlegen(); }} />
-            <button style={knopf} onClick={ordnerAnlegen}>Anlegen</button>
+            <button style={knopf} onClick={ordnerAnlegen}>{t("dialog.create")}</button>
           </div>
         )}
 
-        <ul role="listbox" aria-label="Ordnerinhalt" style={liste}>
-          {eintraege.length === 0 && !laedt && <li style={{ color: "#777", padding: 8 }}>Leerer Ordner</li>}
+        <ul role="listbox" aria-label={t("dialog.contents")} style={liste}>
+          {eintraege.length === 0 && !laedt && <li style={{ color: "#777", padding: 8 }}>{t("dialog.empty")}</li>}
           {eintraege.map((e) => (
             <li key={e.path} role="option" aria-selected={!e.isDir && e.name === name}
               style={{ ...zeile, color: e.isDir ? "#ddd" : "#999" }}
-              title={e.isDir ? "Doppelklick öffnet den Ordner" : "Klick übernimmt den Namen"}
+              title={e.isDir ? t("dialog.dirHint") : t("dialog.fileHint")}
               onClick={() => { if (!e.isDir) { setName(e.name); setUeberschreiben(false); } }}
               onDoubleClick={() => { if (e.isDir) lade(e.path); }}>
               {e.isDir ? "📁" : "📄"} {e.name}
@@ -141,7 +142,7 @@ export default function SpeichernUnter({ source, startPfad, dateiname, onSpeiche
         </ul>
 
         <label style={{ display: "block", fontSize: 12, color: "#aaa", marginTop: 8 }}>
-          Dateiname
+          {t("dialog.fileName")}
           <input ref={nameRef} style={{ ...feld, width: "100%", marginTop: 4 }} value={name}
             onChange={(e) => { setName(e.target.value); setUeberschreiben(false); setFehler(""); }}
             onKeyDown={(e) => { if (e.key === "Enter") speichern(); }} />
@@ -149,16 +150,16 @@ export default function SpeichernUnter({ source, startPfad, dateiname, onSpeiche
 
         {ueberschreiben && (
           <div style={{ color: "#f0c674", fontSize: 12, marginTop: 6 }}>
-            „{name.trim()}“ gibt es hier schon. Nochmal auf Speichern klicken, um sie zu ersetzen.
+            {t("dialog.exists", { name: name.trim() })}
           </div>
         )}
         {fehler && <div role="alert" style={{ color: "#f38ba8", fontSize: 12, marginTop: 6 }}>{fehler}</div>}
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
-          <button style={knopf} onClick={onAbbrechen}>Abbrechen</button>
+          <button style={knopf} onClick={onAbbrechen}>{t("dialog.cancel")}</button>
           <button style={{ ...knopf, background: "#0e639c", borderColor: "#1177bb", color: "#fff" }}
             onClick={speichern} disabled={laedt}>
-            {ueberschreiben ? "Ersetzen" : "Speichern"}
+            {ueberschreiben ? t("dialog.replace") : t("dialog.save")}
           </button>
         </div>
       </div>

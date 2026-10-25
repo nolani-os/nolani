@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useMatrixStore } from "@claraos/core";
+import { useMatrixStore, useTranslation, i18n } from "@claraos/core";
 import type { RailView, MatrixMessage } from "@claraos/core";
 import {
   loadRoomTimeline, sendFormattedMessage, sendReply, editMessage,
@@ -42,7 +42,7 @@ const EMPTY_MSGS: MatrixMessage[] = [];
 
 function timeAgo(ts: number): string {
   const d = Date.now() - ts;
-  if (d < 60000) return "now";
+  if (d < 60000) return i18n.t("teams:mobile.now");
   if (d < 3600000) return `${Math.floor(d / 60000)}m`;
   if (d < 86400000) return `${Math.floor(d / 3600000)}h`;
   return `${Math.floor(d / 86400000)}d`;
@@ -59,6 +59,7 @@ function RoomListItem({
    *  "which messenger" is the actual question. */
   mitDienst?: boolean;
 }) {
+  const { t } = useTranslation("teams");
   const room = useMatrixStore((s) => s.rooms[roomId]);
   if (!room || room.isSpace) return null;
 
@@ -78,7 +79,7 @@ function RoomListItem({
         <div className={styles.roomPreview}>
           {room.lastMessage?.body?.trim()
             ? `${room.lastMessage.sender.replace(/^@/, "").split(":")[0]}: ${room.lastMessage.body}`
-            : "Noch keine Nachrichten"}
+            : t("mobile.noMessages")}
         </div>
       </div>
       {room.unreadCount > 0 && <span className={styles.badge}>{room.unreadCount}</span>}
@@ -87,6 +88,7 @@ function RoomListItem({
 }
 
 function MobileChatView({ roomId, onBack }: { roomId: string; onBack: () => void }) {
+  const { t } = useTranslation("teams");
   const room = useMatrixStore((s) => s.rooms[roomId]);
   const allMessages = useMatrixStore((s) => s.timeline[roomId]) ?? EMPTY_MSGS;
   const meineId = getMatrixClient()?.getUserId() ?? "";
@@ -134,8 +136,8 @@ function MobileChatView({ roomId, onBack }: { roomId: string; onBack: () => void
     return (
       <div className={styles.chatView} data-teams-app>
         <div className={styles.chatHeader}>
-          <IconButton label="Zurück" icon="back" groesse="s" onClick={() => setActiveThreadRoot(null)} />
-          <span className={styles.chatTitle}>Thread</span>
+          <IconButton label={t("mobile.back")} icon="back" groesse="s" onClick={() => setActiveThreadRoot(null)} />
+          <span className={styles.chatTitle}>{t("mobile.thread")}</span>
         </div>
         <ThreadPane roomId={roomId} />
       </div>
@@ -145,11 +147,11 @@ function MobileChatView({ roomId, onBack }: { roomId: string; onBack: () => void
   return (
     <div className={styles.chatView} data-teams-app>
       <div className={styles.chatHeader}>
-        <IconButton label="Zurück" icon="back" groesse="s" onClick={onBack} />
+        <IconButton label={t("mobile.back")} icon="back" groesse="s" onClick={onBack} />
         <span className={styles.chatTitle}>
           {room?.isEncrypted ? <LockIcon size={14} /> : <HashIcon size={14} />} {room?.name}
         </span>
-        <IconButton label="Anruf starten" icon={<PhoneIcon size={20} />} groesse="s" onClick={() => startCall(roomId)} />
+        <IconButton label={t("mobile.startCall")} icon={<PhoneIcon size={20} />} groesse="s" onClick={() => startCall(roomId)} />
       </div>
 
       <>
@@ -196,7 +198,7 @@ function MobileChatView({ roomId, onBack }: { roomId: string; onBack: () => void
                 const count = Math.max(replies, msg.threadReplyCount ?? 0);
                 return count > 0 ? (
                   <button className={styles.threadIndicator} onClick={() => setActiveThreadRoot(msg.eventId)}>
-                    {count} {count === 1 ? "Antwort" : "Antworten"} →
+                    {t("mobile.replies", { count })}
                   </button>
                 ) : null;
               })()}
@@ -213,7 +215,7 @@ function MobileChatView({ roomId, onBack }: { roomId: string; onBack: () => void
         <input
           ref={inputRef}
           className={`${styles.chatInput} ${editingEvent ? styles.editMode : ""}`}
-          placeholder={`Message ${room?.name ?? ""}...`}
+          placeholder={t("mobile.placeholder", { room: room?.name ?? "" })}
           value={input}
           onChange={(e) => { setInput(e.target.value); sendTypingIndicator(roomId); }}
           onKeyDown={(e) => {
@@ -221,7 +223,7 @@ function MobileChatView({ roomId, onBack }: { roomId: string; onBack: () => void
             if (e.key === "Escape") { setReplyTo(null); setEditingEvent(null); }
           }}
         />
-        <IconButton label={editingEvent ? "Änderung speichern" : "Senden"} stufe="filled"
+        <IconButton label={editingEvent ? t("mobile.saveEdit") : t("mobile.send")} stufe="filled"
                     icon={editingEvent ? "check" : <SendIcon size={18} />}
                     onClick={handleSend} disabled={!input.trim()} />
       </div>
@@ -231,6 +233,7 @@ function MobileChatView({ roomId, onBack }: { roomId: string; onBack: () => void
 }
 
 export function MobileLayout({ windowId }: { windowId: string }) {
+  const { t } = useTranslation("teams");
   const railView = useMatrixStore((s) => s.railView);
   const setRailView = useMatrixStore((s) => s.setRailView);
   const rooms = useMatrixStore((s) => s.rooms);
@@ -310,9 +313,9 @@ export function MobileLayout({ windowId }: { windowId: string }) {
     return (
       <div className={styles.mobile} data-teams-app>
         <div className={styles.chatHeader}>
-          <IconButton label="Zurück" icon="back" groesse="s"
+          <IconButton label={t("mobile.back")} icon="back" groesse="s"
                       onClick={() => { setOffenesTeam(null); setMobileView("list"); }} />
-          <span className={styles.chatTitle}>{spaces[offenesTeam]?.name ?? "Team"}</span>
+          <span className={styles.chatTitle}>{spaces[offenesTeam]?.name ?? t("mobile.team")}</span>
         </div>
         <div className={styles.content}>
           <TeamView spaceId={offenesTeam} windowId={windowId} />
@@ -336,11 +339,11 @@ export function MobileLayout({ windowId }: { windowId: string }) {
           .slice(0, 30);
         return (
           <div className={styles.list}>
-            <h2 className={styles.listTitle}>Aktivität</h2>
+            <h2 className={styles.listTitle}>{t("mobile.activity")}</h2>
             {recent.map((r) => (
               <RoomListItem key={r.roomId} roomId={r.roomId} onSelect={() => handleSelectRoom(r.roomId)} />
             ))}
-            {recent.length === 0 && <div className={styles.empty}>Keine neue Aktivität</div>}
+            {recent.length === 0 && <div className={styles.empty}>{t("mobile.noActivity")}</div>}
           </div>
         );
       }
@@ -355,7 +358,7 @@ export function MobileLayout({ windowId }: { windowId: string }) {
           .sort((a, b) => (b.lastMessage?.ts ?? 0) - (a.lastMessage?.ts ?? 0));
         return (
           <div className={styles.list}>
-            <h2 className={styles.listTitle}>Chat</h2>
+            <h2 className={styles.listTitle}>{t("mobile.chat")}</h2>
             {dms.map((r) => (
               <RoomListItem
                 key={r.roomId}
@@ -388,7 +391,7 @@ export function MobileLayout({ windowId }: { windowId: string }) {
               </button>
             ))}
             {dms.length === 0 && talk.length === 0 && (
-              <div className={styles.empty}>Keine Direktnachrichten</div>
+              <div className={styles.empty}>{t("mobile.noDms")}</div>
             )}
           </div>
         );
@@ -397,14 +400,14 @@ export function MobileLayout({ windowId }: { windowId: string }) {
         const spaceList = Object.values(spaces);
         return (
           <div className={styles.list}>
-            <h2 className={styles.listTitle}>Teams</h2>
+            <h2 className={styles.listTitle}>{t("mobile.teams")}</h2>
             {spaceList.map((space) => (
               <div key={space.spaceId}>
                 <div className={styles.spaceHeader}>
                   <button
                     className={styles.spaceChevron}
                     onClick={() => toggleSpaceExpanded(space.spaceId)}
-                    aria-label={expandedSpaces[space.spaceId] ? "Kanäle einklappen" : "Kanäle ausklappen"}
+                    aria-label={expandedSpaces[space.spaceId] ? t("mobile.collapse") : t("mobile.expand")}
                   >{expandedSpaces[space.spaceId] ? "▾" : "▸"}</button>
                   {/* Tapping the name opens the team view with files, calendar
                       and plan — on phones as on desktop. */}
@@ -453,12 +456,12 @@ export function MobileLayout({ windowId }: { windowId: string }) {
         <span className={styles.sucheSymbol}><SearchIcon size={16} /></span>
         <input
           className={styles.sucheFeld}
-          placeholder="Personen suchen…"
+          placeholder={t("mobile.searchPeople")}
           value={suche}
           onChange={(e) => setSuche(e.target.value)}
         />
         {trefferSichtbar && (
-          <button className={styles.sucheLeeren} onClick={() => setSuche("")} aria-label="Suche leeren">
+          <button className={styles.sucheLeeren} onClick={() => setSuche("")} aria-label={t("mobile.clearSearch")}>
             ✕
           </button>
         )}
@@ -467,7 +470,7 @@ export function MobileLayout({ windowId }: { windowId: string }) {
       <div className={styles.content}>
         {trefferSichtbar ? (
           <div className={styles.list}>
-            <h2 className={styles.listTitle}>Personen</h2>
+            <h2 className={styles.listTitle}>{t("mobile.people")}</h2>
             {personen.map((p) => (
               <button
                 key={p.username}
@@ -484,7 +487,7 @@ export function MobileLayout({ windowId }: { windowId: string }) {
               </button>
             ))}
             {personen.length === 0 && (
-              <div className={styles.empty}>Niemand gefunden für „{suche}"</div>
+              <div className={styles.empty}>{t("mobile.nobody", { term: suche })}</div>
             )}
           </div>
         ) : (
@@ -495,7 +498,7 @@ export function MobileLayout({ windowId }: { windowId: string }) {
       <Werkzeugleiste
         eintraege={TABS.map((tab) => ({
           key: tab.id,
-          label: tab.label,
+          label: t(`mobile.tabs.${tab.id}`),
           icon: tab.icon,
           active: railView === tab.id,
           badge: tab.id === "activity"

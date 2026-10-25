@@ -19,14 +19,13 @@ import type React from "react";
 import styles from "./Wissen.module.css";
 import { Icon } from "../../components/Icon";
 import type { ViewLayout } from "../ideas/types";
+import { useTranslation, i18n } from "@claraos/core";
 
+const layoutWahl = (key: ViewLayout, icon: string) =>
+  ({ key, icon, get label() { return i18n.t(`wissen:layout.${key}`); } });
 export const LAYOUT_WAHL: { key: ViewLayout; label: string; icon: string }[] = [
-  { key: "table", label: "Tabelle", icon: "▦" },
-  { key: "board", label: "Board", icon: "▥" },
-  { key: "gallery", label: "Galerie", icon: "▩" },
-  { key: "list", label: "Liste", icon: "≡" },
-  { key: "calendar", label: "Kalender", icon: "▤" },
-  { key: "timeline", label: "Zeitleiste", icon: "▭" },
+  layoutWahl("table", "▦"), layoutWahl("board", "▥"), layoutWahl("gallery", "▩"),
+  layoutWahl("list", "≡"), layoutWahl("calendar", "▤"), layoutWahl("timeline", "▭"),
 ];
 
 interface Props {
@@ -54,6 +53,7 @@ export function AnsichtsMenue({
   aktuell, name, loeschbar, onLayout, onUmbenennen, onLoeschen, onSchliessen, stil,
   onFilter, onSortierung, onSpalten, filterAnzahl = 0, sortAnzahl = 0,
 }: Props) {
+  const { t } = useTranslation("wissen");
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -88,7 +88,7 @@ export function AnsichtsMenue({
         }}
       />
 
-      <div className={styles.menueHinweis} style={{ paddingBottom: 0 }}>Anzeigen als</div>
+      <div className={styles.menueHinweis} style={{ paddingBottom: 0 }}>{t("viewMenu.showAs")}</div>
       {LAYOUT_WAHL.map((l) => (
         <button key={l.key} className={styles.menueZeile}
                 onClick={() => { onLayout(l.key); onSchliessen(); }}>
@@ -105,14 +105,14 @@ export function AnsichtsMenue({
             <button className={styles.menueZeile}
                     onClick={() => { onSchliessen(); onSpalten(); }}>
               <span className={styles.menueSymbol}><Icon name="list" size={14} /></span>
-              <span>Spalten</span>
+              <span>{t("viewMenu.columns")}</span>
             </button>
           )}
           {onFilter && (
             <button className={styles.menueZeile}
                     onClick={() => { onSchliessen(); onFilter(); }}>
               <span className={styles.menueSymbol}>⚙</span>
-              <span>Filter</span>
+              <span>{t("viewMenu.filter")}</span>
               {filterAnzahl > 0 && <span className={styles.menueWert}>{filterAnzahl}</span>}
             </button>
           )}
@@ -120,7 +120,7 @@ export function AnsichtsMenue({
             <button className={styles.menueZeile}
                     onClick={() => { onSchliessen(); onSortierung(); }}>
               <span className={styles.menueSymbol}>↕</span>
-              <span>Sortierung</span>
+              <span>{t("viewMenu.sort")}</span>
               {sortAnzahl > 0 && <span className={styles.menueWert}>{sortAnzahl}</span>}
             </button>
           )}
@@ -132,12 +132,11 @@ export function AnsichtsMenue({
           <div className={styles.menueTrenner} />
           <button className={`${styles.menueZeile} ${styles.menueGefahr}`}
                   onClick={() => {
-                    if (window.confirm(`Ansicht „${name}" löschen?\n\n`
-                      + "Die Einträge bleiben erhalten — nur diese Ansicht verschwindet."))
+                    if (window.confirm(t("viewMenu.confirmDelete", { name })))
                       onLoeschen();
                   }}>
             <span className={styles.menueSymbol}><Icon name="trash" size={14} /></span>
-            <span>Ansicht löschen</span>
+            <span>{t("viewMenu.delete")}</span>
           </button>
         </>
       )}

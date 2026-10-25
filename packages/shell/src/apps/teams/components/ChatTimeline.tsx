@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { useMatrixStore } from "@claraos/core";
+import { useMatrixStore, useTranslation, i18n } from "@claraos/core";
 import type { MatrixMessage } from "@claraos/core";
 import {
   loadRoomTimeline, loadOlderMessages, sendFormattedMessage, sendReply, editMessage,
@@ -25,9 +25,9 @@ function formatTime(ts: number): string {
 function formatDate(ts: number): string {
   const d = new Date(ts);
   const today = new Date();
-  if (d.toDateString() === today.toDateString()) return "Heute";
+  if (d.toDateString() === today.toDateString()) return i18n.t("teams:timeline.today");
   const y = new Date(today); y.setDate(y.getDate() - 1);
-  if (d.toDateString() === y.toDateString()) return "Gestern";
+  if (d.toDateString() === y.toDateString()) return i18n.t("teams:timeline.yesterday");
   return d.toLocaleDateString(regionLocale(), { day: "numeric", month: "short", year: "numeric" });
 }
 
@@ -62,6 +62,7 @@ function LinkPreview({ url }: { url: string }) {
 }
 
 export function ChatTimeline({ roomId }: { roomId: string }) {
+  const { t } = useTranslation("teams");
   const allMessages = useMatrixStore((s) => s.timeline[roomId]) ?? EMPTY_MSGS;
   const loading = useMatrixStore((s) => !!s.timelineLoading[roomId]);
   const room = useMatrixStore((s) => s.rooms[roomId]);
@@ -286,10 +287,10 @@ export function ChatTimeline({ roomId }: { roomId: string }) {
       )}
 
       <div className={styles.messages} ref={scrollRef} onScroll={handleScroll}>
-        {loading && <div className={styles.loadingIndicator}>Lade Nachrichten…</div>}
+        {loading && <div className={styles.loadingIndicator}>{t("timeline.loading")}</div>}
         {messages.map((msg, i) => {
           if (msg.redacted) {
-            return <div key={msg.eventId} className={styles.redacted}>[Nachricht gelöscht]</div>;
+            return <div key={msg.eventId} className={styles.redacted}>{t("timeline.deleted")}</div>;
           }
           const dateStr = formatDate(msg.ts);
           const showDate = dateStr !== lastDate;
@@ -306,7 +307,7 @@ export function ChatTimeline({ roomId }: { roomId: string }) {
             <div key={msg.eventId} data-event-id={msg.eventId}>
               {showDate && <div className={styles.dateSeparator}><span>{dateStr}</span></div>}
               {markerIndex === i - 1 && markerIndex >= 0 && (
-                <div className={styles.newMarker}><span>Neu</span></div>
+                <div className={styles.newMarker}><span>{t("timeline.new")}</span></div>
               )}
               <div
                 className={`${styles.message} ${isOwn ? styles.own : ""} ${highlighted === msg.eventId ? styles.highlighted : ""}`}
@@ -335,17 +336,17 @@ export function ChatTimeline({ roomId }: { roomId: string }) {
                   <button
                     className={styles.replyRef}
                     onClick={() => replyOriginal && scrollToEvent(replyOriginal.eventId)}
-                    title={replyOriginal ? "Zum Original springen" : undefined}
+                    title={replyOriginal ? t("timeline.toOriginal") : undefined}
                   >
                     {replyOriginal ? (
                       <>
                         <span className={styles.replySender}>{replyOriginal.senderName}</span>
                         <span className={styles.replyBody}>
-                          {(replyOriginal.redacted ? "[gelöscht]" : replyOriginal.body).slice(0, 120)}
+                          {(replyOriginal.redacted ? t("timeline.deletedShort") : replyOriginal.body).slice(0, 120)}
                         </span>
                       </>
                     ) : (
-                      <span className={styles.replyBody}>↩ Antwort auf frühere Nachricht</span>
+                      <span className={styles.replyBody}>{t("timeline.earlierReply")}</span>
                     )}
                   </button>
                 )}
@@ -361,7 +362,7 @@ export function ChatTimeline({ roomId }: { roomId: string }) {
                   ) : (
                     msg.body
                   )}
-                  {msg.isEdited && <span className={styles.edited}>(bearbeitet)</span>}
+                  {msg.isEdited && <span className={styles.edited}>{t("timeline.edited")}</span>}
                 </div>
                 {bodyUrl && <LinkPreview url={bodyUrl} />}
                 {reactionEntries.length > 0 && (
@@ -381,7 +382,7 @@ export function ChatTimeline({ roomId }: { roomId: string }) {
                 {thread && thread.count > 0 && (
                   <button className={styles.threadIndicator} onClick={() => setActiveThreadRoot(msg.eventId)}>
                     <ThreadIcon size={13} />
-                    {thread.count} {thread.count === 1 ? "Antwort" : "Antworten"}
+                    {t("timeline.replies", { count: thread.count })}
                     {thread.latestTs > 0 && <span className={styles.threadTime}>· {formatTime(thread.latestTs)}</span>}
                   </button>
                 )}
@@ -399,7 +400,7 @@ export function ChatTimeline({ roomId }: { roomId: string }) {
       </div>
 
       {!atBottom && (
-        <button className={styles.jumpToBottom} onClick={jumpToBottom} title="Nach unten">
+        <button className={styles.jumpToBottom} onClick={jumpToBottom} title={t("timeline.toBottom")}>
           <ArrowDownIcon size={15} />
           {missedCount > 0 && <span className={styles.jumpCount}>{missedCount}</span>}
         </button>
@@ -419,20 +420,20 @@ export function ChatTimeline({ roomId }: { roomId: string }) {
             onClose={() => setMentionQuery(null)}
           />
         )}
-        <button className={styles.composerBtn} onClick={() => fileInputRef.current?.click()} title="Datei anhängen">
+        <button className={styles.composerBtn} onClick={() => fileInputRef.current?.click()} title={t("timeline.attach")}>
           <PaperclipIcon size={18} />
         </button>
         <input type="file" ref={fileInputRef} onChange={handleFileSelect} style={{ display: "none" }} multiple />
         <textarea
           ref={inputRef}
           className={`${styles.input} ${editingEvent ? styles.editMode : ""}`}
-          placeholder={editingEvent ? "Nachricht bearbeiten…" : `Nachricht an ${room?.name ?? ""}…`}
+          placeholder={editingEvent ? t("timeline.editPlaceholder") : t("timeline.placeholder", { room: room?.name ?? "" })}
           value={input}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           rows={1}
         />
-        <button className={styles.composerBtn} onClick={() => setShowEmoji(!showEmoji)} title="Emoji">
+        <button className={styles.composerBtn} onClick={() => setShowEmoji(!showEmoji)} title={t("timeline.emoji")}>
           <SmileIcon size={18} />
         </button>
         <button className={styles.sendBtn} onClick={handleSend} disabled={!input.trim()} title={editingEvent ? "Speichern" : "Senden"}>

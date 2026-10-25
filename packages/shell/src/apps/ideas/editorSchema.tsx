@@ -4,14 +4,19 @@
  * The translation is done by mdBridge.ts (pre-serialize/post-parse), NOT this file. */
 import { BlockNoteSchema, defaultBlockSpecs, defaultInlineContentSpecs } from "@blocknote/core";
 import { createReactBlockSpec, createReactInlineContentSpec } from "@blocknote/react";
+import { i18n } from "@claraos/core";
 
 /** Admonition variants (GitHub syntax): key = MD marker, value = display. */
+/** `label` is a getter, read in the UI language when shown. */
+const hinweis = (kind: string, icon: string) =>
+  ({ icon, get label() { return i18n.t(`wissen:callout.${kind}`); } });
+
 export const CALLOUT_KINDS: Record<string, { icon: string; label: string }> = {
-  note: { icon: "💡", label: "Hinweis" },
-  tip: { icon: "🌱", label: "Tipp" },
-  important: { icon: "📌", label: "Wichtig" },
-  warning: { icon: "⚠️", label: "Warnung" },
-  caution: { icon: "🛑", label: "Achtung" },
+  note: hinweis("note", "💡"),
+  tip: hinweis("tip", "🌱"),
+  important: hinweis("important", "📌"),
+  warning: hinweis("warning", "⚠️"),
+  caution: hinweis("caution", "🛑"),
 };
 
 /** Note (BlockNote 0.51): createReactBlockSpec returns a FACTORY (must be called),
@@ -32,7 +37,7 @@ export const Callout = createReactBlockSpec(
         <div className="kb-callout" data-kind={props.block.props.kind}>
           <button
             className="kb-callout-icon"
-            title={`${kind.label} — klicken zum Wechseln`}
+            title={i18n.t("wissen:callout.switch", { kind: kind.label })}
             contentEditable={false}
             onClick={() => {
               const keys = Object.keys(CALLOUT_KINDS);
@@ -63,9 +68,9 @@ export const Mention = createReactInlineContentSpec(
       <span
         className="kb-mention"
         data-object-id={props.inlineContent.props.objectId}
-        title="Verknüpftes Objekt"
+        title={i18n.t("wissen:editor.linkedObject")}
       >
-        @{props.inlineContent.props.title || "Objekt"}
+        @{props.inlineContent.props.title || i18n.t("wissen:editor.object")}
       </span>
     ),
   },

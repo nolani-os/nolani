@@ -1,4 +1,11 @@
 {
+  "dateWords": {
+    "today": "Heute",
+    "tomorrow": "Morgen",
+    "yesterday": "Gestern",
+    "daysAgo_one": "vor {{count}} Tag",
+    "daysAgo_other": "vor {{count}} Tagen"
+  },
   "dnd": {
     "remaining": {
       "unlimited": "unbegrenzt",
@@ -14,5 +21,35 @@
       "tomorrow": "Bis morgen früh",
       "off": "Bis ich es ausschalte"
     }
+  },
+  "fileTypes": {
+    "pdf": "PDF-Dokument",
+    "text": "Textdatei",
+    "doc": "Dokument",
+    "sheet": "Tabelle",
+    "slides": "Präsentation",
+    "image": "Bild",
+    "video": "Video",
+    "audio": "Audio",
+    "archive": "Archiv",
+    "code": "Code",
+    "data": "Daten",
+    "model3d": "3D-Modell",
+    "mail": "E-Mail",
+    "calendar": "Termin",
+    "contact": "Kontakt",
+    "geo": "Karte / Strecke",
+    "ebook": "E-Book",
+    "font": "Schrift",
+    "package": "Programm / Abbild",
+    "design": "Grafik-Projekt",
+    "unknown": "Datei",
+    "folder": "Ordner"
+  },
+  "install": {
+    "shareLinkReach": "Erreichbar sind Links allerdings nur im lokalen Netz.",
+    "mailSecretMissing": "⚠ Stalwart-Admin-Secret fehlt — Mail wird übersprungen.",
+    "deviceSshdDown": "Auf dem Gerät den SSH-Dienst (sshd) starten.",
+    "deviceOffline": "Gerät einschalten und mit dem Netzwerk verbinden, dann erneut versuchen."
   }
 }

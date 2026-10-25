@@ -270,6 +270,7 @@ def test_http_error_is_error_with_detail(client):
     ("mail", {"name": "send_mail", "mcp": "write"}, "never"),
     ("mastodon", {"name": "post_status", "freigabe": True}, "never"),
     ("routinen", {"name": "run_routine_now"}, "never"),
+    ("action", {"name": "read_screen", "mcp": "read"}, "never"),  # the user's live screen
 ])
 def test_exposure(module, tool, expected):
     assert agent_mcp.exposure(module, tool) == expected

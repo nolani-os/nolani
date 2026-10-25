@@ -2,6 +2,7 @@ import { Fragment, forwardRef, useCallback, useEffect, useRef, useState } from "
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import {
   useFileStore, useDragStore, useWindowsStore, windowCloseGuards,
+  regionLocale, useTranslation,
   type ViewMode, type FileSourceInfo, type FileTabState,
 } from "@claraos/core";
 import { PropertiesDialog, formatBytes, formatDateTime } from "../../components/PropertiesDialog";
@@ -24,7 +25,7 @@ import { buildFileItemMenu } from "./fileItemMenu";
 import { OpenWithDialog } from "./OpenWithDialog";
 import { FileThumb } from "./FileThumb";
 import { prepareItems } from "./listTransform";
-import { getFileTypeInfo } from "../../lib/fileTypeMeta";
+import { getFileTypeInfo, folderTypeName } from "../../lib/fileTypeMeta";
 import { ToolbarMenu } from "../../components/ToolbarMenu";
 import { Leerzustand } from "../../components/Leerzustand";
 import { INSTALL_TEXTS } from "../../installTexts";
@@ -50,7 +51,7 @@ function formatSize(bytes?: number): string {
 
 function formatDate(d?: string | number): string {
   if (!d) return "";
-  try { return new Date(d).toLocaleDateString(); } catch { return ""; }
+  try { return new Date(d).toLocaleDateString(regionLocale()); } catch { return ""; }
 }
 
 
@@ -96,6 +97,9 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
     handleNavigate, handleOpen, openWith,
     createFromTemplate: createFromTemplateCore,
   } = useFileBrowserCore(windowId);
+  const { t } = useTranslation("files");
+  // Shortcut hints in the UI language ("Strg" / "Ctrl")
+  const ctrlKey = t("keys.ctrl");
 
   const [newFolderName, setNewFolderName] = useState("");
   const [showNewFolder, setShowNewFolder] = useState(false);
@@ -152,14 +156,14 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
       const s = useFileStore.getState();
       if (s.tabs.length > 1 && s.confirmClosingMultipleTabs) {
         return confirmDlg(
-          `${s.tabs.length} Tabs sind geöffnet. Fenster trotzdem schließen?`,
-          "Fenster schließen",
+          t("confirm.closeTabs", { count: s.tabs.length }),
+          t("actions.closeWindow"),
         );
       }
       return true;
     });
     return () => { windowCloseGuards.delete(windowId); };
-  }, [windowId, confirmDlg]);
+  }, [windowId, confirmDlg, t]);
 
   // Places/favorites: straight from the store, saves hook plumbing
   const favoritesList = useFileStore((s) => s.favorites);
@@ -177,9 +181,9 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
   const renameTabDlg = useCallback((index: number) => {
     const tab = useFileStore.getState().tabs[index];
     if (!tab) return;
-    void promptDlg("Tab umbenennen (leer = automatischer Name):", tab.customLabel ?? "")
+    void promptDlg(t("tabs.renamePrompt"), tab.customLabel ?? "")
       .then((v) => { if (v !== null && v !== undefined) renameTab(index, String(v)); });
-  }, [promptDlg, renameTab]);
+  }, [promptDlg, renameTab, t]);
 
   // Lasso multi-selection (desktop pattern; measured from the DOM here instead
   // of fixed grid cells, because list/tile views wrap and scroll freely)
@@ -240,7 +244,7 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
     if (node.isDir) { handleOpen(node); return; }
     const src = node.source || activeSource;
     if (fileExt(node.name) === "zip" && src === "nextcloud") {
-      void confirmDlg(`„${node.name}“ nach hier entpacken?`, "Entpacken").then((ok) => {
+      void confirmDlg(t("confirm.extractHere", { name: node.name }), t("actions.extract")).then((ok) => {
         if (ok) void extractItem(node);
       });
       return;
@@ -253,7 +257,7 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
       return;
     }
     setOpenWithNode(node);
-  }, [handleOpen, activeSource, confirmDlg, extractItem, openWithOverrides, openWith]);
+  }, [handleOpen, activeSource, confirmDlg, extractItem, openWithOverrides, openWith, t]);
 
   // New file from template → jump straight into inline rename
   const createFromTemplate = useCallback(async (ext: string) => {
@@ -352,15 +356,17 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
     const isNc = activeSource === "nextcloud";
     const forever = permanent || !isNc;
     if (forever) {
-      const was = nodes.length === 1 ? `„${nodes[0].name}“` : `${nodes.length} Elemente`;
+      const question = nodes.length === 1
+        ? t("confirm.deletePermanentOne", { name: nodes[0].name })
+        : t("confirm.deletePermanentMany", { count: nodes.length });
       if (!(await confirmDlg(
-        `${was} endgültig löschen?${isNc ? " Der Papierkorb wird übersprungen." : " (kein Papierkorb)"}`,
-        "Endgültig löschen",
+        `${question} ${isNc ? t("confirm.skipsTrash") : t("confirm.noTrash")}`,
+        t("actions.deletePermanently"),
       ))) return;
     }
     // Shift+Del in Nextcloud also purges the trash entry
     await ops.remove(activeSource, nodes.map((n) => n.path), permanent && isNc);
-  }, [activeSource, confirmDlg, ops]);
+  }, [activeSource, confirmDlg, ops, t]);
 
   const handlePanelDrop = useCallback((e: React.DragEvent) => {
     if (!useDragStore.getState().current && e.dataTransfer.files.length > 0) {
@@ -442,13 +448,13 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
       if (e.key === "F5" && e.shiftKey && tabs[activeTab]?.split) {
         e.preventDefault();
         void copyToOtherPane().then((ok) => {
-          if (!ok) showPaneHint("Zum Kopieren in die andere Ansicht erst etwas auswählen.");
+          if (!ok) showPaneHint(t("view.copyHint"));
         });
       }
       if (e.key === "F6" && e.shiftKey && tabs[activeTab]?.split) {
         e.preventDefault();
         void moveToOtherPane().then((ok) => {
-          if (!ok) showPaneHint("Zum Verschieben in die andere Ansicht erst etwas auswählen.");
+          if (!ok) showPaneHint(t("view.moveHint"));
         });
       }
       // ── Tabs (Dolphin shortcuts; in the installed PWA window Ctrl+T/W
@@ -481,7 +487,7 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
   }, [renaming, selectedFiles, startRename, toggleHidden, currentPath, activeSource,
       tabs, activeTab, openTab, undoCloseTab, activateTab, closeTabAt, goBack, goForward,
       toggleSplit, focusOtherPane, copyToOtherPane, moveToOtherPane, showPaneHint,
-      windowId, setClipboard, setSelection, clearSelection, ops, openNode, handleNavigate, deleteNodes]);
+      windowId, setClipboard, setSelection, clearSelection, ops, openNode, handleNavigate, deleteNodes, t]);
 
   const breadcrumbs = currentPath.split("/").filter(Boolean);
   const sourceName = sources.find((s) => s.id === activeSource)?.name || activeSource;
@@ -526,31 +532,31 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
     const closes = closeSplitViewChoice === "right"
       ? 1
       : closeSplitViewChoice === "active" ? activePaneIdx : (activePaneIdx === 0 ? 1 : 0);
-    return closes === 0 ? "Linke Ansicht schließen" : "Rechte Ansicht schließen";
+    return closes === 0 ? t("view.splitCloseLeft") : t("view.splitCloseRight");
   })();
 
   return (
     <div className={styles.appRoot}>
       {/* Tab bar (Dolphin: auto-hide with one tab, AlwaysShowTabBar setting) */}
       {showTabBar && (
-        <div className={styles.tabBar} role="tablist" aria-label="Ordner-Tabs">
-          {tabs.map((t, i) => (
+        <div className={styles.tabBar} role="tablist" aria-label={t("tabs.ariaLabel")}>
+          {tabs.map((tab, i) => (
             <WindowContextMenu
-              key={t.id}
+              key={tab.id}
               items={[
-                { id: "tab-rename", label: "Tab umbenennen …", onSelect: () => renameTabDlg(i) },
-                ...(t.customLabel
-                  ? [{ id: "tab-autoname", label: "Automatischer Name", onSelect: () => renameTab(i, "") }]
+                { id: "tab-rename", label: t("tabs.rename"), onSelect: () => renameTabDlg(i) },
+                ...(tab.customLabel
+                  ? [{ id: "tab-autoname", label: t("tabs.autoName"), onSelect: () => renameTab(i, "") }]
                   : []),
                 { id: "tab-sep", label: "---" },
-                { id: "tab-close", label: "Tab schließen", onSelect: () => closeTabAt(i) },
+                { id: "tab-close", label: t("tabs.close"), onSelect: () => closeTabAt(i) },
               ]}
             >
               <div
                 role="tab"
                 aria-selected={i === activeTab}
                 className={`${styles.tab} ${i === activeTab ? styles.tabActive : ""}`}
-                title={`${t.source}:${t.path}`}
+                title={`${tab.source}:${tab.path}`}
                 onClick={() => activateTab(i)}
                 onDoubleClick={() => renameTabDlg(i)}
                 onMouseDown={(e) => { if (e.button === 1) { e.preventDefault(); midPressTab.current = i; } }}
@@ -561,10 +567,10 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
                   midPressTab.current = null;
                 }}
               >
-                <span className={styles.tabLabel}>{tabTitle(t, sources)}</span>
+                <span className={styles.tabLabel}>{tabTitle(tab, sources)}</span>
                 <button
                   className={styles.tabClose}
-                  aria-label="Tab schließen"
+                  aria-label={t("tabs.close")}
                   onClick={(e) => { e.stopPropagation(); closeTabAt(i); }}
                 >
                   <Icon name="close" size={12} />
@@ -574,8 +580,8 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
           ))}
           <button
             className={styles.tabNewBtn}
-            title="Neuer Tab (Strg+T)"
-            aria-label="Neuer Tab"
+            title={t("tabs.newTitle", { shortcut: `${ctrlKey}+T` })}
+            aria-label={t("tabs.new")}
             onClick={() => openTab(activeSource, currentPath || "/", { force: true })}
           >
             <Icon name="plus" size={14} />
@@ -583,8 +589,8 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
           {closedTabs.length > 0 && (
             <button
               className={styles.tabNewBtn}
-              title="Geschlossenen Tab wiederherstellen (Strg+Umschalt+T)"
-              aria-label="Geschlossenen Tab wiederherstellen"
+              title={t("tabs.reopenTitle", { shortcut: `${ctrlKey}+${t("keys.shift")}+T` })}
+              aria-label={t("tabs.reopen")}
               onClick={() => undoCloseTab()}
             ><Icon name="reload" size={14} /></button>
           )}
@@ -594,13 +600,13 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
       {/* Left: Tree Panel */}
       <WindowContextMenu
         items={[
-          { id: "reload-sources", label: "Quellen neu laden", onSelect: () => { void loadSources(); } },
-          { id: "refresh", label: "Ordner aktualisieren", shortcut: "F5", onSelect: () => loadTree(activeSource, currentPath || "/") },
+          { id: "reload-sources", label: t("sidebar.reloadSources"), onSelect: () => { void loadSources(); } },
+          { id: "refresh", label: t("sidebar.refreshFolder"), shortcut: "F5", onSelect: () => loadTree(activeSource, currentPath || "/") },
         ]}
       >
       <nav className={styles.treePanel} data-tour="files-sidebar">
         <PlacesSection onNavigate={handleNavigate} promptDlg={promptDlg} />
-        <div className={styles.treePanelHeader}>Quellen</div>
+        <div className={styles.treePanelHeader}>{t("sections.sources")}</div>
         {sources.map((src) => (
           <Fragment key={src.id}>
             <TreeSourceNode
@@ -615,7 +621,7 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
                 onClick={() => { void loadTrash(); }}
               >
                 <span className={styles.treeExpander}> </span>
-                <span><OrtSymbol icon="🗑" /> Papierkorb</span>
+                <span><OrtSymbol icon="🗑" /> {t("sections.trash")}</span>
               </div>
             )}
           </Fragment>
@@ -636,18 +642,18 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
         <>
         {/* Toolbar */}
         <div className={styles.toolbar}>
-          <IconButton label="Zurück (Alt+←)" icon="back" groesse="s" disabled={(tabs[activeTab]?.back.length ?? 0) === 0} onClick={() => goBack()} />
-          <IconButton label="Vor (Alt+→)" icon="arrowRight" groesse="s" disabled={(tabs[activeTab]?.fwd.length ?? 0) === 0} onClick={() => goForward()} />
+          <IconButton label={t("toolbar.back")} icon="back" groesse="s" disabled={(tabs[activeTab]?.back.length ?? 0) === 0} onClick={() => goBack()} />
+          <IconButton label={t("toolbar.forward")} icon="arrowRight" groesse="s" disabled={(tabs[activeTab]?.fwd.length ?? 0) === 0} onClick={() => goForward()} />
           <WindowContextMenu
             items={[
               {
                 id: "copy-path",
-                label: "Pfad kopieren",
+                label: t("toolbar.copyPath"),
                 onSelect: () => { navigator.clipboard?.writeText(currentPath || "/").catch(() => undefined); },
               },
               {
                 id: "refresh",
-                label: "Aktualisieren",
+                label: t("actions.refresh"),
                 shortcut: "F5",
                 onSelect: () => loadTree(activeSource, currentPath || "/"),
               },
@@ -658,7 +664,7 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
               className={styles.pathInput}
               autoFocus
               value={pathEdit}
-              aria-label="Pfad eingeben"
+              aria-label={t("toolbar.enterPath")}
               onChange={(e) => setPathEdit(e.target.value)}
               onBlur={() => setPathEdit(null)}
               onKeyDown={(e) => {
@@ -695,7 +701,7 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
                 {i === -1 ? (
                   <button
                     className={styles.breadcrumbItem}
-                    title="Zwischenordner anzeigen"
+                    title={t("toolbar.showIntermediate")}
                     onClick={(e) => setCrumbMenu({ x: e.clientX, y: e.clientY })}
                   >
                     …
@@ -718,8 +724,8 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
             ))}
             <button
               className={styles.breadcrumbEdit}
-              title="Pfad eingeben (F6)"
-              aria-label="Pfad eingeben"
+              title={t("toolbar.enterPathTitle")}
+              aria-label={t("toolbar.enterPath")}
               onClick={() => setPathEdit(currentPath || "/")}
             ><Icon name="pen" size={13} /></button>
           </div>
@@ -744,7 +750,7 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
             className={styles.searchInput}
             data-tour="files-search"
             value={filterQuery}
-            placeholder="Suchen…"
+            placeholder={t("toolbar.search")}
             onChange={(e) => setFilterQuery(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && filterQuery.trim()) {
@@ -759,15 +765,15 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
           />
           <div className={styles.toolbarActions}>
             <Button stufe="tonal" groesse="s" icon="plus" data-tour="files-new-folder"
-                    onClick={() => setShowNewFolder(!showNewFolder)} title="Neuer Ordner">Ordner</Button>
-            <IconButton label="Hochladen" icon="export" groesse="s"
+                    onClick={() => setShowNewFolder(!showNewFolder)} title={t("new.folder")}>{t("new.folderShort")}</Button>
+            <IconButton label={t("actions.upload")} icon="export" groesse="s"
                         onClick={() => uploadInputRef.current?.click()} />
             <input
               ref={uploadInputRef}
               type="file"
               multiple
               hidden
-              aria-label="Dateien hochladen"
+              aria-label={t("actions.uploadFiles")}
               onChange={(e) => {
                 const files = Array.from(e.target.files ?? []);
                 e.target.value = "";
@@ -776,70 +782,70 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
             />
             {clipboard && (
               <IconButton
-                label={`Einfügen (${clipboard.paths.length} ${clipboard.action === "cut" ? "ausgeschnitten" : "kopiert"})`}
+                label={t(clipboard.action === "cut" ? "toolbar.pasteCut" : "toolbar.pasteCopied", { count: clipboard.paths.length })}
                 icon="copy" groesse="s"
                 onClick={() => { void ops.paste(activeSource, currentPath || "/"); }}
               />
             )}
             <ToolbarMenu
               triggerClassName={styles.toolBtn}
-              title="Ansicht"
+              title={t("view.title")}
               trigger={<><Icon name={String(viewMode).includes("grid") ? "image" : "list"} size={16} /><Icon name="chevronDown" size={12} /></>}
               items={[
                 {
                   id: "split-toggle",
-                  label: splitPane ? closeSplitLabel : "Ansicht teilen",
+                  label: splitPane ? closeSplitLabel : t("view.splitOpen"),
                   shortcut: "F3",
                   onSelect: () => toggleSplit(),
                 },
                 ...(splitPane
                   ? [{
                       id: "split-focus",
-                      label: "Andere Ansicht fokussieren",
-                      shortcut: "Strg+F3",
+                      label: t("view.splitFocusOther"),
+                      shortcut: `${ctrlKey}+F3`,
                       onSelect: () => focusOtherPane(),
                     }]
                   : []),
                 { id: "sep-v0", label: "---" },
                 ...(["icons-large", "icons-small", "list", "details"] as ViewMode[]).map((m) => ({
                   id: `view-${m}`,
-                  label: { "icons-large": "Große Symbole", "icons-small": "Kleine Symbole", list: "Liste", details: "Details" }[m]!,
+                  label: t(`view.${m}`),
                   checked: viewMode === m,
                   onSelect: () => setViewMode(m),
                 })),
                 { id: "sep-v1", label: "---" },
                 {
                   id: "hidden",
-                  label: "Versteckte Dateien",
+                  label: t("view.hiddenFiles"),
                   shortcut: "Ctrl+H",
                   checked: showHidden,
                   onSelect: () => toggleHidden(),
                 },
                 {
                   id: "group-by",
-                  label: "Gruppieren nach",
+                  label: t("view.groupBy"),
                   submenu: [
-                    { id: "g-none", label: "Keine Gruppierung", checked: groupBy === "none", onSelect: () => setGroupBy("none") },
-                    { id: "g-type", label: "Typ", checked: groupBy === "type", onSelect: () => setGroupBy("type") },
-                    { id: "g-date", label: "Änderungsdatum", checked: groupBy === "date", onSelect: () => setGroupBy("date") },
+                    { id: "g-none", label: t("view.noGrouping"), checked: groupBy === "none", onSelect: () => setGroupBy("none") },
+                    { id: "g-type", label: t("sort.type"), checked: groupBy === "type", onSelect: () => setGroupBy("type") },
+                    { id: "g-date", label: t("sort.modified"), checked: groupBy === "date", onSelect: () => setGroupBy("date") },
                   ],
                 },
               ]}
             />
             <ToolbarMenu
               triggerClassName={styles.toolBtn}
-              title="Sortieren"
+              title={t("sort.title")}
               trigger={<><Icon name="arrowUp" size={16} style={sortDir === "asc" ? undefined : { transform: "rotate(180deg)" }} /><Icon name="chevronDown" size={12} /></>}
               items={[
-                { id: "s-name", label: "Name", checked: sortKey === "name", onSelect: () => setSort("name") },
-                { id: "s-modified", label: "Änderungsdatum", checked: sortKey === "modified", onSelect: () => setSort("modified") },
-                { id: "s-size", label: "Größe", checked: sortKey === "size", onSelect: () => setSort("size") },
-                { id: "s-type", label: "Typ", checked: sortKey === "type", onSelect: () => setSort("type") },
+                { id: "s-name", label: t("sort.name"), checked: sortKey === "name", onSelect: () => setSort("name") },
+                { id: "s-modified", label: t("sort.modified"), checked: sortKey === "modified", onSelect: () => setSort("modified") },
+                { id: "s-size", label: t("sort.size"), checked: sortKey === "size", onSelect: () => setSort("size") },
+                { id: "s-type", label: t("sort.type"), checked: sortKey === "type", onSelect: () => setSort("type") },
                 { id: "sep-s1", label: "---" },
-                { id: "s-asc", label: "Aufsteigend", checked: sortDir === "asc", onSelect: () => setSort(sortKey, "asc") },
-                { id: "s-desc", label: "Absteigend", checked: sortDir === "desc", onSelect: () => setSort(sortKey, "desc") },
+                { id: "s-asc", label: t("sort.asc"), checked: sortDir === "asc", onSelect: () => setSort(sortKey, "asc") },
+                { id: "s-desc", label: t("sort.desc"), checked: sortDir === "desc", onSelect: () => setSort(sortKey, "desc") },
                 { id: "sep-s2", label: "---" },
-                { id: "s-dirs", label: "Ordner zuerst", checked: dirsFirst, onSelect: () => toggleDirsFirst() },
+                { id: "s-dirs", label: t("sort.dirsFirst"), checked: dirsFirst, onSelect: () => toggleDirsFirst() },
               ]}
             />
           </div>
@@ -851,11 +857,11 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleNewFolder()}
-              placeholder="Ordnername …"
+              placeholder={t("new.folderPlaceholder")}
               autoFocus
             />
-            <Button stufe="filled" groesse="s" onClick={handleNewFolder}>Anlegen</Button>
-            <Button stufe="text" groesse="s" onClick={() => setShowNewFolder(false)}>Abbrechen</Button>
+            <Button stufe="filled" groesse="s" onClick={handleNewFolder}>{t("actions.create")}</Button>
+            <Button stufe="text" groesse="s" onClick={() => setShowNewFolder(false)}>{t("actions.cancel")}</Button>
           </div>
         )}
 
@@ -869,7 +875,7 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
               {breadcrumbs.length ? decodeURIComponent(breadcrumbs[breadcrumbs.length - 1]) : sourceName}
             </h2>
             <span className={styles.ordnerSub}>
-              {sourceName}{!loading && !error ? ` · ${items.length} ${items.length === 1 ? "Element" : "Elemente"}` : ""}
+              {sourceName}{!loading && !error ? ` · ${t("count.items", { count: items.length })}` : ""}
             </span>
           </div>
         )}
@@ -878,7 +884,7 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
           {splitPane && activePaneIdx === 1 && (
             <>
               <SimplePane side={0} style={{ flexBasis: `${splitRatio * 100}%`, flexGrow: 0, flexShrink: 0 }} />
-              <div className={styles.paneSplitter} onMouseDown={startSplitDrag} role="separator" aria-label="Ansichten-Teiler" />
+              <div className={styles.paneSplitter} onMouseDown={startSplitDrag} role="separator" aria-label={t("view.splitDivider")} />
             </>
           )}
           <div
@@ -892,14 +898,14 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
         {/* Search results (recursive, Enter in the search field) */}
         {searchLoading || searchResults !== null ? (
           searchLoading ? (
-            <div className={styles.emptyState}>Suche…</div>
+            <div className={styles.emptyState}>{t("search.searching")}</div>
           ) : (
             <div className={styles.fileList}>
               {searchTruncated && (
-                <div className={styles.noteBanner}>Ergebnis begrenzt — nicht alle Treffer angezeigt.</div>
+                <div className={styles.noteBanner}>{t("search.truncated")}</div>
               )}
               {(searchResults ?? []).length === 0 ? (
-                <div className={styles.emptyState}>Keine Treffer</div>
+                <div className={styles.emptyState}>{t("empty.noHits")}</div>
               ) : (
                 (searchResults ?? []).map((node) => {
                   const parent = node.path.replace(/\/+$/, "").split("/").slice(0, -1).join("/") || "/";
@@ -919,7 +925,7 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
                         </span>
                       </span>
                       <IconButton
-                        label="Enthaltenden Ordner öffnen" icon="folder" groesse="s"
+                        label={t("search.openParent")} icon="folder" groesse="s"
                         onClick={() => handleNavigate(node.source || activeSource, parent)}
                       />
                     </div>
@@ -929,7 +935,7 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
             </div>
           )
         ) : loading ? (
-          <div className={styles.emptyState}>Wird geladen…</div>
+          <div className={styles.emptyState}>{t("status.loading")}</div>
         ) : error ? (
           <div className={styles.errorPanel}>
             <div className={styles.errorIcon}>
@@ -938,9 +944,9 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
             <div className={styles.errorTitle}>
               {error.code === "device_offline"
                 ? error.status === "sshd_down"
-                  ? `${error.device ?? sourceName} ist erreichbar, aber SSH läuft nicht`
-                  : `${error.device ?? sourceName} ist offline / nicht erreichbar`
-                : "Ordner konnte nicht geladen werden"}
+                  ? t("errors.sshdDown", { device: error.device ?? sourceName })
+                  : t("errors.offline", { device: error.device ?? sourceName })
+                : t("errors.loadFolder")}
             </div>
             <div className={styles.errorDetail}>
               {error.code === "device_offline"
@@ -949,17 +955,17 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
                   : INSTALL_TEXTS.deviceOffline
                 : error.message}
               {error.last_seen && (
-                <div>Zuletzt gesehen: {new Date(error.last_seen).toLocaleString()}</div>
+                <div>{t("errors.lastSeen", { date: new Date(error.last_seen).toLocaleString(regionLocale()) })}</div>
               )}
             </div>
-            <Button stufe="tonal" icon="reload" onClick={() => { void loadSources(true).then(() => loadTree(activeSource, currentPath || "/")); }}>Erneut versuchen</Button>
+            <Button stufe="tonal" icon="reload" onClick={() => { void loadSources(true).then(() => loadTree(activeSource, currentPath || "/")); }}>{t("actions.retry")}</Button>
           </div>
         ) : items.length === 0 ? (
           <WindowContextMenu
             items={[
-              { id: "new-folder", label: "Neuer Ordner", onSelect: () => setShowNewFolder(true) },
+              { id: "new-folder", label: t("new.folder"), onSelect: () => setShowNewFolder(true) },
               ...(clipboard
-                ? [{ id: "paste", label: "Einfügen", shortcut: "Strg+V",
+                ? [{ id: "paste", label: t("actions.paste"), shortcut: `${ctrlKey}+V`,
                      onSelect: () => { void ops.paste(activeSource, currentPath || "/"); } }]
                 : []),
             ]}
@@ -967,11 +973,11 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
             <div className={styles.emptyState}>
               <Leerzustand
                 symbol={<Icon name="folder" size={36} />}
-                titel="Ordner ist leer"
-                hinweis="Dateien hierher ziehen oder hochladen."
+                titel={t("empty.folder")}
+                hinweis={t("empty.folderHint")}
                 aktionen={[
-                  { label: "Hochladen", onClick: () => uploadInputRef.current?.click() },
-                  { label: "Neuer Ordner", onClick: () => setShowNewFolder(true), zweitrangig: true },
+                  { label: t("actions.upload"), onClick: () => uploadInputRef.current?.click() },
+                  { label: t("new.folder"), onClick: () => setShowNewFolder(true), zweitrangig: true },
                 ]}
               />
             </div>
@@ -986,16 +992,16 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
                 {viewMode === "details" && (
                   <div className={styles.detailsHeader}>
                     <button className={`${styles.detailName} ${styles.headerBtn}`} onClick={() => setSort("name")}>
-                      Name{sortKey === "name" ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
+                      {t("details.name")}{sortKey === "name" ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
                     </button>
                     <button className={`${styles.detailType} ${styles.headerBtn}`} onClick={() => setSort("type")}>
-                      Typ{sortKey === "type" ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
+                      {t("details.type")}{sortKey === "type" ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
                     </button>
                     <button className={`${styles.detailSize} ${styles.headerBtn}`} onClick={() => setSort("size")}>
-                      Größe{sortKey === "size" ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
+                      {t("details.size")}{sortKey === "size" ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
                     </button>
                     <button className={`${styles.detailDate} ${styles.headerBtn}`} onClick={() => setSort("modified")}>
-                      Geändert{sortKey === "modified" ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
+                      {t("details.modified")}{sortKey === "modified" ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
                     </button>
                   </div>
                 )}
@@ -1038,14 +1044,14 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
                     onDownload: (n) => {
                       const ts = targetsFor(n);
                       if (ts.length === 1) void downloadFile(activeSource, n.path, n.name);
-                      else downloadMany(activeSource, ts.map((t) => t.path));
+                      else downloadMany(activeSource, ts.map((it) => it.path));
                     },
                     onArchive: (n) => { void archiveItem(n); },
                     onExtract: (n) => { void extractItem(n); },
                     onEncrypt: (n) => { void encryptItem(n); },
                     onDesktopShortcut: (n) => { void createDesktopShortcut(n); },
-                    onCopy: (n) => setClipboard("copy", activeSource, targetsFor(n).map((t) => t.path)),
-                    onCut: (n) => setClipboard("cut", activeSource, targetsFor(n).map((t) => t.path)),
+                    onCopy: (n) => setClipboard("copy", activeSource, targetsFor(n).map((it) => it.path)),
+                    onCut: (n) => setClipboard("cut", activeSource, targetsFor(n).map((it) => it.path)),
                     onPaste: clipboard && node.isDir
                       ? (n) => { void ops.paste(activeSource, n.path); }
                       : undefined,
@@ -1082,7 +1088,7 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
                           e.dataTransfer.dropEffect = (e.ctrlKey || e.metaKey) ? "copy" : "move";
                           if (dropTarget !== node.path) setDropTarget(node.path);
                         } : undefined}
-                        onFolderDragLeave={node.isDir ? () => setDropTarget((t) => (t === node.path ? null : t)) : undefined}
+                        onFolderDragLeave={node.isDir ? () => setDropTarget((cur) => (cur === node.path ? null : cur)) : undefined}
                         onFolderDrop={node.isDir ? (e) => { void dropInto(e, node.path); } : undefined}
                         onMiddleOpen={node.isDir
                           ? (fg) => openTab(node.source || activeSource, node.path, { background: !fg })
@@ -1092,7 +1098,7 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
                           // If n is part of the selection, the whole selection is dragged
                           const ts = targetsFor(n);
                           useDragStore.getState().startDrag(ts.length > 1
-                            ? { type: "files", source: activeSource, paths: ts.map((t) => t.path) }
+                            ? { type: "files", source: activeSource, paths: ts.map((it) => it.path) }
                             : { type: "file", source: activeSource, path: n.path, name: n.name, isDir: n.isDir });
                         }}
                         onDragEnd={() => useDragStore.getState().endDrag()}
@@ -1114,13 +1120,13 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
               <ContextMenu.Content className={styles.ctxMenu}>
                 <ContextMenu.Sub>
                   <ContextMenu.SubTrigger className={styles.ctxItem}>
-                    Neu
+                    {t("new.title")}
                     <span style={{ marginLeft: "auto" }}>›</span>
                   </ContextMenu.SubTrigger>
                   <ContextMenu.Portal>
                     <ContextMenu.SubContent className={styles.ctxMenu}>
                       <ContextMenu.Item className={styles.ctxItem} onSelect={() => setShowNewFolder(true)}>
-                        <FileTypeIcon isDir px={15} /> Ordner
+                        <FileTypeIcon isDir px={15} /> {t("new.folderShort")}
                       </ContextMenu.Item>
                       <ContextMenu.Separator className={styles.ctxSep} />
                       {NEW_FILE_TEMPLATES.map((tpl) => (
@@ -1138,21 +1144,21 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
                 <ContextMenu.Separator className={styles.ctxSep} />
                 <ContextMenu.Item className={styles.ctxItem} disabled={selectedFiles.length === 0}
                   onSelect={() => setClipboard("copy", activeSource, selectedFiles)}>
-                  Kopieren
+                  {t("actions.copy")}
                 </ContextMenu.Item>
                 <ContextMenu.Item className={styles.ctxItem} disabled={selectedFiles.length === 0}
                   onSelect={() => setClipboard("cut", activeSource, selectedFiles)}>
-                  Ausschneiden
+                  {t("actions.cut")}
                 </ContextMenu.Item>
                 {clipboard && (
                   <ContextMenu.Item className={styles.ctxItem}
                     onSelect={() => { void ops.paste(activeSource, currentPath || "/"); }}>
-                    Einfügen
+                    {t("actions.paste")}
                   </ContextMenu.Item>
                 )}
                 <ContextMenu.Item className={styles.ctxItem} disabled={items.length === 0}
                   onSelect={() => setSelection(items.map((n) => n.path))}>
-                  Alle auswählen
+                  {t("actions.selectAll")}
                 </ContextMenu.Item>
                 <ContextMenu.Separator className={styles.ctxSep} />
                 <ContextMenu.Item
@@ -1160,11 +1166,11 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
                   onSelect={startRename}
                   disabled={selectedFiles.length !== 1}
                 >
-                  Umbenennen
+                  {t("actions.rename")}
                 </ContextMenu.Item>
                 <ContextMenu.Item className={styles.ctxItem} disabled={selectedFiles.length === 0}
                   onSelect={() => { void deleteNodes(items.filter((n) => selectedFiles.includes(n.path)), false); }}>
-                  {activeSource === "nextcloud" ? "In Papierkorb verschieben" : "Löschen"}
+                  {activeSource === "nextcloud" ? t("actions.moveToTrash") : t("actions.delete")}
                 </ContextMenu.Item>
                 <ContextMenu.Separator className={styles.ctxSep} />
                 <ContextMenu.Item
@@ -1172,7 +1178,7 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
                   onSelect={showProperties}
                   disabled={selectedFiles.length !== 1}
                 >
-                  Eigenschaften
+                  {t("actions.properties")}
                 </ContextMenu.Item>
               </ContextMenu.Content>
             </ContextMenu.Portal>
@@ -1181,7 +1187,7 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
           </div>
           {splitPane && activePaneIdx === 0 && (
             <>
-              <div className={styles.paneSplitter} onMouseDown={startSplitDrag} role="separator" aria-label="Ansichten-Teiler" />
+              <div className={styles.paneSplitter} onMouseDown={startSplitDrag} role="separator" aria-label={t("view.splitDivider")} />
               <SimplePane side={1} style={{ flex: 1 }} />
             </>
           )}
@@ -1190,7 +1196,7 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
         {renaming && (
           <div className={styles.renameOverlay} onClick={commitRename}>
             <div className={styles.renameBox} onClick={(e) => e.stopPropagation()}>
-              <label>Umbenennen</label>
+              <label>{t("actions.rename")}</label>
               <input
                 autoFocus
                 value={renaming.value}
@@ -1201,8 +1207,8 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
                 }}
               />
               <div className={styles.renameActions}>
-                <Button stufe="text" groesse="s" onClick={() => setRenaming(null)}>Abbrechen</Button>
-                <Button stufe="filled" groesse="s" onClick={commitRename}>OK</Button>
+                <Button stufe="text" groesse="s" onClick={() => setRenaming(null)}>{t("actions.cancel")}</Button>
+                <Button stufe="filled" groesse="s" onClick={commitRename}>{t("actions.ok")}</Button>
               </div>
             </div>
           </div>
@@ -1247,24 +1253,26 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
           title={propsNode?.name ?? ""}
           onClose={() => setPropsNode(null)}
           rows={propsNode ? [
-            { label: "Typ", value: propsNode.isDir ? "Ordner" : getFileTypeInfo(propsNode.name).name },
-            { label: "Quelle", value: sourceName },
-            { label: "Pfad", value: propsNode.path },
-            { label: "Größe", value: formatBytes(propsNode.size) },
-            { label: "Geändert", value: formatDateTime(propsNode.modified ? String(propsNode.modified) : undefined) },
+            { label: t("details.type"), value: propsNode.isDir ? folderTypeName() : getFileTypeInfo(propsNode.name).name },
+            { label: t("details.source"), value: sourceName },
+            { label: t("details.path"), value: propsNode.path },
+            { label: t("details.size"), value: formatBytes(propsNode.size) },
+            { label: t("details.modified"), value: formatDateTime(propsNode.modified ? String(propsNode.modified) : undefined) },
           ] : []}
         />
 
         {/* Status bar */}
         <div className={styles.statusBar}>
           <span>
-            {items.length} {items.length === 1 ? "Element" : "Elemente"}
-            {dotfilesHidden > 0 && ` (${dotfilesHidden} ausgeblendet)`}
+            {t("count.items", { count: items.length })}
+            {dotfilesHidden > 0 && ` ${t("count.hidden", { count: dotfilesHidden })}`}
           </span>
-          {selectedFiles.length > 0 && <span>{selectedFiles.length} ausgewählt</span>}
+          {selectedFiles.length > 0 && <span>{t("count.selected", { count: selectedFiles.length })}</span>}
           {ops.upload && (
             <span className={styles.uploadStatus} role="status">
-              Lädt hoch{ops.upload.count > 1 ? ` (${ops.upload.index + 1}/${ops.upload.count})` : ""}: {ops.upload.name}
+              {ops.upload.count > 1
+                ? t("upload.desktopCount", { index: ops.upload.index + 1, total: ops.upload.count, name: ops.upload.name })
+                : t("upload.desktop", { name: ops.upload.name })}
               <span className={styles.uploadBar}><span style={{ width: `${Math.round(ops.upload.fraction * 100)}%` }} /></span>
               {Math.round(ops.upload.fraction * 100)} %
             </span>
@@ -1284,9 +1292,10 @@ export default function FileBrowserDesktop({ windowId }: { windowId: string }) {
 function TrashView({ confirmDlg }: { confirmDlg: (message: string, confirmLabel?: string) => Promise<boolean> }) {
   const { trashItems, trashLoading, closeTrash, restoreTrashItem, purgeTrashItem, emptyTrash } = useFileStore();
   const items = trashItems ?? [];
+  const { t } = useTranslation("files");
 
   const restore = (name: string, trashPath: string) => {
-    void confirmDlg(`„${name}“ wiederherstellen?`, "Wiederherstellen").then((ok) => {
+    void confirmDlg(t("confirm.restore", { name }), t("actions.restore")).then((ok) => {
       if (ok) void restoreTrashItem(trashPath);
     });
   };
@@ -1295,48 +1304,48 @@ function TrashView({ confirmDlg }: { confirmDlg: (message: string, confirmLabel?
     <>
       <div className={styles.toolbar}>
         <div className={styles.breadcrumb}>
-          <button className={styles.breadcrumbItem} onClick={closeTrash}><Icon name="back" size={14} /> Zurück</button>
+          <button className={styles.breadcrumbItem} onClick={closeTrash}><Icon name="back" size={14} /> {t("trash.back")}</button>
           <span className={styles.breadcrumbSep}>/</span>
-          <span className={styles.breadcrumbItem}><Icon name="trash" size={14} /> Papierkorb</span>
+          <span className={styles.breadcrumbItem}><Icon name="trash" size={14} /> {t("sections.trash")}</span>
         </div>
         <div className={styles.toolbarActions}>
           <Button
             stufe="text" groesse="s" icon="trash"
             disabled={items.length === 0}
             onClick={() => {
-              void confirmDlg(`Papierkorb leeren? ${items.length} Elemente werden endgültig gelöscht.`, "Leeren")
+              void confirmDlg(t("confirm.emptyTrash", { count: items.length }), t("actions.emptyConfirm"))
                 .then((ok) => { if (ok) void emptyTrash(); });
             }}
           >
-            Papierkorb leeren
+            {t("actions.emptyTrash")}
           </Button>
         </div>
       </div>
       {trashLoading ? (
-        <div className={styles.emptyState}>Wird geladen…</div>
+        <div className={styles.emptyState}>{t("status.loading")}</div>
       ) : items.length === 0 ? (
         <div className={styles.emptyState}>
-          <Leerzustand symbol={<Icon name="trash" size={36} />} titel="Papierkorb ist leer"
-                       hinweis="Gelöschtes aus Nextcloud landet hier und lässt sich wiederherstellen." />
+          <Leerzustand symbol={<Icon name="trash" size={36} />} titel={t("empty.trash")}
+                       hinweis={t("empty.trashHint")} />
         </div>
       ) : (
         <div className={styles.fileList}>
           <div className={styles.detailsHeader}>
-            <span className={styles.detailName}>Name</span>
-            <span className={styles.trashOrigin}>Originalort</span>
-            <span className={styles.detailDate}>Gelöscht</span>
+            <span className={styles.detailName}>{t("details.name")}</span>
+            <span className={styles.trashOrigin}>{t("trash.originalLocation")}</span>
+            <span className={styles.detailDate}>{t("trash.deleted")}</span>
           </div>
           {items.map((it) => (
             <WindowContextMenu
               key={it.trashPath}
               items={[
-                { id: "restore", label: "Wiederherstellen", onSelect: () => restore(it.name, it.trashPath) },
+                { id: "restore", label: t("actions.restore"), onSelect: () => restore(it.name, it.trashPath) },
                 {
                   id: "purge",
-                  label: "Endgültig löschen",
+                  label: t("actions.deletePermanently"),
                   variant: "destructive",
                   onSelect: () => {
-                    void confirmDlg(`„${it.name}“ endgültig löschen? Das kann nicht rückgängig gemacht werden.`, "Endgültig löschen")
+                    void confirmDlg(t("confirm.purge", { name: it.name }), t("actions.deletePermanently"))
                       .then((ok) => { if (ok) void purgeTrashItem(it.trashPath); });
                   },
                 },
@@ -1351,7 +1360,7 @@ function TrashView({ confirmDlg }: { confirmDlg: (message: string, confirmLabel?
                   {it.originalPath ? "/" + it.originalPath.split("/").slice(0, -1).join("/").replace(/^\//, "") : ""}
                 </span>
                 <span className={styles.detailDate}>
-                  {it.deletedAt ? new Date(it.deletedAt * 1000).toLocaleString() : ""}
+                  {it.deletedAt ? new Date(it.deletedAt * 1000).toLocaleString(regionLocale()) : ""}
                 </span>
               </div>
             </WindowContextMenu>
@@ -1359,7 +1368,7 @@ function TrashView({ confirmDlg }: { confirmDlg: (message: string, confirmLabel?
         </div>
       )}
       <div className={styles.statusBar}>
-        <span>{items.length} Elemente im Papierkorb</span>
+        <span>{t("trash.count", { count: items.length })}</span>
       </div>
     </>
   );
@@ -1387,11 +1396,13 @@ function OrtSymbol({ icon, size = 15 }: { icon?: string; size?: number }) {
   );
 }
 
+// titleKey: translated at render time (`files:places.*`); the paths are real
+// folder names on the server and stay as they are.
 const SYSTEM_PLACES = [
-  { id: "sys:home", title: "Persönlicher Ordner", source: "nextcloud", path: "/", icon: "🏠" },
-  { id: "sys:desktop", title: "Schreibtisch", source: "nextcloud", path: "/Desktop", icon: "🖥️" },
-  { id: "sys:documents", title: "Dokumente", source: "nextcloud", path: "/Dokumente", icon: "📄" },
-  { id: "sys:downloads", title: "Downloads", source: "nextcloud", path: "/Downloads", icon: "⬇️" },
+  { id: "sys:home", titleKey: "places.homeFolder", source: "nextcloud", path: "/", icon: "🏠" },
+  { id: "sys:desktop", titleKey: "places.desktop", source: "nextcloud", path: "/Desktop", icon: "🖥️" },
+  { id: "sys:documents", titleKey: "places.documents", source: "nextcloud", path: "/Dokumente", icon: "📄" },
+  { id: "sys:downloads", titleKey: "places.downloads", source: "nextcloud", path: "/Downloads", icon: "⬇️" },
 ];
 
 function PlacesSection({ onNavigate, promptDlg }: {
@@ -1404,6 +1415,7 @@ function PlacesSection({ onNavigate, promptDlg }: {
     favorites, loadFavorites, openTab, openSplitAt,
     activeSource, currentPath, trashItems,
   } = useFileStore();
+  const { t } = useTranslation("files");
 
   useEffect(() => {
     if (favorites === null) void loadFavorites();
@@ -1411,7 +1423,9 @@ function PlacesSection({ onNavigate, promptDlg }: {
 
   const anyHidden = hiddenSystemPlaces.length > 0;
   const rows = [
-    ...SYSTEM_PLACES.map((p) => ({ ...p, system: true, hidden: hiddenSystemPlaces.includes(p.id) })),
+    ...SYSTEM_PLACES.map(({ titleKey, ...p }) => ({
+      ...p, title: t(titleKey), system: true, hidden: hiddenSystemPlaces.includes(p.id),
+    })),
     ...places.map((p) => ({ ...p, system: false, hidden: false })),
   ].filter((r) => showHiddenPlaces || !r.hidden);
 
@@ -1419,11 +1433,11 @@ function PlacesSection({ onNavigate, promptDlg }: {
     ...(anyHidden
       ? [{
           id: "show-all",
-          label: showHiddenPlaces ? "Versteckte wieder ausblenden" : "Alle Einträge anzeigen",
+          label: showHiddenPlaces ? t("places.hideHiddenAgain") : t("places.showAll"),
           onSelect: () => setShowHiddenPlaces(!showHiddenPlaces),
         }]
       : []),
-    { id: "add-current", label: "Aktuellen Ordner zu Orten hinzufügen", onSelect: () => {
+    { id: "add-current", label: t("places.addCurrent"), onSelect: () => {
         addPlace(currentPath.split("/").filter(Boolean).pop() ?? "/", activeSource, currentPath || "/");
       } },
   ];
@@ -1431,26 +1445,26 @@ function PlacesSection({ onNavigate, promptDlg }: {
   return (
     <div data-places>
       <WindowContextMenu items={headerMenu}>
-        <div className={styles.treePanelHeader}>Orte</div>
+        <div className={styles.treePanelHeader}>{t("sections.places")}</div>
       </WindowContextMenu>
       {rows.map((r) => (
         <WindowContextMenu
           key={r.id}
           items={[
-            { id: "p-tab", label: "In neuem Tab öffnen", onSelect: () => openTab(r.source, r.path, { background: true }) },
-            { id: "p-split", label: "In geteilter Ansicht öffnen", onSelect: () => openSplitAt(r.source, r.path) },
+            { id: "p-tab", label: t("menu.openInNewTab"), onSelect: () => openTab(r.source, r.path, { background: true }) },
+            { id: "p-split", label: t("menu.openInSplit"), onSelect: () => openSplitAt(r.source, r.path) },
             { id: "p-sep", label: "---" },
             ...(r.system
               ? [r.hidden
-                  ? { id: "p-unhide", label: "Eintrag wieder anzeigen", onSelect: () => unhideSystemPlace(r.id) }
-                  : { id: "p-hide", label: "Eintrag verstecken", onSelect: () => hideSystemPlace(r.id) }]
+                  ? { id: "p-unhide", label: t("places.unhide"), onSelect: () => unhideSystemPlace(r.id) }
+                  : { id: "p-hide", label: t("places.hide"), onSelect: () => hideSystemPlace(r.id) }]
               : [
-                  { id: "p-rename", label: "Umbenennen …", onSelect: () => {
-                      void promptDlg("Ort umbenennen:", r.title).then((v) => { if (v) renamePlace(r.id, v); });
+                  { id: "p-rename", label: t("places.rename"), onSelect: () => {
+                      void promptDlg(t("places.renamePrompt"), r.title).then((v) => { if (v) renamePlace(r.id, v); });
                     } },
-                  { id: "p-up", label: "Nach oben", onSelect: () => movePlace(r.id, -1) },
-                  { id: "p-down", label: "Nach unten", onSelect: () => movePlace(r.id, 1) },
-                  { id: "p-remove", label: "Entfernen", variant: "destructive" as const, onSelect: () => removePlace(r.id) },
+                  { id: "p-up", label: t("places.moveUp"), onSelect: () => movePlace(r.id, -1) },
+                  { id: "p-down", label: t("places.moveDown"), onSelect: () => movePlace(r.id, 1) },
+                  { id: "p-remove", label: t("places.remove"), variant: "destructive" as const, onSelect: () => removePlace(r.id) },
                 ]),
           ]}
         >
@@ -1470,7 +1484,7 @@ function PlacesSection({ onNavigate, promptDlg }: {
       ))}
       {(favorites?.length ?? 0) > 0 && (
         <>
-          <div className={styles.treePanelHeader}>Favoriten</div>
+          <div className={styles.treePanelHeader}>{t("sections.favorites")}</div>
           {favorites!.map((f) => {
             const parent = f.path.replace(/\/+$/, "").split("/").slice(0, -1).join("/") || "/";
             return (
@@ -1503,8 +1517,9 @@ function PlacesSection({ onNavigate, promptDlg }: {
 
 function SimplePane({ side, style }: { side: 0 | 1; style?: React.CSSProperties }) {
   const { tabs, activeTab, treeCache, setActivePane, loadPaneTree, navigateTo, showHidden } = useFileStore();
-  const t = tabs[activeTab];
-  const pane = side === 1 ? t?.split : t ? { source: t.source, path: t.path } : undefined;
+  const { t } = useTranslation("files");
+  const tab = tabs[activeTab];
+  const pane = side === 1 ? tab?.split : tab ? { source: tab.source, path: tab.path } : undefined;
   const cacheKey = pane ? `${pane.source}:${pane.path}` : "";
   const tree = pane ? treeCache[cacheKey] : undefined;
 
@@ -1525,9 +1540,9 @@ function SimplePane({ side, style }: { side: 0 | 1; style?: React.CSSProperties 
         {pane.path || "/"}
       </div>
       {!tree ? (
-        <div className={styles.emptyState}>Laden…</div>
+        <div className={styles.emptyState}>{t("status.loadingShort")}</div>
       ) : children.length === 0 ? (
-        <div className={styles.emptyState}>Leerer Ordner</div>
+        <div className={styles.emptyState}>{t("empty.folderShort")}</div>
       ) : (
         <div className={styles.fileList}>
           {children.map((n: FileNode) => (
@@ -1558,6 +1573,7 @@ function TreeSourceNode({ source, isActive, onNavigate }: {
   onNavigate: (source: string, path: string) => void;
 }) {
   const { sidebarExpanded, toggleSidebarNode, treeCache, loadTree } = useFileStore();
+  const { t } = useTranslation("files");
   const key = source.id;
   const expanded = sidebarExpanded[key] ?? isActive;
   // Device start path (Android: /sdcard); "/" is unreadable on phones
@@ -1584,8 +1600,8 @@ function TreeSourceNode({ source, isActive, onNavigate }: {
           <span className={styles.offlineBadge}>
             {/* Important: "no access" is different from "offline": the user can
                 fix the one themselves, not the other. */}
-            {source.status === "kein_zugang" ? "kein Zugang"
-              : source.status === "sshd_down" ? "SSH aus" : "offline"}
+            {source.status === "kein_zugang" ? t("source.noAccessShort")
+              : source.status === "sshd_down" ? t("source.sshOff") : t("source.offline")}
           </span>
         )}
       </div>
@@ -1732,7 +1748,7 @@ const FileItem = forwardRef<HTMLDivElement, {
         </span>
         {viewMode === "details" && (
           <>
-            <span className={styles.detailType}>{node.isDir ? "Ordner" : getFileTypeInfo(node.name).name}</span>
+            <span className={styles.detailType}>{node.isDir ? folderTypeName() : getFileTypeInfo(node.name).name}</span>
             <span className={styles.detailSize}>{formatSize(node.size)}</span>
             <span className={styles.detailDate}>{formatDate(node.modified)}</span>
           </>

@@ -38,6 +38,7 @@ from betriebsprofil import PRODUCT_NAME
 import asyncio
 import json
 import logging
+import re
 import time
 from collections import defaultdict
 from typing import Any
@@ -59,8 +60,8 @@ _MCP_TOKEN = _os.environ.get("CLARAOS_MCP_TOKEN", "")
 from urllib.parse import urlsplit
 
 from app_seeds import BUILTIN_APPS
-from auth import ENFORCE, PROXY_SECRET, SERVICE_TOKEN, _matches
-from app_url_patterns import PatternError, known_patterns, resolve_path
+from auth import ENFORCE, PROXY_SECRET, SERVICE_TOKEN, _matches, require_caller
+from app_url_patterns import URL_PATTERNS, PatternError, known_patterns, resolve_path
 
 
 def _app_origin(app_id: str) -> str | None:
@@ -323,7 +324,21 @@ async def dispatch(request: Request) -> JSONResponse:
             content={"error": "missing_fields", "required": ["target_user", "app_id", "action"]},
             status_code=status.HTTP_400_BAD_REQUEST,
         )
+    return JSONResponse(content=await zustellen(
+        target, app_id, action, body.get("args") or {},
+        instance_id=body.get("instance_id"), window_id=body.get("window_id"),
+        sender=body.get("from"),
+    ))
 
+
+async def zustellen(target: str, app_id: str, action: str, args: dict[str, Any],
+                    instance_id: str | None = None, window_id: str | None = None,
+                    sender: str | None = None) -> dict[str, Any]:
+    """Push one action to `target`'s browsers and wait for what they report back.
+
+    Returns {"delivered", "target_user", "rendered", "detail"}: `rendered` counts the
+    browsers that confirmed the action, which is what a caller may report to the user.
+    """
     global _ack_zaehler
     _ack_zaehler += 1
     action_id = f"{int(time.time() * 1000)}-{_ack_zaehler}"
@@ -332,10 +347,10 @@ async def dispatch(request: Request) -> JSONResponse:
         "type": "action",
         "app_id": app_id,
         "action": action,
-        "args": body.get("args") or {},
-        "instance_id": body.get("instance_id"),
-        "window_id": body.get("window_id"),
-        "from": body.get("from"),
+        "args": args,
+        "instance_id": instance_id,
+        "window_id": window_id,
+        "from": sender,
         "action_id": action_id,
         "ts": time.time(),
     }
@@ -351,7 +366,7 @@ async def dispatch(request: Request) -> JSONResponse:
                 f"Kein Browser mit offenem {PRODUCT_NAME} verbunden — es wurde NICHTS "
                 "angezeigt. Dem Nutzer das so sagen, nicht Erfolg melden."
             )
-            return JSONResponse(content=antwort)
+            return antwort
         try:
             await asyncio.wait_for(_ack_events[action_id].wait(), timeout=_ACK_FRIST)
         except asyncio.TimeoutError:
@@ -401,7 +416,7 @@ async def dispatch(request: Request) -> JSONResponse:
                 f"{_ACK_FRIST:.0f} s nicht quittiert — unklar, ob etwas zu sehen ist. "
                 "Beim Nutzer nachfragen statt Erfolg zu melden."
             )
-        return JSONResponse(content=antwort)
+        return antwort
     finally:
         _acks.pop(action_id, None)
         _ack_events.pop(action_id, None)
@@ -446,6 +461,14 @@ async def navigate(request: Request) -> JSONResponse:
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
+    antwort, code = await deep_link(target, app_id, pattern_key, body.get("params") or {},
+                                    sender=body.get("from"))
+    return JSONResponse(content=antwort, status_code=code)
+
+
+async def deep_link(target: str, app_id: str, pattern_key: str, params: dict[str, Any],
+                    sender: str | None = None) -> tuple[dict[str, Any], int]:
+    """Point `target`'s window of `app_id` at a registered view. Returns (answer, status)."""
     origin = _app_origin(app_id)
     if not origin:
         # Internal apps: no origin — a relative path is enough as long as the app
@@ -453,19 +476,13 @@ async def navigate(request: Request) -> JSONResponse:
         if _app_is_internal(app_id) and known_patterns(app_id):
             origin = ""
         else:
-            return JSONResponse(
-                content={"error": "unknown_app_origin", "app_id": app_id},
-                status_code=status.HTTP_400_BAD_REQUEST,
-            )
+            return {"error": "unknown_app_origin", "app_id": app_id}, status.HTTP_400_BAD_REQUEST
 
     try:
-        path = resolve_path(app_id, pattern_key, body.get("params") or {})
+        path = resolve_path(app_id, pattern_key, params)
     except PatternError as e:
-        return JSONResponse(
-            content={"error": "pattern_error", "detail": str(e),
-                     "known_patterns": known_patterns(app_id)},
-            status_code=status.HTTP_400_BAD_REQUEST,
-        )
+        return ({"error": "pattern_error", "detail": str(e),
+                 "known_patterns": known_patterns(app_id)}, status.HTTP_400_BAD_REQUEST)
 
     url = origin + path
     payload = {
@@ -473,11 +490,11 @@ async def navigate(request: Request) -> JSONResponse:
         "app_id": "shell",
         "action": "navigate_to",
         "args": {"app_id": app_id, "url": url, "pattern_key": pattern_key},
-        "from": body.get("from"),
+        "from": sender,
         "ts": time.time(),
     }
     delivered = await _broadcast(target, payload)
-    return JSONResponse(content={"delivered": delivered, "url": url, "app_id": app_id})
+    return {"delivered": delivered, "url": url, "app_id": app_id}, 200
 
 
 @router.get("/status")
@@ -489,6 +506,146 @@ async def status_endpoint() -> JSONResponse:
             "total_connections": sum(len(s) for s in _subscribers.values()),
         }
     )
+
+
+# ── Assistant tools: drive the caller's own screen ──────────────────────────
+#
+# The tool gateway (routers/clara_tools.py, clara-tools.d/action.yaml) calls these
+# with the user of the running chat turn in `X-Claraos-User`. The screen that is
+# driven is always that user's: a `target_user` in the body is ignored, so neither
+# the model nor injected text can reach another user's session.
+
+# Viewer apps the shell registers; any other `viewer_hint` is ignored.
+_BETRACHTER = frozenset({
+    "image-viewer", "pdf-viewer", "video-player", "text-editor",
+    "office-viewer", "model-viewer", "files",
+})
+_NEBEN_CHAT = "anchor-chat-right"
+_KEIN_BROWSER = (f"Kein Browser mit offenem {PRODUCT_NAME} verbunden — es wurde NICHTS "
+                 "angezeigt. Dem Nutzer das so sagen, nicht Erfolg melden.")
+
+
+def _bericht(antwort: dict[str, Any], app_id: str, action: str) -> dict[str, Any]:
+    """Tool answer: `ok` follows what the browser confirmed, not the transport."""
+    rendered = antwort.get("rendered")
+    ergebnis: dict[str, Any] = {
+        "ok": bool(rendered) if rendered is not None else bool(antwort.get("delivered")),
+        "delivered": antwort.get("delivered", 0),
+        "action": action,
+        "app_id": app_id,
+    }
+    if rendered is not None:
+        ergebnis["rendered"] = rendered
+    if antwort.get("detail"):
+        ergebnis["detail"] = antwort["detail"]
+    return ergebnis
+
+
+async def _shell(user: str, action: str, args: dict[str, Any]) -> dict[str, Any]:
+    return _bericht(await zustellen(user, "shell", action, args, sender="assistant"), "shell", action)
+
+
+def _text(body: dict[str, Any], key: str) -> str:
+    wert = body.get(key)
+    return wert.strip() if isinstance(wert, str) else ""
+
+
+@router.post("/clara/{werkzeug}")
+async def clara_werkzeug(werkzeug: str, request: Request) -> JSONResponse:
+    """One UI tool of the assistant, executed on the calling user's screen."""
+    user = require_caller(request).lower()
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    if not isinstance(body, dict):
+        return JSONResponse(content={"error": "invalid_json"}, status_code=400)
+
+    if werkzeug == "open_window":
+        app_id = _text(body, "app_id")
+        if not app_id:
+            return JSONResponse(content={"ok": False, "error": "app_id fehlt"}, status_code=422)
+        opts = body.get("opts") if isinstance(body.get("opts"), dict) else {}
+        opts.setdefault("position", _NEBEN_CHAT)
+        ergebnis = await _shell(user, "open_window", {"app_id": app_id, "opts": opts})
+    elif werkzeug == "close_window":
+        ergebnis = await _shell(user, "close_window", {"app_id": _text(body, "app_id") or "*"})
+    elif werkzeug == "navigate_files":
+        args = {"source": _text(body, "source") or "nextcloud", "path": _text(body, "path") or "/"}
+        if _text(body, "select_filename"):
+            args["select_filename"] = _text(body, "select_filename")
+        ergebnis = _bericht(await zustellen(user, "files", "navigate", args, sender="assistant"),
+                            "files", "navigate")
+    elif werkzeug == "open_in_viewer":
+        pfad = _text(body, "path")
+        if not pfad:
+            return JSONResponse(content={"ok": False, "error": "path fehlt"}, status_code=422)
+        quelle = _text(body, "source") or "nextcloud"
+        titel = pfad.rsplit("/", 1)[-1] or pfad
+        hint = _text(body, "viewer_hint")
+        if hint in _BETRACHTER:
+            ergebnis = await _shell(user, "open_window", {"app_id": hint, "opts": {
+                "path": pfad, "source": quelle, "position": _NEBEN_CHAT, "title": titel}})
+        else:
+            ergebnis = await _shell(user, "open_in_viewer",
+                                    {"path": pfad, "source": quelle, "title": titel})
+            if hint:
+                ergebnis["hinweis"] = (
+                    f"viewer_hint '{hint}' gibt es nicht (erlaubt: {sorted(_BETRACHTER)}); "
+                    "der Betrachter wurde nach Dateiendung gewählt.")
+    elif werkzeug == "read_screen":
+        ergebnis = await _shell(user, "read_screen", {})
+    elif werkzeug == "show_artifact":
+        args = {"kind": _text(body, "kind") or "markdown", "content": str(body.get("content") or "")}
+        for key in ("mime", "title"):
+            if _text(body, key):
+                args[key] = _text(body, key)
+        ergebnis = await _shell(user, "show_artifact", args)
+    elif werkzeug == "office_insert":
+        args = {"content": str(body.get("content") or ""),
+                "mime": _text(body, "mime") or "text/plain;charset=utf-8",
+                "save": bool(body.get("save"))}
+        if _text(body, "position") == "end":
+            args["position"] = "end"
+        ergebnis = _bericht(await zustellen(user, "office-viewer", "insert", args,
+                                            window_id=_text(body, "window_id") or None,
+                                            sender="assistant"), "office-viewer", "insert")
+    elif werkzeug == "navigate_to":
+        params = body.get("params")
+        if isinstance(params, str):  # models often send the object as a JSON string
+            try:
+                params = json.loads(params) if params.strip() else {}
+            except ValueError:
+                params = {}
+        params = dict(params) if isinstance(params, dict) else {}
+        if body.get("id") not in (None, "") and "id" not in params:
+            params["id"] = body["id"]
+        # The model names the id loosely ("id", "album_id", "taskId"); the pattern
+        # wants its own placeholder. One id given → it fills the missing placeholder.
+        ids = [k for k in params if k.lower().endswith("id")]
+        for platz in re.findall(r"\{(\w+)\}", URL_PATTERNS.get(_text(body, "app_id"), {})
+                                .get(_text(body, "pattern_key"), "")):
+            if platz not in params and len(ids) == 1:
+                params[platz] = params[ids[0]]
+        antwort, code = await deep_link(user, _text(body, "app_id"), _text(body, "pattern_key"),
+                                        params, sender="assistant")
+        return JSONResponse(content=antwort, status_code=code)
+    elif werkzeug == "dispatch":
+        app_id, action = _text(body, "app_id"), _text(body, "action")
+        if not app_id or not action:
+            return JSONResponse(content={"ok": False, "error": "app_id und action nötig"},
+                                status_code=422)
+        args = body.get("args") if isinstance(body.get("args"), dict) else {}
+        ergebnis = _bericht(await zustellen(
+            user, app_id, action, args,
+            instance_id=_text(body, "instance_id") or None,
+            window_id=_text(body, "window_id") or None, sender="assistant"), app_id, action)
+    else:
+        return JSONResponse(content={"error": "unknown_tool", "tool": werkzeug}, status_code=404)
+
+    if not ergebnis.get("delivered"):
+        ergebnis["detail"] = _KEIN_BROWSER
+    return JSONResponse(content=ergebnis)
 
 
 # Bus handlers — deliver events from other instances locally

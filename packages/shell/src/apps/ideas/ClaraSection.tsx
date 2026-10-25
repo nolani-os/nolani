@@ -3,7 +3,7 @@
  * Answers are stored as kind='answer' in the activity log (quoting the
  * question), so the thinking loop persists on the OBJECT and Clara sees them
  * on the next get_object. */
-import { getBrand } from "@claraos/core";
+import { useTranslation } from "@claraos/core";
 import { useMemo, useState } from "react";
 import styles from "./IdeasApp.module.css";
 import type { KbActivity } from "./types";
@@ -14,6 +14,7 @@ interface Props {
 }
 
 export function ClaraSection({ activity, onAnswer }: Props) {
+  const { t } = useTranslation("wissen");
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -30,14 +31,14 @@ export function ClaraSection({ activity, onAnswer }: Props) {
 
   return (
     <section className={styles.claraSection}>
-      <h4>🤖 {getBrand().assistant} möchte wissen</h4>
+      <h4>{t("clara.wantsToKnow")}</h4>
       {openQuestions.map((q) => (
         <div key={q.id} className={styles.claraQuestion}>
           <p>{q.content}</p>
           <div className={styles.claraAnswerRow}>
             <input
               className={styles.input}
-              placeholder="Deine Antwort… (Enter)"
+              placeholder={t("clara.answer")}
               value={drafts[q.id] ?? ""}
               disabled={busy === q.id}
               onChange={(e) => setDrafts((d) => ({ ...d, [q.id]: e.target.value }))}

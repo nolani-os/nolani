@@ -23,6 +23,7 @@ import { PropertyField } from "../ideas/PropertyFields";
 import { TYP_MARKE } from "./feldTypen";
 import { Icon } from "../../components/Icon";
 import { formatZahl, formatZeitpunkt } from "../ideas/format";
+import { useTranslation } from "@claraos/core";
 
 /** Field registry → definition for the property editor (as in CollectionView). */
 function alsDef(f: KbField): KbPropDef {
@@ -51,6 +52,7 @@ interface Props {
 }
 
 export function SammlungsFelder({ sammlungen, werte, readOnly, onSpeichern }: Props) {
+  const { t } = useTranslation("wissen");
   const [felder, setFelder] = useState<KbField[]>([]);
   const [fehler, setFehler] = useState(false);
 
@@ -79,7 +81,7 @@ export function SammlungsFelder({ sammlungen, werte, readOnly, onSpeichern }: Pr
 
   if (!sammlungen.length) return null;
   if (fehler) {
-    return <div className={geteilt.metaHint}>Die Spalten der Sammlung ließen sich nicht laden.</div>;
+    return <div className={geteilt.metaHint}>{t("fields.loadFailed")}</div>;
   }
   if (!felder.length) return null;
 

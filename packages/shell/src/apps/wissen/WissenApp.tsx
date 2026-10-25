@@ -20,7 +20,7 @@
  * active section + "More".
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useAuthStore, useWindowsStore, getBrand } from "@claraos/core";
+import { useAuthStore, useWindowsStore, useTranslation, i18n } from "@claraos/core";
 import styles from "../ideas/IdeasApp.module.css";
 import leiste from "./Wissen.module.css";
 import { Icon, iconFuerEmoji, type IconName } from "../../components/Icon";
@@ -66,21 +66,25 @@ interface RailItem {
   bereich: Bereich;
 }
 
+/** `label` is a getter, read in the UI language whenever it is shown. */
+const railItem = (key: Rail, icon: IconName, bereich: Bereich): RailItem =>
+  ({ key, icon, bereich, get label() { return i18n.t(`wissen:nav.${key}`); } });
+
 const RAIL_ITEMS: RailItem[] = [
-  { key: "collections", icon: "collections", label: "Sammlungen", bereich: "wissen" },
-  { key: "objects", icon: "list", label: "Alle", bereich: "wissen" },
-  { key: "notes", icon: "note", label: "Notizen", bereich: "wissen" },
-  { key: "search", icon: "search", label: "Suche", bereich: "wissen" },
-  { key: "graph", icon: "graph", label: "Netz", bereich: "wissen" },
-  { key: "inbox", icon: "bell", label: "Neues", bereich: "wissen" },
-  { key: "trash", icon: "trash", label: "Papierkorb", bereich: "wissen" },
-  { key: "dash", icon: "dashboard", label: "Übersicht", bereich: "strategie" },
-  { key: "goals", icon: "target", label: "Ziele", bereich: "strategie" },
-  { key: "visions", icon: "horizon", label: "Visionen", bereich: "strategie" },
-  { key: "board", icon: "board", label: "Ideen-Board", bereich: "strategie" },
-  { key: "list", icon: "list", label: "Ideen-Liste", bereich: "strategie" },
-  { key: "matrix", icon: "matrix", label: "Matrix", bereich: "strategie" },
-  { key: "ideagraph", icon: "graph", label: "Ideen-Netz", bereich: "strategie" },
+  railItem("collections", "collections", "wissen"),
+  railItem("objects", "list", "wissen"),
+  railItem("notes", "note", "wissen"),
+  railItem("search", "search", "wissen"),
+  railItem("graph", "graph", "wissen"),
+  railItem("inbox", "bell", "wissen"),
+  railItem("trash", "trash", "wissen"),
+  railItem("dash", "dashboard", "strategie"),
+  railItem("goals", "target", "strategie"),
+  railItem("visions", "horizon", "strategie"),
+  railItem("board", "board", "strategie"),
+  railItem("list", "list", "strategie"),
+  railItem("matrix", "matrix", "strategie"),
+  railItem("ideagraph", "graph", "strategie"),
 ];
 
 /** On mobile only the four most used targets per section — the rest in the "More" sheet.
@@ -112,6 +116,7 @@ export default function WissenApp({ windowId, start = "wissen" }: {
   /** What the app opens with — depending on which tile launched it. */
   start?: Bereich;
 }) {
+  const { t } = useTranslation("wissen");
   const [rail, setRail] = useState<Rail>(START_RAIL[start]);
   const [objects, setObjects] = useState<KbObjectSlim[]>([]);
   const [collections, setCollections] = useState<KbCollection[]>([]);
@@ -336,11 +341,11 @@ export default function WissenApp({ windowId, start = "wissen" }: {
   // First breadcrumb in the path — the collection, otherwise the sidebar section.
   const herkunft = activeColl
     ? { label: activeColl.name, icon: activeColl.icon }
-    : { label: RAIL_ITEMS.find((it) => it.key === rail)?.label ?? "Übersicht" };
+    : { label: RAIL_ITEMS.find((it) => it.key === rail)?.label ?? t("nav.dash") };
 
   // ── Content ───────────────────────────────────────────────────────────────
   const content = loading ? (
-    <div className={styles.empty}>Lade…</div>
+    <div className={styles.empty}>{t("app.loading")}</div>
   ) : detailId && !seitenfenster ? (
     <IdeaDetail
       objectId={detailId}
@@ -378,11 +383,11 @@ export default function WissenApp({ windowId, start = "wissen" }: {
           <aside className={leiste.seitenfenster}>
             <div className={leiste.seitenfensterKopf}>
               <span>{activeColl.icon ?? "🗂️"} {activeColl.name}</span>
-              <button className={styles.iconBtn} title="Als ganze Seite öffnen"
+              <button className={styles.iconBtn} title={t("app.openFull")}
                       onClick={() => setAusTabelle(false)}>⤢</button>
-              <button className={styles.iconBtn} title="Seitenfenster schließen"
+              <button className={styles.iconBtn} title={t("app.closePanel")}
                       onClick={() => { setDetailId(null); reload(); }}>
-                <Icon name="close" size={14} title="Schließen" />
+                <Icon name="close" size={14} title={t("app.close")} />
               </button>
             </div>
             <IdeaDetail
@@ -430,15 +435,15 @@ export default function WissenApp({ windowId, start = "wissen" }: {
     <GraphView onOpen={oeffneObjekt} />
   ) : rail === "inbox" ? (
     <div className={styles.listView}>
-      <h3><Icon name="bell" size={17} className={styles.inlineIcon} />Neues</h3>
-      {notifications.length === 0 && <div className={styles.empty}>Nichts Neues.</div>}
+      <h3><Icon name="bell" size={17} className={styles.inlineIcon} />{t("nav.inbox")}</h3>
+      {notifications.length === 0 && <div className={styles.empty}>{t("app.nothingNew")}</div>}
       <div className={styles.listRows}>
         {notifications.map((n) => (
           <button key={n.id}
                   className={`${styles.notifRow} ${n.read ? "" : styles.notifUnread}`}
                   onClick={() => { if (n.object_id) setDetailId(n.object_id); }}>
             <span className={styles.listTitle}>
-              <Icon name="comment" size={14} className={styles.inlineIcon} />{n.actor} · {n.object_title ?? "Objekt"}
+              <Icon name="comment" size={14} className={styles.inlineIcon} />{n.actor} · {n.object_title ?? t("app.object")}
             </span>
             <span className={styles.listMeta}>{n.snippet.slice(0, 60)}</span>
             <span className={styles.listMeta}>{formatZeitpunkt(n.created_at)}</span>
@@ -448,24 +453,24 @@ export default function WissenApp({ windowId, start = "wissen" }: {
     </div>
   ) : rail === "trash" ? (
     <div className={styles.listView}>
-      <h3><Icon name="trash" size={17} className={styles.inlineIcon} />Papierkorb</h3>
-      {trash.length === 0 && <div className={styles.empty}>Der Papierkorb ist leer.</div>}
+      <h3><Icon name="trash" size={17} className={styles.inlineIcon} />{t("nav.trash")}</h3>
+      {trash.length === 0 && <div className={styles.empty}>{t("app.trashEmpty")}</div>}
       <div className={styles.listRows}>
-        {trash.map((t) => (
-          <div key={t.id} className={styles.trashRow}>
+        {trash.map((obj) => (
+          <div key={obj.id} className={styles.trashRow}>
             <span className={styles.trashTitle}>
-              <ObjektSymbol icon={t.icon} size={14} />{t.title}
+              <ObjektSymbol icon={obj.icon} size={14} />{obj.title}
             </span>
             <span className={styles.listMeta}>
-              {t.deleted_at ? formatZeitpunkt(t.deleted_at) : ""}
+              {obj.deleted_at ? formatZeitpunkt(obj.deleted_at) : ""}
             </span>
             <button className={styles.btnSecondary}
                     onClick={async () => {
-                      await ideasApi.restoreObject(t.id);
-                      setTrash((prev) => prev.filter((x) => x.id !== t.id));
+                      await ideasApi.restoreObject(obj.id);
+                      setTrash((prev) => prev.filter((x) => x.id !== obj.id));
                       reload();
                     }}>
-              Wiederherstellen
+              {t("app.restore")}
             </button>
           </div>
         ))}
@@ -484,19 +489,19 @@ export default function WissenApp({ windowId, start = "wissen" }: {
           onClara={() => useWindowsStore.getState().toggleClaraInline(windowId)}
         />
       )}
-      <h3><Icon name="collections" size={17} className={styles.inlineIcon} />Sammlungen</h3>
+      <h3><Icon name="collections" size={17} className={styles.inlineIcon} />{t("nav.collections")}</h3>
       {collections.length === 0 && (
         /* An empty state without a next step is a dead end. */
         <div className={styles.empty}>
-          <p>Hier landet, was ihr nachschlagen wollt — Rezepte, Vertraege, Geschenkideen.</p>
+          <p>{t("app.emptyIntro")}</p>
           <button className={styles.btnPrimary} onClick={() => setShowCollModal(true)}>
-            Mit einer Vorlage anfangen
+            {t("app.startTemplate")}
           </button>
           {/* This is exactly where someone with nothing yet stands — and for
               them "just say it" is the shortest path. */}
           <button className={styles.btnSecondary}
                   onClick={() => useWindowsStore.getState().toggleClaraInline(windowId)}>
-            <Icon name="comment" size={14} className={styles.inlineIcon} />{getBrand().assistant} machen lassen
+            <Icon name="comment" size={14} className={styles.inlineIcon} />{t("app.letAssistant")}
           </button>
         </div>
       )}
@@ -506,16 +511,16 @@ export default function WissenApp({ windowId, start = "wissen" }: {
             <span className={styles.collCardIcon}><ObjektSymbol icon={c.icon} ersatz="collections" size={20} /></span>
             <span className={styles.collCardName}>{c.name}</span>
             <span className={styles.collCardMeta}>
-              {c.item_count ?? 0} Einträge{c.visibility === "family"
+              {t("app.entries", { count: c.item_count ?? 0 })}{c.visibility === "family"
                 ? <> · <Icon name="people" size={12} /></> : null}
               {c.permission && c.permission !== "owner"
-                ? <> · <Icon name="people" size={12} /> von {c.owner}</> : null}
+                ? <> · <Icon name="people" size={12} /> {t("app.from", { owner: c.owner })}</> : null}
             </span>
           </button>
         ))}
         <button className={`${styles.collCard} ${styles.collCardNew}`} onClick={() => setShowCollModal(true)}>
           <span className={styles.collCardIcon}><Icon name="plus" size={22} /></span>
-          <span className={styles.collCardName}>Neue Sammlung</span>
+          <span className={styles.collCardName}>{t("app.newCollection")}</span>
         </button>
       </div>
     </div>
@@ -550,12 +555,12 @@ export default function WissenApp({ windowId, start = "wissen" }: {
         {!isMobile && (
           <nav className={leiste.rail}>
             <div className={leiste.railScroll}>
-              {railGruppe("wissen", "Wissen")}
-              {railGruppe("strategie", "Strategie")}
+              {railGruppe("wissen", t("nav.wissen"))}
+              {railGruppe("strategie", t("nav.strategie"))}
 
               {favorites.length > 0 && (
                 <>
-                  <div className={leiste.railGroupLabel}>Favoriten</div>
+                  <div className={leiste.railGroupLabel}>{t("nav.favorites")}</div>
                   {favorites.slice(0, 4).map((f) => (
                     <button
                       key={f.id}
@@ -572,7 +577,7 @@ export default function WissenApp({ windowId, start = "wissen" }: {
 
               {collections.length > 0 && (
                 <>
-                  <div className={leiste.railGroupLabel}>Sammlungen</div>
+                  <div className={leiste.railGroupLabel}>{t("nav.collections")}</div>
                   {collections.map((c) => (
                     <button
                       key={c.id}
@@ -589,14 +594,14 @@ export default function WissenApp({ windowId, start = "wissen" }: {
             </div>
 
             <div className={leiste.railSpacer} />
-            <button className={leiste.railBtn} title="Webseite sichern (Web-Clipper)"
+            <button className={leiste.railBtn} title={t("app.clipTitle")}
                     onClick={() => setShowClip(true)}>
               <span className={leiste.railIcon}><Icon name="globe" size={17} /></span>
-              <span className={leiste.railLabel}>Clip</span>
+              <span className={leiste.railLabel}>{t("app.clip")}</span>
             </button>
-            <label className={leiste.railBtn} title="Notion- oder Markdown-ZIP importieren">
+            <label className={leiste.railBtn} title={t("app.importTitle")}>
               <span className={leiste.railIcon}><Icon name="import" size={17} /></span>
-              <span className={leiste.railLabel}>Import</span>
+              <span className={leiste.railLabel}>{t("app.import")}</span>
               <input
                 type="file"
                 accept=".zip"
@@ -609,8 +614,8 @@ export default function WissenApp({ windowId, start = "wissen" }: {
                   try {
                     const rep = await ideasApi.importArchive(f);
                     window.alert(
-                      `Import fertig:\n${rep.pages} Seite(n), ${rep.collections} Sammlung(en) ` +
-                      `mit ${rep.rows} Zeile(n).\n${rep.links_rewritten} Verweis(e) verknüpft.`);
+                      t("app.importDone", { pages: rep.pages, collections: rep.collections,
+                                            rows: rep.rows, links: rep.links_rewritten }));
                     reload();
                   } catch (err) {
                     setError(err instanceof Error ? err.message : String(err));
@@ -619,17 +624,17 @@ export default function WissenApp({ windowId, start = "wissen" }: {
               />
             </label>
             <a className={leiste.railBtn} href={ideasApi.exportUrl()}
-               title="Alles als ZIP exportieren (Markdown + CSV)" download>
+               title={t("app.exportTitle")} download>
               <span className={leiste.railIcon}><Icon name="export" size={17} /></span>
-              <span className={leiste.railLabel}>Export</span>
+              <span className={leiste.railLabel}>{t("app.export")}</span>
             </a>
             <button
               className={`${leiste.railBtn} ${leiste.railCapture}`}
-              title={bereich === "strategie" ? "Neue Idee (N)" : "Neue Notiz (N)"}
+              title={bereich === "strategie" ? t("app.newIdeaN") : t("app.newNoteN")}
               onClick={() => setShowCapture(true)}
             >
               <span className={leiste.railIcon}><Icon name="plus" size={20} /></span>
-              <span className={leiste.railLabel}>{bereich === "strategie" ? "Idee" : "Notiz"}</span>
+              <span className={leiste.railLabel}>{bereich === "strategie" ? t("app.idea") : t("app.note")}</span>
             </button>
           </nav>
         )}
@@ -640,7 +645,7 @@ export default function WissenApp({ windowId, start = "wissen" }: {
               <span>{error}</span>
               <button className={styles.btnSecondary}
                       onClick={() => { setError(null); reload(); }}>
-                Nochmal versuchen
+                {t("app.retry")}
               </button>
             </div>
           )}
@@ -662,7 +667,7 @@ export default function WissenApp({ windowId, start = "wissen" }: {
             })),
             {
               key: "mehr",
-              label: "Mehr",
+              label: t("app.more"),
               icon: "more" as const,
               active: !mobileTabs.includes(rail),
               badge: unread,
@@ -670,7 +675,7 @@ export default function WissenApp({ windowId, start = "wissen" }: {
             },
           ]}
           fab={{
-            label: bereich === "wissen" ? "Neue Notiz" : "Neue Idee",
+            label: bereich === "wissen" ? t("app.newNote") : t("app.newIdea"),
             onClick: () => setShowCapture(true),
           }}
         />
@@ -678,8 +683,8 @@ export default function WissenApp({ windowId, start = "wissen" }: {
 
       {showCapture && (
         <QuickCapture
-          heading={bereich === "strategie" ? "💡 Neue Idee" : "Neue Notiz"}
-          submitLabel={bereich === "strategie" ? "Als Funke speichern" : "Speichern"}
+          heading={bereich === "strategie" ? t("app.ideaHeading") : t("app.newNote")}
+          submitLabel={bereich === "strategie" ? t("app.saveSpark") : t("app.save")}
           onCapture={capture}
           onClose={() => { setShowCapture(false); reload(); }}
         />
@@ -696,9 +701,9 @@ export default function WissenApp({ windowId, start = "wissen" }: {
         <div className={styles.modalBackdrop} onClick={() => setShowMore(false)}>
           <div className={`${styles.modal} ${styles.moreSheet}`} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHead}>
-              <h3>Mehr</h3>
-              <button className={styles.iconBtn} onClick={() => setShowMore(false)} title="Schließen">
-                <Icon name="close" size={18} title="Schließen" />
+              <h3>{t("app.more")}</h3>
+              <button className={styles.iconBtn} onClick={() => setShowMore(false)} title={t("app.close")}>
+                <Icon name="close" size={18} title={t("app.close")} />
               </button>
             </div>
             <div className={styles.moreGrid}>
@@ -712,14 +717,14 @@ export default function WissenApp({ windowId, start = "wissen" }: {
               ))}
               <button className={styles.moreItem}
                       onClick={() => { setShowMore(false); setShowClip(true); }}>
-                <span className={styles.moreIcon}><Icon name="globe" size={18} /></span><span>Webseite sichern</span>
+                <span className={styles.moreIcon}><Icon name="globe" size={18} /></span><span>{t("app.saveWeb")}</span>
               </button>
               <button className={styles.moreItem}
                       onClick={() => { setShowMore(false); setShowCollModal(true); }}>
-                <span className={styles.moreIcon}><Icon name="collections" size={18} /></span><span>Neue Sammlung</span>
+                <span className={styles.moreIcon}><Icon name="collections" size={18} /></span><span>{t("app.newCollection")}</span>
               </button>
               <label className={styles.moreItem}>
-                <span className={styles.moreIcon}><Icon name="import" size={18} /></span><span>Import (ZIP)</span>
+                <span className={styles.moreIcon}><Icon name="import" size={18} /></span><span>{t("app.importZip")}</span>
                 <input type="file" accept=".zip" style={{ display: "none" }}
                        onChange={async (e) => {
                          const f = e.target.files?.[0];
@@ -728,7 +733,7 @@ export default function WissenApp({ windowId, start = "wissen" }: {
                          setShowMore(false);
                          try {
                            const rep = await ideasApi.importArchive(f);
-                           window.alert(`Import fertig: ${rep.pages} Seite(n), ${rep.collections} Sammlung(en).`);
+                           window.alert(t("app.importDoneShort", { pages: rep.pages, collections: rep.collections }));
                            reload();
                          } catch (err) {
                            setError(err instanceof Error ? err.message : String(err));
@@ -737,13 +742,13 @@ export default function WissenApp({ windowId, start = "wissen" }: {
               </label>
               <a className={styles.moreItem} href={ideasApi.exportUrl()} download
                  onClick={() => setShowMore(false)}>
-                <span className={styles.moreIcon}><Icon name="export" size={18} /></span><span>Export (ZIP)</span>
+                <span className={styles.moreIcon}><Icon name="export" size={18} /></span><span>{t("app.exportZip")}</span>
               </a>
             </div>
             {collections.length > 0 && (
               <>
                 <h4 className={styles.moreSectionTitle}>
-                  <Icon name="collections" size={15} className={styles.inlineIcon} />Sammlungen
+                  <Icon name="collections" size={15} className={styles.inlineIcon} />{t("nav.collections")}
                 </h4>
                 <div className={styles.listRows}>
                   {collections.slice(0, 10).map((c) => (

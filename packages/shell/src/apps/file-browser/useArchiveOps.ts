@@ -4,7 +4,9 @@
  * each view can use its own useDialogs() instance.
  */
 import { useCallback } from "react";
-import { useFileStore, type FileNode } from "@claraos/core";
+import { i18n, useFileStore, type FileNode } from "@claraos/core";
+
+const tr = (key: string, opts?: Record<string, unknown>) => i18n.t(`files:${key}`, opts);
 
 interface ArchiveDeps {
   activeSource: string;
@@ -23,11 +25,11 @@ export function useArchiveOps({ activeSource, currentPath, promptDlg, alertDlg }
       body: JSON.stringify({ source: node.source ?? activeSource, path: node.path }),
     });
     if (r.ok) loadTree(activeSource, currentPath || "/");
-    else await alertDlg(`Archivieren fehlgeschlagen: ${(await r.json().catch(() => ({})))?.detail ?? r.status}`);
+    else await alertDlg(tr("archive.archiveFailed", { detail: (await r.json().catch(() => ({})))?.detail ?? r.status }));
   }, [activeSource, currentPath, loadTree, alertDlg]);
 
   const encryptItem = useCallback(async (node: FileNode & { source?: string }) => {
-    const pw = await promptDlg(`Passwort für „${node.name}“ — ohne Passwort ist das Archiv nicht lesbar:`);
+    const pw = await promptDlg(tr("archive.encryptPrompt", { name: node.name }));
     if (!pw) return;
     const r = await fetch("/api/claraos/files/v2/encrypt", {
       method: "POST",
@@ -35,7 +37,7 @@ export function useArchiveOps({ activeSource, currentPath, promptDlg, alertDlg }
       body: JSON.stringify({ source: node.source ?? activeSource, path: node.path, password: pw }),
     });
     if (r.ok) loadTree(activeSource, currentPath || "/");
-    else await alertDlg(`Verschlüsseln fehlgeschlagen: ${(await r.json().catch(() => ({})))?.detail ?? r.status}`);
+    else await alertDlg(tr("archive.encryptFailed", { detail: (await r.json().catch(() => ({})))?.detail ?? r.status }));
   }, [activeSource, currentPath, loadTree, promptDlg, alertDlg]);
 
   const extractItem = useCallback(async (node: FileNode & { source?: string }) => {
@@ -49,20 +51,21 @@ export function useArchiveOps({ activeSource, currentPath, promptDlg, alertDlg }
     // Encrypted archives: ask for the password, up to 3 attempts on typos
     for (let attempt = 0; !r.ok && attempt < 3; attempt++) {
       const detail = String((await r.json().catch(() => ({})))?.detail ?? "");
+      // Matches the server's (German) error detail, not UI text
       if (!detail.includes("Passwort erforderlich") && !detail.includes("Falsches Passwort")) {
-        await alertDlg(`Entpacken fehlgeschlagen: ${detail || r.status}`);
+        await alertDlg(tr("archive.extractFailed", { detail: detail || r.status }));
         return;
       }
       const pw = await promptDlg(
         detail.includes("Falsches Passwort")
-          ? `Falsches Passwort für „${node.name}“ — erneut versuchen:`
-          : `„${node.name}“ ist verschlüsselt — Passwort:`,
+          ? tr("archive.wrongPassword", { name: node.name })
+          : tr("archive.passwordPrompt", { name: node.name }),
       );
       if (!pw) return;
       r = await post(pw);
     }
     if (!r.ok) {
-      await alertDlg(`Entpacken fehlgeschlagen: ${(await r.json().catch(() => ({})))?.detail ?? r.status}`);
+      await alertDlg(tr("archive.extractFailed", { detail: (await r.json().catch(() => ({})))?.detail ?? r.status }));
       return;
     }
     loadTree(activeSource, currentPath || "/");

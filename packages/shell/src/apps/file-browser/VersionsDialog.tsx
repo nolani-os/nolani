@@ -7,7 +7,7 @@
  * share dialog.
  */
 import { useCallback, useEffect, useState } from "react";
-import { useFileStore } from "@claraos/core";
+import { useFileStore, useTranslation } from "@claraos/core";
 import styles from "./ShareDialog.module.css";
 
 interface Version {
@@ -34,6 +34,7 @@ export function VersionsDialog({ path, name, onClose, confirmDlg }: Props) {
   const [versions, setVersions] = useState<Version[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const { t } = useTranslation("files");
 
   const load = useCallback(async () => {
     try {
@@ -54,8 +55,8 @@ export function VersionsDialog({ path, name, onClose, confirmDlg }: Props) {
   const restore = async (v: Version) => {
     const when = v.modified || v.id;
     if (!(await confirmDlg(
-      `„${name}“ auf den Stand vom ${when} zurücksetzen? Der aktuelle Inhalt wird selbst zur Version.`,
-      "Wiederherstellen",
+      t("versions.restoreConfirm", { name, when }),
+      t("actions.restore"),
     ))) return;
     setBusy(true);
     setError("");
@@ -91,20 +92,20 @@ export function VersionsDialog({ path, name, onClose, confirmDlg }: Props) {
         className={styles.dialog}
         role="dialog"
         aria-modal="true"
-        aria-label={`Frühere Versionen von „${name}“`}
+        aria-label={t("versions.ariaLabel", { name })}
         onClick={(e) => e.stopPropagation()}
       >
         <div className={styles.header}>
-          <span>Frühere Versionen — „{name}“</span>
-          <button onClick={onClose} aria-label="Schließen">×</button>
+          <span>{t("versions.title", { name })}</span>
+          <button onClick={onClose} aria-label={t("actions.close")}>×</button>
         </div>
 
         {error && <div className={styles.error}>{error}</div>}
 
         <div className={styles.list}>
-          {versions === null && <p className={styles.hint}>Versionen werden geladen…</p>}
+          {versions === null && <p className={styles.hint}>{t("versions.loading")}</p>}
           {versions !== null && versions.length === 0 && (
-            <p className={styles.hint}>Keine früheren Versionen vorhanden.</p>
+            <p className={styles.hint}>{t("versions.none")}</p>
           )}
           {(versions ?? []).map((v) => (
             <div key={v.id} className={styles.share}>
@@ -112,8 +113,8 @@ export function VersionsDialog({ path, name, onClose, confirmDlg }: Props) {
                 {v.modified || v.id}
                 {v.size != null && <span className={styles.hint}> · {fmtSize(v.size)}</span>}
               </span>
-              <button disabled={busy} onClick={() => download(v)}>Laden</button>
-              <button disabled={busy} onClick={() => void restore(v)}>Wiederherstellen</button>
+              <button disabled={busy} onClick={() => download(v)}>{t("versions.download")}</button>
+              <button disabled={busy} onClick={() => void restore(v)}>{t("actions.restore")}</button>
             </div>
           ))}
         </div>

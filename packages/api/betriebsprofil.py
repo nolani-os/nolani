@@ -200,6 +200,14 @@ PRODUCT_NAME: str = (
     or ("" if IS_CELL else _heim_werte().get("CLARAOS_PRODUCT_NAME", ""))
     or "NolaniOS"
 )
+# The product's folder in each user's Nextcloud (desktop state, wallpapers, avatar).
+# Its own setting, not PRODUCT_NAME: renaming the product must not orphan the
+# folder. The demo cell showed visitors a "ClaraOS" folder from the old fixed name.
+NC_FOLDER: str = (
+    os.environ.get("CLARAOS_NC_FOLDER", "").strip().strip("/")
+    or ("" if IS_CELL else _heim_werte().get("CLARAOS_NC_FOLDER", ""))
+    or "NolaniOS"
+)
 ASSISTANT_NAME: str = (
     os.environ.get("CLARAOS_ASSISTANT_NAME", "").strip()
     or ("" if IS_CELL else _heim_werte().get("CLARAOS_ASSISTANT_NAME", ""))
@@ -306,10 +314,13 @@ def werkzeugfreier_kontext(parts: list[str]) -> list[str]:
 # With an external brain (services/brain_turns.py) the cell HAS tools — its own
 # clara-tools.d. Identity and session lines stay (the brain needs them); hints at
 # tools that only exist in the home setup still go, they would send the model
-# looking for tools it does not have.
+# looking for tools it does not have. The UI tools (`claraos_action_*`, action.yaml)
+# and the file tools (`files_*`, files.yaml) exist in a cell under their home names,
+# so hints naming them stay — they are what lets the model open and drive the apps.
 _HEIM_WERKZEUG_TEILE = re.compile(
-    r"^(preferred actions|wrapp_instance_id:)"
-    r"|claraos_action_|\bguide_[a-z_]+|meta_platform|toolgen",
+    r"^wrapp_instance_id:"
+    r"|\bguide_[a-z_]+|meta_platform|toolgen|text-editor_[a-z_]+|immich_|find_person"
+    r"|claraos_action_guide_",
     re.IGNORECASE,
 )
 

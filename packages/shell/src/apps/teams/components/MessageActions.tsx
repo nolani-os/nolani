@@ -1,4 +1,4 @@
-import { useMatrixStore } from "@claraos/core";
+import { useMatrixStore, useTranslation } from "@claraos/core";
 import type { MatrixMessage } from "@claraos/core";
 import { sendReaction, deleteMessage, pinMessage } from "../matrixClient";
 import { ThreadIcon } from "./icons";
@@ -23,6 +23,7 @@ export function MessageActions({
   onThread?: () => void;
   showEmojiPicker: () => void;
 }) {
+  const { t } = useTranslation("teams");
   const userId = useMatrixStore((s) => s.userId);
   const isOwn = msg.sender === userId;
 
@@ -34,36 +35,36 @@ export function MessageActions({
             key={emoji}
             className={styles.reactionBtn}
             onClick={() => sendReaction(msg.roomId, msg.eventId, emoji)}
-            title={`React with ${emoji}`}
+            title={t("actions.react", { emoji })}
           >
             {emoji}
           </button>
         ))}
-        <button className={styles.reactionBtn} onClick={showEmojiPicker} title="Weitere Reaktionen">
+        <button className={styles.reactionBtn} onClick={showEmojiPicker} title={t("actions.moreReactions")}>
           +
         </button>
       </div>
       <div className={styles.separator} />
       {onThread && (
-        <button className={styles.actionBtn} onClick={onThread} title="Im Thread antworten">
+        <button className={styles.actionBtn} onClick={onThread} title={t("actions.thread")}>
           <ThreadIcon size={14} />
         </button>
       )}
-      <button className={styles.actionBtn} onClick={onReply} title="Antworten">↩</button>
-      {isOwn && <button className={styles.actionBtn} onClick={onEdit} title="Bearbeiten">✏️</button>}
+      <button className={styles.actionBtn} onClick={onReply} title={t("actions.reply")}>↩</button>
+      {isOwn && <button className={styles.actionBtn} onClick={onEdit} title={t("actions.edit")}>✏️</button>}
       {isOwn && (
         <button
           className={styles.actionBtn}
-          onClick={() => { if (confirm("Diese Nachricht wirklich löschen?")) deleteMessage(msg.roomId, msg.eventId); }}
-          title="Löschen"
+          onClick={() => { if (confirm(t("actions.confirmDelete"))) deleteMessage(msg.roomId, msg.eventId); }}
+          title={t("actions.delete")}
         >🗑️</button>
       )}
-      <button className={styles.actionBtn} onClick={onForward} title="Weiterleiten">↗️</button>
-      <button className={styles.actionBtn} onClick={onSave} title="Merken">🔖</button>
+      <button className={styles.actionBtn} onClick={onForward} title={t("actions.forward")}>↗️</button>
+      <button className={styles.actionBtn} onClick={onSave} title={t("actions.save")}>🔖</button>
       <button
         className={styles.actionBtn}
         onClick={() => pinMessage(msg.roomId, msg.eventId)}
-        title="Pin"
+        title={t("actions.pin")}
       >📌</button>
     </div>
   );

@@ -5,7 +5,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import styles from "../PlannerApp.module.css";
 import { plannerApi } from "../api";
 import type { ProjectCosts, TaskCost, VikProject, VikTask } from "../types";
-import { regionLocale, getBrand } from "@claraos/core";
+import { i18n, regionLocale, useTranslation } from "@claraos/core";
+
+/** Technical name of the cost-tracking service (not translated). */
+const COST_SERVICE = "clara-agent";
 
 function eur(v: number | null | undefined): string {
   return v == null ? "—" : `${v.toFixed(v < 1 ? 4 : 2)} €`;
@@ -15,12 +18,13 @@ function tok(v: number | null | undefined): string {
 }
 function mins(v: number | null | undefined): string {
   if (v == null) return "—";
-  if (v < 60) return `${Math.round(v)} min`;
+  if (v < 60) return i18n.t("planner:costs.unit.minutes", { value: Math.round(v) });
   const h = Math.floor(v / 60);
-  return `${h} h ${Math.round(v % 60)} min`;
+  return i18n.t("planner:costs.unit.hoursMinutes", { hours: h, minutes: Math.round(v % 60) });
 }
 
 export function CostsView({ project, onOpen }: { project: VikProject; onOpen: (t: VikTask) => void }) {
+  const { t } = useTranslation("planner");
   const [costs, setCosts] = useState<ProjectCosts | null>(null);
   const [titles, setTitles] = useState<Record<number, string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +38,7 @@ export function CostsView({ project, onOpen }: { project: VikProject; onOpen: (t
         plannerApi.listProjectTasks(project.id).catch(() => [] as VikTask[]),
       ]);
       setCosts(c);
-      setTitles(Object.fromEntries((tasks || []).map((t) => [t.id, t.title])));
+      setTitles(Object.fromEntries((tasks || []).map((task) => [task.id, task.title])));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -45,12 +49,12 @@ export function CostsView({ project, onOpen }: { project: VikProject; onOpen: (t
   useEffect(() => { setLoading(true); load(); }, [load]);
 
   const totalWorked = useMemo(
-    () => (costs?.tasks || []).reduce((s, t) => s + (t.worked_minutes || 0), 0),
+    () => (costs?.tasks || []).reduce((s, tc) => s + (tc.worked_minutes || 0), 0),
     [costs],
   );
 
-  if (loading) return <div className={styles.loading}>Lade Kosten…</div>;
-  if (error) return <div className={styles.errorBox}>{error} <button aria-label="Neu laden" title="Neu laden" onClick={load}>↻</button></div>;
+  if (loading) return <div className={styles.loading}>{t("costs.loading")}</div>;
+  if (error) return <div className={styles.errorBox}>{error} <button aria-label={t("costs.reload")} title={t("costs.reload")} onClick={load}>↻</button></div>;
   if (!costs) return null;
 
   const est = costs.project_estimate;
@@ -64,71 +68,69 @@ export function CostsView({ project, onOpen }: { project: VikProject; onOpen: (t
       <header className={styles.costsHead}>
         <div className={styles.costsCards}>
           <div className={styles.costCard}>
-            <span className={styles.costCardLabel}>Ist-Kosten (Projekt)</span>
+            <span className={styles.costCardLabel}>{t("costs.project.actual")}</span>
             <span className={styles.costCardValue}>
-              {costs.cost_available ? eur(costs.total?.cost_eur ?? 0) : "nicht verfügbar"}
+              {costs.cost_available ? eur(costs.total?.cost_eur ?? 0) : t("costs.unavailable")}
             </span>
             {costs.cost_available && costs.total && (
               <span className={styles.costCardSub}>
-                {tok(costs.total.input_tokens + costs.total.output_tokens)} Tokens · {costs.total.events} Läufe
+                {t("costs.usage", { tokens: tok(costs.total.input_tokens + costs.total.output_tokens), count: costs.total.events })}
               </span>
             )}
           </div>
           <div className={styles.costCard}>
-            <span className={styles.costCardLabel}>Schätzung</span>
+            <span className={styles.costCardLabel}>{t("costs.project.estimate")}</span>
             <span className={styles.costCardValue}>{eur(est?.estimate_eur)}</span>
             <span className={styles.costCardSub}>
-              {est?.estimate_minutes != null ? mins(est.estimate_minutes) : "—"} · {tok(est?.estimate_tokens)} Tokens
+              {est?.estimate_minutes != null ? mins(est.estimate_minutes) : "—"} · {t("costs.tokens", { tokens: tok(est?.estimate_tokens) })}
             </span>
           </div>
           <div className={styles.costCard}>
-            <span className={styles.costCardLabel}>Gearbeitete Zeit</span>
+            <span className={styles.costCardLabel}>{t("costs.project.worked")}</span>
             <span className={styles.costCardValue}>{mins(totalWorked)}</span>
-            <span className={styles.costCardSub}>aus Worklog (start/finish)</span>
+            <span className={styles.costCardSub}>{t("costs.project.fromWorklog")}</span>
           </div>
         </div>
-        <button className={styles.btn} onClick={load} title="Aktualisieren">↻</button>
+        <button className={styles.btn} onClick={load} title={t("costs.refresh")}>↻</button>
       </header>
 
       {!costs.cost_available && (
         <div className={styles.hint}>
-          Die Kostenerfassung (clara-agent) ist gerade nicht erreichbar — Schätzungen und Zeiten
-          werden trotzdem angezeigt.
+          {t("costs.unavailableHint", { service: COST_SERVICE })}
         </div>
       )}
 
       {costs.tasks.length === 0 ? (
         <div className={styles.emptyHint}>
-          Noch keine Kosten, Schätzungen oder Zeiten erfasst. Sobald {getBrand().assistant} an Aufgaben dieses
-          Projekts arbeitet, erscheinen hier die realen Kosten pro Aufgabe.
+          {t("costs.project.empty")}
         </div>
       ) : (
         <div className={styles.costsTableWrap}>
           <table className={styles.costsTable}>
             <thead>
               <tr>
-                <th>Aufgabe</th>
-                <th className={styles.num}>Ist €</th>
-                <th className={styles.num}>Schätzung €</th>
-                <th className={styles.num}>Tokens</th>
-                <th className={styles.num}>Zeit</th>
+                <th>{t("costs.col.task")}</th>
+                <th className={styles.num}>{t("costs.col.actualEur")}</th>
+                <th className={styles.num}>{t("costs.col.estimateEur")}</th>
+                <th className={styles.num}>{t("costs.col.tokens")}</th>
+                <th className={styles.num}>{t("costs.col.time")}</th>
               </tr>
             </thead>
             <tbody>
-              {costs.tasks.map((t: TaskCost) => {
-                const over = t.estimate_eur != null && t.cost_eur != null && t.cost_eur > t.estimate_eur;
+              {costs.tasks.map((tc: TaskCost) => {
+                const over = tc.estimate_eur != null && tc.cost_eur != null && tc.cost_eur > tc.estimate_eur;
                 return (
-                  <tr key={t.task_id} className={styles.costRow} onClick={() => openTask(t.task_id)}>
+                  <tr key={tc.task_id} className={styles.costRow} onClick={() => openTask(tc.task_id)}>
                     <td className={styles.costTitle}>
-                      {titles[t.task_id] ?? `#${t.task_id}`}
-                      {t.open_sessions > 0 && <span className={styles.costWorking}>● arbeitet</span>}
+                      {titles[tc.task_id] ?? `#${tc.task_id}`}
+                      {tc.open_sessions > 0 && <span className={styles.costWorking}>● {t("costs.working")}</span>}
                     </td>
-                    <td className={`${styles.num} ${over ? styles.costOver : ""}`}>{eur(t.cost_eur)}</td>
-                    <td className={styles.num}>{eur(t.estimate_eur)}</td>
+                    <td className={`${styles.num} ${over ? styles.costOver : ""}`}>{eur(tc.cost_eur)}</td>
+                    <td className={styles.num}>{eur(tc.estimate_eur)}</td>
                     <td className={styles.num}>
-                      {t.input_tokens != null ? tok((t.input_tokens || 0) + (t.output_tokens || 0)) : "—"}
+                      {tc.input_tokens != null ? tok((tc.input_tokens || 0) + (tc.output_tokens || 0)) : "—"}
                     </td>
-                    <td className={styles.num}>{mins(t.worked_minutes)}</td>
+                    <td className={styles.num}>{mins(tc.worked_minutes)}</td>
                   </tr>
                 );
               })}

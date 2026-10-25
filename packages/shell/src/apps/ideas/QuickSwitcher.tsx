@@ -11,6 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./IdeasApp.module.css";
 import { ideasApi } from "./api";
 import type { KbCollection, KbObjectSlim } from "./types";
+import { useTranslation } from "@claraos/core";
 
 interface Props {
   /** Objects already loaded: basis for the instant matches */
@@ -30,6 +31,7 @@ function score(title: string, q: string): number {
 }
 
 export function QuickSwitcher({ local, collections, onOpenObject, onOpenCollection, onClose }: Props) {
+  const { t } = useTranslation("wissen");
   const [q, setQ] = useState("");
   const [remote, setRemote] = useState<KbObjectSlim[]>([]);
   const [cursor, setCursor] = useState(0);
@@ -83,7 +85,7 @@ export function QuickSwitcher({ local, collections, onOpenObject, onOpenCollecti
         <input
           className={styles.input}
           autoFocus
-          placeholder="Springe zu… (Objekt oder Sammlung)"
+          placeholder={t("switcher.placeholder")}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => {
@@ -101,11 +103,11 @@ export function QuickSwitcher({ local, collections, onOpenObject, onOpenCollecti
                     onClick={() => choose(i)}>
               <span>{r.icon}</span>
               <span className={styles.listTitle}>{r.title}</span>
-              <span className={styles.listMeta}>{r.kind === "collection" ? "Sammlung" : "Objekt"}</span>
+              <span className={styles.listMeta}>{r.kind === "collection" ? t("switcher.collection") : t("switcher.object")}</span>
             </button>
           ))}
           {results.length === 0 && (
-            <div className={styles.empty}>Nichts gefunden.</div>
+            <div className={styles.empty}>{t("switcher.nothing")}</div>
           )}
         </div>
       </div>

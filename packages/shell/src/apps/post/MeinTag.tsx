@@ -17,7 +17,7 @@ import { useCallback, useEffect, useState } from "react";
 import styles from "./PostApp.module.css";
 import { Icon } from "../../components/Icon";
 import { postApi, type BrueckenErgebnis } from "./api";
-import { regionLocale } from "@claraos/core";
+import { i18n, regionLocale, useTranslation } from "@claraos/core";
 
 export interface TagTermin {
   uid: string; summary: string; start: string; end: string;
@@ -43,13 +43,18 @@ function uhrzeit(iso: string): string {
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" });
 }
 
+/** Same calendar day as today? Decided on the date, never on the displayed label. */
+function istHeute(iso: string): boolean {
+  const d = new Date(iso);
+  return !Number.isNaN(d.getTime()) && d.toDateString() === new Date().toDateString();
+}
+
 function tagName(iso: string): string {
   const d = new Date(iso); const heute = new Date();
   if (Number.isNaN(d.getTime())) return "";
-  const gleich = d.toDateString() === heute.toDateString();
   const morgen = new Date(heute); morgen.setDate(morgen.getDate() + 1);
-  if (gleich) return "Heute";
-  if (d.toDateString() === morgen.toDateString()) return "Morgen";
+  if (istHeute(iso)) return i18n.t("post:day.today");
+  if (d.toDateString() === morgen.toDateString()) return i18n.t("post:day.tomorrow");
   return d.toLocaleDateString(regionLocale(), { weekday: "short", day: "2-digit", month: "2-digit" });
 }
 
@@ -65,6 +70,7 @@ export function MeinTag({ tage, melde, onOeffnePlanner }: {
   melde: (text: string, fehler?: boolean) => void;
   onOeffnePlanner: () => void;
 }) {
+  const { t } = useTranslation("post");
   const [termine, setTermine] = useState<TagTermin[]>([]);
   const [aufgaben, setAufgaben] = useState<TagAufgabe[]>([]);
   const [laeuft, setLaeuft] = useState(true);
@@ -79,14 +85,14 @@ export function MeinTag({ tage, melde, onOeffnePlanner }: {
       const r = await fetch(
         `/api/claraos/planner/events?start=${encodeURIComponent(von)}&end=${encodeURIComponent(bis)}`,
         { credentials: "include" });
-      if (r.status === 424) { setFehlt("Planner ist für dich nicht verbunden."); setLaeuft(false); return; }
+      if (r.status === 424) { setFehlt(i18n.t("post:myDay.notConnected")); setLaeuft(false); return; }
       if (!r.ok) throw new Error(`${r.status}`);
       const d = await r.json();
       setTermine((d.events ?? []).slice(0, 40));
       setAufgaben((d.tasks ?? []).filter((t: TagAufgabe) => !t.done).slice(0, 40));
       setFehlt(null);
     } catch (e) {
-      setFehlt(`Tagesübersicht nicht erreichbar (${e instanceof Error ? e.message : e})`);
+      setFehlt(i18n.t("post:myDay.unreachable", { error: e instanceof Error ? e.message : String(e) }));
     } finally {
       setLaeuft(false);
     }
@@ -101,7 +107,7 @@ export function MeinTag({ tage, melde, onOeffnePlanner }: {
     setArbeitet(true);
     try {
       const r: BrueckenErgebnis = await postApi.bruecke(art, { email_id: mailId });
-      melde(r.message || (art === "task" ? "Aufgabe aus der Mail angelegt" : "Termin aus der Mail angelegt"));
+      melde(r.message || (art === "task" ? t("bridge.taskCreated") : t("bridge.eventCreated")));
       await laden();
     } catch (e) {
       melde(e instanceof Error ? e.message : String(e), true);
@@ -120,59 +126,59 @@ export function MeinTag({ tage, melde, onOeffnePlanner }: {
     className: `${styles.tagBlock} ${istZiel ? styles.tagBlockZiel : ""}`,
   });
 
-  const heuteTermine = termine.filter((t) => tagName(t.start) === "Heute");
-  const spaeter = termine.filter((t) => tagName(t.start) !== "Heute");
+  const heuteTermine = termine.filter((x) => istHeute(x.start));
+  const spaeter = termine.filter((x) => !istHeute(x.start));
   const offen = aufgaben.filter((a) => !ueberfaellig(a));
   const spaet = aufgaben.filter(ueberfaellig);
 
   return (
     <aside className={styles.meinTag}>
       <div className={styles.tagKopf}>
-        <b>Mein Tag</b>
+        <b>{t("myDay.title")}</b>
         <span className={styles.hinweis}>{new Date().toLocaleDateString(regionLocale(), { weekday: "long", day: "2-digit", month: "long" })}</span>
         <span style={{ flex: 1 }} />
-        <button className={styles.iconKnopf} title="Aktualisieren" onClick={() => void laden()}>
+        <button className={styles.iconKnopf} title={t("common.refresh")} onClick={() => void laden()}>
           <Icon name="reload" size={13} />
         </button>
-        <button className={styles.iconKnopf} title="Im Planner öffnen" onClick={onOeffnePlanner}>
+        <button className={styles.iconKnopf} title={t("myDay.openPlanner")} onClick={onOeffnePlanner}>
           <Icon name="today" size={13} />
         </button>
       </div>
 
       {fehlt && <div className={styles.warnung}>{fehlt}</div>}
-      {laeuft && !fehlt && <div className={styles.hinweis} style={{ padding: "0.5rem 0.75rem" }}>Lade …</div>}
+      {laeuft && !fehlt && <div className={styles.hinweis} style={{ padding: "0.5rem 0.75rem" }}>{t("common.loading")}</div>}
 
       <div {...zone("event", ziel === "termin")}>
-        <div className={styles.tagTitel}><Icon name="calendar" size={13} /> Termine</div>
-        {heuteTermine.length === 0 && <div className={styles.hinweis}>Heute nichts eingetragen.</div>}
-        {heuteTermine.map((t) => (
-          <div key={t.uid} className={`${styles.tagZeile} ${t.cancelled ? styles.tagAbgesagt : ""}`}
-               title={t.cancelled ? "Abgesagt" : (t.location || t.summary)}>
-            <span className={styles.tagZeit}>{t.all_day ? "ganztags" : uhrzeit(t.start)}</span>
-            <span className={styles.tagText}>{t.summary || "(ohne Titel)"}</span>
-            {t.cancelled && <span className={styles.hinweis}>abgesagt</span>}
+        <div className={styles.tagTitel}><Icon name="calendar" size={13} /> {t("myDay.events")}</div>
+        {heuteTermine.length === 0 && <div className={styles.hinweis}>{t("myDay.nothingToday")}</div>}
+        {heuteTermine.map((x) => (
+          <div key={x.uid} className={`${styles.tagZeile} ${x.cancelled ? styles.tagAbgesagt : ""}`}
+               title={x.cancelled ? t("myDay.cancelledTitle") : (x.location || x.summary)}>
+            <span className={styles.tagZeit}>{x.all_day ? t("myDay.allDay") : uhrzeit(x.start)}</span>
+            <span className={styles.tagText}>{x.summary || t("myDay.untitled")}</span>
+            {x.cancelled && <span className={styles.hinweis}>{t("myDay.cancelled")}</span>}
           </div>
         ))}
         {spaeter.length > 0 && (
           <>
-            <div className={styles.tagTrenner}>Danach</div>
-            {spaeter.slice(0, 6).map((t) => (
-              <div key={t.uid} className={`${styles.tagZeile} ${t.cancelled ? styles.tagAbgesagt : ""}`}>
-                <span className={styles.tagZeit}>{tagName(t.start)}</span>
-                <span className={styles.tagText}>{t.summary || "(ohne Titel)"}</span>
-                {t.cancelled && <span className={styles.hinweis}>abgesagt</span>}
+            <div className={styles.tagTrenner}>{t("myDay.later")}</div>
+            {spaeter.slice(0, 6).map((x) => (
+              <div key={x.uid} className={`${styles.tagZeile} ${x.cancelled ? styles.tagAbgesagt : ""}`}>
+                <span className={styles.tagZeit}>{tagName(x.start)}</span>
+                <span className={styles.tagText}>{x.summary || t("myDay.untitled")}</span>
+                {x.cancelled && <span className={styles.hinweis}>{t("myDay.cancelled")}</span>}
               </div>
             ))}
           </>
         )}
-        <div className={styles.tagZiehHinweis}>Mail hierher ziehen → Termin</div>
+        <div className={styles.tagZiehHinweis}>{t("myDay.dropEvent")}</div>
       </div>
 
       <div {...zone("task", ziel === "aufgabe")}>
-        <div className={styles.tagTitel}><Icon name="check" size={13} /> Aufgaben</div>
+        <div className={styles.tagTitel}><Icon name="check" size={13} /> {t("myDay.tasks")}</div>
         {spaet.length > 0 && (
           <>
-            <div className={styles.tagTrenner}>Überfällig ({spaet.length})</div>
+            <div className={styles.tagTrenner}>{t("myDay.overdue", { count: spaet.length })}</div>
             {spaet.slice(0, 8).map((a) => (
               <div key={a.id} className={`${styles.tagZeile} ${styles.tagSpaet}`}>
                 <span className={styles.tagText}>{a.title}</span>
@@ -180,17 +186,17 @@ export function MeinTag({ tage, melde, onOeffnePlanner }: {
             ))}
           </>
         )}
-        {offen.length === 0 && spaet.length === 0 && <div className={styles.hinweis}>Nichts offen.</div>}
+        {offen.length === 0 && spaet.length === 0 && <div className={styles.hinweis}>{t("myDay.nothingOpen")}</div>}
         {offen.slice(0, 10).map((a) => (
           <div key={a.id} className={styles.tagZeile}>
             <span className={styles.tagZeit}>{a.due_date ? tagName(a.due_date) : ""}</span>
             <span className={styles.tagText}>{a.title}</span>
           </div>
         ))}
-        <div className={styles.tagZiehHinweis}>Mail hierher ziehen → Aufgabe</div>
+        <div className={styles.tagZiehHinweis}>{t("myDay.dropTask")}</div>
       </div>
 
-      {arbeitet && <div className={styles.hinweis} style={{ padding: "0.4rem 0.75rem" }}>Lege an …</div>}
+      {arbeitet && <div className={styles.hinweis} style={{ padding: "0.4rem 0.75rem" }}>{t("myDay.creating")}</div>}
     </aside>
   );
 }

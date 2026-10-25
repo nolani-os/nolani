@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { appUrl, getBrand } from "@claraos/core";
+import { appUrl, Trans, useTranslation } from "@claraos/core";
 import { CreateUserWizard } from "./CreateUserWizard";
 import { UserDetail } from "./UserDetail";
 import styles from "./UserAdminApp.module.css";
@@ -30,6 +30,7 @@ const ADMIN_VIEW_URL = appUrl("admin-view") + "/";
 type Tab = "humans" | "service" | "audit";
 
 export default function UserAdminApp({ windowId: _windowId }: { windowId: string }) {
+  const { t } = useTranslation("userAdmin");
   const [tab, setTab] = useState<Tab>("humans");
   const [users, setUsers] = useState<User[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
@@ -83,8 +84,8 @@ export default function UserAdminApp({ windowId: _windowId }: { windowId: string
       const data = await res.json();
       setSelected(null);
       setActiveSession({ target: data.target_user, sessionId: data.session_id });
-    } catch (e) { setError(`Impersonation nicht möglich: ${e}`); }
-  }, []);
+    } catch (e) { setError(t("msg.impersonateFailed", { error: String(e) })); }
+  }, [t]);
 
   const endImpersonation = useCallback(async () => {
     try {
@@ -94,11 +95,11 @@ export default function UserAdminApp({ windowId: _windowId }: { windowId: string
       // Security-relevant: only discard the session locally once the server has
       // actually ended it — otherwise the admin would believe they were back to
       // being themselves.
-      setError(`Fremdsitzung konnte serverseitig nicht beendet werden: ${e}`);
+      setError(t("msg.impersonateEndFailed", { error: String(e) }));
     }
     setActiveSession(null);
     if (tab === "audit") loadAudit();
-  }, [tab, loadAudit]);
+  }, [tab, loadAudit, t]);
 
   const startFullView = useCallback(async (username: string) => {
     setError(null);
@@ -115,19 +116,19 @@ export default function UserAdminApp({ windowId: _windowId }: { windowId: string
       const data = await res.json();
       setSelected(null);
       setFullView({ target: data.target_user, streamUrl: data.stream_url });
-    } catch (e) { setError(`Voll-Ansicht nicht möglich: ${e}`); }
-  }, []);
+    } catch (e) { setError(t("msg.fullViewFailed", { error: String(e) })); }
+  }, [t]);
 
   const endFullView = useCallback(async () => {
     try {
       const res = await fetch(`${AV}/end`, { method: "POST", credentials: "include" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
     } catch (e) {
-      setError(`Voll-Ansicht konnte serverseitig nicht beendet werden: ${e}`);
+      setError(t("msg.fullViewEndFailed", { error: String(e) }));
     }
     setFullView(null);
     if (tab === "audit") loadAudit();
-  }, [tab, loadAudit]);
+  }, [tab, loadAudit, t]);
 
   const formatDate = (d: string | null) => {
     if (!d) return "–";
@@ -143,12 +144,12 @@ export default function UserAdminApp({ windowId: _windowId }: { windowId: string
         <div className={styles.impersonateFrame}>
           <div className={styles.banner}>
             <span className={styles.bannerIcon}>⚠</span>
-            <span>Angemeldet als: <strong>{activeSession.target}</strong></span>
+            <span><Trans t={t} i18nKey="banner.signedInAs" values={{ user: activeSession.target }} components={{ b: <strong /> }} /></span>
             <span className={styles.bannerSpacer} />
             <span className={styles.sessionId}>session: {activeSession.sessionId.slice(0, 8)}</span>
-            <button className={styles.endBtn} onClick={endImpersonation}>Sitzung beenden</button>
+            <button className={styles.endBtn} onClick={endImpersonation}>{t("banner.endSession")}</button>
           </div>
-          <iframe className={styles.iframe} src={ADMIN_VIEW_URL} title={`${getBrand().product} als ${activeSession.target}`}
+          <iframe className={styles.iframe} src={ADMIN_VIEW_URL} title={t("banner.frameTitle", { user: activeSession.target })}
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
             allow="fullscreen; clipboard-read; clipboard-write; camera; microphone" />
         </div>
@@ -163,11 +164,11 @@ export default function UserAdminApp({ windowId: _windowId }: { windowId: string
         <div className={styles.impersonateFrame}>
           <div className={styles.banner}>
             <span className={styles.bannerIcon}>🔎</span>
-            <span>Voll-Ansicht für <strong>{fullView.target}</strong> — im Fenster als <strong>du selbst</strong> anmelden, dann bei <strong>{fullView.target}</strong> auf <strong>„Impersonate"</strong> klicken (Grund eingeben). Danach zeigt jede App diesen User.</span>
+            <span><Trans t={t} i18nKey="banner.fullView" values={{ user: fullView.target }} components={{ b: <strong /> }} /></span>
             <span className={styles.bannerSpacer} />
-            <button className={styles.endBtn} onClick={endFullView}>Sitzung beenden</button>
+            <button className={styles.endBtn} onClick={endFullView}>{t("banner.endSession")}</button>
           </div>
-          <iframe className={styles.iframe} src={fullView.streamUrl} title={`Voll-Ansicht als ${fullView.target}`}
+          <iframe className={styles.iframe} src={fullView.streamUrl} title={t("banner.fullViewTitle", { user: fullView.target })}
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
             allow="fullscreen; clipboard-read; clipboard-write; camera; microphone" />
         </div>
@@ -188,24 +189,24 @@ export default function UserAdminApp({ windowId: _windowId }: { windowId: string
   return (
     <div className={styles.userAdmin}>
       <div className={styles.tabs}>
-        <button className={`${styles.tab} ${tab === "humans" ? styles.tabActive : ""}`} onClick={() => setTab("humans")}>👤 Menschen</button>
-        <button className={`${styles.tab} ${tab === "service" ? styles.tabActive : ""}`} onClick={() => setTab("service")}>🤖 Dienstkonten</button>
-        <button className={`${styles.tab} ${tab === "audit" ? styles.tabActive : ""}`} onClick={() => setTab("audit")}>📋 Protokoll</button>
+        <button className={`${styles.tab} ${tab === "humans" ? styles.tabActive : ""}`} onClick={() => setTab("humans")}>{t("tabs.humans")}</button>
+        <button className={`${styles.tab} ${tab === "service" ? styles.tabActive : ""}`} onClick={() => setTab("service")}>{t("tabs.service")}</button>
+        <button className={`${styles.tab} ${tab === "audit" ? styles.tabActive : ""}`} onClick={() => setTab("audit")}>{t("tabs.audit")}</button>
         {tab === "humans" && (
-          <button className={styles.newUserBtn} onClick={() => setShowWizard(true)}>+ Neuer Benutzer</button>
+          <button className={styles.newUserBtn} onClick={() => setShowWizard(true)}>{t("newUser")}</button>
         )}
       </div>
 
       <div className={styles.content}>
-        {loading && <div className={styles.status}>Lade…</div>}
+        {loading && <div className={styles.status}>{t("common.loading")}</div>}
         {error && <div className={styles.error}>{error}</div>}
 
         {tab === "audit" && !loading && !error && (
           <div className={styles.auditTable}>
             <div className={styles.auditHeader}>
-              <span>Gestartet</span><span>Admin</span><span>Ziel</span><span>Aktion</span><span>Beendet</span>
+              <span>{t("audit.started")}</span><span>{t("audit.admin")}</span><span>{t("audit.target")}</span><span>{t("audit.action")}</span><span>{t("audit.ended")}</span>
             </div>
-            {audit.length === 0 && <div className={styles.empty}>Keine Einträge</div>}
+            {audit.length === 0 && <div className={styles.empty}>{t("audit.empty")}</div>}
             {audit.map((e) => (
               <div key={e.id} className={styles.auditRow}>
                 <span>{formatDate(e.started_at)}</span><span>{e.impersonator}</span>
@@ -217,13 +218,13 @@ export default function UserAdminApp({ windowId: _windowId }: { windowId: string
 
         {(tab === "humans" || tab === "service") && !loading && !error && (
           <div className={styles.userGrid}>
-            {users.length === 0 && <div className={styles.empty}>Keine {tab === "humans" ? "Personen" : "Service-Accounts"}</div>}
+            {users.length === 0 && <div className={styles.empty}>{tab === "humans" ? t("list.noHumans") : t("list.noService")}</div>}
             {users.map((u) => (
               <div key={u.username} className={styles.userCard} onClick={() => tab === "humans" && setSelected(u)}
                 style={{ cursor: tab === "humans" ? "pointer" : "default" }}>
                 <div className={styles.userIcon}>{tab === "service" ? "🤖" : "👤"}</div>
                 <div className={styles.userInfo}>
-                  <div className={styles.userName}>{u.name}{!u.is_active && <span className={styles.inactiveBadge}>inaktiv</span>}</div>
+                  <div className={styles.userName}>{u.name}{!u.is_active && <span className={styles.inactiveBadge}>{t("common.inactive")}</span>}</div>
                   <div className={styles.userUsername}>{u.username}</div>
                   {u.email && <div className={styles.userEmail}>{u.email}</div>}
                   <div className={styles.userGroups}>
@@ -231,8 +232,8 @@ export default function UserAdminApp({ windowId: _windowId }: { windowId: string
                   </div>
                 </div>
                 {tab === "humans"
-                  ? <button className={styles.openBtn} onClick={(e) => { e.stopPropagation(); setSelected(u); }}>Verwalten →</button>
-                  : <button className={styles.openBtn} onClick={() => startImpersonation(u.username)} disabled={!u.is_active}>Öffnen →</button>}
+                  ? <button className={styles.openBtn} onClick={(e) => { e.stopPropagation(); setSelected(u); }}>{t("list.manage")}</button>
+                  : <button className={styles.openBtn} onClick={() => startImpersonation(u.username)} disabled={!u.is_active}>{t("list.open")}</button>}
               </div>
             ))}
           </div>

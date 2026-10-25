@@ -1,33 +1,43 @@
-import { lazy } from "react";
-import { useAppRegistryStore } from "@claraos/core";
+import { lazy, type ComponentType } from "react";
+import { useAppRegistryStore, i18n } from "@claraos/core";
 import type { AppManifest } from "@claraos/core";
+
+/**
+ * Lazy app whose texts live in their own catalog namespace: the namespace is
+ * loaded together with the code, so the window never renders raw keys.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function lazyWithTexts<T extends ComponentType<any>>(ns: string | string[], load: () => Promise<{ default: T }>) {
+  return lazy(() => Promise.all([load(), i18n.loadNamespaces(ns).catch(() => undefined)]).then(([m]) => m));
+}
 
 // Lazy-loaded app components
 const SettingsApp = lazy(() => import("./settings/SettingsApp"));
-const FileBrowserApp = lazy(() => import("./file-browser/FileBrowserApp"));
-const TextEditorApp = lazy(() => import("./text-editor/TextEditorApp"));
-const PdfViewerApp = lazy(() => import("./pdf-viewer/PdfViewerApp"));
-const ImageViewerApp = lazy(() => import("./image-viewer/ImageViewerApp"));
-const VideoPlayerApp = lazy(() => import("./video-player/VideoPlayerApp"));
-const UserAdminApp = lazy(() => import("./user-admin/UserAdminApp"));
-const TeamsApp = lazy(() => import("./teams/TeamsApp"));
-const TaskManagerApp = lazy(() => import("./task-manager/TaskManagerApp"));
-const PlannerApp = lazy(() => import("./planner/PlannerApp"));
+const FileBrowserApp = lazyWithTexts("files", () => import("./file-browser/FileBrowserApp"));
+const TextEditorApp = lazyWithTexts("textEditor", () => import("./text-editor/TextEditorApp"));
+const PdfViewerApp = lazyWithTexts("viewers", () => import("./pdf-viewer/PdfViewerApp"));
+const ImageViewerApp = lazyWithTexts("imageViewer", () => import("./image-viewer/ImageViewerApp"));
+const VideoPlayerApp = lazyWithTexts("viewers", () => import("./video-player/VideoPlayerApp"));
+const UserAdminApp = lazyWithTexts("userAdmin", () => import("./user-admin/UserAdminApp"));
+// Teams embeds the planner calendar, so it needs the planner texts too.
+const TeamsApp = lazyWithTexts(["planner", "teams"], () => import("./teams/TeamsApp"));
+const TaskManagerApp = lazyWithTexts("taskManager", () => import("./task-manager/TaskManagerApp"));
+const PlannerApp = lazyWithTexts("planner", () => import("./planner/PlannerApp"));
 // Knowledge Suite and Idea/Strategy Suite are ONE app ("Wissen").
 // Both ids remain — they only select the start section, so existing deep
 // links (`?app=ideas`, ntfy, Clara) keep working.
-const WissenApp = lazy(() => import("./wissen/WissenApp"));
-const StrategieEntry = lazy(() => import("./wissen/StrategieEntry"));
-const OfficeViewerApp = lazy(() => import("./office-viewer/OfficeViewerApp"));
+const WissenApp = lazyWithTexts("wissen", () => import("./wissen/WissenApp"));
+const StrategieEntry = lazyWithTexts("wissen", () => import("./wissen/StrategieEntry"));
+const OfficeViewerApp = lazyWithTexts("viewers", () => import("./office-viewer/OfficeViewerApp"));
 // Contacts — ClaraOS owns the data itself (superset); external formats are
 // projections. Not to be confused with Nextcloud's address book.
-const KontakteApp = lazy(() => import("./kontakte/KontakteApp"));
+const KontakteApp = lazyWithTexts("kontakte", () => import("./kontakte/KontakteApp"));
 // Post — native mail client (JMAP proxy in the API).
-const PostApp = lazy(() => import("./post/PostApp"));
+const PostApp = lazyWithTexts("post", () => import("./post/PostApp"));
 // Services — tiles for third-party sites, opened in the user's own streamed browser.
-const ServicesHubApp = lazy(() => import("./services-hub/ServicesHubApp"));
+const ServicesHubApp = lazyWithTexts("servicesHub", () => import("./services-hub/ServicesHubApp"));
 // Routines — recurring tasks for Clara (cells; the API decides where it is offered).
-const RoutinenApp = lazy(() => import("./clara-routinen/RoutinenApp"));
+const RoutinenApp = lazyWithTexts("claraRoutines", () => import("./clara-routinen/RoutinenApp"));
 
 // Map appId → lazy React component (for internal apps)
 export const appComponents: Record<string, React.LazyExoticComponent<React.ComponentType<{ windowId: string }>>> = {

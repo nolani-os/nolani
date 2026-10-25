@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "../../PlannerApp.module.css";
 import type { CalEventFull } from "../../api";
 import { EventBlock, busyClassOf } from "./EventBlock";
+import { useTranslation } from "@claraos/core";
 import { eventsByDay, layoutDay, snapTo15, ymdOf, type PlacedEvent } from "./calLayout";
 
 const HOUR_PX = 48;
@@ -33,6 +34,7 @@ export function TimeGrid({
    * touch scrolling; times are changed in the editor (tap). */
   interactive?: boolean;
 }) {
+  const { t } = useTranslation("planner");
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
@@ -54,8 +56,8 @@ export function TimeGrid({
     scrollRef.current?.scrollTo({ top: 7 * HOUR_PX });
   }, []);
   useEffect(() => {
-    const t = setInterval(() => setNowTick(Date.now()), 60_000);
-    return () => clearInterval(t);
+    const timer = setInterval(() => setNowTick(Date.now()), 60_000);
+    return () => clearInterval(timer);
   }, []);
 
   /** Pointer position → (day index, minutes). */
@@ -149,7 +151,7 @@ export function TimeGrid({
     <div className={styles.timeGridWrap}>
       {/* All-day row */}
       <div className={styles.allDayRow} style={{ gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }}>
-        <div className={styles.allDayLabel}>ganztägig</div>
+        <div className={styles.allDayLabel}>{t("calendar.allDay")}</div>
         {dayKeys.map((k) => (
           <div key={k} className={styles.allDayCell}>
             {(allDay.get(k) ?? []).map((ev) => (

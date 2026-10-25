@@ -14,7 +14,7 @@ import {
 } from "@blocknote/react";
 import { filterSuggestionItems } from "@blocknote/core";
 import { BlockNoteView } from "@blocknote/mantine";
-import { de } from "@blocknote/core/locales";
+import { de, en } from "@blocknote/core/locales";
 import "@blocknote/core/fonts/inter.css";
 import { Icon } from "../../components/Icon";
 import "@blocknote/mantine/style.css";
@@ -23,12 +23,14 @@ import { kbSchema, CALLOUT_KINDS } from "./editorSchema";
 import { blocksForSerialize, blocksFromParse } from "./mdBridge";
 import { ideasApi } from "./api";
 import { useColorMode } from "./useColorMode";
+import { useTranslation, i18n } from "@claraos/core";
 
 /** Formatting toolbar for touch devices: BlockNote only ships a selection
  * popup and the slash menu, both of which assume a mouse or keyboard. Without
  * this bar, bold, lists or callouts are practically unreachable on phones
  * (Notion has exactly such a bar above the keyboard). */
 function MobileToolbar({ editor }: { editor: any }) {
+  const { t } = useTranslation("wissen");
   const act = (fn: () => void) => (e: React.MouseEvent) => {
     e.preventDefault();   // keep focus in the editor, otherwise the keyboard closes
     fn();
@@ -39,16 +41,16 @@ function MobileToolbar({ editor }: { editor: any }) {
   };
   return (
     <div className="kb-mobile-toolbar">
-      <button onMouseDown={act(() => editor.toggleStyles({ bold: true }))} title="Fett"><b>B</b></button>
-      <button onMouseDown={act(() => editor.toggleStyles({ italic: true }))} title="Kursiv"><i>I</i></button>
-      <button onMouseDown={act(() => setBlock("heading", { level: 1 }))} title="Überschrift">H1</button>
-      <button onMouseDown={act(() => setBlock("heading", { level: 2 }))} title="Zwischenüberschrift">H2</button>
-      <button onMouseDown={act(() => setBlock("bulletListItem"))} title="Liste">•—</button>
-      <button onMouseDown={act(() => setBlock("checkListItem"))} title="Aufgabe">☑</button>
-      <button onMouseDown={act(() => setBlock("callout", { kind: "note" }))} title="Hinweis-Kasten"><Icon name="idea" size={14} /></button>
-      <button onMouseDown={act(() => setBlock("codeBlock"))} title="Code">{"</>"}</button>
+      <button onMouseDown={act(() => editor.toggleStyles({ bold: true }))} title={t("editor.bold")}><b>B</b></button>
+      <button onMouseDown={act(() => editor.toggleStyles({ italic: true }))} title={t("editor.italic")}><i>I</i></button>
+      <button onMouseDown={act(() => setBlock("heading", { level: 1 }))} title={t("editor.heading")}>H1</button>
+      <button onMouseDown={act(() => setBlock("heading", { level: 2 }))} title={t("editor.subheading")}>H2</button>
+      <button onMouseDown={act(() => setBlock("bulletListItem"))} title={t("editor.list")}>•—</button>
+      <button onMouseDown={act(() => setBlock("checkListItem"))} title={t("editor.task")}>☑</button>
+      <button onMouseDown={act(() => setBlock("callout", { kind: "note" }))} title={t("editor.calloutBox")}><Icon name="idea" size={14} /></button>
+      <button onMouseDown={act(() => setBlock("codeBlock"))} title={t("editor.code")}>{"</>"}</button>
       <button onMouseDown={act(() => editor.insertInlineContent("@"))} title="Objekt erwähnen">@</button>
-      <button onMouseDown={act(() => setBlock("paragraph"))} title="Normaler Text">¶</button>
+      <button onMouseDown={act(() => setBlock("paragraph"))} title={t("editor.paragraph")}>¶</button>
     </div>
   );
 }
@@ -74,16 +76,17 @@ async function uploadTo(objectId: string, file: File): Promise<string> {
   const r = await fetch(`/api/claraos/knowledge/objects/${objectId}/attachments`, {
     method: "POST", credentials: "include", body: form,
   });
-  if (!r.ok) throw new Error(`Upload fehlgeschlagen (${r.status})`);
+  if (!r.ok) throw new Error(i18n.t("wissen:editor.uploadFailed", { status: r.status }));
   return (await r.json()).attachment.url;
 }
 
 export default function IdeaEditor({
   initialMarkdown, onChangeMarkdown, readOnly, objectId, mobile, onNeueUnterseite,
 }: Props) {
+  const { t } = useTranslation("wissen");
   const editor = useCreateBlockNote({
     schema: kbSchema,
-    dictionary: de,
+    dictionary: i18n.resolvedLanguage === "en" ? en : de,
     uploadFile: objectId ? (file: File) => uploadTo(objectId, file) : undefined,
   });
   const debounce = useRef<number | undefined>(undefined);
@@ -163,9 +166,9 @@ export default function IdeaEditor({
           ...getDefaultReactSlashMenuItems(editor as never),
           ...Object.entries(CALLOUT_KINDS).map(([kind, v]) => ({
             title: `${v.label}`,
-            subtext: "Hervorgehobener Kasten",
+            subtext: t("editor.calloutSub"),
             aliases: ["callout", "kasten", "hinweis", kind],
-            group: "Kästen",
+            group: t("editor.groupBoxes"),
             icon: <span>{v.icon}</span>,
             onItemClick: () => {
               const cur = editor.getTextCursorPosition().block;
@@ -173,10 +176,10 @@ export default function IdeaEditor({
             },
           })),
           ...(onNeueUnterseite ? [{
-            title: "Unterseite",
-            subtext: "Neue Seite anlegen und hier verlinken",
+            title: t("editor.subpage"),
+            subtext: t("editor.subpageSub"),
             aliases: ["seite", "unterseite", "page", "sub"],
-            group: "Verweise",
+            group: t("editor.groupRefs"),
             icon: <Icon name="document" size={16} />,
             onItemClick: async () => {
               const sub = await onNeueUnterseite();
@@ -188,10 +191,10 @@ export default function IdeaEditor({
             },
           }] : []),
           {
-            title: "Eintrag erwähnen",
-            subtext: "Auf einen vorhandenen Eintrag verweisen",
+            title: t("editor.mention"),
+            subtext: t("editor.mentionSub"),
             aliases: ["erwähnung", "mention", "verweis", "link"],
-            group: "Verweise",
+            group: t("editor.groupRefs"),
             icon: <Icon name="link" size={16} />,
             onItemClick: () => editor.insertInlineContent("@"),
           },

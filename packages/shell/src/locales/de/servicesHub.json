@@ -1,0 +1,71 @@
+{
+  "tile": {
+    "open": "Öffnen",
+    "unpin": "Von „Angepinnt“ lösen",
+    "pin": "Anpinnen (Start + Taskbar)",
+    "credentials": "Zugang hinterlegen …",
+    "vaultBadge": "Credentials im Vault hinterlegt"
+  },
+  "form": {
+    "editTitle": "Dienst bearbeiten: {{id}}",
+    "newTitle": "Neuen Dienst anlegen",
+    "name": "Name",
+    "namePlaceholder": "z. B. Netflix",
+    "url": "URL",
+    "emoji": "Emoji",
+    "iconUrl": "Icon-URL (optional)",
+    "groups": "Sichtbar für Gruppen (nichts gewählt = alle)",
+    "vaultItem": "Tresor-Eintrag (Zugangsdaten)",
+    "noVaultItem": "— keins verknüpft —",
+    "save": "Speichern",
+    "create": "Anlegen",
+    "cancel": "Abbrechen"
+  },
+  "msg": {
+    "saved": "„{{name}}“ gespeichert.",
+    "created": "„{{name}}“ angelegt — Kachel ist sofort im Hub.",
+    "confirmDelete": "Dienst „{{name}}“ endgültig löschen?",
+    "deleted": "„{{name}}“ gelöscht.",
+    "synced_one": "{{count}} Kachel angelegt{{skipped}}.",
+    "synced_other": "{{count}} Kacheln angelegt{{skipped}}.",
+    "skipped": ", {{count}} übersprungen"
+  },
+  "search": "Dienst suchen…",
+  "tabs": {
+    "grid": "Dienste",
+    "manage": "Verwalten",
+    "vault": "Vault-Abgleich"
+  },
+  "access": {
+    "title": "{{name}} — dein Zugang",
+    "close": "Schließen",
+    "hint": "Gilt nur für dich. Andere im Haushalt hinterlegen ihren eigenen Zugang."
+  },
+  "grid": {
+    "noneForYou": "Für dich sind noch keine Dienste freigeschaltet.",
+    "noMatch": "Kein Dienst passt zur Suche."
+  },
+  "row": {
+    "disabled": " · deaktiviert",
+    "seed": "Seed",
+    "byForm": "per Formular",
+    "vault": " · 🔑 Vault",
+    "edit": "Bearbeiten",
+    "deactivate": "Deaktivieren",
+    "activate": "Aktivieren",
+    "delete": "Löschen"
+  },
+  "vault": {
+    "reading": "Vault wird gelesen…",
+    "services": "Dienste",
+    "noCredentials": "⚠️ keine Credentials gefunden",
+    "explicit": "verknüpft",
+    "domain": "Domain-Treffer",
+    "orphans": "Vault-Items ohne Dienst",
+    "syncTitle": "Legt für jeden Eintrag ohne Kachel eine an. Löscht nie etwas.",
+    "syncing": "Lege an…",
+    "syncAll": "Alle {{count}} anlegen",
+    "allAssigned": "Alle Login-Items sind einem Dienst zugeordnet. ✓",
+    "createService": "Dienst anlegen"
+  }
+}

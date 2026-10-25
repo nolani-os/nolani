@@ -1,7 +1,7 @@
 """Wallpaper and avatar storage.
 
 Both are images that belong to the account and should outlive devices, so
-they live in Nextcloud (`ClaraOS/Wallpapers`, `ClaraOS/Avatar`), not in
+they live in Nextcloud (`<NC_FOLDER>/Wallpapers`, `<NC_FOLDER>/Avatar`), not in
 IndexedDB. A wallpaper that exists on only one laptop is not a personalized
 account.
 
@@ -24,13 +24,14 @@ from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 
 from auth import get_current_user
+from betriebsprofil import NC_FOLDER
 from routers.files import _auth_header, _nc_credentials, _webdav_url
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/claraos/personalization", tags=["personalization"])
 
-WALLPAPER_DIR = "ClaraOS/Wallpapers"
-AVATAR_PATH = "ClaraOS/Avatar/avatar.png"
+WALLPAPER_DIR = f"{NC_FOLDER}/Wallpapers"
+AVATAR_PATH = f"{NC_FOLDER}/Avatar/avatar.png"
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 ALLOWED_TYPES = {"image/png", "image/jpeg", "image/webp", "image/avif"}
 
@@ -126,8 +127,8 @@ async def put_avatar(request: Request, file: UploadFile = File(...)) -> dict:
 
     nc_user, nc_pass = await _nc_credentials(user["username"])
     async with httpx.AsyncClient(timeout=30.0) as client:
-        await _mkcol(client, nc_user, nc_pass, "ClaraOS")
-        await _mkcol(client, nc_user, nc_pass, "ClaraOS/Avatar")
+        await _mkcol(client, nc_user, nc_pass, NC_FOLDER)
+        await _mkcol(client, nc_user, nc_pass, f"{NC_FOLDER}/Avatar")
         r = await client.put(
             _webdav_url(nc_user, f"/{AVATAR_PATH}"),
             headers={**_auth_header(nc_user, nc_pass),
@@ -213,7 +214,7 @@ async def upload_wallpaper(request: Request, file: UploadFile = File(...)) -> di
 
     nc_user, nc_pass = await _nc_credentials(user["username"])
     async with httpx.AsyncClient(timeout=60.0) as client:
-        await _mkcol(client, nc_user, nc_pass, "ClaraOS")
+        await _mkcol(client, nc_user, nc_pass, NC_FOLDER)
         await _mkcol(client, nc_user, nc_pass, WALLPAPER_DIR)
         r = await client.put(
             _webdav_url(nc_user, f"/{WALLPAPER_DIR}/{name}"),

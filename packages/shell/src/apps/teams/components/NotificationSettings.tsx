@@ -1,7 +1,8 @@
-import { useMatrixStore } from "@claraos/core";
+import { useMatrixStore, useTranslation } from "@claraos/core";
 import styles from "./NotificationSettings.module.css";
 
 export function NotificationSettings({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation("teams");
   const rooms = useMatrixStore((s) => s.rooms);
   const mutedRooms = useMatrixStore((s) => s.mutedRooms);
   const toggleMute = useMatrixStore((s) => s.toggleMuteRoom);
@@ -11,8 +12,8 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
   return (
     <div className={styles.panel}>
       <div className={styles.header}>
-        <span>Benachrichtigungen</span>
-        <button aria-label="Schließen" title="Schließen" className={styles.closeBtn} onClick={onClose}>×</button>
+        <span>{t("notif.title")}</span>
+        <button aria-label={t("common.close")} title={t("common.close")} className={styles.closeBtn} onClick={onClose}>×</button>
       </div>
       <div className={styles.list}>
         {channels.map((r) => (

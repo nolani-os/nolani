@@ -4,7 +4,7 @@
  * but **the answer comes from the person**. A model that invents five levels
  * by itself produces plausible prose instead of a root cause, and that is
  * exactly where most "AI kaizen" tools fail. */
-import { getBrand } from "@claraos/core";
+import { i18n, useTranslation } from "@claraos/core";
 import { useState } from "react";
 import styles from "./IdeasApp.module.css";
 import { Icon } from "../../components/Icon";
@@ -18,6 +18,7 @@ interface Props {
 }
 
 export function FiveWhyModal({ goal, onClose, onDone }: Props) {
+  const { t } = useTranslation("wissen");
   const [problem, setProblem] = useState("");
   const [started, setStarted] = useState(false);
   const [chain, setChain] = useState<WhyLink[]>([]);
@@ -40,7 +41,7 @@ export function FiveWhyModal({ goal, onClose, onDone }: Props) {
       setNote(r.note);
       setAnswer("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : `${getBrand().assistant} antwortet gerade nicht`);
+      setError(e instanceof Error ? e.message : i18n.t("wissen:fiveWhy.noAnswer"));
     } finally {
       setBusy(false);
     }
@@ -66,7 +67,7 @@ export function FiveWhyModal({ goal, onClose, onDone }: Props) {
       await ideasApi.fiveWhyFinish(goal.id, problem, chain);
       onDone();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Auswertung fehlgeschlagen");
+      setError(e instanceof Error ? e.message : i18n.t("wissen:fiveWhy.evalFailed"));
       setBusy(false);
     }
   };
@@ -75,29 +76,27 @@ export function FiveWhyModal({ goal, onClose, onDone }: Props) {
     <div className={styles.modalBackdrop} onClick={onClose}>
       <div className={`${styles.modal} ${styles.modalWide}`} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHead}>
-          <h3><Icon name="search" size={16} className={styles.inlineIcon} />Ursache suchen — „{goal.title}"</h3>
-          <button className={styles.iconBtn} onClick={onClose}><Icon name="close" size={14} title="Schließen" /></button>
+          <h3><Icon name="search" size={16} className={styles.inlineIcon} />{t("fiveWhy.title", { goal: goal.title })}</h3>
+          <button className={styles.iconBtn} onClick={onClose}><Icon name="close" size={14} title={t("app.close")} /></button>
         </div>
 
         {!started ? (
           <>
             <p className={styles.metaHint}>
-              Beschreibe in einem Satz, was konkret nicht läuft. {getBrand().assistant} fragt dann fünfmal
-              „warum?" — antworten musst du, denn du kennst die Lage. Sie schlägt jeweils
-              ein paar Möglichkeiten vor, die du übernehmen oder überschreiben kannst.
+              {t("fiveWhy.intro")}
             </p>
             <input className={styles.input} autoFocus value={problem}
-                   placeholder="Was läuft nicht? (z. B. Wir verpassen regelmäßig Abgabetermine)"
+                   placeholder={t("fiveWhy.placeholder")}
                    onChange={(e) => setProblem(e.target.value)}
                    onKeyDown={(e) => { if (e.key === "Enter") void start(); }} />
             <div className={styles.modalFoot}>
               <button className={styles.btnPrimary} disabled={!problem.trim()}
-                      onClick={() => void start()}>Los</button>
+                      onClick={() => void start()}>{t("fiveWhy.go")}</button>
             </div>
           </>
         ) : (
           <>
-            <p className={styles.whyProblem}><strong>Problem:</strong> {problem}</p>
+            <p className={styles.whyProblem}><strong>{t("fiveWhy.problem")}</strong> {problem}</p>
 
             {chain.length > 0 && (
               <ol className={styles.whyChain}>
@@ -110,13 +109,13 @@ export function FiveWhyModal({ goal, onClose, onDone }: Props) {
               </ol>
             )}
 
-            {busy && <p className={styles.metaHint}>{getBrand().assistant} denkt nach…</p>}
+            {busy && <p className={styles.metaHint}>{t("fiveWhy.thinking")}</p>}
             {error && <div className={styles.error}>{error}</div>}
             {note && <p className={styles.metaHint}>{note}</p>}
 
             {!done && question && (
               <div className={styles.whyStep}>
-                <strong>{chain.length + 1}. Warum? {question}</strong>
+                <strong>{t("fiveWhy.why", { n: chain.length + 1, question })}</strong>
                 {candidates.length > 0 && (
                   <div className={styles.whyCandidates}>
                     {candidates.map((c) => (
@@ -127,17 +126,17 @@ export function FiveWhyModal({ goal, onClose, onDone }: Props) {
                   </div>
                 )}
                 <textarea className={styles.input} rows={2} value={answer} autoFocus
-                          placeholder="Deine Antwort (Vorschlag anklicken und anpassen geht auch)"
+                          placeholder={t("fiveWhy.answer")}
                           onChange={(e) => setAnswer(e.target.value)} />
                 <button className={styles.btnPrimary} disabled={busy || !answer.trim()}
-                        onClick={() => void submitAnswer()}>Weiter</button>
+                        onClick={() => void submitAnswer()}>{t("fiveWhy.next")}</button>
               </div>
             )}
 
             <div className={styles.modalFoot}>
               {chain.length > 0 && (
                 <button className={styles.btnPrimary} disabled={busy} onClick={() => void finish()}>
-                  {done ? "Auswerten und speichern" : "Hier abbrechen und auswerten"}
+                  {done ? t("fiveWhy.finish") : t("fiveWhy.abort")}
                 </button>
               )}
             </div>

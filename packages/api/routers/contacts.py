@@ -25,6 +25,7 @@ from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
 from auth import require_caller
+from sprache import Text, sprache_jetzt, t as _t, tx
 from services import google_kontakte as google
 from services import kontakte_abgleich as abgleich
 from services import kontakte_dienste as dienste
@@ -49,7 +50,7 @@ def _ich(request: Request) -> str:
 def _nicht_gefunden(e: store.KontaktFehlt) -> HTTPException:
     # Deliberately 404 also for "belongs to someone else". A separate 403 would
     # reveal that the ID exists.
-    return HTTPException(status_code=404, detail="Kontakt nicht gefunden.")
+    return HTTPException(status_code=404, detail=Text("contacts.notFound"))
 
 
 # ── Models ──────────────────────────────────────────────────────────────────
@@ -121,21 +122,22 @@ async def dienste_katalog() -> dict:
     comparison. The same trap is documented in `teams_admin` for
     `/me/resources`. `tests/kontakte_routen_test.py` pins this down.
     """
-    return {"dienste": dienste.katalog()}
+    return {"dienste": dienste.katalog(await sprache_jetzt())}
 
 
 @router.get("/regel")
 async def regel_lesen(request: Request) -> dict:
     """The caller's reachability rule — and what it honestly does."""
     ich = _ich(request)
+    lang = await sprache_jetzt()
     return {
         "erreichbar": await regeln.regel_holen(ich),
         # The UI should not have to guess where the rule applies. It applies in
         # the channels ClaraOS itself controls — and nowhere else. That needs
         # to be stated.
-        "greift_in": ["Kontakte teilen", "Wissen teilen"],
-        "greift_nicht_in": ["Telefon", "E-Mail", "WhatsApp", "SMS",
-                            f"alles ausserhalb von {PRODUCT_NAME}"],
+        "greift_in": [_t(lang, "contacts.appliesIn.shareContacts"), _t(lang, "contacts.appliesIn.shareKnowledge")],
+        "greift_nicht_in": [_t(lang, "contacts.notIn.phone"), _t(lang, "contacts.notIn.email"), "WhatsApp", "SMS",
+                            _t(lang, "contacts.notIn.outside", product=PRODUCT_NAME)],
     }
 
 
@@ -206,7 +208,7 @@ async def google_trennen(request: Request) -> dict:
             "UPDATE claraos_app_credentials SET is_active = FALSE "
             "WHERE username = $1 AND app_id = $2", ich, GOOGLE_APP_ID)
     return {"verbunden": False,
-            "hinweis": f"Zugang geloest. Deine Kontakte bleiben in {PRODUCT_NAME}."}
+            "hinweis": await tx("contacts.unlinked", product=PRODUCT_NAME)}
 
 
 @router.delete("/{contact_id}")
@@ -323,7 +325,7 @@ async def import_vcf(request: Request, datei: UploadFile = File(...)) -> dict:
     roh = await datei.read()
     if len(roh) > MAX_UPLOAD:
         raise HTTPException(status_code=413,
-                            detail=f"Datei zu gross (max {MAX_UPLOAD // 1024 // 1024} MB).")
+                            detail=Text("contacts.fileTooLarge", mb=MAX_UPLOAD // 1024 // 1024))
     try:
         text = roh.decode("utf-8")
     except UnicodeDecodeError:
@@ -333,7 +335,7 @@ async def import_vcf(request: Request, datei: UploadFile = File(...)) -> dict:
     bloecke = vcard.karten(text)
     if not bloecke:
         raise HTTPException(status_code=400,
-                            detail="Keine vCard gefunden. Ist das wirklich eine .vcf-Datei?")
+                            detail=Text("contacts.noVcard"))
 
     quelle, konto = "vcf", (datei.filename or "upload")[:120]
     lauf = await store.lauf_beginnen(ich, quelle, konto)
@@ -403,14 +405,14 @@ async def _google_zugang(owner: str) -> dict:
     from encryption import decrypt_credentials
     import json as _json
     if not owner:
-        raise google.GoogleFehlt("Kein Google-Zugang hinterlegt.")
+        raise google.GoogleFehlt(Text("contacts.noGoogleAccess"))
     async with user_tx(owner) as conn:   # row-level security (migrations/042)
         r = await conn.fetchrow(
             "SELECT credentials FROM claraos_app_credentials "
             "WHERE username = $1 AND app_id = $2 AND is_active = TRUE",
             owner, GOOGLE_APP_ID)
     if not r:
-        raise google.GoogleFehlt("Kein Google-Zugang hinterlegt.")
+        raise google.GoogleFehlt(Text("contacts.noGoogleAccess"))
     d = decrypt_credentials(bytes(r["credentials"]))
     if isinstance(d, str):
         d = _json.loads(d)
@@ -423,14 +425,13 @@ async def google_status(request: Request) -> dict:
     cid, secret, _r = _google_konfig()
     if not cid or not secret:
         return {"moeglich": False, "verbunden": False,
-                "hinweis": "Google ist auf diesem Server nicht eingerichtet "
-                           "(GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET fehlen)."}
+                "hinweis": await tx("contacts.googleNotSetUpVars")}
     try:
         z = await _google_zugang(ich)
         konto = z.get("konto", "")
     except Exception:
         return {"moeglich": True, "verbunden": False,
-                "hinweis": "Noch nicht verbunden.", "nur_lesend": True}
+                "hinweis": await tx("contacts.notConnected"), "nur_lesend": True}
     return {"moeglich": True, "verbunden": True, "konto": konto,
             "nur_lesend": True, "zeiger": await store.zeiger_stand(ich)}
 
@@ -442,12 +443,12 @@ async def google_start(request: Request) -> dict:
     cid, secret, redirect = _google_konfig()
     if not cid or not secret:
         raise HTTPException(status_code=503,
-                            detail="Google ist auf diesem Server nicht eingerichtet.")
+                            detail=Text("contacts.googleNotSetUp"))
     # `state` carries the user. On the way back it is checked against the
     # authenticated identity — a foreign `state` must never cause a token to
     # end up with the wrong user.
     return {"url": google.anmelde_url(cid, redirect, state=ich),
-            "hinweis": f"{PRODUCT_NAME} fragt nur Lesezugriff auf deine Kontakte an."}
+            "hinweis": await tx("contacts.readOnlyAccess", product=PRODUCT_NAME)}
 
 
 @router.get("/google/callback")
@@ -475,34 +476,32 @@ async def google_callback(request: Request,
         return RedirectResponse(ziel, status_code=303)
 
     if error:
-        return weiter("abgebrochen", f"Google meldet: {error}")
+        return weiter("abgebrochen", await tx("contacts.googleSays", error=error))
     ich = _ich(request)
     if not code:
-        return weiter("fehler", "Google hat keinen Freigabe-Code geschickt.")
+        return weiter("fehler", await tx("contacts.noCode"))
     if state != ich:
         # Security: `state` MUST match the logged-in user. Otherwise someone
         # else's authorisation code could end up on this account — or, worse,
         # this user's code on someone else's.
         logger.warning("Google-Rueckweg: state=%r passt nicht zu %r", state, ich)
-        return weiter("fehler", "Die Freigabe gehoert zu einem anderen Konto.")
+        return weiter("fehler", await tx("contacts.otherAccount"))
 
     cid, secret, redirect = _google_konfig()
     if not cid or not secret:
-        return weiter("fehler", "Google ist auf diesem Server nicht eingerichtet.")
+        return weiter("fehler", await tx("contacts.googleNotSetUp"))
     try:
         tok = await google.code_eintauschen(cid, secret, redirect, code)
     except Exception as e:
         logger.warning("Google-Token-Tausch fehlgeschlagen: %s", e)
-        return weiter("fehler", "Der Freigabe-Code konnte nicht eingeloest werden.")
+        return weiter("fehler", await tx("contacts.codeFailed"))
 
     refresh = tok.get("refresh_token")
     if not refresh:
         # Google returns the long-lived token ONLY the first time. Whoever has
         # authorised before gets none — not our bug, but without an explanation
         # users look for the fault on their side.
-        return weiter("fehler",
-                      "Google hat kein dauerhaftes Token geliefert. Bitte den Zugang "
-                      "unter myaccount.google.com/permissions entfernen und neu verbinden.")
+        return weiter("fehler", await tx("contacts.noRefreshToken"))
     konto = await google.konto_name(tok.get("access_token", ""))
     await _google_speichern(ich, refresh, konto)
     return weiter("verbunden", konto)
@@ -532,7 +531,7 @@ async def google_sync(request: Request, voll: bool = Query(False)) -> dict:
     ich = _ich(request)
     cid, secret, _r = _google_konfig()
     if not cid or not secret:
-        raise HTTPException(status_code=503, detail="Google ist nicht eingerichtet.")
+        raise HTTPException(status_code=503, detail=Text("contacts.googleNotSetUp"))
     try:
         zugang = await _google_zugang(ich)
         access = await google.zugriffstoken(cid, secret, zugang["refresh_token"])
@@ -589,10 +588,10 @@ async def google_sync(request: Request, voll: bool = Query(False)) -> dict:
             await store.zeiger_setzen(ich, quelle, konto, neuer_zeiger, voll=war_voll)
     except google.GoogleFehlt as e:
         await store.lauf_abschliessen(ich, lauf, z, str(e))
-        raise HTTPException(status_code=409, detail=str(e))
+        raise HTTPException(status_code=409, detail=e.args[0] if e.args and isinstance(e.args[0], Text) else str(e))
     except Exception as e:
         await store.lauf_abschliessen(ich, lauf, z, str(e)[:400])
-        raise HTTPException(status_code=502, detail=f"Google-Abgleich fehlgeschlagen: {e}")
+        raise HTTPException(status_code=502, detail=Text("contacts.googleSyncFailed", error=e))
 
     await store.lauf_abschliessen(ich, lauf, z, "; ".join(fehler) or None)
     return {"lauf": lauf, "konto": konto, "vollabgleich": war_voll, **z, "fehler": fehler}
@@ -613,9 +612,7 @@ async def projektion_status(request: Request) -> dict:
     u = await store.projektion_uebersicht(ich, projektion.ZIEL)
     if art != "eigen":
         return {"moeglich": False, "adressbuch": projektion.BUCH, **u,
-                "hinweis": "Dafuer brauchst du einen eigenen Nextcloud-Zugang in "
-                           "den Einstellungen. Ein geteiltes Dienstkonto wird hier "
-                           "bewusst nicht verwendet."}
+                "hinweis": await tx("contacts.ownNextcloud")}
     return {"moeglich": True, "adressbuch": projektion.BUCH, **u}
 
 
@@ -639,7 +636,7 @@ async def projektion_sync(request: Request) -> dict:
         raise HTTPException(status_code=500, detail="Abgleich abgebrochen (Zielpruefung).")
     except Exception as e:
         logger.warning("Projektion fehlgeschlagen fuer %s: %s", ich, e)
-        raise HTTPException(status_code=502, detail=f"Abgleich fehlgeschlagen: {e}")
+        raise HTTPException(status_code=502, detail=Text("contacts.syncFailed", error=e))
 
 
 # ── User matching and teams ─────────────────────────────────────────────────
@@ -669,7 +666,7 @@ async def abgleich_vorschlaege(request: Request) -> dict:
         v = await abgleich.vorschlaege(ich)
     except Exception as e:
         logger.warning("Abgleich fehlgeschlagen fuer %s: %s", ich, e)
-        raise HTTPException(status_code=502, detail=f"Abgleich nicht moeglich: {e}")
+        raise HTTPException(status_code=502, detail=Text("contacts.syncImpossible", error=e))
     return {"count": len(v), "vorschlaege": v, "automatisch": False}
 
 
@@ -719,9 +716,7 @@ async def meine_teams(request: Request) -> dict:
         nutzer = {}
     teams = sorted({t for u in nutzer.values() for t in u["teams"]})
     return {"teams": teams, "darf_einladen": darf,
-            "hinweis": None if darf else
-                       "Jemanden in ein Team aufzunehmen ist eine Verwaltungshandlung. "
-                       "Bitte einen Admin fragen."}
+            "hinweis": None if darf else await tx("contacts.teamAdmin")}
 
 
 # ── Sharing and blocking ────────────────────────────────────────────────────
@@ -811,8 +806,7 @@ async def import_carddav(request: Request) -> dict:
     if (await nc_zugang(ich)) != "eigen":
         raise HTTPException(
             status_code=409,
-            detail="Dafuer brauchst du einen eigenen Nextcloud-Zugang in den "
-                   "Einstellungen.")
+            detail=Text("contacts.ownNextcloudShort"))
 
     from routers.files import _nc_credentials
     from routers.nc_pim import _addressbooks, _dav, _REPORT_VCARD, _hrefs_and_data

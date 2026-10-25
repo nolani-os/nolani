@@ -11,7 +11,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChatSurface, MarkerPayload } from "@claraos/core";
-import { useAuthStore, useDragStore, useClaraChatSettings, useWindowsStore, useWrappStore, useIframeAppStore, useFileStore, useMarkerStore, useVoiceStore, useAppRegistryStore, objectShortName, getBrand } from "@claraos/core";
+import { useAuthStore, useDragStore, useClaraChatSettings, useWindowsStore, useWrappStore, useIframeAppStore, useFileStore, useMarkerStore, useVoiceStore, useAppRegistryStore, objectShortName, getBrand, useTranslation, Trans, i18n } from "@claraos/core";
 import { berichtVomSchirm } from "./shellActionHandler";
 import { useClaraChat } from "./useClaraChat";
 import { useLiveVoice } from "./useLiveVoice";
@@ -113,11 +113,11 @@ function findNode(node: { id: string; name?: string; type?: string; children?: u
 function markerLabel(p: MarkerPayload): string {
   switch (p.kind) {
     case "bbox-img":
-      return `Region in ${p.appId.split(":").pop()}`;   // "<wrapp>:<tab>" -> tab
+      return i18n.t("chat:marker.region", { tab: p.appId.split(":").pop() });   // "<wrapp>:<tab>" -> tab
     case "svg-element":
-      return p.elementId || "SVG-Element";
+      return p.elementId || i18n.t("chat:marker.svgElement");
     case "geojson":
-      return "Polygon (Karte)";
+      return i18n.t("chat:marker.polygon");
     case "cad-object": {
       const ifc = (p.bimProps && typeof p.bimProps === "object" && "ifcClass" in p.bimProps)
         ? String((p.bimProps as Record<string, unknown>).ifcClass)
@@ -138,11 +138,13 @@ import type { ClaraUiHook } from "./toolsApi";
 import { useDialogs } from "./Dialogs";
 import styles from "./ClaraChatPanel.module.css";
 
-/** Verb chips shown in the empty state (tasks, not questions). */
-const WELCOME_CHIPS = [
-  { icon: "📄", label: "Dokument zusammenfassen", prompt: "Fasse mir dieses Dokument zusammen: " },
-  { icon: "🖼️", label: "Fotos finden", prompt: "Suche in Immich nach Fotos von " },
-  { icon: "📅", label: "Tag planen", prompt: "Hilf mir, meinen Tag zu planen. Heute steht an: " },
+/** Verb chips shown in the empty state (tasks, not questions). The prompt is
+ *  only a draft seeded into the composer, so it follows the UI language.
+ *  A function, not a constant, so the language is read at render time. */
+const welcomeChips = () => [
+  { icon: "📄", label: i18n.t("chat:welcome.chips.summarize.label"), prompt: i18n.t("chat:welcome.chips.summarize.prompt") },
+  { icon: "🖼️", label: i18n.t("chat:welcome.chips.photos.label"), prompt: i18n.t("chat:welcome.chips.photos.prompt") },
+  { icon: "📅", label: i18n.t("chat:welcome.chips.planDay.label"), prompt: i18n.t("chat:welcome.chips.planDay.prompt") },
 ];
 
 const READ_API = "/api/claraos/files/v2";
@@ -265,6 +267,7 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
     onVoiceVollbild,
   } = props;
 
+  const { t } = useTranslation("chat");
   const settingsModel = useClaraChatSettings((s: { model: string }) => s.model);
   const effectiveModel = model ?? settingsModel;
 
@@ -323,6 +326,7 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
   const [pendingText, setPendingText] = useState<{ value: string } | null>(null);
   const { dialogHost, confirmDlg, promptDlg, alertDlg } = useDialogs();
   const user = useAuthStore((s) => s.user);
+  const greetName = user?.name ? user.name.split(" ")[0] : user?.username ?? "";
 
   // Carry-over draft from the launcher input (start-menu expansion).
   useEffect(() => {
@@ -361,7 +365,10 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
   // Suggestions per app from the server (curated list in chat_v2, not the
   // tool hints). Gemini/ChatGPT show in an empty chat what you can ask;
   // on mobile this used to show only "Hallo! Ich bin Clara."
-  type Vorschlag = { label: string; prompt: string; sofort?: boolean };
+  // Server texts are German; `id` picks the translation (`suggest.<id>`).
+  type Vorschlag = { id?: string; label: string; prompt: string; sofort?: boolean };
+  const vorschlagText = (v: Vorschlag, field: "label" | "prompt") =>
+    v.id ? t(`suggest.${v.id}.${field}`, { defaultValue: v[field] }) : v[field];
   const [vorschlaege, setVorschlaege] = useState<Vorschlag[]>([]);
   useEffect(() => {
     if (!mobil) return;
@@ -518,7 +525,7 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
 
   const handleCreateFolder = useCallback(
     async (parentId?: string) => {
-      const name = await promptDlg("Ordnername:");
+      const name = await promptDlg(t("folders.namePrompt"));
       if (!name) return;
       try {
         await foldersApi.create(name, parentId);
@@ -579,7 +586,7 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
             onNewChat={handleNewChat}
             onCreateFolder={handleCreateFolder}
             onRenameChat={async (id, currentTitle) => {
-              const name = await promptDlg("Chat umbenennen:", currentTitle);
+              const name = await promptDlg(t("folders.renameChatPrompt"), currentTitle);
               if (!name || name === currentTitle) return;
               try {
                 await chatsApi.rename(id, name);
@@ -589,7 +596,7 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
               }
             }}
             onRenameFolder={async (id, currentName) => {
-              const name = await promptDlg("Ordner umbenennen:", currentName);
+              const name = await promptDlg(t("folders.renameFolderPrompt"), currentName);
               if (!name || name === currentName) return;
               try {
                 await foldersApi.rename(id, name);
@@ -599,7 +606,7 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
               }
             }}
             onDeleteFolder={async (id, name) => {
-              if (await confirmDlg(`Ordner „${name}“ samt enthaltenen Chats löschen?`, "Löschen")) {
+              if (await confirmDlg(t("folders.deleteFolderConfirm", { name }), t("folders.delete"))) {
                 try {
                   await foldersApi.remove(id);
                   await chat.refresh();
@@ -610,7 +617,7 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
             }}
             onDeleteChat={async (id) => {
               const title = chat.chatList.find((c) => c.id === id)?.title;
-              if (await confirmDlg(`Chat${title ? ` „${title}“` : ""} löschen?`, "Löschen")) {
+              if (await confirmDlg(title ? t("folders.deleteChatConfirm", { title }) : t("folders.deleteChatConfirmUntitled"), t("folders.delete"))) {
                 await chat.removeChat(id);
               }
             }}
@@ -620,16 +627,16 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
                 const preview = await foldersApi.cleanupCandidates();
                 const n = preview.candidates.length;
                 if (n === 0) {
-                  await alertDlg("Keine leeren Auto-Ordner zum Aufräumen.");
+                  await alertDlg(t("folders.cleanup.none"));
                   return;
                 }
-                if (!(await confirmDlg(`${n} leere Auto-Ordner werden gelöscht. Fortfahren?`, "Aufräumen"))) return;
+                if (!(await confirmDlg(t("folders.cleanup.confirm", { count: n }), t("folders.cleanup.action")))) return;
                 const result = await foldersApi.cleanup();
                 await chat.refresh();
-                await alertDlg(`${result.count} Ordner aufgeräumt.`);
+                await alertDlg(t("folders.cleanup.done", { count: result.count }));
               } catch (err) {
                 console.error("cleanup failed", err);
-                await alertDlg("Aufräumen fehlgeschlagen — siehe Console.");
+                await alertDlg(t("folders.cleanup.failed"));
               }
             }}
           />
@@ -661,7 +668,7 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
                   type="button"
                   className={styles.headerBtn}
                   onClick={onExpand}
-                  title="Im Vollbild öffnen"
+                  title={t("panel.expand")}
                 >
                   ↗
                 </button>
@@ -671,7 +678,7 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
                   type="button"
                   className={styles.headerBtn}
                   onClick={onClose}
-                  title="Schließen"
+                  title={t("panel.close")}
                 >
                   ×
                 </button>
@@ -692,53 +699,54 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
           messages={chat.messages}
           streaming={chat.streaming}
           kompakt={mobil}
-          onFollowup={mobil || variant === "full" || variant === "sidebar" ? (t) => { chat.send(t).catch(() => undefined); } : undefined}
+          onFollowup={mobil || variant === "full" || variant === "sidebar" ? (text) => { chat.send(text).catch(() => undefined); } : undefined}
           onRetry={
             variant === "full" || variant === "sidebar" || mobil
-              ? (t) => { chat.send(t).catch(() => undefined); }
+              ? (text) => { chat.send(text).catch(() => undefined); }
               : undefined
           }
           emptyHint={
             mobil ? (
               <div className={`${styles.welcome} ${styles.welcomeMobil}`}>
                 <h3>
-                  Hallo{user?.name ? ` ${user.name.split(" ")[0]}` : user?.username ? ` ${user.username}` : ""}.
+                  {greetName ? t("welcome.greetingMobile", { name: greetName }) : t("welcome.greetingMobileAnon")}
                 </h3>
                 <p>
                   {appId && appName
-                    ? `Ich sehe ${appName}. Was soll ich tun?`
-                    : "Was kann ich für dich tun?"}
+                    ? t("welcome.seesApp", { app: appName })
+                    : t("welcome.whatCanIDo")}
                 </p>
                 <div className={styles.welcomeChips}>
-                  {(vorschlaege.length ? vorschlaege : WELCOME_CHIPS.map((c) => ({ label: c.label, prompt: c.prompt, sofort: false }))).map((v) => (
+                  {(vorschlaege.length ? vorschlaege : welcomeChips().map((c) => ({ label: c.label, prompt: c.prompt, sofort: false }))).map((v) => (
                     <button
                       key={v.label}
                       type="button"
                       className={styles.welcomeChip}
                       onClick={() => {
-                        if (v.sofort) chat.send(v.prompt).catch(() => undefined);
-                        else setPendingText({ value: v.prompt });
+                        const prompt = vorschlagText(v, "prompt");
+                        if (v.sofort) chat.send(prompt).catch(() => undefined);
+                        else setPendingText({ value: prompt });
                       }}
                     >
-                      {v.label}
+                      {vorschlagText(v, "label")}
                     </button>
                   ))}
                 </div>
               </div>
             ) : variant === "inline" && objectKey ? (
               <div className={styles.welcome}>
-                <p>Du arbeitest mit <code>{objectKey}</code>.</p>
-                <p>Frag {getBrand().assistant} nach Hilfe oder lass etwas erledigen.</p>
+                <p><Trans t={t} i18nKey="welcome.workingWith" values={{ object: objectKey }} components={{ code: <code /> }} /></p>
+                <p>{t("welcome.askForHelp")}</p>
               </div>
             ) : variant === "full" || variant === "sidebar" ? (
               <div className={styles.welcome}>
                 <div className={styles.welcomeIcon}><ClaraMark className={styles.welcomeMark} /></div>
                 <h3>
-                  Hallo{user?.name ? ` ${user.name.split(" ")[0]}` : user?.username ? ` ${user.username}` : ""}!
+                  {greetName ? t("welcome.greeting", { name: greetName }) : t("welcome.greetingAnon")}
                 </h3>
-                <p>Wie kann ich dir helfen?</p>
+                <p>{t("welcome.howCanIHelp")}</p>
                 <div className={styles.welcomeChips}>
-                  {WELCOME_CHIPS.map((c) => (
+                  {welcomeChips().map((c) => (
                     <button
                       key={c.label}
                       type="button"
@@ -754,9 +762,9 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
                     type="button"
                     className={styles.welcomeContinue}
                     onClick={() => chat.loadChat(chat.chatList[0].id)}
-                    title="Letzte Konversation fortsetzen"
+                    title={t("welcome.continueTitle")}
                   >
-                    ↻ Weiter mit: <strong>{chat.chatList[0].title || "Letzter Chat"}</strong>
+                    ↻ {t("welcome.continueWith")} <strong>{chat.chatList[0].title || t("welcome.lastChat")}</strong>
                   </button>
                 )}
               </div>
@@ -776,18 +784,18 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
           <div className={styles.speakingBar} data-testid="live-voice-bar">
             <span className={styles.speakingDot} aria-hidden="true" />
             <span className={styles.speakingLabel}>
-              {live.state === "connecting" && "Live-Gespräch: verbinde …"}
-              {live.state === "listening" && `Live-Gespräch: ${getBrand().assistant} hört zu …`}
-              {live.state === "speaking" && `${getBrand().assistant} spricht — du darfst reinreden`}
-              {live.state === "error" && `Live-Gespräch: ${live.error ?? "Fehler"}`}
+              {live.state === "connecting" && t("live.connecting")}
+              {live.state === "listening" && t("live.listening")}
+              {live.state === "speaking" && t("live.speaking")}
+              {live.state === "error" && t("live.error", { error: live.error ?? t("live.errorFallback") })}
             </span>
             <button
               type="button"
               className={styles.speakingStop}
               onClick={() => void live.stop()}
-              aria-label="Live-Gespräch beenden"
+              aria-label={t("live.endLabel")}
             >
-              ⏹ Beenden
+              ⏹ {t("live.end")}
             </button>
           </div>
         )}
@@ -795,29 +803,29 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
         {chat.voiceState === "speaking" && (
           <div className={styles.speakingBar} data-testid="speaking-bar">
             <span className={styles.speakingDot} aria-hidden="true" />
-            <span className={styles.speakingLabel}>{getBrand().assistant} spricht …</span>
+            <span className={styles.speakingLabel}>{t("speaking.label")}</span>
             <button
               type="button"
               className={styles.speakingStop}
               onClick={chat.stopSpeaking}
-              aria-label="Vorlesen stoppen"
+              aria-label={t("speaking.stopLabel")}
             >
-              ⏹ Stopp
+              ⏹ {t("speaking.stop")}
             </button>
           </div>
         )}
 
         {mobil && (
-          <div className={styles.kontextChips} aria-label={`Kontext für ${getBrand().assistant}`}>
+          <div className={styles.kontextChips} aria-label={t("context.label")}>
             {appId && (
               <button
                 type="button"
                 className={`${styles.kontextChip} ${mitApp ? styles.kontextChipOn : ""}`}
                 aria-pressed={mitApp}
                 onClick={() => setMitApp((v) => !v)}
-                title={mitApp ? `${getBrand().assistant} sieht diese App als Kontext` : "Ohne App-Bezug fragen"}
+                title={mitApp ? t("context.appOnTitle") : t("context.appOffTitle")}
               >
-                {mitApp ? "✓ " : ""}Zu dieser App
+                {mitApp ? "✓ " : ""}{t("context.app")}
               </button>
             )}
             <button
@@ -825,15 +833,15 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
               className={`${styles.kontextChip} ${mitSchirm ? styles.kontextChipOn : ""}`}
               aria-pressed={mitSchirm}
               onClick={() => setMitSchirm((v) => !v)}
-              title="Hängt an die nächste Frage an, was gerade auf dem Bildschirm steht"
+              title={t("context.screenTitle")}
             >
-              {mitSchirm ? "✓ " : ""}Bildschirm lesen
+              {mitSchirm ? "✓ " : ""}{t("context.screen")}
             </button>
           </div>
         )}
 
         <Composer
-          onSend={async (t, opts) => {
+          onSend={async (text, opts) => {
             // Snapshot the pinned marker for THIS send and clear the chip
             // immediately for instant visual feedback. The marker rides on
             // `extraMetaOverride` so it lands in the request even though
@@ -856,10 +864,10 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
                 setMitSchirm(false);
               }
             }
-            const ok = await chat.send(t, { ...opts, extraMetaOverride: overrideMeta });
+            const ok = await chat.send(text, { ...opts, extraMetaOverride: overrideMeta });
             // Submission failed (e.g. chat creation) — restore the text so
             // the user can retry instead of losing the message silently.
-            if (!ok && t) setPendingText({ value: t });
+            if (!ok && text) setPendingText({ value: text });
           }}
           onAbort={chat.abort}
           streaming={chat.streaming}
@@ -908,10 +916,10 @@ export function ClaraChatPanel(props: ClaraChatPanelProps) {
           autoFocus={variant !== "quick"}
           placeholder={
             variant === "quick"
-              ? `Nachricht an ${getBrand().assistant} …`
+              ? t("composer.placeholderQuick")
               : appId
-                ? `Frag ${getBrand().assistant} zu ${appId} …`
-                : `Frag ${getBrand().assistant} …`
+                ? t("composer.placeholderApp", { app: appId })
+                : t("composer.placeholder")
           }
         />
 

@@ -49,7 +49,8 @@ function actorLabel(actor: string): string {
 
 export default function TasksWidget({ widgetId, config, guardRef, onOpenApp }: WidgetProps) {
   // `t` is the loop variable for tasks below — hence `tr`.
-  const { t: tr } = useTranslation("desktop");
+  // "planner" too: error messages come from the planner api in that namespace.
+  const { t: tr } = useTranslation(["desktop", "planner"]);
   const updateWidgetConfig = useWorkspaceStore((st) => st.updateWidgetConfig);
   const cfgProjects: number[] = Array.isArray(config?.projects)
     ? (config.projects as unknown[]).map(Number).filter((n) => Number.isFinite(n))

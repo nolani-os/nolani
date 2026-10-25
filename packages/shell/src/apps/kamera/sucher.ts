@@ -19,6 +19,7 @@
  * Side benefit: a live image is what makes the app a camera in the first
  * place — before, half the screen was empty.
  */
+import { i18n } from "@claraos/core";
 
 export interface SucherStart {
   stream: MediaStream;
@@ -49,7 +50,7 @@ export function alsAppInstalliert(): boolean {
  * the system camera then remains as a fallback.
  */
 export async function starteSucher(): Promise<SucherStart> {
-  if (!sucherMoeglich()) throw new Error("Dieser Browser kann keine Kamera öffnen.");
+  if (!sucherMoeglich()) throw new Error(i18n.t("kamera:camera.noBrowser"));
   let stream: MediaStream;
   try {
     stream = await navigator.mediaDevices.getUserMedia({
@@ -58,9 +59,9 @@ export async function starteSucher(): Promise<SucherStart> {
     });
   } catch (e) {
     const name = (e as { name?: string }).name || "";
-    if (name === "NotAllowedError") throw new Error("Kamerazugriff wurde abgelehnt.");
-    if (name === "NotFoundError") throw new Error("Keine Kamera gefunden.");
-    throw new Error("Kamera lässt sich nicht öffnen.");
+    if (name === "NotAllowedError") throw new Error(i18n.t("kamera:camera.denied"));
+    if (name === "NotFoundError") throw new Error(i18n.t("kamera:camera.notFound"));
+    throw new Error(i18n.t("kamera:camera.cannotOpen"));
   }
   const spur = stream.getVideoTracks()[0];
   const s = spur?.getSettings?.() || {};
@@ -128,16 +129,16 @@ export async function ausloesen(
     }
   }
 
-  if (!videoEl || !videoEl.videoWidth) throw new Error("Kein Bild vom Sucher.");
+  if (!videoEl || !videoEl.videoWidth) throw new Error(i18n.t("kamera:camera.noImage"));
   const c = document.createElement("canvas");
   c.width = videoEl.videoWidth;
   c.height = videoEl.videoHeight;
   const ctx = c.getContext("2d");
-  if (!ctx) throw new Error("Kein Bild vom Sucher.");
+  if (!ctx) throw new Error(i18n.t("kamera:camera.noImage"));
   ctx.drawImage(videoEl, 0, 0);
   const blob: Blob | null = await new Promise((res) =>
     c.toBlob((b) => res(b), "image/jpeg", 0.95));
-  if (!blob) throw new Error("Aufnahme fehlgeschlagen.");
+  if (!blob) throw new Error(i18n.t("kamera:camera.captureFailed"));
   return blob;
 }
 

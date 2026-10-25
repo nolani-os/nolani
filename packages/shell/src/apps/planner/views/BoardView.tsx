@@ -1,6 +1,7 @@
 /** A project's Kanban board — buckets (project sections), cards,
  * HTML5 DnD card→bucket (house style, no dnd-kit). */
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { i18n, useTranslation } from "@claraos/core";
 import styles from "../PlannerApp.module.css";
 import { Icon } from "../../../components/Icon";
 import { plannerApi } from "../api";
@@ -14,6 +15,7 @@ export function BoardView({
   onOpen: (t: VikTask) => void;
   onBack: () => void;
 }) {
+  const { t } = useTranslation("planner");
   const [buckets, setBuckets] = useState<VikBucket[]>([]);
   const [viewId, setViewId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +32,7 @@ export function BoardView({
       setError(null);
       const detail = await plannerApi.getProject(project.id);
       const kanban = (detail.views || []).find((v) => v.view_kind === "kanban");
-      if (!kanban) { setError("Projekt hat keine Kanban-Ansicht."); return; }
+      if (!kanban) { setError(i18n.t("planner:board.noKanban")); return; }
       setViewId(kanban.id);
       let bs = (await plannerApi.listBuckets(project.id, kanban.id)) || [];
       // Fallback: if the bucket endpoint returns no tasks, group from the project tasks
@@ -63,7 +65,7 @@ export function BoardView({
     if (src?.id === targetBucket) return;
     // optimistic
     setBuckets((prev) => {
-      const task = prev.flatMap((b) => b.tasks ?? []).find((t) => t.id === taskId);
+      const task = prev.flatMap((b) => b.tasks ?? []).find((x) => x.id === taskId);
       if (!task) return prev;
       return prev.map((b) => ({
         ...b,
@@ -83,8 +85,8 @@ export function BoardView({
     const title = newCard.trim();
     if (!title) return;
     try {
-      const t = await plannerApi.createTask(project.id, { title });
-      if (viewId != null) await plannerApi.moveTaskToBucket(project.id, viewId, bucketId, t.id).catch(() => undefined);
+      const created = await plannerApi.createTask(project.id, { title });
+      if (viewId != null) await plannerApi.moveTaskToBucket(project.id, viewId, bucketId, created.id).catch(() => undefined);
       setNewCard("");
       setAddingIn(null);
       load();
@@ -105,13 +107,13 @@ export function BoardView({
   return (
     <div className={styles.boardWrap}>
       <header className={styles.viewHeader}>
-        <button aria-label="Zurück" title="Zurück" className={styles.btn} onClick={onBack}>←</button>
+        <button aria-label={t("actions.back")} title={t("actions.back")} className={styles.btn} onClick={onBack}>←</button>
         <h2>{project.title}</h2>
-        <span className={styles.viewSub}>{totalTasks} Aufgaben</span>
+        <span className={styles.viewSub}>{t("board.taskCount", { count: totalTasks })}</span>
       </header>
       {error && <div className={styles.errorBox}>{error}</div>}
       {loading ? (
-        <div className={styles.loading}>Lade Board…</div>
+        <div className={styles.loading}>{t("board.loading")}</div>
       ) : (
         <div className={styles.board}>
           {buckets.map((b) => (
@@ -132,32 +134,32 @@ export function BoardView({
                 <span className={styles.count}>{b.tasks?.length ?? 0}</span>
               </div>
               <div className={styles.bucketBody}>
-                {(b.tasks ?? []).map((t) => (
+                {(b.tasks ?? []).map((task) => (
                   <div
-                    key={t.id}
-                    className={`${styles.card} ${t.done ? styles.taskDone : ""}`}
+                    key={task.id}
+                    className={`${styles.card} ${task.done ? styles.taskDone : ""}`}
                     draggable
                     onDragStart={(e) => {
-                      setDragTaskId(t.id);
-                      e.dataTransfer.setData("text/plain", String(t.id));
+                      setDragTaskId(task.id);
+                      e.dataTransfer.setData("text/plain", String(task.id));
                       e.dataTransfer.effectAllowed = "move";
                     }}
                     onDragEnd={() => { setDragTaskId(null); setDropBucket(null); }}
-                    onClick={() => onOpen(t)}
+                    onClick={() => onOpen(task)}
                   >
-                    <div className={styles.cardTitle}>{t.title} <PrioBadge priority={t.priority} /></div>
+                    <div className={styles.cardTitle}>{task.title} <PrioBadge priority={task.priority} /></div>
                     <div className={styles.cardMeta}>
-                      {hasDate(t.due_date) && (
-                        <span className={`${styles.metaBadge} ${isOverdue(t) ? styles.overdue : ""}`}>
-                          <Icon name="calendar" size={12} /> {dueLabel(t.due_date)}
+                      {hasDate(task.due_date) && (
+                        <span className={`${styles.metaBadge} ${isOverdue(task) ? styles.overdue : ""}`}>
+                          <Icon name="calendar" size={12} /> {dueLabel(task.due_date)}
                         </span>
                       )}
-                      <ChecklistBadge task={t} />
-                      <InWorkBadge task={t} />
-                      {!!t.assignees?.length && (
-                        <span className={styles.metaBadge}><Icon name="person" size={12} /> {t.assignees.map((a) => a.username).join(", ")}</span>
+                      <ChecklistBadge task={task} />
+                      <InWorkBadge task={task} />
+                      {!!task.assignees?.length && (
+                        <span className={styles.metaBadge}><Icon name="person" size={12} /> {task.assignees.map((a) => a.username).join(", ")}</span>
                       )}
-                      <LabelChips task={t} />
+                      <LabelChips task={task} />
                     </div>
                   </div>
                 ))}
@@ -165,7 +167,7 @@ export function BoardView({
                   <input
                     className={styles.input}
                     autoFocus
-                    placeholder="Kartentitel…"
+                    placeholder={t("board.cardPlaceholder")}
                     value={newCard}
                     onChange={(e) => setNewCard(e.target.value)}
                     onKeyDown={(e) => {
@@ -175,14 +177,14 @@ export function BoardView({
                     onBlur={() => { setAddingIn(null); setNewCard(""); }}
                   />
                 ) : (
-                  <button className={styles.addCardBtn} onClick={() => setAddingIn(b.id)}>+ Karte</button>
+                  <button className={styles.addCardBtn} onClick={() => setAddingIn(b.id)}>+ {t("board.addCard")}</button>
                 )}
               </div>
             </div>
           ))}
           <div className={styles.bucketAdd}>
             {addingBucket ? (
-              <input className={styles.input} autoFocus placeholder="Abschnittsname…"
+              <input className={styles.input} autoFocus placeholder={t("board.sectionPlaceholder")}
                      value={newBucket} onChange={(e) => setNewBucket(e.target.value)}
                      onKeyDown={(e) => {
                        if (e.key === "Enter") addBucket();
@@ -190,7 +192,7 @@ export function BoardView({
                      }}
                      onBlur={() => { setAddingBucket(false); setNewBucket(""); }} />
             ) : (
-              <button className={styles.addCardBtn} onClick={() => setAddingBucket(true)}>+ Abschnitt</button>
+              <button className={styles.addCardBtn} onClick={() => setAddingBucket(true)}>+ {t("board.addSection")}</button>
             )}
           </div>
         </div>

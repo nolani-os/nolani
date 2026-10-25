@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Editor from "@monaco-editor/react";
-import { useWindowsStore, useFileStore, buildObjectUri } from "@claraos/core";
+import { useWindowsStore, useFileStore, buildObjectUri, i18n, useTranslation } from "@claraos/core";
 import SpeichernUnter from "./SpeichernUnter";
 
 const LANG_MAP: Record<string, string> = {
@@ -17,12 +17,13 @@ function getLanguage(filename: string): string {
 }
 
 export default function TextEditorApp({ windowId }: { windowId: string }) {
+  const { t } = useTranslation("textEditor");
   const [content, setContent] = useState("");
   const [filename, setFilename] = useState("untitled.txt");
   const [filePath, setFilePath] = useState<string | null>(null);
   const [fileSource, setFileSource] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
-  const [status, setStatus] = useState("Bereit");
+  const [status, setStatus] = useState(() => i18n.t("textEditor:ready"));
   const [speichernUnter, setSpeichernUnter] = useState(false);
   // Path we just wrote ourselves: the window store echoes it back as winPath,
   // and re-reading it from the server would only reset status and cursor.
@@ -46,16 +47,16 @@ export default function TextEditorApp({ windowId }: { windowId: string }) {
     if (selbstGeschrieben.current === `${winSource}:${winPath}`) return;
     let cancelled = false;
     (async () => {
-      setStatus("Loading...");
+      setStatus(i18n.t("textEditor:loading"));
       const data = await useFileStore.getState().readFile(winSource, winPath);
       if (cancelled) return;
       if (!data) {
-        setStatus("Failed to load file");
+        setStatus(i18n.t("textEditor:loadFailed"));
         return;
       }
       // Binary files (encoding=base64) — show a notice instead of raw bytes
       if (data.encoding === "base64") {
-        setContent("[Binary file — open in another viewer]");
+        setContent(i18n.t("textEditor:binary"));
       } else {
         setContent(data.content || "");
       }
@@ -63,7 +64,7 @@ export default function TextEditorApp({ windowId }: { windowId: string }) {
       setFilePath(winPath);
       setFileSource(winSource);
       setDirty(false);
-      setStatus(`Loaded: ${winPath}`);
+      setStatus(i18n.t("textEditor:loaded", { path: winPath }));
     })();
     return () => { cancelled = true; };
   }, [winPath, winSource]);
@@ -74,13 +75,13 @@ export default function TextEditorApp({ windowId }: { windowId: string }) {
       setSpeichernUnter(true);
       return;
     }
-    setStatus("Saving...");
+    setStatus(i18n.t("textEditor:saving"));
     const ok = await useFileStore.getState().writeFile(fileSource, filePath, content);
     if (ok) {
       setDirty(false);
-      setStatus(`Gespeichert: ${filename}`);
+      setStatus(i18n.t("textEditor:saved", { name: filename }));
     } else {
-      setStatus(`Fehler beim Speichern`);
+      setStatus(i18n.t("textEditor:saveFailed"));
     }
   }, [filePath, fileSource, content, filename]);
 
@@ -94,7 +95,7 @@ export default function TextEditorApp({ windowId }: { windowId: string }) {
     setFilename(name);
     setDirty(false);
     setSpeichernUnter(false);
-    setStatus(`Gespeichert: ${pfad}`);
+    setStatus(i18n.t("textEditor:saved", { name: pfad }));
     // The window now belongs to this file: title, inline chat and session restore.
     useWindowsStore.getState().setWindowFile(windowId, source, pfad, name);
     return true;
@@ -108,9 +109,9 @@ export default function TextEditorApp({ windowId }: { windowId: string }) {
     setFilePath(null);
     setFileSource(null);
     setDirty(false);
-    setStatus("Bereit");
+    setStatus(t("ready"));
     selbstGeschrieben.current = null;
-    useWindowsStore.getState().setWindowFile(windowId, "", "", "Texteditor");
+    useWindowsStore.getState().setWindowFile(windowId, "", "", t("title"));
   };
 
   // Ctrl+S / Ctrl+Shift+S — only for the focused window; the listener is global,
@@ -141,16 +142,16 @@ export default function TextEditorApp({ windowId }: { windowId: string }) {
         display: "flex", alignItems: "center", gap: 8, padding: "4px 8px",
         background: "#252526", borderBottom: "1px solid #3c3c3c", fontSize: 13,
       }}>
-        <button onClick={neu} style={btnStyle}>Neu</button>
-        <button onClick={saveFile} disabled={!dirty} style={btnStyle} title="Speichern (Strg+S)">
-          Speichern {dirty ? "●" : ""}
+        <button onClick={neu} style={btnStyle}>{t("new")}</button>
+        <button onClick={saveFile} disabled={!dirty} style={btnStyle} title={t("saveTitle")}>
+          {t("save")} {dirty ? "●" : ""}
         </button>
-        <button onClick={() => setSpeichernUnter(true)} style={btnStyle} title="Speichern unter (Strg+Umschalt+S)">
-          Speichern unter…
+        <button onClick={() => setSpeichernUnter(true)} style={btnStyle} title={t("saveAsTitle")}>
+          {t("saveAs")}
         </button>
         <span style={{ flex: 1 }} />
         <span style={{ color: "#888", fontSize: 12 }}>
-          {filename} {dirty ? "(modified)" : ""} — {getLanguage(filename)}
+          {filename} {dirty ? t("modified") : ""} — {getLanguage(filename)}
         </span>
       </div>
 
@@ -181,7 +182,7 @@ export default function TextEditorApp({ windowId }: { windowId: string }) {
         fontSize: 12, display: "flex", justifyContent: "space-between",
       }}>
         <span>{status}</span>
-        <span>{content.split("\n").length} lines</span>
+        <span>{t("lines", { count: content.split("\n").length })}</span>
       </div>
 
       {speichernUnter && (

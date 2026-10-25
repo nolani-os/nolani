@@ -77,5 +77,13 @@
   },
   "actionSheet": { "back": "Back" },
   "propertiesDialog": { "close": "Close" },
-  "toolbar": { "areas": "Sections" }
+  "toolbar": { "areas": "Sections" },
+  "loadReason": {
+    "notFound": "The file doesn't exist (any more) — it was moved, renamed or deleted.",
+    "noAccess": "You don't have access to this file.",
+    "serverError": "The server did not deliver the file (error {{status}}).",
+    "noConnection": "No connection to the server — the file could not be loaded.",
+    "image": "The image could not be shown — the browser can't display the format, or the file is damaged.",
+    "video": "The video could not be played — the browser doesn't know the format (often MKV/AVI), or the file is damaged."
+  }
 }

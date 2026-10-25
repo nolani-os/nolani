@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
+import { useTranslation } from "@claraos/core";
 import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
@@ -14,6 +15,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
  */
 export default function PdfSeiten({ url }: { url: string }) {
   const boxRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation("viewers");
   const [breite, setBreite] = useState(0);
   const [seiten, setSeiten] = useState(0);
   const [fehler, setFehler] = useState("");
@@ -37,9 +39,9 @@ export default function PdfSeiten({ url }: { url: string }) {
         <Document
           file={url}
           onLoadSuccess={({ numPages }) => setSeiten(numPages)}
-          onLoadError={(e) => setFehler(`PDF lässt sich nicht öffnen: ${e.message}`)}
-          loading={hinweis("PDF wird geladen …")}
-          error={hinweis("PDF lässt sich nicht öffnen.")}
+          onLoadError={(e) => setFehler(t("pdf.cannotOpenDetail", { error: e.message }))}
+          loading={hinweis(t("pdf.loading"))}
+          error={hinweis(t("pdf.cannotOpen"))}
         >
           {breite > 0 && Array.from({ length: seiten }, (_, i) => (
             <div key={i} style={{ margin: "8px auto", width: "fit-content", boxShadow: "0 1px 4px #0006" }}>

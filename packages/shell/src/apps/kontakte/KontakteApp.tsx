@@ -24,9 +24,21 @@ import {
   type Block, type Dienst, type Freigabe, type MeineTeams, type ProjektionStatus,
   type RegelStatus, type Vorschlag,
 } from "./api";
-import { regionLocale, getBrand } from "@claraos/core";
+import { regionLocale, Trans, useTranslation, type TFunction } from "@claraos/core";
 
 type Ansicht = "detail" | "bearbeiten" | "verlauf" | "quellen" | "vorschlaege";
+
+/** Inline markup allowed in catalog texts (rendered through <Trans>). */
+const TAGS = { b: <strong />, i: <em />, br: <br />, code: <code /> };
+
+/** "3 new, 1 changed, …" — zero counts of the optional parts are left out. */
+function teileText(t: TFunction, r: Partial<Record<"neu" | "geaendert" | "unveraendert" | "uebersprungen" | "konflikt", number>>): string {
+  const teile = [t("parts.new", { count: r.neu ?? 0 }), t("parts.changed", { count: r.geaendert ?? 0 }),
+                 t("parts.unchanged", { count: r.unveraendert ?? 0 })];
+  if (r.uebersprungen) teile.push(t("parts.skipped", { count: r.uebersprungen }));
+  if (r.konflikt) teile.push(t("parts.conflict", { count: r.konflikt }));
+  return teile.join(", ");
+}
 
 const LEERE_DATEN: KontaktDaten = { namen: {}, mails: [], telefone: [] };
 
@@ -42,6 +54,7 @@ function initialen(name: string): string {
 }
 
 export default function KontakteApp({ windowId }: { windowId: string }) {
+  const { t } = useTranslation("kontakte");
   const mobil = useIsMobile();
   const [kontakte, setKontakte] = useState<Kontakt[] | null>(null);
   const [gewaehlt, setGewaehlt] = useState<Kontakt | null>(null);
@@ -97,15 +110,16 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
     const text = p.get("meldung") || "";
     setMeldung(
       g === "verbunden"
-        ? { text: `Google verbunden${text ? ` (${text})` : ""}. Jetzt „Von Google holen" drücken.` }
+        ? { text: text ? t("msg.googleConnectedDetail", { detail: text }) : t("msg.googleConnected") }
         : g === "abgebrochen"
-          ? { text: `Freigabe abgebrochen${text ? `: ${text}` : "."}` }
-          : { text: text || "Die Google-Freigabe hat nicht geklappt.", fehler: true },
+          ? { text: text ? t("msg.googleCancelledDetail", { detail: text }) : t("msg.googleCancelled") }
+          : { text: text || t("msg.googleFailed"), fehler: true },
     );
     p.delete("google"); p.delete("meldung");
     const qs = p.toString();
     window.history.replaceState(null, "", window.location.pathname + (qs ? `?${qs}` : ""));
     void kontakteApi.googleStatus().then(setGoogle).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const oeffnen = useCallback(async (id: string) => {
@@ -137,11 +151,11 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
       };
       if (gewaehlt) {
         const r = await kontakteApi.aendern(gewaehlt.id, daten);
-        setMeldung({ text: r.geaendert ? "Gespeichert." : "Unverändert — nichts zu speichern." });
+        setMeldung({ text: r.geaendert ? t("msg.saved") : t("msg.unchanged") });
         await oeffnen(gewaehlt.id);
       } else {
         const r = await kontakteApi.anlegen(daten);
-        setMeldung({ text: "Angelegt." });
+        setMeldung({ text: t("msg.created") });
         await oeffnen(r.id);
       }
       await laden();
@@ -150,13 +164,13 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
     } finally {
       setLaeuft(false);
     }
-  }, [entwurf, gewaehlt, laden, oeffnen]);
+  }, [entwurf, gewaehlt, laden, oeffnen, t]);
 
   const entfernen = useCallback(async () => {
     if (!gewaehlt) return;
     try {
       await kontakteApi.entfernen(gewaehlt.id);
-      setMeldung({ text: "Entfernt — liegt im Papierkorb und ist wiederherstellbar." });
+      setMeldung({ text: t("msg.removed") });
       setGewaehlt(null);
       await laden();
     } catch (e) {
@@ -169,13 +183,10 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
     const name = gewaehlt.anzeigename;
     // Warning: two sentences, no "Are you sure?". The second says what is lost —
     // otherwise you click away something you can't oversee.
-    if (!window.confirm(
-      `„${name}" ENDGÜLTIG löschen?\n\n` +
-      "Kontakt, alle früheren Fassungen und die Herkunftsdaten werden " +
-      "unwiderruflich gelöscht. Das ist NICHT der Papierkorb.")) return;
+    if (!window.confirm(t("msg.confirmPurge", { name }))) return;
     try {
       const r = await kontakteApi.endgueltigLoeschen(gewaehlt.id);
-      setMeldung({ text: `„${name}" endgültig gelöscht (mit ${r.fassungen} Fassungen).` });
+      setMeldung({ text: t("msg.purged", { name, count: r.fassungen }) });
       setGewaehlt(null);
       await laden();
     } catch (e) {
@@ -187,7 +198,7 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
     if (!gewaehlt) return;
     try {
       await kontakteApi.wiederherstellen(gewaehlt.id);
-      setMeldung({ text: "Wiederhergestellt." });
+      setMeldung({ text: t("msg.restored") });
       await oeffnen(gewaehlt.id);
       await laden();
     } catch (e) {
@@ -210,7 +221,7 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
     if (!gewaehlt) return;
     try {
       await kontakteApi.fassungZurueck(gewaehlt.id, seq);
-      setMeldung({ text: `Stand ${seq} ist wieder aktuell. Der bisherige Stand steht jetzt im Verlauf.` });
+      setMeldung({ text: t("msg.versionRestored", { seq }) });
       await oeffnen(gewaehlt.id);
       await laden();
     } catch (e) {
@@ -220,12 +231,10 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
 
   const importieren = useCallback(async (datei: File) => {
     setLaeuft(true);
-    setMeldung({ text: `„${datei.name}" wird eingelesen…` });
+    setMeldung({ text: t("msg.importReading", { file: datei.name }) });
     try {
       const r = await kontakteApi.importVcf(datei);
-      const teile = [`${r.neu} neu`, `${r.geaendert} geändert`, `${r.unveraendert} unverändert`];
-      if (r.uebersprungen) teile.push(`${r.uebersprungen} übersprungen`);
-      setMeldung({ text: `${r.gesehen} Karten gelesen: ${teile.join(", ")}.` });
+      setMeldung({ text: t("msg.importDone", { count: r.gesehen, parts: teileText(t, r) }) });
       await laden();
     } catch (e) {
       setMeldung({ text: e instanceof Error ? e.message : String(e), fehler: true });
@@ -233,7 +242,7 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
       setLaeuft(false);
       if (dateiRef.current) dateiRef.current.value = "";
     }
-  }, [laden]);
+  }, [laden, t]);
 
   const googleVerbinden = useCallback(async () => {
     try {
@@ -248,16 +257,13 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
 
   const googleHolen = useCallback(async (voll = false) => {
     setLaeuft(true);
-    setMeldung({ text: voll ? "Vollabgleich mit Google läuft…" : "Google wird abgeglichen…" });
+    setMeldung({ text: voll ? t("msg.googleFullSyncing") : t("msg.googleSyncing") });
     try {
       const r = await kontakteApi.googleSync(voll);
-      const teile = [`${r.neu} neu`, `${r.geaendert} geändert`, `${r.unveraendert} unverändert`];
-      if (r.uebersprungen) teile.push(`${r.uebersprungen} übersprungen`);
-      if (r.konflikt) teile.push(`${r.konflikt} mit Konflikt`);
+      const werte = { account: r.konto || "Google", count: r.gesehen, parts: teileText(t, r) };
       setMeldung({
-        text: `${r.vollabgleich ? "Vollabgleich" : "Abgleich"} mit ${r.konto || "Google"}: `
-            + `${r.gesehen} gesehen — ${teile.join(", ")}.`
-            + (r.konflikt ? " Bei Konflikten gilt dein Stand; der Google-Stand liegt als Vorschlag am Kontakt." : ""),
+        text: (r.vollabgleich ? t("msg.googleFullSyncDone", werte) : t("msg.googleSyncDone", werte))
+            + (r.konflikt ? t("msg.googleConflictNote") : ""),
       });
       await laden();
       setGoogle(await kontakteApi.googleStatus());
@@ -266,12 +272,10 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
     } finally {
       setLaeuft(false);
     }
-  }, [laden]);
+  }, [laden, t]);
 
   const googleTrennen = useCallback(async () => {
-    if (!window.confirm(
-      `Google-Zugang lösen?\n\nDeine Kontakte bleiben vollständig in ${getBrand().product} — `
-      + "gelöst wird nur die Verbindung.")) return;
+    if (!window.confirm(t("msg.confirmGoogleDisconnect"))) return;
     try {
       const r = await kontakteApi.googleTrennen();
       setMeldung({ text: r.hinweis });
@@ -279,7 +283,7 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
     } catch (e) {
       setMeldung({ text: e instanceof Error ? e.message : String(e), fehler: true });
     }
-  }, []);
+  }, [t]);
 
   const vorschlaegeHolen = useCallback(async () => {
     setAnsicht("vorschlaege");
@@ -299,25 +303,25 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
       setVorschlaege((alt) => (alt ?? []).filter((x) => x.contact_id !== v.contact_id));
       setMeldung({
         text: bestaetigt
-          ? `„${v.anzeigename}" ist jetzt mit ${v.username} verknüpft.`
-          : `Abgelehnt — dieser Vorschlag kommt nicht wieder.`,
+          ? t("msg.linked", { name: v.anzeigename, user: v.username })
+          : t("msg.rejected"),
       });
       await laden();
     } catch (e) {
       setMeldung({ text: e instanceof Error ? e.message : String(e), fehler: true });
     }
-  }, [laden]);
+  }, [laden, t]);
 
   const linkLoesen = useCallback(async (username: string) => {
     if (!gewaehlt) return;
     try {
       await kontakteApi.linkLoesen(gewaehlt.id, username);
-      setMeldung({ text: `Verknüpfung mit ${username} aufgehoben.` });
+      setMeldung({ text: t("msg.unlinked", { user: username }) });
       await oeffnen(gewaehlt.id);
     } catch (e) {
       setMeldung({ text: e instanceof Error ? e.message : String(e), fehler: true });
     }
-  }, [gewaehlt, oeffnen]);
+  }, [gewaehlt, oeffnen, t]);
 
   const handleSetzen = useCallback(async (service: string, handle: string) => {
     if (!gewaehlt) return;
@@ -325,16 +329,16 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
       const r = await kontakteApi.handleSetzen(gewaehlt.id, service, handle);
       setMeldung({
         text: r.klasse === "foederiert"
-          ? `${service} hinzugefügt — dort kann ${getBrand().product} wirklich etwas tun.`
+          ? t("msg.handleFederated", { service })
           : r.klasse === "bridge"
-            ? `${service} hinzugefügt — erreichbar erst, wenn die Brücke läuft.`
-            : `${service} hinzugefügt — ${getBrand().product} kann dort nur das Profil öffnen.`,
+            ? t("msg.handleBridge", { service })
+            : t("msg.handleReference", { service }),
       });
       await oeffnen(gewaehlt.id);
     } catch (e) {
       setMeldung({ text: e instanceof Error ? e.message : String(e), fehler: true });
     }
-  }, [gewaehlt, oeffnen]);
+  }, [gewaehlt, oeffnen, t]);
 
   const handleWeg = useCallback(async (service: string, handle: string) => {
     if (!gewaehlt) return;
@@ -350,12 +354,12 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
     if (!gewaehlt) return;
     try {
       const r = await kontakteApi.teilen(gewaehlt.id, mit);
-      setMeldung({ text: `„${gewaehlt.anzeigename}" ist jetzt für ${r.name} sichtbar — nur lesend.` });
+      setMeldung({ text: t("msg.shared", { name: gewaehlt.anzeigename, user: r.name }) });
       setFreigaben(await kontakteApi.freigaben(gewaehlt.id));
     } catch (e) {
       setMeldung({ text: e instanceof Error ? e.message : String(e), fehler: true });
     }
-  }, [gewaehlt]);
+  }, [gewaehlt, t]);
 
   const teilenZurueck = useCallback(async (mit: string) => {
     if (!gewaehlt) return;
@@ -394,23 +398,23 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
     try {
       await kontakteApi.regelSetzen(wert);
       setRegel(await kontakteApi.regelLesen());
-      setMeldung({ text: "Erreichbarkeit geändert." });
+      setMeldung({ text: t("msg.reachChanged") });
     } catch (e) {
       setMeldung({ text: e instanceof Error ? e.message : String(e), fehler: true });
     }
-  }, []);
+  }, [t]);
 
   const aufsHandy = useCallback(async () => {
     setLaeuft(true);
-    setMeldung({ text: "Adressbuch wird abgeglichen…" });
+    setMeldung({ text: t("msg.phoneSyncing") });
     try {
       const r = await kontakteApi.projektionSync();
-      const teile = [`${r.geschrieben} geschrieben`, `${r.unveraendert} unverändert`];
-      if (r.geloescht) teile.push(`${r.geloescht} entfernt`);
-      if (r.fehler) teile.push(`${r.fehler} fehlgeschlagen`);
+      const teile = [t("parts.written", { count: r.geschrieben }), t("parts.unchanged", { count: r.unveraendert })];
+      if (r.geloescht) teile.push(t("parts.deleted", { count: r.geloescht }));
+      if (r.fehler) teile.push(t("parts.failed", { count: r.fehler }));
       setMeldung({
-        text: (r.neu_angelegt ? `Adressbuch „${r.adressbuch}" angelegt. ` : "")
-            + `${r.geprueft} Kontakte geprüft: ${teile.join(", ")}.`
+        text: (r.neu_angelegt ? t("msg.bookCreated", { book: r.adressbuch }) : "")
+            + t("msg.phoneDone", { count: r.geprueft, parts: teile.join(", ") })
             + (r.fehler_texte.length ? ` (${r.fehler_texte[0]})` : ""),
         fehler: r.fehler > 0,
       });
@@ -420,20 +424,18 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
     } finally {
       setLaeuft(false);
     }
-  }, []);
+  }, [t]);
 
   const carddavHolen = useCallback(async () => {
     setLaeuft(true);
-    setMeldung({ text: "Nextcloud-Adressbücher werden gelesen…" });
+    setMeldung({ text: t("msg.carddavReading") });
     try {
       const r = await kontakteApi.importCarddav();
-      const teile = [`${r.neu} neu`, `${r.geaendert} geändert`, `${r.unveraendert} unverändert`];
-      if (r.uebersprungen) teile.push(`${r.uebersprungen} übersprungen`);
       setMeldung({
         text: r.adressbuecher.length
-          ? `${r.adressbuecher.join(", ")}: ${r.gesehen} Karten — ${teile.join(", ")}`
-            + (r.bilder ? `, ${r.bilder} Bilder` : "")
-          : "Keine eigenen Adressbücher in Nextcloud gefunden.",
+          ? t("msg.carddavDone", { books: r.adressbuecher.join(", "), count: r.gesehen, parts: teileText(t, r) })
+            + (r.bilder ? t("msg.carddavImages", { count: r.bilder }) : "")
+          : t("msg.carddavNone"),
       });
       await laden();
     } catch (e) {
@@ -441,7 +443,7 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
     } finally {
       setLaeuft(false);
     }
-  }, [laden]);
+  }, [laden, t]);
 
   const bearbeitenStarten = useCallback((neu: boolean) => {
     setEntwurf(neu ? { ...LEERE_DATEN } : JSON.parse(JSON.stringify(gewaehlt?.data ?? LEERE_DATEN)));
@@ -464,38 +466,38 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
       <div className={`${styles.kopf} ${mobil ? styles.kopfMobil : ""}`}>
         {mobil && mobilDetailOffen ? (
           <div className={styles.kopfZeile}>
-            <IconButton label="Zurück zur Liste" icon="back" onClick={zurListe} />
+            <IconButton label={t("head.backToList")} icon="back" onClick={zurListe} />
             <span className={styles.kopfTitel}>
-              {ansicht === "quellen" ? "Quellen" : ansicht === "vorschlaege" ? "Abgleich" : entwurf ? "Kontakt bearbeiten" : "Kontakt"}
+              {ansicht === "quellen" ? t("head.titleSources") : ansicht === "vorschlaege" ? t("head.titleMatching") : entwurf ? t("head.titleEdit") : t("head.titleContact")}
             </span>
           </div>
         ) : (
           <>
-            {mobil && <h2 className={styles.kopfTitel}>{papierkorb ? "Papierkorb" : "Kontakte"}</h2>}
-            <input className={styles.suche} placeholder={mobil ? "Suchen…" : "Suchen — Name, Firma, Nummer, Handle…"}
+            {mobil && <h2 className={styles.kopfTitel}>{papierkorb ? t("head.trash") : t("head.contacts")}</h2>}
+            <input className={styles.suche} placeholder={mobil ? t("head.searchMobile") : t("head.search")}
                    value={suche} onChange={(e) => setSuche(e.target.value)} />
             {!mobil && (
             <button className={`${styles.knopf} ${styles.knopfHaupt}`}
-                    onClick={() => bearbeitenStarten(true)}>+ Neu</button>
+                    onClick={() => bearbeitenStarten(true)}>{t("head.new")}</button>
             )}
             {!mobil && (
             <button className={`${styles.knopf} ${styles.mehrKnopf}`}
                     aria-expanded={mehr}
-                    onClick={() => setMehr(!mehr)}>{mehr ? "Weniger" : "Mehr"}</button>
+                    onClick={() => setMehr(!mehr)}>{mehr ? t("head.less") : t("head.more")}</button>
             )}
             {!mobil && (
             <div className={`${styles.zweitReihe} ${mehr ? styles.zweitReiheOffen : ""}`}>
               <button className={styles.knopf} disabled={laeuft}
-                      onClick={() => dateiRef.current?.click()}>Import .vcf</button>
+                      onClick={() => dateiRef.current?.click()}>{t("head.importVcf")}</button>
               <a className={styles.knopf} href={kontakteApi.exportUrl()}
-                 title="Alle Kontakte als .vcf sichern">Export</a>
+                 title={t("head.exportTitle")}>{t("head.export")}</a>
               <button className={styles.knopf} onClick={() => { setPapierkorb(!papierkorb); setGewaehlt(null); }}>
-                {papierkorb ? "Adressbuch" : "Papierkorb"}
+                {papierkorb ? t("head.addressBook") : t("head.trash")}
               </button>
-              <button className={styles.knopf} onClick={vorschlaegeHolen}>Abgleich</button>
+              <button className={styles.knopf} onClick={vorschlaegeHolen}>{t("head.matching")}</button>
               <button className={styles.knopf}
                       onClick={() => setAnsicht(ansicht === "quellen" ? "detail" : "quellen")}>
-                Quellen
+                {t("head.sources")}
               </button>
             </div>
             )}
@@ -514,14 +516,14 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
 
       <div className={`${styles.koerper} ${mobilKlasse}`}>
         <div className={styles.liste}>
-          {kontakte === null && <div className={styles.leer}>Lade…</div>}
+          {kontakte === null && <div className={styles.leer}>{t("common.loading")}</div>}
           {kontakte?.length === 0 && (
             <div className={styles.leer}>
               {papierkorb
-                ? "Der Papierkorb ist leer."
+                ? t("list.trashEmpty")
                 : suche
-                  ? "Nichts gefunden."
-                  : "Noch keine Kontakte.\nLade eine .vcf-Datei hoch — aus Google Kontakte oder vom Handy exportiert."}
+                  ? t("list.nothingFound")
+                  : t("list.noContacts")}
             </div>
           )}
           {kontakte?.map((k) => (
@@ -544,7 +546,7 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
                     || k.data.mails?.[0]?.wert
                     || k.data.telefone?.[0]?.wert
                     || "—"}
-                  {k.fremd ? " · geteilt" : ""}
+                  {k.fremd ? t("list.sharedSuffix") : ""}
                 </div>
               </div>
             </div>
@@ -596,31 +598,31 @@ export default function KontakteApp({ windowId }: { windowId: string }) {
           )}
 
           {ansicht === "detail" && !entwurf && !gewaehlt && !mobil && (
-            <div className={styles.leer}>Einen Kontakt auswählen.</div>
+            <div className={styles.leer}>{t("list.pick")}</div>
           )}
         </div>
       </div>
       {mobil && !mobilDetailOffen && (
         <Werkzeugleiste
           eintraege={[
-            { key: "adressbuch", label: "Adressbuch", icon: "people", active: !papierkorb,
+            { key: "adressbuch", label: t("head.addressBook"), icon: "people", active: !papierkorb,
               onClick: () => { setPapierkorb(false); setGewaehlt(null); } },
-            { key: "papierkorb", label: "Papierkorb", icon: "trash", active: papierkorb,
+            { key: "papierkorb", label: t("head.trash"), icon: "trash", active: papierkorb,
               onClick: () => { setPapierkorb(true); setGewaehlt(null); } },
-            { key: "abgleich", label: "Abgleich", icon: "repeat", active: false, onClick: vorschlaegeHolen },
-            { key: "quellen", label: "Quellen", icon: "link", active: false, onClick: () => setAnsicht("quellen") },
-            { key: "mehr", label: "Import und Export", icon: "more", active: false, onClick: () => setMehrBlatt(true) },
+            { key: "abgleich", label: t("head.matching"), icon: "repeat", active: false, onClick: vorschlaegeHolen },
+            { key: "quellen", label: t("head.sources"), icon: "link", active: false, onClick: () => setAnsicht("quellen") },
+            { key: "mehr", label: t("head.importExport"), icon: "more", active: false, onClick: () => setMehrBlatt(true) },
           ]}
-          fab={{ label: "Neuer Kontakt", onClick: () => bearbeitenStarten(true) }}
+          fab={{ label: t("head.newContact"), onClick: () => bearbeitenStarten(true) }}
         />
       )}
       <ActionSheet
         open={mehrBlatt}
         onClose={() => setMehrBlatt(false)}
-        title="Import und Export"
+        title={t("head.importExport")}
         items={[
-          { id: "import", label: "Import aus .vcf-Datei", onSelect: () => dateiRef.current?.click() },
-          { id: "export", label: "Alle Kontakte als .vcf sichern", onSelect: () => window.location.assign(kontakteApi.exportUrl()) },
+          { id: "import", label: t("head.importFromVcf"), onSelect: () => dateiRef.current?.click() },
+          { id: "export", label: t("head.exportTitle"), onSelect: () => window.location.assign(kontakteApi.exportUrl()) },
         ]}
       />
     </div>
@@ -647,6 +649,7 @@ function Anzeigen({ kontakt, teams, onLinkLoesen, dienste, onHandleSetzen, onHan
   onBearbeiten: () => void; onEntfernen: () => void; onWiederherstellen: () => void;
   onEndgueltig: () => void; onVerlauf: () => void;
 }) {
+  const { t } = useTranslation("kontakte");
   const d = kontakt.data;
   const entfernt = kontakt.state === "removed";
   return (
@@ -658,23 +661,23 @@ function Anzeigen({ kontakt, teams, onLinkLoesen, dienste, onHandleSetzen, onHan
         )}
         <div className={styles.detailName}>{kontakt.anzeigename}</div>
         {!entfernt && !kontakt.fremd && (
-          <button className={styles.knopf} onClick={onBearbeiten}>Bearbeiten</button>
+          <button className={styles.knopf} onClick={onBearbeiten}>{t("detail.edit")}</button>
         )}
-        <button className={styles.knopf} onClick={onVerlauf}>Verlauf</button>
+        <button className={styles.knopf} onClick={onVerlauf}>{t("detail.history")}</button>
         {entfernt
-          ? <button className={`${styles.knopf} ${styles.knopfHaupt}`} onClick={onWiederherstellen}>Wiederherstellen</button>
-          : !kontakt.fremd && <button className={styles.knopf} onClick={onEntfernen}>Entfernen</button>}
+          ? <button className={`${styles.knopf} ${styles.knopfHaupt}`} onClick={onWiederherstellen}>{t("detail.restore")}</button>
+          : !kontakt.fremd && <button className={styles.knopf} onClick={onEntfernen}>{t("common.remove")}</button>}
       </div>
 
       {kontakt.fremd && (
         <div className={styles.fussnote}>
-          Dieser Kontakt gehört <strong>{kontakt.owner}</strong> und wurde mit dir geteilt.
+          <Trans t={t} i18nKey="detail.ownedBy" values={{ owner: kontakt.owner }} components={TAGS} />
         </div>
       )}
 
       {!!d.organisation?.firma && (
         <div className={styles.block}>
-          <div className={styles.blockTitel}>Organisation</div>
+          <div className={styles.blockTitel}>{t("detail.organisation")}</div>
           <div className={styles.zeile}>
             <span className={styles.zeileWert}>
               {[d.organisation.position, d.organisation.abteilung, d.organisation.firma]
@@ -686,10 +689,10 @@ function Anzeigen({ kontakt, teams, onLinkLoesen, dienste, onHandleSetzen, onHan
 
       {!!d.mails?.length && (
         <div className={styles.block}>
-          <div className={styles.blockTitel}>E-Mail</div>
+          <div className={styles.blockTitel}>{t("detail.email")}</div>
           {d.mails.map((m, i) => (
             <div className={styles.zeile} key={i}>
-              <span className={styles.zeileLabel}>{m.label || "E-Mail"}</span>
+              <span className={styles.zeileLabel}>{m.label || t("detail.email")}</span>
               <span className={styles.zeileWert}><a href={`mailto:${m.wert}`}>{m.wert}</a></span>
             </div>
           ))}
@@ -698,11 +701,11 @@ function Anzeigen({ kontakt, teams, onLinkLoesen, dienste, onHandleSetzen, onHan
 
       {!!d.telefone?.length && (
         <div className={styles.block}>
-          <div className={styles.blockTitel}>Telefon</div>
-          {d.telefone.map((t, i) => (
+          <div className={styles.blockTitel}>{t("detail.phone")}</div>
+          {d.telefone.map((tel, i) => (
             <div className={styles.zeile} key={i}>
-              <span className={styles.zeileLabel}>{t.label || "Telefon"}</span>
-              <span className={styles.zeileWert}><a href={`tel:${t.wert.replace(/\s/g, "")}`}>{t.wert}</a></span>
+              <span className={styles.zeileLabel}>{tel.label || t("detail.phone")}</span>
+              <span className={styles.zeileWert}><a href={`tel:${tel.wert.replace(/\s/g, "")}`}>{tel.wert}</a></span>
             </div>
           ))}
         </div>
@@ -710,10 +713,10 @@ function Anzeigen({ kontakt, teams, onLinkLoesen, dienste, onHandleSetzen, onHan
 
       {!!d.adressen?.length && (
         <div className={styles.block}>
-          <div className={styles.blockTitel}>Adresse</div>
+          <div className={styles.blockTitel}>{t("detail.address")}</div>
           {d.adressen.map((a, i) => (
             <div className={styles.zeile} key={i}>
-              <span className={styles.zeileLabel}>{a.label || "Adresse"}</span>
+              <span className={styles.zeileLabel}>{a.label || t("detail.address")}</span>
               <span className={styles.zeileWert}>
                 {[a.strasse, [a.plz, a.ort].filter(Boolean).join(" "), a.land].filter(Boolean).join(", ")}
               </span>
@@ -724,29 +727,29 @@ function Anzeigen({ kontakt, teams, onLinkLoesen, dienste, onHandleSetzen, onHan
 
       {!!d.daten?.geburtstag && (
         <div className={styles.block}>
-          <div className={styles.blockTitel}>Geburtstag</div>
+          <div className={styles.blockTitel}>{t("detail.birthday")}</div>
           <div className={styles.zeile}><span className={styles.zeileWert}>{d.daten.geburtstag}</span></div>
         </div>
       )}
 
       {!!kontakt.links?.length && (
         <div className={styles.block}>
-          <div className={styles.blockTitel}>{getBrand().product}-Nutzer</div>
+          <div className={styles.blockTitel}>{t("detail.users")}</div>
           {kontakt.links.map((l, i) => (
             <div className={styles.handle} key={i}>
               <span className={`${styles.marke} ${l.confidence === "bestaetigt" ? styles.markeEcht : ""}`}>
-                {l.confidence === "bestaetigt" ? "verknüpft" : "abgelehnt"}
+                {l.confidence === "bestaetigt" ? t("detail.linked") : t("detail.rejected")}
               </span>
               <span className={styles.zeileWert}>{l.username}</span>
               <button className={styles.knopf} onClick={() => onLinkLoesen(l.username)}>
-                Aufheben
+                {t("common.lift")}
               </button>
             </div>
           ))}
           {kontakt.links.some((l) => l.confidence === "bestaetigt") && teams && (
             <div className={styles.fussnote}>
               {teams.darf_einladen
-                ? "In ein Team aufnehmen geht in der Teams-App."
+                ? t("detail.teamsHint")
                 : teams.hinweis}
             </div>
           )}
@@ -763,7 +766,7 @@ function Anzeigen({ kontakt, teams, onLinkLoesen, dienste, onHandleSetzen, onHan
 
       {!!d.notizen && (
         <div className={styles.block}>
-          <div className={styles.blockTitel}>Notiz</div>
+          <div className={styles.blockTitel}>{t("detail.note")}</div>
           <div className={styles.zeile}>
             <span className={styles.zeileWert} style={{ whiteSpace: "pre-wrap" }}>{d.notizen}</span>
           </div>
@@ -772,13 +775,13 @@ function Anzeigen({ kontakt, teams, onLinkLoesen, dienste, onHandleSetzen, onHan
 
       {!!kontakt.quellen?.length && (
         <div className={styles.block}>
-          <div className={styles.blockTitel}>Herkunft</div>
+          <div className={styles.blockTitel}>{t("detail.origin")}</div>
           {kontakt.quellen.map((q, i) => (
             <div className={styles.zeile} key={i}>
               <span className={styles.zeileLabel}>{q.source}</span>
               <span className={styles.zeileWert}>
                 {q.account || "—"}
-                {q.state === "source_deleted" && " · dort inzwischen gelöscht"}
+                {q.state === "source_deleted" && t("detail.deletedThere")}
               </span>
             </div>
           ))}
@@ -795,19 +798,17 @@ function Anzeigen({ kontakt, teams, onLinkLoesen, dienste, onHandleSetzen, onHan
       {!kontakt.fremd && (
         <div className={styles.gefahrZone}>
           <button className={`${styles.knopf} ${styles.knopfGefahr}`} onClick={onEndgueltig}>
-            Endgültig löschen
+            {t("detail.purge")}
           </button>
           <div className={styles.fussnote}>
-            Löscht den Kontakt, alle früheren Fassungen und die Herkunftsdaten
-            unwiderruflich. Zum normalen Wegräumen gibt es „Entfernen" — das
-            landet im Papierkorb.
+            {t("detail.purgeNote")}
           </div>
         </div>
       )}
 
       {!!d.frei && Object.keys(d.frei).length > 0 && (
         <div className={styles.block}>
-          <div className={styles.blockTitel}>Aus der Quelle übernommen</div>
+          <div className={styles.blockTitel}>{t("detail.fromSource")}</div>
           {Object.entries(d.frei).map(([k, v]) => (
             <div className={styles.zeile} key={k}>
               <span className={styles.zeileLabel}>{k}</span>
@@ -815,8 +816,7 @@ function Anzeigen({ kontakt, teams, onLinkLoesen, dienste, onHandleSetzen, onHan
             </div>
           ))}
           <div className={styles.fussnote}>
-            Felder, die {getBrand().product} aufhebt, obwohl vCard sie nicht kennt. Beim Export
-            fehlen sie — dort passt nur, was das Format vorsieht.
+            {t("detail.fromSourceNote")}
           </div>
         </div>
       )}
@@ -832,6 +832,7 @@ function Handles({ handles, dienste, onSetzen, onWeg }: {
   onSetzen?: (service: string, handle: string) => void;
   onWeg?: (service: string, handle: string) => void;
 }) {
+  const { t } = useTranslation("kontakte");
   const [offen, setOffen] = useState(false);
   const [service, setService] = useState("");
   const [wert, setWert] = useState("");
@@ -846,11 +847,11 @@ function Handles({ handles, dienste, onSetzen, onWeg }: {
 
   return (
     <div className={styles.block}>
-      <div className={styles.blockTitel}>Dienste</div>
+      <div className={styles.blockTitel}>{t("handles.title")}</div>
 
       {handles.length === 0 && !offen && (
         <div className={styles.zeile}>
-          <span className={styles.zeileWert} style={{ opacity: 0.7 }}>Noch keine.</span>
+          <span className={styles.zeileWert} style={{ opacity: 0.7 }}>{t("handles.none")}</span>
         </div>
       )}
 
@@ -860,22 +861,22 @@ function Handles({ handles, dienste, onSetzen, onWeg }: {
         return (
           <div className={styles.handle} key={i}>
             <span className={`${styles.marke} ${echt ? styles.markeEcht : ""}`}>
-              {echt ? "föderiert" : h.klasse === "bridge" ? "Brücke" : "Verweis"}
+              {t(`handles.class.${h.klasse}`)}
             </span>
             <span className={styles.zeileLabel}>{h.service}</span>
             <span className={styles.zeileWert}>
               {url ? <a href={url} target="_blank" rel="noopener noreferrer">{h.handle}</a> : h.handle}
             </span>
             {onWeg && (
-              <button className={styles.knopf} title="Diesen Dienst entfernen"
-                      onClick={() => onWeg(h.service, h.handle)}>Entfernen</button>
+              <button className={styles.knopf} title={t("handles.removeTitle")}
+                      onClick={() => onWeg(h.service, h.handle)}>{t("common.remove")}</button>
             )}
           </div>
         );
       })}
 
       {onSetzen && !offen && (
-        <button className={styles.knopf} onClick={() => setOffen(true)}>+ Dienst</button>
+        <button className={styles.knopf} onClick={() => setOffen(true)}>{t("handles.add")}</button>
       )}
 
       {onSetzen && offen && (
@@ -883,7 +884,7 @@ function Handles({ handles, dienste, onSetzen, onWeg }: {
           <div className={styles.feldReihe}>
             <select className={`${styles.feld} ${styles.feldSchmal}`} value={service}
                     onChange={(e) => setService(e.target.value)}>
-              <option value="">Dienst wählen…</option>
+              <option value="">{t("handles.pick")}</option>
               {dienste.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.label}{d.klasse === "foederiert" ? " ✓" : ""}
@@ -891,7 +892,7 @@ function Handles({ handles, dienste, onSetzen, onWeg }: {
               ))}
             </select>
             <input className={styles.feld} style={{ flex: 1 }} autoFocus
-                   placeholder={gewaehlt?.platzhalter || "Kennung"}
+                   placeholder={gewaehlt?.platzhalter || t("handles.idPlaceholder")}
                    value={wert} onChange={(e) => setWert(e.target.value)}
                    onKeyDown={(e) => { if (e.key === "Enter") speichern(); }} />
           </div>
@@ -900,30 +901,23 @@ function Handles({ handles, dienste, onSetzen, onWeg }: {
           {gewaehlt && (
             <div className={styles.fussnote}>
               <span className={`${styles.marke} ${gewaehlt.klasse === "foederiert" ? styles.markeEcht : ""}`}>
-                {gewaehlt.klasse === "foederiert" ? "föderiert"
-                  : gewaehlt.klasse === "bridge" ? "Brücke" : "Verweis"}
+                {t(`handles.class.${gewaehlt.klasse}`)}
               </span>{" "}
-              {gewaehlt.hinweis || `${getBrand().product} speichert die Kennung.`}
+              {gewaehlt.hinweis || t("handles.storesId")}
             </div>
           )}
           <div className={styles.feldReihe}>
             <button className={`${styles.knopf} ${styles.knopfHaupt}`}
-                    disabled={!service || !wert.trim()} onClick={speichern}>Hinzufügen</button>
+                    disabled={!service || !wert.trim()} onClick={speichern}>{t("handles.addButton")}</button>
             <button className={styles.knopf}
-                    onClick={() => { setOffen(false); setWert(""); }}>Abbrechen</button>
+                    onClick={() => { setOffen(false); setWert(""); }}>{t("common.cancel")}</button>
           </div>
         </>
       )}
 
       {handles.length > 0 && (
         <div className={styles.fussnote}>
-          <strong>Föderiert</strong> heißt: {getBrand().product} kann dort wirklich etwas tun
-          (schreiben, teilen, folgen). <strong>Verweis</strong> heißt: wir speichern
-          die Kennung und öffnen das Profil — mehr lassen diese Dienste nicht zu.
-          <strong> Brücke</strong> heißt: erreichbar erst, wenn die Matrix-Brücke läuft.
-          <br />
-          Die Einstufung wählt nicht du, sondern sie folgt dem Dienst — sonst
-          verspräche die Karte etwas, das es nicht gibt.
+          <Trans t={t} i18nKey="handles.explain" components={TAGS} />
         </div>
       )}
     </div>
@@ -939,6 +933,7 @@ function Bearbeiten({ entwurf, setEntwurf, laeuft, onSpeichern, onAbbrechen }: {
   onSpeichern: () => void;
   onAbbrechen: () => void;
 }) {
+  const { t } = useTranslation("kontakte");
   const setzen = (pfad: string, wert: string) => {
     const kopie = JSON.parse(JSON.stringify(entwurf)) as KontaktDaten;
     const [a, b] = pfad.split(".");
@@ -970,72 +965,71 @@ function Bearbeiten({ entwurf, setEntwurf, laeuft, onSpeichern, onAbbrechen }: {
   return (
     <>
       <div className={styles.detailKopf}>
-        <div className={styles.detailName}>Kontakt bearbeiten</div>
+        <div className={styles.detailName}>{t("edit.title")}</div>
         <button className={`${styles.knopf} ${styles.knopfHaupt}`} disabled={laeuft} onClick={onSpeichern}>
-          Speichern
+          {t("common.save")}
         </button>
-        <button className={styles.knopf} onClick={onAbbrechen}>Abbrechen</button>
+        <button className={styles.knopf} onClick={onAbbrechen}>{t("common.cancel")}</button>
       </div>
 
       <div className={styles.block}>
-        <div className={styles.blockTitel}>Name</div>
+        <div className={styles.blockTitel}>{t("edit.name")}</div>
         <div className={styles.feldReihe}>
-          <input className={`${styles.feld} ${styles.feldSchmal}`} placeholder="Vorname"
+          <input className={`${styles.feld} ${styles.feldSchmal}`} placeholder={t("edit.firstName")}
                  value={n.vorname ?? ""} onChange={(e) => setzen("namen.vorname", e.target.value)} />
-          <input className={`${styles.feld} ${styles.feldSchmal}`} placeholder="Nachname"
+          <input className={`${styles.feld} ${styles.feldSchmal}`} placeholder={t("edit.lastName")}
                  value={n.nachname ?? ""} onChange={(e) => setzen("namen.nachname", e.target.value)} />
         </div>
-        <input className={styles.feld} placeholder="Anzeigename (leer = aus Vor- und Nachname)"
+        <input className={styles.feld} placeholder={t("edit.displayName")}
                value={n.anzeigename ?? ""} onChange={(e) => setzen("namen.anzeigename", e.target.value)} />
       </div>
 
       <div className={styles.block}>
-        <div className={styles.blockTitel}>Organisation</div>
+        <div className={styles.blockTitel}>{t("edit.organisation")}</div>
         <div className={styles.feldReihe}>
-          <input className={styles.feld} placeholder="Firma"
+          <input className={styles.feld} placeholder={t("edit.company")}
                  value={entwurf.organisation?.firma ?? ""}
                  onChange={(e) => setzen("organisation.firma", e.target.value)} />
         </div>
-        <input className={styles.feld} placeholder="Position"
+        <input className={styles.feld} placeholder={t("edit.position")}
                value={entwurf.organisation?.position ?? ""}
                onChange={(e) => setzen("organisation.position", e.target.value)} />
       </div>
 
       <div className={styles.block}>
-        <div className={styles.blockTitel}>E-Mail</div>
+        <div className={styles.blockTitel}>{t("edit.email")}</div>
         {(entwurf.mails ?? []).map((m, i) => (
           <div className={styles.feldReihe} key={i}>
-            <input className={`${styles.feld} ${styles.feldSchmal}`} placeholder="Art"
+            <input className={`${styles.feld} ${styles.feldSchmal}`} placeholder={t("edit.kind")}
                    value={m.label ?? ""} onChange={(e) => listeSetzen("mails", i, { label: e.target.value })} />
-            <input className={styles.feld} placeholder="name@example.org" style={{ flex: 1 }}
+            <input className={styles.feld} placeholder={t("edit.emailPlaceholder")} style={{ flex: 1 }}
                    value={m.wert} onChange={(e) => listeSetzen("mails", i, { wert: e.target.value })} />
           </div>
         ))}
-        <button className={styles.knopf} onClick={() => listeDazu("mails")}>+ E-Mail</button>
+        <button className={styles.knopf} onClick={() => listeDazu("mails")}>{t("edit.addEmail")}</button>
       </div>
 
       <div className={styles.block}>
-        <div className={styles.blockTitel}>Telefon</div>
-        {(entwurf.telefone ?? []).map((t, i) => (
+        <div className={styles.blockTitel}>{t("edit.phone")}</div>
+        {(entwurf.telefone ?? []).map((tel, i) => (
           <div className={styles.feldReihe} key={i}>
-            <input className={`${styles.feld} ${styles.feldSchmal}`} placeholder="Art"
-                   value={t.label ?? ""} onChange={(e) => listeSetzen("telefone", i, { label: e.target.value })} />
-            <input className={styles.feld} placeholder="+49 …" style={{ flex: 1 }}
-                   value={t.wert} onChange={(e) => listeSetzen("telefone", i, { wert: e.target.value })} />
+            <input className={`${styles.feld} ${styles.feldSchmal}`} placeholder={t("edit.kind")}
+                   value={tel.label ?? ""} onChange={(e) => listeSetzen("telefone", i, { label: e.target.value })} />
+            <input className={styles.feld} placeholder={t("edit.phonePlaceholder")} style={{ flex: 1 }}
+                   value={tel.wert} onChange={(e) => listeSetzen("telefone", i, { wert: e.target.value })} />
           </div>
         ))}
-        <button className={styles.knopf} onClick={() => listeDazu("telefone")}>+ Telefon</button>
+        <button className={styles.knopf} onClick={() => listeDazu("telefone")}>{t("edit.addPhone")}</button>
       </div>
 
       <div className={styles.block}>
-        <div className={styles.blockTitel}>Notiz</div>
+        <div className={styles.blockTitel}>{t("edit.note")}</div>
         <textarea className={styles.feld} rows={3} value={entwurf.notizen ?? ""}
                   onChange={(e) => setzen("notizen", e.target.value)} />
       </div>
 
       <div className={styles.fussnote}>
-        Leere Zeilen werden beim Speichern verworfen. Felder aus einer Quelle, die
-        dieses Formular nicht kennt, bleiben unverändert erhalten.
+        {t("edit.footer")}
       </div>
     </>
   );
@@ -1043,13 +1037,8 @@ function Bearbeiten({ entwurf, setEntwurf, laeuft, onSpeichern, onAbbrechen }: {
 
 /* ── History ──────────────────────────────────────────────────────────────── */
 
-const GRUND_TEXT: Record<string, string> = {
-  bearbeitet: "von Hand geändert",
-  import: "durch Import geändert",
-  entfernt: "entfernt",
-  wiederhergestellt: "zurückgeholt",
-  zusammengefuehrt: "zusammengeführt",
-};
+/** Reasons the server records; unknown ones are shown as they come. */
+const GRUENDE = new Set(["bearbeitet", "import", "entfernt", "wiederhergestellt", "zusammengefuehrt"]);
 
 function Verlauf({ kontakt, fassungen, onZurueck, onHolen }: {
   kontakt: Kontakt;
@@ -1057,17 +1046,18 @@ function Verlauf({ kontakt, fassungen, onZurueck, onHolen }: {
   onZurueck: () => void;
   onHolen: (seq: number) => void;
 }) {
+  const { t } = useTranslation("kontakte");
   return (
     <>
       <div className={styles.detailKopf}>
-        <div className={styles.detailName}>Verlauf — {kontakt.anzeigename}</div>
-        <button className={styles.knopf} onClick={onZurueck}>Zurück</button>
+        <div className={styles.detailName}>{t("history.title", { name: kontakt.anzeigename })}</div>
+        <button className={styles.knopf} onClick={onZurueck}>{t("common.back")}</button>
       </div>
 
-      {fassungen === null && <div className={styles.leer}>Lade…</div>}
+      {fassungen === null && <div className={styles.leer}>{t("common.loading")}</div>}
       {fassungen?.length === 0 && (
         <div className={styles.leer}>
-          Noch keine früheren Stände — dieser Kontakt wurde seit dem Anlegen nicht geändert.
+          {t("history.empty")}
         </div>
       )}
       {fassungen?.map((f) => (
@@ -1081,16 +1071,15 @@ function Verlauf({ kontakt, fassungen, onZurueck, onHolen }: {
             {f.data.mails?.[0]?.wert ? ` · ${f.data.mails[0].wert}` : ""}
           </span>
           <span className={styles.fassungGrund}>
-            {GRUND_TEXT[f.reason] ?? f.reason}
+            {GRUENDE.has(f.reason) ? t(`history.reason.${f.reason}`) : f.reason}
             {f.changed_by.startsWith("import:") ? ` (${f.changed_by})` : ""}
           </span>
-          <button className={styles.knopf} onClick={() => onHolen(f.seq)}>Diesen Stand holen</button>
+          <button className={styles.knopf} onClick={() => onHolen(f.seq)}>{t("history.restoreThis")}</button>
         </div>
       ))}
 
       <div className={styles.fussnote}>
-        Jede Zeile ist ein vollständiger früherer Stand. Einen davon zu holen löscht
-        nichts — der bisherige Stand wandert dabei selbst in den Verlauf.
+        {t("history.footer")}
       </div>
     </>
   );
@@ -1112,17 +1101,18 @@ function Quellen({ google, projektion, laeuft, regel, onRegel, onCarddav, onVerb
   onAufsHandy: () => void;
   onZurueck: () => void;
 }) {
+  const { t } = useTranslation("kontakte");
   return (
     <>
       <div className={styles.detailKopf}>
-        <div className={styles.detailName}>Quellen</div>
-        <button className={styles.knopf} onClick={onZurueck}>Zurück</button>
+        <div className={styles.detailName}>{t("sources.title")}</div>
+        <button className={styles.knopf} onClick={onZurueck}>{t("common.back")}</button>
       </div>
 
       <div className={styles.block}>
-        <div className={styles.blockTitel}>Google Kontakte</div>
+        <div className={styles.blockTitel}>{t("sources.google")}</div>
 
-        {google === null && <div className={styles.zeile}>Wird geprüft…</div>}
+        {google === null && <div className={styles.zeile}>{t("common.checking")}</div>}
 
         {google && !google.moeglich && (
           <>
@@ -1130,10 +1120,7 @@ function Quellen({ google, projektion, laeuft, regel, onRegel, onCarddav, onVerb
               <span className={styles.zeileWert}>{google.hinweis}</span>
             </div>
             <div className={styles.fussnote}>
-              Solange Google hier nicht eingerichtet ist, geht der Weg über einen
-              Export: In Google Kontakte alles als <strong>vCard</strong> exportieren
-              und oben über „Import .vcf" hochladen. Das funktioniert sofort und
-              braucht keine Freigabe.
+              <Trans t={t} i18nKey="sources.notSetUp" components={TAGS} />
             </div>
           </>
         )}
@@ -1141,16 +1128,13 @@ function Quellen({ google, projektion, laeuft, regel, onRegel, onCarddav, onVerb
         {google?.moeglich && !google.verbunden && (
           <>
             <div className={styles.zeile}>
-              <span className={styles.zeileWert}>Noch nicht verbunden.</span>
+              <span className={styles.zeileWert}>{t("sources.notConnected")}</span>
             </div>
             <button className={`${styles.knopf} ${styles.knopfHaupt}`} onClick={onVerbinden}>
-              Mit Google verbinden
+              {t("sources.connect")}
             </button>
             <div className={styles.fussnote}>
-              🔒 {getBrand().product} fragt <strong>nur Lesezugriff</strong> auf deine Kontakte an
-              (<code>contacts.readonly</code>). Es <strong>kann</strong> bei Google
-              nichts ändern oder löschen — nicht weil wir es lassen, sondern weil
-              Google uns die Berechtigung dafür gar nicht gibt.
+              <Trans t={t} i18nKey="sources.readOnlyAsk" components={TAGS} />
             </div>
           </>
         )}
@@ -1158,72 +1142,59 @@ function Quellen({ google, projektion, laeuft, regel, onRegel, onCarddav, onVerb
         {google?.verbunden && (
           <>
             <div className={styles.zeile}>
-              <span className={styles.zeileLabel}>Konto</span>
-              <span className={styles.zeileWert}>{google.konto || "(unbekannt)"}</span>
+              <span className={styles.zeileLabel}>{t("sources.account")}</span>
+              <span className={styles.zeileWert}>{google.konto || t("common.unknown")}</span>
             </div>
             {google.zeiger?.filter((z) => z.source === "google").map((z, i) => (
               <div className={styles.zeile} key={i}>
-                <span className={styles.zeileLabel}>Zuletzt</span>
+                <span className={styles.zeileLabel}>{t("sources.lastRun")}</span>
                 <span className={styles.zeileWert}>
-                  {z.last_run ? new Date(z.last_run).toLocaleString(regionLocale()) : "noch nie"}
-                  {z.inkrementell ? " · holt nur noch Änderungen" : " · beim nächsten Mal alles"}
+                  {z.last_run ? new Date(z.last_run).toLocaleString(regionLocale()) : t("sources.never")}
+                  {z.inkrementell ? t("sources.incremental") : t("sources.fullNext")}
                 </span>
               </div>
             ))}
             <div className={styles.feldReihe}>
               <button className={`${styles.knopf} ${styles.knopfHaupt}`} disabled={laeuft}
-                      onClick={() => onHolen(false)}>Von Google holen</button>
+                      onClick={() => onHolen(false)}>{t("sources.fetch")}</button>
               <button className={styles.knopf} disabled={laeuft}
-                      onClick={() => onHolen(true)}>Alles neu holen</button>
-              <button className={styles.knopf} onClick={onTrennen}>Zugang lösen</button>
+                      onClick={() => onHolen(true)}>{t("sources.fetchAll")}</button>
+              <button className={styles.knopf} onClick={onTrennen}>{t("sources.disconnect")}</button>
             </div>
             <div className={styles.fussnote}>
-              🔒 Nur Lesezugriff. Änderungen, die du <em>hier</em> machst, gehen
-              <strong> nicht</strong> zurück zu Google — das ist so gewollt.
-              Ändert sich ein Kontakt an beiden Stellen, gilt dein Stand, und
-              Googles Stand liegt als Vorschlag an der Karte.
-              <br />
-              „Zugang lösen" löscht keine Kontakte.
+              <Trans t={t} i18nKey="sources.readOnlyNote" components={TAGS} />
             </div>
           </>
         )}
       </div>
 
       <div className={styles.block}>
-        <div className={styles.blockTitel}>Wer darf dich in {getBrand().product} erreichen</div>
+        <div className={styles.blockTitel}>{t("sources.reachTitle")}</div>
         {regel && (
           <>
-            {([
-              ["alle", "Alle", `Jeder in ${getBrand().product} darf dir etwas zustellen.`],
-              ["team", "Nur mein Team", "Nur Leute aus einem Team, in dem du auch bist."],
-              ["team_und_kontakte", "Team und Kontakte",
-               "Zusätzlich alle, die du selbst als Kontakt führst und verknüpft hast."],
-            ] as const).map(([wert, titel, erklaerung]) => (
+            {(["alle", "team", "team_und_kontakte"] as const).map((wert) => (
               <div className={styles.zeile} key={wert}>
                 <input type="radio" name="erreichbar" checked={regel.erreichbar === wert}
                        onChange={() => onRegel(wert)} id={`er-${wert}`} />
                 <label htmlFor={`er-${wert}`} className={styles.zeileWert}>
-                  <strong>{titel}</strong> — {erklaerung}
+                  <strong>{t(`sources.reach.${wert}.title`)}</strong> — {t(`sources.reach.${wert}.text`)}
                 </label>
               </div>
             ))}
             {/* Warning: the most important thing about this setting is what it CANNOT do.
                 Keeping quiet about that builds reassurance instead of protection. */}
             <div className={styles.fussnote}>
-              Greift in: <strong>{regel.greift_in.join(", ")}</strong>.
-              <br />
-              🔴 Greift <strong>nicht</strong> in: {regel.greift_nicht_in.join(", ")}.
-              Diese Einstellung schaltet weder dein Telefon noch WhatsApp ab — sie
-              gilt nur dort, wo {getBrand().product} beide Enden kontrolliert.
+              <Trans t={t} i18nKey="sources.reachScope" components={TAGS}
+                     values={{ inList: regel.greift_in.join(", "), notList: regel.greift_nicht_in.join(", ") }} />
             </div>
           </>
         )}
       </div>
 
       <div className={styles.block}>
-        <div className={styles.blockTitel}>Aufs Handy — {getBrand().product}-Adressbuch in Nextcloud</div>
+        <div className={styles.blockTitel}>{t("sources.phoneTitle")}</div>
 
-        {projektion === null && <div className={styles.zeile}>Wird geprüft…</div>}
+        {projektion === null && <div className={styles.zeile}>{t("common.checking")}</div>}
 
         {projektion && !projektion.moeglich && (
           <div className={styles.zeile}>
@@ -1234,59 +1205,45 @@ function Quellen({ google, projektion, laeuft, regel, onRegel, onCarddav, onVerb
         {projektion?.moeglich && (
           <>
             <div className={styles.zeile}>
-              <span className={styles.zeileLabel}>Adressbuch</span>
+              <span className={styles.zeileLabel}>{t("sources.book")}</span>
               <span className={styles.zeileWert}>„{projektion.adressbuch}"</span>
             </div>
             <div className={styles.zeile}>
-              <span className={styles.zeileLabel}>Stand</span>
+              <span className={styles.zeileLabel}>{t("sources.state")}</span>
               <span className={styles.zeileWert}>
-                {projektion.draussen} von {projektion.kontakte} übertragen
-                {projektion.mit_fehler ? ` · ${projektion.mit_fehler} mit Fehler` : ""}
+                {t("sources.transferred", { done: projektion.draussen, total: projektion.kontakte })}
+                {projektion.mit_fehler ? t("sources.withErrors", { count: projektion.mit_fehler }) : ""}
                 {projektion.zuletzt
-                  ? ` · zuletzt ${new Date(projektion.zuletzt).toLocaleString(regionLocale())}`
-                  : " · noch nie"}
+                  ? t("sources.lastAt", { when: new Date(projektion.zuletzt).toLocaleString(regionLocale()) })
+                  : t("sources.neverSuffix")}
               </span>
             </div>
             <button className={`${styles.knopf} ${styles.knopfHaupt}`} disabled={laeuft}
                     onClick={onAufsHandy}>
-              Jetzt übertragen
+              {t("sources.transfer")}
             </button>
           </>
         )}
 
         <div className={styles.fussnote}>
-          {getBrand().product} legt in Nextcloud ein <strong>eigenes</strong> Adressbuch an und ist
-          dessen einziger Schreiber. Dein bestehendes Adressbuch wird
-          <strong> nicht angefasst</strong>.
-          <br />
-          Damit die Kontakte auf dem Handy landen, musst du dieses Adressbuch dort
-          einmal abonnieren (DAVx5). 🔴 Solange <em>beide</em> Adressbücher am Gerät
-          hängen, steht jeder Kontakt doppelt — das Umschalten ist ein eigener,
-          bewusster Schritt und braucht vorher eine Sicherung.
+          <Trans t={t} i18nKey="sources.phoneNote" components={TAGS} />
         </div>
       </div>
 
       <div className={styles.block}>
-        <div className={styles.blockTitel}>Nextcloud-Adressbücher</div>
+        <div className={styles.blockTitel}>{t("sources.nextcloudTitle")}</div>
         <button className={styles.knopf} disabled={laeuft} onClick={onCarddav}>
-          Aus Nextcloud holen
+          {t("sources.nextcloudFetch")}
         </button>
         <div className={styles.fussnote}>
-          Liest deine <em>eigenen</em> Adressbücher in Nextcloud — nützlich, wenn dein
-          Handy per DAVx5 dorthin synchronisiert. Das von {getBrand().product} geschriebene
-          Adressbuch und Nextclouds Nutzerverzeichnis werden dabei
-          <strong> übersprungen</strong>: Sonst läse {getBrand().product} seine eigene Ausgabe
-          wieder ein, und die Wahrheit wäre ihr eigenes Abbild.
+          <Trans t={t} i18nKey="sources.nextcloudNote" components={TAGS} />
         </div>
       </div>
 
       <div className={styles.block}>
-        <div className={styles.blockTitel}>vCard-Datei</div>
+        <div className={styles.blockTitel}>{t("sources.vcardTitle")}</div>
         <div className={styles.fussnote}>
-          Über „Import .vcf" oben. Dieselbe Datei mehrfach hochzuladen ist
-          folgenlos — {getBrand().product} merkt sich je Quelle, was sie zuletzt gezeigt hat,
-          und legt nichts doppelt an. Ein Kontakt, den du entfernt hast, kommt
-          durch einen erneuten Import <strong>nicht</strong> zurück.
+          <Trans t={t} i18nKey="sources.vcardNote" components={TAGS} />
         </div>
       </div>
     </>
@@ -1301,54 +1258,48 @@ function Vorschlaege({ liste, teams, onEntscheiden, onZurueck }: {
   onEntscheiden: (v: Vorschlag, bestaetigt: boolean) => void;
   onZurueck: () => void;
 }) {
+  const { t } = useTranslation("kontakte");
   return (
     <>
       <div className={styles.detailKopf}>
-        <div className={styles.detailName}>Abgleich mit {getBrand().product}-Nutzern</div>
-        <button className={styles.knopf} onClick={onZurueck}>Zurück</button>
+        <div className={styles.detailName}>{t("matching.title")}</div>
+        <button className={styles.knopf} onClick={onZurueck}>{t("common.back")}</button>
       </div>
 
-      {liste === null && <div className={styles.leer}>Wird geprüft…</div>}
+      {liste === null && <div className={styles.leer}>{t("common.checking")}</div>}
 
       {liste?.length === 0 && (
         <div className={styles.leer}>
-          Keine offenen Vorschläge.
+          {t("matching.none")}
           {teams?.teams.length
-            ? ` Verglichen wurde mit den Mitgliedern von: ${teams.teams.join(", ")}.`
-            : " Du teilst mit niemandem ein Team — dann gibt es auch nichts zu vergleichen."}
+            ? t("matching.comparedWith", { teams: teams.teams.join(", ") })
+            : t("matching.noTeam")}
         </div>
       )}
 
       {liste?.map((v) => (
         <div className={styles.fassung} key={v.contact_id}>
           <span className={`${styles.marke} ${v.schwach ? "" : styles.markeEcht}`}>
-            {v.schwach ? "Hinweis" : "Treffer"}
+            {v.schwach ? t("matching.hint") : t("matching.match")}
           </span>
           <span className={styles.zeileWert}>
-            <strong>{v.anzeigename}</strong> ist vermutlich <strong>{v.nutzer_name}</strong>
-            {" "}({v.username})
+            <Trans t={t} i18nKey="matching.probably" components={TAGS}
+                   values={{ contact: v.anzeigename, user: v.nutzer_name, username: v.username }} />
             <br />
             <span className={styles.fassungGrund}>
               {v.begruendung}
-              {v.teams.length ? ` · gemeinsam in: ${v.teams.join(", ")}` : ""}
+              {v.teams.length ? t("matching.together", { teams: v.teams.join(", ") }) : ""}
             </span>
           </span>
           <button className={`${styles.knopf} ${styles.knopfHaupt}`}
-                  onClick={() => onEntscheiden(v, true)}>Ist dieselbe Person</button>
+                  onClick={() => onEntscheiden(v, true)}>{t("matching.same")}</button>
           <button className={styles.knopf}
-                  onClick={() => onEntscheiden(v, false)}>Nein</button>
+                  onClick={() => onEntscheiden(v, false)}>{t("matching.no")}</button>
         </div>
       ))}
 
       <div className={styles.fussnote}>
-        🔒 Verglichen wird <strong>nur</strong> mit Leuten, mit denen du ein Team
-        teilst — sonst würde diese Liste verraten, wer hier überhaupt ein Konto hat.
-        <br />
-        <strong>{getBrand().product} verknüpft nie von selbst.</strong> Eine falsche Verknüpfung
-        hiesse nicht „falscher Name", sondern: jemand bekommt Sichtbarkeit auf
-        Teaminhalte. Deshalb entscheidest du.
-        <br />
-        „Nein" wird gespeichert — derselbe Vorschlag kommt nicht wieder.
+        <Trans t={t} i18nKey="matching.note" components={TAGS} />
       </div>
     </>
   );
@@ -1356,11 +1307,7 @@ function Vorschlaege({ liste, teams, onEntscheiden, onZurueck }: {
 
 /* ── Sharing and blocking ─────────────────────────────────────────────────── */
 
-const ZUSTAND_TEXT: Record<string, string> = {
-  durchgesetzt: "durchgesetzt",
-  ausgeblendet: "nur ausgeblendet",
-  fehlgeschlagen: "fehlgeschlagen",
-};
+const ZUSTAENDE = new Set(["durchgesetzt", "ausgeblendet", "fehlgeschlagen"]);
 
 function TeilenUndBlocken({ kontakt, teams, dienste, daten,
                             onTeilen, onTeilenZurueck, onBlocken, onBlockAufheben }: {
@@ -1373,12 +1320,13 @@ function TeilenUndBlocken({ kontakt, teams, dienste, daten,
   onBlocken: (service: string) => void;
   onBlockAufheben: (service: string) => void;
 }) {
+  const { t } = useTranslation("kontakte");
   const [wer, setWer] = useState("");
   const [blockDienst, setBlockDienst] = useState("claraos");
 
   // Anything attached to the contact can be blocked — plus ClaraOS itself.
   const blockbar = [
-    { id: "claraos", label: `${getBrand().product} (Kontakte, Wissen)` },
+    { id: "claraos", label: t("share.productLabel") },
     ...(kontakt.handles ?? []).map((h) => ({
       id: h.service,
       label: dienste.find((d) => d.id === h.service)?.label ?? h.service,
@@ -1389,41 +1337,39 @@ function TeilenUndBlocken({ kontakt, teams, dienste, daten,
 
   return (
     <div className={styles.block}>
-      <div className={styles.blockTitel}>Teilen und Blocken</div>
+      <div className={styles.blockTitel}>{t("share.title")}</div>
 
       {(daten?.freigaben ?? []).map((f) => (
         <div className={styles.handle} key={f.shared_with}>
-          <span className={styles.marke}>geteilt</span>
-          <span className={styles.zeileWert}>{f.shared_with} · nur lesend</span>
+          <span className={styles.marke}>{t("share.sharedBadge")}</span>
+          <span className={styles.zeileWert}>{t("share.readOnly", { user: f.shared_with })}</span>
           <button className={styles.knopf} onClick={() => onTeilenZurueck(f.shared_with)}>
-            Zurücknehmen
+            {t("share.revoke")}
           </button>
         </div>
       ))}
 
       <div className={styles.feldReihe}>
         <input className={styles.feld} style={{ flex: 1 }}
-               placeholder="Mit wem teilen? (Nutzername aus deinem Team)"
+               placeholder={t("share.placeholder")}
                value={wer} onChange={(e) => setWer(e.target.value)}
                onKeyDown={(e) => { if (e.key === "Enter" && wer.trim()) { onTeilen(wer.trim()); setWer(""); } }} />
         <button className={styles.knopf} disabled={!wer.trim()}
-                onClick={() => { onTeilen(wer.trim()); setWer(""); }}>Teilen</button>
+                onClick={() => { onTeilen(wer.trim()); setWer(""); }}>{t("share.share")}</button>
       </div>
       <div className={styles.fussnote}>
-        Teilen geht nur mit Leuten, mit denen du ein Team teilst
-        {teams?.teams.length ? ` (${teams.teams.join(", ")})` : ""} — und nur, wenn
-        die Person dich nicht blockiert hat. Eine Freigabe ist <strong>nur lesend</strong>{" "}
-        und zeigt <strong>nicht</strong> deinen Bearbeitungsverlauf.
+        <Trans t={t} i18nKey="share.note" components={TAGS}
+               values={{ teams: teams?.teams.length ? ` (${teams.teams.join(", ")})` : "" }} />
       </div>
 
       {(daten?.blocks ?? []).map((b) => (
         <div className={styles.handle} key={b.service}>
           <span className={`${styles.marke} ${b.zustand === "durchgesetzt" ? styles.markeEcht : ""}`}>
-            {ZUSTAND_TEXT[b.zustand] ?? b.zustand}
+            {ZUSTAENDE.has(b.zustand) ? t(`share.state.${b.zustand}`) : b.zustand}
           </span>
-          <span className={styles.zeileWert}>{b.service} blockiert</span>
+          <span className={styles.zeileWert}>{t("share.blocked", { service: b.service })}</span>
           <button className={styles.knopf} onClick={() => onBlockAufheben(b.service)}>
-            Aufheben
+            {t("common.lift")}
           </button>
         </div>
       ))}
@@ -1433,21 +1379,17 @@ function TeilenUndBlocken({ kontakt, teams, dienste, daten,
                 onChange={(e) => setBlockDienst(e.target.value)} style={{ flex: 1 }}>
           {blockbar.map((d) => (
             <option key={d.id} value={d.id} disabled={schonGeblockt.has(d.id)}>
-              {d.label}{schonGeblockt.has(d.id) ? " (schon blockiert)" : ""}
+              {d.label}{schonGeblockt.has(d.id) ? t("share.alreadyBlocked") : ""}
             </option>
           ))}
         </select>
         <button className={`${styles.knopf} ${styles.knopfGefahr}`}
                 disabled={schonGeblockt.has(blockDienst)}
-                onClick={() => onBlocken(blockDienst)}>Blockieren</button>
+                onClick={() => onBlocken(blockDienst)}>{t("share.block")}</button>
       </div>
       {/* Warning: the most honest sentence in the whole app: what a block CANNOT do. */}
       <div className={styles.fussnote}>
-        <strong>Durchgesetzt</strong> heißt: {getBrand().product} hat dort wirklich etwas getan
-        ({getBrand().product}-Kanäle, Matrix-Ignorierliste). <strong>Nur ausgeblendet</strong> heißt:
-        der Dienst kennt keinen Block, den wir setzen könnten — LinkedIn, X, Facebook.
-        Dort verschwindet der Kontakt bei uns aus der Liste, und mehr ist ehrlicherweise
-        nicht drin. Ein Block hier hindert niemanden daran, dich anzurufen.
+        <Trans t={t} i18nKey="share.blockNote" components={TAGS} />
       </div>
     </div>
   );

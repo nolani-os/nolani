@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { INSTALL_TEXTS } from "../../installTexts";
 import styles from "./UserAdminApp.module.css";
-import { regionLocale } from "@claraos/core";
+import { regionLocale, Trans, useTranslation } from "@claraos/core";
 
 const UA = "/api/claraos/user-admin";
 
@@ -26,6 +26,7 @@ function genPassword(): string {
 }
 
 export function CreateUserWizard({ onClose, onCreated }: Props) {
+  const { t } = useTranslation("userAdmin");
   const [step, setStep] = useState<1 | 2>(1);
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
@@ -118,16 +119,16 @@ export function CreateUserWizard({ onClose, onCreated }: Props) {
     return (
       <div className={styles.modalOverlay}>
         <div className={styles.modal}>
-          <h2>✓ {result.username} angelegt</h2>
+          <h2>{t("wizard.created", { user: result.username })}</h2>
           <p className={styles.modalHint}>
-            Das Start-Passwort wird <strong>nur jetzt</strong> angezeigt — gib es persönlich weiter.
+            <Trans t={t} i18nKey="wizard.passwordOnce" components={{ b: <strong /> }} />
           </p>
           <div className={styles.pwBox}>
             <code className={styles.pwValue}>{result.password}</code>
             <button className={styles.btn} onClick={() => {
               navigator.clipboard.writeText(result.password);
               setCopied(true); setTimeout(() => setCopied(false), 1500);
-            }}>{copied ? "✓ Kopiert" : "Kopieren"}</button>
+            }}>{copied ? t("common.copied") : t("common.copy")}</button>
           </div>
           <div className={styles.stepList}>
             {Object.entries(result.steps).map(([k, v]) => (
@@ -137,29 +138,29 @@ export function CreateUserWizard({ onClose, onCreated }: Props) {
               </div>
             ))}
           </div>
-          {result.email && <p className={styles.modalHint}>Mail: <code>{result.email}</code></p>}
+          {result.email && <p className={styles.modalHint}>{t("wizard.mail")} <code>{result.email}</code></p>}
 
           {/* Invite link for the setup assistant (public portal).
               Like the password: the link is only visible NOW (the DB only keeps the hash). */}
           {!invite ? (
             <div style={{ margin: "12px 0" }}>
               <button className={styles.btn} onClick={createInvite} disabled={inviteBusy}>
-                {inviteBusy ? "Erzeuge…" : "\u{1F517} Einladungslink für Einrichtungsassistent"}
+                {inviteBusy ? t("wizard.inviteBusy") : t("wizard.invite")}
               </button>
               {inviteError && <p className={styles.error}>{inviteError}</p>}
             </div>
           ) : (
             <div style={{ margin: "12px 0" }}>
               <p className={styles.modalHint}>
-                Einrichtungs-Link (gültig bis {new Date(invite.expires_at).toLocaleDateString(regionLocale())},
-                nur <strong>jetzt</strong> sichtbar — per Messenger schicken oder QR abscannen lassen):
+                <Trans t={t} i18nKey="wizard.inviteHint" components={{ b: <strong /> }}
+                       values={{ date: new Date(invite.expires_at).toLocaleDateString(regionLocale()) }} />
               </p>
               <div className={styles.pwBox}>
                 <code className={styles.pwValue} style={{ fontSize: 11, wordBreak: "break-all" }}>{invite.invite_url}</code>
                 <button className={styles.btn} onClick={() => {
                   navigator.clipboard.writeText(invite.invite_url);
                   setInviteCopied(true); setTimeout(() => setInviteCopied(false), 1500);
-                }}>{inviteCopied ? "✓ Kopiert" : "Kopieren"}</button>
+                }}>{inviteCopied ? t("common.copied") : t("common.copy")}</button>
               </div>
               <div style={{ background: "#fff", borderRadius: 10, padding: 12, width: "fit-content", margin: "10px auto" }}>
                 <QRCodeSVG value={invite.invite_url} size={140} marginSize={1} />
@@ -168,7 +169,7 @@ export function CreateUserWizard({ onClose, onCreated }: Props) {
           )}
 
           <div className={styles.modalActions}>
-            <button className={styles.btnPrimary} onClick={onClose}>Fertig</button>
+            <button className={styles.btnPrimary} onClick={onClose}>{t("wizard.done")}</button>
           </div>
         </div>
       </div>
@@ -180,23 +181,23 @@ export function CreateUserWizard({ onClose, onCreated }: Props) {
   return (
     <div className={styles.modalOverlay}>
       <div className={styles.modal}>
-        <h2>Neuer Benutzer {step === 2 && "· Dienste"}</h2>
+        <h2>{step === 2 ? t("wizard.titleServices") : t("wizard.title")}</h2>
 
         {step === 1 && (
           <>
             <label className={styles.field}>
-              <span>Name</span>
+              <span>{t("wizard.name")}</span>
               <input className={styles.input} value={name} autoFocus
-                onChange={(e) => setName(e.target.value)} placeholder="Vorname Nachname" />
+                onChange={(e) => setName(e.target.value)} placeholder={t("wizard.namePlaceholder")} />
             </label>
             <label className={styles.field}>
-              <span>Benutzername</span>
+              <span>{t("wizard.username")}</span>
               <input className={styles.input} value={username}
                 onChange={(e) => { setUsername(e.target.value); setUsernameEdited(true); }}
-                placeholder="vorname.nachname" />
+                placeholder={t("wizard.usernamePlaceholder")} />
             </label>
             <div className={styles.field}>
-              <span>Gruppen</span>
+              <span>{t("wizard.groups")}</span>
               <div className={styles.groupChips}>
                 {allGroups.map((g) => (
                   <button key={g} type="button"
@@ -204,11 +205,11 @@ export function CreateUserWizard({ onClose, onCreated }: Props) {
                     onClick={() => toggleGroup(g)}>{g}</button>
                 ))}
               </div>
-              <span className={styles.hint}>Preset „Familienmitglied" ist vorausgewählt.</span>
+              <span className={styles.hint}>{t("wizard.presetHint")}</span>
             </div>
             <div className={styles.modalActions}>
-              <button className={styles.btn} onClick={onClose}>Abbrechen</button>
-              <button className={styles.btnPrimary} disabled={!canNext} onClick={() => setStep(2)}>Weiter →</button>
+              <button className={styles.btn} onClick={onClose}>{t("wizard.cancel")}</button>
+              <button className={styles.btnPrimary} disabled={!canNext} onClick={() => setStep(2)}>{t("wizard.next")}</button>
             </div>
           </>
         )}
@@ -217,11 +218,11 @@ export function CreateUserWizard({ onClose, onCreated }: Props) {
           <>
             <label className={styles.checkRow}>
               <input type="checkbox" checked={createNc} onChange={(e) => setCreateNc(e.target.checked)} />
-              <span>Nextcloud-Konto anlegen</span>
+              <span>{t("wizard.createNc")}</span>
             </label>
             {createNc && (
               <label className={styles.field}>
-                <span>Speicher-Quota</span>
+                <span>{t("wizard.quota")}</span>
                 <select className={styles.input} value={ncQuota} onChange={(e) => setNcQuota(e.target.value)}>
                   <option>10 GB</option><option>50 GB</option><option>100 GB</option><option>none</option>
                 </select>
@@ -229,20 +230,20 @@ export function CreateUserWizard({ onClose, onCreated }: Props) {
             )}
             <label className={styles.checkRow}>
               <input type="checkbox" checked={createMail} onChange={(e) => setCreateMail(e.target.checked)} />
-              <span>Mail-Konto anlegen</span>
+              <span>{t("wizard.createMail")}</span>
             </label>
             {mailAvailable === false && (
               <span className={styles.hint}>{INSTALL_TEXTS.mailSecretMissing}</span>
             )}
             <div className={styles.summary}>
-              <strong>{name}</strong> ({username}) · {groups.length} Gruppen
+              <strong>{name}</strong> ({username}) · {t("wizard.groupCount", { count: groups.length })}
               {createNc && ` · NC ${ncQuota}`}{createMail && " · Mail"}
             </div>
             {error && <p className={styles.error}>{error}</p>}
             <div className={styles.modalActions}>
-              <button className={styles.btn} onClick={() => setStep(1)} disabled={busy}>← Zurück</button>
+              <button className={styles.btn} onClick={() => setStep(1)} disabled={busy}>{t("common.back")}</button>
               <button className={styles.btnPrimary} onClick={submit} disabled={busy}>
-                {busy ? "Lege an…" : "Benutzer anlegen"}
+                {busy ? t("wizard.creating") : t("wizard.create")}
               </button>
             </div>
           </>

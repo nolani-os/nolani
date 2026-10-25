@@ -6,6 +6,7 @@ import styles from "../../PlannerApp.module.css";
 import { Icon } from "../../../../components/Icon";
 import { ConflictError, kalenderApi, ncApi, plannerApi, type AttendeeOut, type BusyStatus, type CalEventFull, type EventWrite, type Person } from "../../api";
 import { EinladungAntwort, FreiGebucht } from "./Phase5";
+import { useTranslation } from "@claraos/core";
 
 export interface EditorInit {
   mode: "create" | "edit";
@@ -30,27 +31,30 @@ function wallToIso(local: string, tz: string): string {
   return new Date(guess.getTime() - (asUtc - guess.getTime())).toISOString();
 }
 
-const BUSY_OPTIONS: { value: BusyStatus; label: string }[] = [
-  { value: "free", label: "🟢 Frei" },
-  { value: "busy", label: "🔵 Beschäftigt" },
-  { value: "tentative", label: "🟡 Mit Vorbehalt" },
-  { value: "oof", label: "🟣 Außer Haus" },
+// Option lists: values are API values, labels are translated at render time.
+const BUSY_OPTIONS: { value: BusyStatus; dot: string }[] = [
+  { value: "free", dot: "🟢" },
+  { value: "busy", dot: "🔵" },
+  { value: "tentative", dot: "🟡" },
+  { value: "oof", dot: "🟣" },
 ];
-const FREQ_OPTIONS = [
-  { value: "", label: "Keine Wiederholung" },
-  { value: "DAILY", label: "Täglich" },
-  { value: "WEEKLY", label: "Wöchentlich" },
-  { value: "MONTHLY", label: "Monatlich" },
-  { value: "YEARLY", label: "Jährlich" },
+const FREQ_OPTIONS: { value: string; key: string }[] = [
+  { value: "", key: "none" },
+  { value: "DAILY", key: "daily" },
+  { value: "WEEKLY", key: "weekly" },
+  { value: "MONTHLY", key: "monthly" },
+  { value: "YEARLY", key: "yearly" },
 ];
-const ALARM_OPTIONS = [
-  { value: "", label: "Keine Erinnerung" },
-  { value: "5", label: "5 Minuten vorher" },
-  { value: "15", label: "15 Minuten vorher" },
-  { value: "30", label: "30 Minuten vorher" },
-  { value: "60", label: "1 Stunde vorher" },
-  { value: "1440", label: "1 Tag vorher" },
-];
+const ALARM_MINUTES = ["", "5", "15", "30", "60", "1440"];
+
+/** Reminder label key + count: "n minutes/hours/days before". */
+function alarmLabel(value: string): [string, number] {
+  if (value === "") return ["event.alarm.none", 0];
+  const m = Number(value);
+  if (m % 1440 === 0) return ["event.alarm.daysBefore", m / 1440];
+  if (m % 60 === 0) return ["event.alarm.hoursBefore", m / 60];
+  return ["event.alarm.minutesBefore", m];
+}
 
 function toLocalInput(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -76,6 +80,7 @@ export function EventEditor({
    * then RELOAD, otherwise it keeps showing the outdated state. */
   onError: (msg: string, konflikt?: boolean) => void;
 }) {
+  const { t } = useTranslation("planner");
   const ev = init.ev;
   const inst = init.instance && init.instance.recurrence_id ? init.instance : undefined;
   const [scope, setScope] = useState<"this" | "series">(inst ? "this" : "series");
@@ -183,23 +188,23 @@ export function EventEditor({
   return (
     <div className={styles.dialogOverlay} onClick={onClose}>
       <div className={`${styles.dialog} ${styles.eventDialog}`} onClick={(e) => e.stopPropagation()}>
-        <h3>{init.mode === "edit" ? "Termin bearbeiten" : "Neuer Termin"}
-          {ev?.is_recurring && !inst ? <span className={styles.hintInline}> ↻ ganze Serie</span> : null}
+        <h3>{init.mode === "edit" ? t("event.editTitle") : t("event.newTitle")}
+          {ev?.is_recurring && !inst ? <span className={styles.hintInline}> ↻ {t("event.wholeSeriesHint")}</span> : null}
         </h3>
         {inst && (
           <div className={styles.calSwitch}>
-            <button className={`${styles.projTab} ${scope === "this" ? styles.projTabActive : ""}`} onClick={() => switchScope("this")}>Nur dieser Termin</button>
-            <button className={`${styles.projTab} ${scope === "series" ? styles.projTabActive : ""}`} onClick={() => switchScope("series")}>↻ Ganze Serie</button>
+            <button className={`${styles.projTab} ${scope === "this" ? styles.projTabActive : ""}`} onClick={() => switchScope("this")}>{t("event.onlyThis")}</button>
+            <button className={`${styles.projTab} ${scope === "series" ? styles.projTabActive : ""}`} onClick={() => switchScope("series")}>↻ {t("event.wholeSeries")}</button>
           </div>
         )}
         {canRespond && (
           <EinladungAntwort uid={ev!.uid} calendar={ev!.calendar} myPartstat={myAttendee?.partstat}
                             onDone={(m) => onSaved(m)} onError={(m) => onError(m)} />
         )}
-        <input className={styles.input} autoFocus placeholder="Titel" value={summary}
+        <input className={styles.input} autoFocus placeholder={t("event.titlePlaceholder")} value={summary}
                onChange={(e) => setSummary(e.target.value)} />
         <div className={styles.fieldRow}>
-          <label>Ganztägig</label>
+          <label>{t("event.allDay")}</label>
           <input type="checkbox" className={styles.selectCheck} checked={allDay}
                  onChange={(e) => {
                    const v = e.target.checked;
@@ -212,25 +217,25 @@ export function EventEditor({
                  }} />
         </div>
         <div className={styles.fieldRow}>
-          <label>Beginn</label>
+          <label>{t("event.start")}</label>
           <input type={allDay ? "date" : "datetime-local"} className={styles.input} value={start}
                  onChange={(e) => setStart(e.target.value)} />
         </div>
         <div className={styles.fieldRow}>
-          <label>Ende</label>
+          <label>{t("event.end")}</label>
           <input type={allDay ? "date" : "datetime-local"} className={styles.input} value={end}
                  onChange={(e) => setEnd(e.target.value)} />
         </div>
         {!allDay && (
           <div className={styles.fieldRow}>
-            <label>Zeitzone</label>
+            <label>{t("event.timezone")}</label>
             <select className={styles.select} value={tzid} onChange={(e) => setTzid(e.target.value)}>
               {TZ_OPTIONS.map((z) => <option key={z} value={z}>{z.replace("_", " ")}</option>)}
             </select>
           </div>
         )}
         <div className={styles.fieldRow}>
-          <label>Kalender</label>
+          <label>{t("event.calendar")}</label>
           <select className={styles.select} value={calendar} onChange={(e) => setCalendar(e.target.value)}
                   disabled={init.mode === "edit"}>
             {writableCals.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
@@ -240,48 +245,51 @@ export function EventEditor({
           </select>
         </div>
         <div className={styles.fieldRow}>
-          <label>Anzeigen als</label>
+          <label>{t("event.showAs")}</label>
           <select className={styles.select} value={busy} onChange={(e) => setBusy(e.target.value as BusyStatus)}>
-            {BUSY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            {BUSY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.dot} {t(`calendar.busy.${o.value}`)}</option>)}
           </select>
         </div>
         <div className={styles.fieldRow}>
-          <label>Ort</label>
+          <label>{t("event.location")}</label>
           <input className={styles.input} value={location} onChange={(e) => setLocation(e.target.value)} />
         </div>
         {scope === "this" && inst ? (
-          <div className={styles.hint}>Änderung gilt nur für diesen Einzeltermin der Serie.</div>
+          <div className={styles.hint}>{t("event.onlyThisHint")}</div>
         ) : customRRule ? (
-          <div className={styles.hint}>Benutzerdefinierte Wiederholung — bleibt unverändert erhalten.</div>
+          <div className={styles.hint}>{t("event.customRecurrence")}</div>
         ) : (
           <div className={styles.fieldRow}>
-            <label>Wiederholung</label>
+            <label>{t("event.recurrence")}</label>
             <select className={styles.select} value={freq} onChange={(e) => setFreq(e.target.value)}>
-              {FREQ_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              {FREQ_OPTIONS.map((o) => <option key={o.value} value={o.value}>{t(`event.freq.${o.key}`)}</option>)}
             </select>
             {freq && (
-              <input type="date" className={styles.input} title="Endet am (leer = unbegrenzt)"
+              <input type="date" className={styles.input} title={t("event.recurrenceUntil")}
                      value={until} onChange={(e) => setUntil(e.target.value)} />
             )}
           </div>
         )}
         <div className={styles.fieldRow}>
-          <label>Erinnerung</label>
+          <label>{t("event.reminder")}</label>
           <select className={styles.select} value={alarm} onChange={(e) => setAlarm(e.target.value)}>
-            {ALARM_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            {ALARM_MINUTES.map((v) => {
+              const [key, count] = alarmLabel(v);
+              return <option key={v} value={v}>{t(key, { count })}</option>;
+            })}
           </select>
         </div>
 
         {/* Attendees (Nextcloud contacts) — Nextcloud sends iMIP invitations server-side */}
         <div className={styles.detailSection}>
-          <h4>Teilnehmer</h4>
+          <h4>{t("event.attendees")}</h4>
           <div className={styles.labelPicker}>
             {attendees.map((a, i) => (
               <span key={a.email} className={`${styles.labelChip} ${styles.labelChipActive}`}
                     title={a.partstat ?? ""}>
                 {PARTSTAT_BADGE[a.partstat ?? ""] ?? ""} {a.name || a.email}
                 <button className={styles.savedChipDel}
-                        onClick={() => setAttendees(attendees.filter((_, j) => j !== i))}><Icon name="close" size={14} title="Schließen" /></button>
+                        onClick={() => setAttendees(attendees.filter((_, j) => j !== i))}><Icon name="close" size={14} title={t("actions.close")} /></button>
               </span>
             ))}
             <ContactPicker
@@ -290,14 +298,14 @@ export function EventEditor({
           </div>
           {people.length > 0 && (
             <div className={styles.labelPicker} style={{ marginTop: 6 }}>
-              <span className={styles.hintInline}>Familie:</span>
+              <span className={styles.hintInline}>{t("event.family")}</span>
               {people.filter((p) => !myAddresses.includes(p.email.toLowerCase()) && !attendees.some((a) => a.email.toLowerCase() === p.email.toLowerCase())).map((p) => (
                 <button key={p.username} className={styles.labelChip} title={p.email}
                         onClick={() => setAttendees([...attendees, { email: p.email, name: p.name }])}>+ {p.name}</button>
               ))}
               {!allDay && (
                 <button className={`${styles.labelChip} ${showFb ? styles.labelChipActive : ""}`} onClick={() => setShowFb(!showFb)}>
-                  {showFb ? "Belegung ausblenden" : "Frei/Gebucht prüfen"}
+                  {showFb ? t("event.hideFreeBusy") : t("event.checkFreeBusy")}
                 </button>
               )}
             </div>
@@ -310,7 +318,7 @@ export function EventEditor({
         </div>
 
         <div className={styles.fieldRow}>
-          <label>Notizen</label>
+          <label>{t("event.notes")}</label>
           <textarea className={styles.textarea} rows={2} value={description}
                     onChange={(e) => setDescription(e.target.value)} />
         </div>
@@ -319,16 +327,17 @@ export function EventEditor({
           {init.mode === "edit" && (
             confirmDelete ? (
               <button className={styles.btnDanger} disabled={saving} onClick={del}>
-                Wirklich löschen{scope === "this" && inst ? " (nur dieser Termin)" : ev?.is_recurring ? " (ganze Serie)" : ""}?
+                {scope === "this" && inst ? t("event.confirmDeleteThis")
+                  : ev?.is_recurring ? t("event.confirmDeleteSeries") : t("event.confirmDelete")}
               </button>
             ) : (
-              <button className={styles.btnDanger} disabled={saving} onClick={() => setConfirmDelete(true)}>Löschen</button>
+              <button className={styles.btnDanger} disabled={saving} onClick={() => setConfirmDelete(true)}>{t("actions.delete")}</button>
             )
           )}
           <span style={{ flex: 1 }} />
-          <button className={styles.btn} onClick={onClose}>Abbrechen</button>
+          <button className={styles.btn} onClick={onClose}>{t("actions.cancel")}</button>
           <button className={styles.btnPrimary} disabled={saving || !summary.trim()} onClick={save}>
-            {saving ? "Speichert…" : "Speichern"}
+            {saving ? t("event.saving") : t("actions.save")}
           </button>
         </div>
       </div>
@@ -343,6 +352,7 @@ function ContactPicker({
   exclude: string[];
   onPick: (email: string, name?: string) => void;
 }) {
+  const { t } = useTranslation("planner");
   const [editing, setEditing] = useState(false);
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<{ name: string; emails: string[]; org?: string }[]>([]);
@@ -365,34 +375,34 @@ function ContactPicker({
   }, [q, editing]);
 
   if (!editing) {
-    return <button className={styles.labelChip} onClick={() => setEditing(true)}>+ Kontakt</button>;
+    return <button className={styles.labelChip} onClick={() => setEditing(true)}>+ {t("event.contact.add")}</button>;
   }
   return (
     <div className={styles.pickerWrap}>
-      <input className={styles.input} autoFocus placeholder="Kontakt suchen…" value={q}
+      <input className={styles.input} autoFocus placeholder={t("event.contact.searchPlaceholder")} value={q}
              onChange={(e) => setQ(e.target.value)}
              onKeyDown={(e) => e.key === "Escape" && (setEditing(false), setQ(""))} />
       {(hits.length > 0 || searching) && (
         <div className={styles.pickerPop}>
-          {searching && <span className={styles.pickerItem}>Suche…</span>}
+          {searching && <span className={styles.pickerItem}>{t("event.contact.searching")}</span>}
           {hits.map((c) => {
             const email = c.emails.find((x) => !exclude.includes(x));
             return (
               <button key={`${c.name}-${c.emails[0] ?? ""}`} className={styles.pickerItem}
                       disabled={!email}
-                      title={email ?? "Kontakt hat keine E-Mail-Adresse"}
+                      title={email ?? t("event.contact.noEmailTitle")}
                       onClick={() => {
                         if (!email) return;
                         onPick(email, c.name);
                         setEditing(false); setQ(""); setHits([]);
                       }}>
-                {c.name}{c.org ? ` · ${c.org}` : ""} {email ? `<${email}>` : "(keine E-Mail)"}
+                {c.name}{c.org ? ` · ${c.org}` : ""} {email ? `<${email}>` : t("event.contact.noEmail")}
               </button>
             );
           })}
         </div>
       )}
-      <button className={styles.btn} onClick={() => { setEditing(false); setQ(""); }}><Icon name="close" size={14} title="Schließen" /></button>
+      <button className={styles.btn} onClick={() => { setEditing(false); setQ(""); }}><Icon name="close" size={14} title={t("actions.close")} /></button>
     </div>
   );
 }

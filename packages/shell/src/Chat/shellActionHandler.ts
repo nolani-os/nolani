@@ -24,12 +24,13 @@
  * Every action returns a result (`Ergebnis`) that goes back over the bus as
  * an `ack` — so Clara learns whether something was really displayed.
  */
-import { useAppRegistryStore, useWindowsStore, useUIStore, getBrand } from "@claraos/core";
+import { useAppRegistryStore, useWindowsStore, useUIStore, getBrand, i18n } from "@claraos/core";
 import { registerActionHandler, meldeErgebnis, type ActionPayload } from "./actionBus";
 import { navigateIframe } from "../apps/iframeNavigator";
 import { merken, istHtml } from "../lib/artefakte";
 import { warteAufInhalt, berichtVerwerfen, MELDENDE_APPS } from "../lib/ladeberichte";
 import { appComponents, getAppManifest } from "../apps/registry";
+import { resolveFileApp } from "../lib/fileTypeRouter";
 
 /** What a shell action did — sent back to the server as an `ack`. */
 export interface Ergebnis {
@@ -267,6 +268,16 @@ async function shellOpenWindow(args: OpenWindowArgs): Promise<Ergebnis> {
  * user dealt with last). Only if none is open, open a new one.
  */
 async function betrachterZeigen(pfad: string, quelle: string, titel?: string): Promise<Ergebnis> {
+  // Not an image: open the viewer for its type. Without viewer_hint a .docx
+  // landed in the image viewer (reported as "chosen by extension"), and the
+  // assistant opened it a second time in the office viewer.
+  const zielApp = resolveFileApp(pfad.split("/").pop() ?? pfad);
+  if (zielApp && zielApp !== "image-viewer" && zielApp !== "files") {
+    return shellOpenWindow({
+      app_id: zielApp,
+      opts: { path: pfad, source: quelle, title: titel, position: "anchor-chat-right" },
+    } as OpenWindowArgs);
+  }
   const store = useWindowsStore.getState();
   const betrachter = store.windowOrder
     .map((id) => store.windows[id])
@@ -318,7 +329,10 @@ async function shellShowArtifact(args: ShowArtifactArgs): Promise<Ergebnis> {
   }
   const mime = args.mime ?? "";
   const html = kind === "html" || istHtml(content, mime);
-  const title = args.title || (html ? `Seite von ${getBrand().assistant}` : `${kind[0].toUpperCase()}${kind.slice(1)} von ${getBrand().assistant}`);
+  // The window title is shown to the user, so it follows the UI language.
+  const title = args.title || (html
+    ? i18n.t("chatWork:artifact.pageTitle")
+    : i18n.t("chatWork:artifact.kindTitle", { kind: `${kind[0].toUpperCase()}${kind.slice(1)}` }));
 
   // Keep the content in volatile memory (not in the persisted window store!)
   // and open it in the viewer: HTML runs there, everything else is shown as source.

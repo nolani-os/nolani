@@ -1,0 +1,69 @@
+{
+  "status": {
+    "laeuft": "läuft …",
+    "fertig": "fertig",
+    "wartet": "wartet auf Freigabe",
+    "fehler": "fehlgeschlagen",
+    "erledigt": "erledigt"
+  },
+  "proposalStatus": {
+    "offen": "offen",
+    "ausgefuehrt": "ausgeführt",
+    "fehler": "fehlgeschlagen",
+    "verworfen": "verworfen"
+  },
+  "examples": [
+    {
+      "titel": "Guten Morgen",
+      "auftrag": "Fasse meine ungelesenen Mails und meine heute fälligen Aufgaben in fünf Sätzen zusammen."
+    },
+    {
+      "titel": "Wochenrückblick",
+      "auftrag": "Welche Aufgaben habe ich diese Woche erledigt, welche sind überfällig? Kurze Liste."
+    },
+    {
+      "titel": "Feierabend-Check",
+      "auftrag": "Was steht morgen im Kalender? Schlage eine Aufgabe für Vorbereitungen vor, falls nötig."
+    }
+  ],
+  "rhythm": {
+    "stuendlich": "stündlich zur Minute {{minute}}",
+    "werktags": "werktags um {{time}}",
+    "woechentlich": "jeden {{day}} um {{time}}",
+    "taeglich": "täglich um {{time}}"
+  },
+  "rhythmOption": {
+    "taeglich": "täglich",
+    "werktags": "werktags",
+    "woechentlich": "wöchentlich",
+    "stuendlich": "stündlich"
+  },
+  "error": "Fehler {{status}}",
+  "confirmDelete": "Routine „{{title}}“ löschen?",
+  "started": "„{{title}}“ läuft — das Ergebnis kommt als Meldung.",
+  "proposal": "Vorschlag: {{tool}}",
+  "approve": "Freigeben",
+  "discard": "Verwerfen",
+  "title": "Routinen",
+  "new": "+ Neue Routine",
+  "intro": "Wiederkehrende Aufträge an {{assistant}}. Sie liest selbstständig — ändern, senden oder anlegen tut sie nur, wenn du den Vorschlag hier freigibst.",
+  "noBrain": "{{assistant}} ist in dieser Umgebung nicht angebunden — Routinen laufen nicht.",
+  "waiting": "Wartet auf deine Freigabe",
+  "waitingIntro": "{{assistant}} hat das im Chat vorbereitet. Es passiert erst, wenn du es freigibst.",
+  "fieldTitle": "Titel",
+  "fieldTask": "Auftrag an {{assistant}}",
+  "fieldRhythm": "Rhythmus",
+  "fieldDay": "Tag",
+  "fieldMinute": "Minute (hh:MM)",
+  "fieldTime": "Uhrzeit",
+  "save": "Speichern",
+  "cancel": "Abbrechen",
+  "empty": "Noch keine Routine. Lege eine an — oder nimm ein Beispiel.",
+  "paused": " · pausiert",
+  "now": "Jetzt",
+  "pause": "Pausieren",
+  "activate": "Aktivieren",
+  "edit": "Bearbeiten",
+  "delete": "Löschen",
+  "noRuns": "Noch kein Lauf."
+}

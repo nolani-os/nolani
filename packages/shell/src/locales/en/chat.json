@@ -1,0 +1,414 @@
+{
+  "activity": {
+    "done": "Done",
+    "doneCount_one": "{{count}} done",
+    "doneCount_other": "{{count}} done",
+    "executing": "{{assistant}} is working …",
+    "finalizing": "{{assistant}} is writing the answer …",
+    "moreTools_one": "+{{count}} more tool running",
+    "moreTools_other": "+{{count}} more tools running",
+    "plan": "Plan",
+    "planning": "{{assistant}} is planning steps …",
+    "slow": "{{assistant}} is still working. You can close the chat — the answer will be saved.",
+    "subAgent": "Sub-agent: {{name}}",
+    "subAgentsDone_one": "{{count}} sub-agent done",
+    "subAgentsDone_other": "{{count}} sub-agents done",
+    "subAgentsParallel_one": "{{count}} sub-agent in parallel",
+    "subAgentsParallel_other": "{{count}} sub-agents in parallel",
+    "thinking": "{{assistant}} is thinking …"
+  },
+  "agents": {
+    "collapse": "Collapse list",
+    "expand": "Expand list",
+    "focusSourceTitle": "Click → focus source window",
+    "hideStale_one": "Hide {{count}} stale",
+    "hideStale_other": "Hide {{count}} stale",
+    "openTaskTitle": "Click → open task in Planner",
+    "regionLabel": "Active {{assistant}} tasks",
+    "showStale_one": "{{count}} stale entry (>6 h) — show",
+    "showStale_other": "{{count}} stale entries (>6 h) — show",
+    "staleTitle": "Entry is old (>6h) — can be reset in the task detail. Click → open task",
+    "stuck": "stuck (>6h)",
+    "title": "{{assistant}} is working"
+  },
+  "camera": {
+    "cancel": "Cancel",
+    "captureFailed": "Capture failed.",
+    "openFailed": "Can't open the camera.",
+    "opening": "Opening camera …",
+    "systemCamera": "System camera",
+    "torch": "Flashlight",
+    "useSystemCamera": "Use the system camera instead"
+  },
+  "composer": {
+    "attach": "Attach",
+    "attachCurrent": "Attach current object ({{name}})",
+    "clearPin": "Remove marking",
+    "dictate": "Dictate",
+    "dictateEnd": "Stop dictation",
+    "fromProductFiles": "From {{product}} files …",
+    "live": "Live conversation",
+    "liveEnd": "End live conversation",
+    "liveHint": "{{assistant}} listens, interrupting allowed.",
+    "liveStartTitle": "Start live conversation ({{assistant}} listens, interrupting allowed)",
+    "markArea": "Mark area",
+    "markAreaHint": "Circle something in the app and ask about it.",
+    "markCancel": "Cancel marking",
+    "photoTo": "Photo to {{assistant}}",
+    "pinnedTitle": "Marked region will be sent with the next message",
+    "placeholder": "Ask {{assistant}} …",
+    "placeholderApp": "Ask {{assistant}} about {{app}} …",
+    "placeholderQuick": "Message {{assistant}} …",
+    "plus": {
+      "camera": "Camera",
+      "file": "File",
+      "photos": "Photos",
+      "productFiles": "{{product}} files"
+    },
+    "plusLabel": "Attach or choose a tool",
+    "queued": "Will be sent once {{assistant}} is done: “{{text}}”",
+    "remove": "Remove",
+    "send": "Send",
+    "speak": "Speak",
+    "stop": "Stop",
+    "stopRecording": "Stop recording",
+    "stopRecordingLabel": "Stop recording",
+    "takePhoto": "Take photo",
+    "uploadFromDevice": "Upload from device",
+    "voice": {
+      "active": "Voice mode on — speak …",
+      "answering": "{{assistant}} is answering …",
+      "arming": "Opening microphone …",
+      "dictating": "Speak — I'm taking it down …",
+      "idle": "Voice mode — tap the waves to speak.",
+      "listening": "I'm listening — just speak.",
+      "speaking": "{{assistant}} is speaking — feel free to interrupt.",
+      "transcribing": "Understanding …"
+    },
+    "voiceFullscreen": "Voice full screen",
+    "voiceFullscreenTitle": "Voice full screen with large orb",
+    "voiceModeEnd": "Exit voice mode",
+    "voiceModeEndTitle": "Exit voice mode — back to typing",
+    "voiceModeStart": "Start voice mode",
+    "you": "You"
+  },
+  "context": {
+    "app": "About this app",
+    "appOffTitle": "Ask without app context",
+    "appOnTitle": "{{assistant}} sees this app as context",
+    "label": "Context for {{assistant}}",
+    "screen": "Read screen",
+    "screenTitle": "Attaches what's currently on screen to your next question"
+  },
+  "dialog": {
+    "ok": "OK"
+  },
+  "folders": {
+    "actions": "Actions",
+    "cleanup": {
+      "action": "Clean up",
+      "confirm_one": "{{count}} empty auto folder will be deleted. Continue?",
+      "confirm_other": "{{count}} empty auto folders will be deleted. Continue?",
+      "done_one": "{{count}} folder cleaned up.",
+      "done_other": "{{count}} folders cleaned up.",
+      "failed": "Cleanup failed — see console.",
+      "none": "No empty auto folders to clean up."
+    },
+    "cleanupAuto": "Clean up empty auto folders",
+    "delete": "Delete",
+    "deleteChatConfirm": "Delete chat “{{title}}”?",
+    "deleteChatConfirmUntitled": "Delete chat?",
+    "deleteFolderConfirm": "Delete folder “{{name}}” and the chats in it?",
+    "folderActions": "Folder actions",
+    "group": {
+      "older": "Older",
+      "thisMonth": "This month",
+      "thisWeek": "This week",
+      "today": "Today",
+      "yesterday": "Yesterday"
+    },
+    "moveToFolder": "Move to folder",
+    "namePrompt": "Folder name:",
+    "newChat": "New chat",
+    "newChatHere": "New chat here",
+    "newFolder": "New folder",
+    "newSubfolder": "New subfolder",
+    "noChats": "No chats yet.",
+    "noFolder": "No folder",
+    "noFolders": "No folders with content.",
+    "noResults": "No matches.",
+    "rename": "Rename",
+    "renameChatPrompt": "Rename chat:",
+    "renameFolderPrompt": "Rename folder:",
+    "searchPlaceholder": "Search chats …",
+    "section": "Folders",
+    "untitled": "(untitled)"
+  },
+  "hooks": {
+    "forApp": "For {{app}}",
+    "hide": "Hide module actions",
+    "label": "Module actions",
+    "show": "Module actions ({{count}})",
+    "showOthersTitle": "Show actions from other modules"
+  },
+  "live": {
+    "connecting": "Live conversation: connecting …",
+    "end": "End",
+    "endLabel": "End live conversation",
+    "error": "Live conversation: {{error}}",
+    "errorFallback": "Error",
+    "listening": "Live conversation: {{assistant}} is listening …",
+    "speaking": "{{assistant}} is speaking — feel free to interrupt"
+  },
+  "markdown": {
+    "copied": "Copied",
+    "copyCode": "Copy code",
+    "externalImage": "{{alt}} (external image, not loaded — tap to open)",
+    "externalImageFrom": "{{alt}} (external image from {{host}}, not loaded — tap to open)",
+    "externalImageTitle": "External image — not loaded automatically for security reasons"
+  },
+  "marker": {
+    "polygon": "Polygon (map)",
+    "region": "Region in {{tab}}",
+    "svgElement": "SVG element"
+  },
+  "messages": {
+    "askAgain": "Ask again",
+    "copy": "Copy",
+    "copyAnswer": "Copy answer",
+    "copyMessage": "Copy message",
+    "emptyGreeting": "Hi! I'm {{assistant}}.",
+    "followups": "Follow-up questions",
+    "image": "Image",
+    "readAloud": "Read aloud",
+    "readAloudTitle": "Read answer aloud",
+    "retry": "Retry",
+    "retryTitle": "Send question again",
+    "roleSystem": "System",
+    "share": "Share",
+    "shareTitle": "Share answer",
+    "sources_one": "{{count}} source",
+    "sources_other": "{{count}} sources",
+    "today": "Today",
+    "yesterday": "Yesterday"
+  },
+  "nav": {
+    "open": "open"
+  },
+  "panel": {
+    "close": "Close",
+    "expand": "Open full screen"
+  },
+  "picker": {
+    "busy": "Loading …",
+    "confirm": "Add",
+    "confirmCount_one": "Add ({{count}})",
+    "confirmCount_other": "Add ({{count}})",
+    "empty": "No entries.",
+    "loading": "Loading …",
+    "loadingSources": "Loading sources …",
+    "title": "Choose file from {{product}}"
+  },
+  "plan": {
+    "edit": "Edit",
+    "failed": "Action didn't go through — the plan may start automatically. Please try again.",
+    "failedApprove": "Action didn't go through — please try again.",
+    "saveAndStart": "Save + start",
+    "startNow": "Start now",
+    "startsIn": "Plan — starts in {{seconds}}s",
+    "stop": "Stop"
+  },
+  "question": {
+    "hint": "Empty fields: {{assistant}} assumes something sensible",
+    "hintRequired": "* Required · empty fields: {{assistant}} assumes something sensible",
+    "missing": "Please fill in: {{fields}}",
+    "received": "{{assistant}} has your details",
+    "required": "Required field",
+    "sendFailed": "Couldn't send the answer — please click again or type it directly in the chat.",
+    "sending": "Sending…",
+    "sent": "Sent",
+    "submit": "Submit"
+  },
+  "speaking": {
+    "label": "{{assistant}} is speaking …",
+    "stop": "Stop",
+    "stopLabel": "Stop reading aloud"
+  },
+  "subAgent": {
+    "error": "error",
+    "ok": "ok",
+    "title": "Sub-agent #{{number}}",
+    "tools_one": "{{count}} tool",
+    "tools_other": "{{count}} tools"
+  },
+  "thinkingLine": {
+    "hideSteps": "Hide steps",
+    "minutes": "{{time}} min",
+    "phase": {
+      "done": "Done",
+      "executing": "Working",
+      "finalizing": "Writing",
+      "planning": "Planning",
+      "thinking": "Thinking"
+    },
+    "seconds_one": "{{count}} s",
+    "seconds_other": "{{count}} s",
+    "showSteps": "View steps",
+    "tools_one": "{{count}} tool",
+    "tools_other": "{{count}} tools"
+  },
+  "welcome": {
+    "askForHelp": "Ask {{assistant}} for help or to get something done.",
+    "chips": {
+      "photos": {
+        "label": "Find photos",
+        "prompt": "Search Immich for photos of "
+      },
+      "planDay": {
+        "label": "Plan my day",
+        "prompt": "Help me plan my day. Today I have: "
+      },
+      "summarize": {
+        "label": "Summarize document",
+        "prompt": "Summarize this document for me: "
+      }
+    },
+    "continueTitle": "Continue last conversation",
+    "continueWith": "Continue with:",
+    "greeting": "Hi {{name}}!",
+    "greetingAnon": "Hi!",
+    "greetingMobile": "Hi {{name}}.",
+    "greetingMobileAnon": "Hi.",
+    "howCanIHelp": "How can I help you?",
+    "lastChat": "Last chat",
+    "seesApp": "I can see {{app}}. What should I do?",
+    "whatCanIDo": "What can I do for you?",
+    "workingWith": "You're working with <code>{{object}}</code>."
+  },
+  "suggest": {
+    "overdue": {
+      "label": "What's overdue today?",
+      "prompt": "What's overdue today? Give me a short summary."
+    },
+    "newTask": {
+      "label": "Create task",
+      "prompt": "Create a task: "
+    },
+    "weekSummary": {
+      "label": "Summarize my week",
+      "prompt": "Summarize my week: appointments and open tasks."
+    },
+    "freeSlot": {
+      "label": "Find a free slot",
+      "prompt": "Find me a free slot this week for "
+    },
+    "whatsHere": {
+      "label": "What's in here?",
+      "prompt": "What's in this folder? Give me a short overview."
+    },
+    "findFile": {
+      "label": "Find file",
+      "prompt": "Find the file "
+    },
+    "summarize": {
+      "label": "Summarize",
+      "prompt": "Summarize the selected file."
+    },
+    "whatDoIKnow": {
+      "label": "What do I know about it?",
+      "prompt": "What does my knowledge app say about "
+    },
+    "newNote": {
+      "label": "Create note",
+      "prompt": "Create a note: "
+    },
+    "summarizeCollection": {
+      "label": "Summarize collection",
+      "prompt": "Summarize the current collection."
+    },
+    "findContact": {
+      "label": "Find contact",
+      "prompt": "Find the contact "
+    },
+    "birthdays": {
+      "label": "Birthdays",
+      "prompt": "Whose birthday is in the next 30 days?"
+    },
+    "newContact": {
+      "label": "Create contact",
+      "prompt": "Create a contact: "
+    },
+    "whatsOn": {
+      "label": "What's on?",
+      "prompt": "Which devices are switched on right now?"
+    },
+    "light": {
+      "label": "Light",
+      "prompt": "Turn the light "
+    },
+    "usageToday": {
+      "label": "Usage today",
+      "prompt": "How much power did we use today?"
+    },
+    "whatIsThis": {
+      "label": "What is this?",
+      "prompt": "What can be seen in the picture?"
+    },
+    "captureReceipt": {
+      "label": "Capture receipt",
+      "prompt": "Capture the receipt in the photo."
+    },
+    "describeImage": {
+      "label": "Describe image",
+      "prompt": "Describe the open image."
+    },
+    "brighten": {
+      "label": "Brighten",
+      "prompt": "Make the image a little brighter."
+    },
+    "removeBackground": {
+      "label": "Remove background",
+      "prompt": "Remove the background."
+    },
+    "summarizePdf": {
+      "label": "Summarize",
+      "prompt": "Summarize this document."
+    },
+    "askDocument": {
+      "label": "Ask about the document",
+      "prompt": "What does the document say about "
+    },
+    "whoIsAround": {
+      "label": "Who's around?",
+      "prompt": "Who on the team is available right now?"
+    },
+    "draftMessage": {
+      "label": "Draft message",
+      "prompt": "Draft a message to "
+    },
+    "shoppingList": {
+      "label": "Shopping list",
+      "prompt": "What's on the shopping list?"
+    },
+    "addToList": {
+      "label": "Add",
+      "prompt": "Add to the shopping list: "
+    },
+    "today": {
+      "label": "What's on today?",
+      "prompt": "What's on today? Appointments and tasks."
+    },
+    "findPhotos": {
+      "label": "Find photos",
+      "prompt": "Find photos of "
+    },
+    "summarizeDocument": {
+      "label": "Summarize document",
+      "prompt": "Summarize this document for me: "
+    },
+    "research": {
+      "label": "Look something up",
+      "prompt": "Research for me: "
+    }
+  }
+}

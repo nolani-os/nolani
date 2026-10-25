@@ -3,7 +3,7 @@
  * Binds the window to the object (setCurrentObjectUri), so "Develop with
  * Clara" opens the inline Clara panel with the object as context. */
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
-import { buildObjectUri, useWindowsStore, getBrand } from "@claraos/core";
+import { buildObjectUri, useWindowsStore, getBrand, useTranslation } from "@claraos/core";
 import styles from "./IdeasApp.module.css";
 import leiste from "../wissen/Wissen.module.css";
 import { Icon } from "../../components/Icon";
@@ -17,13 +17,11 @@ import { ClaraSection } from "./ClaraSection";
 import { CommentsPanel } from "./CommentsPanel";
 import { HistoryPanel } from "./HistoryPanel";
 import { regionLocale } from "@claraos/core";
+import { STAGE_BY_KEY } from "./stages";
 
 const IdeaEditor = lazy(() => import("./IdeaEditor"));
 
-const KIND_LABEL: Record<string, string> = {
-  comment: "💬", analysis: "🔎 Analyse", question: "❓ Rückfrage", answer: "💡 Antwort",
-  stage_change: "🪜", edit: "✏️", handoff: "🚀 An Planner übergeben",
-};
+const KINDS = ["comment", "analysis", "question", "answer", "stage_change", "edit", "handoff"];
 
 interface Props {
   objectId: string;
@@ -48,6 +46,7 @@ export function IdeaDetail({
   objectId, windowId, appId = "ideas", currentUser, linkCandidates, types = [], onBack, onOpenObject, onChanged,
   herkunft, kompakt,
 }: Props) {
+  const { t } = useTranslation("wissen");
   const [obj, setObj] = useState<KbObject | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -210,15 +209,15 @@ export function IdeaDetail({
   /** Entries of the ⋯ menu. Order: harmless first, and at the very bottom
    *  what must not be hit by accident. */
   const mehrEintraege: ContextMenuItem[] = obj ? [
-    { id: "versionen", label: "Versionen ansehen", icon: <Icon name="restore" size={14} />,
+    { id: "versionen", label: t("detail.versions"), icon: <Icon name="restore" size={14} />,
       onSelect: () => setShowHistory(true) },
-    { id: "duplizieren", label: "Duplizieren", icon: "⧉", onSelect: async () => {
+    { id: "duplizieren", label: t("detail.duplicate"), icon: "⧉", onSelect: async () => {
         const copy = await ideasApi.duplicateObject(obj.id);
         onChanged();
         onOpenObject(copy.id);
       } },
     ...(isOwner ? [{ id: "tr1", label: "---" }, {
-      id: "shopping", label: "Shopping-Recherche starten", icon: "🛒",
+      id: "shopping", label: t("detail.shopping"), icon: "🛒",
       onSelect: async () => {
         // Create a basket with idea_ref → the shopping app shows a link back
         // to the idea; if one already exists, it is reused.
@@ -242,14 +241,13 @@ export function IdeaDetail({
           sessionStorage.removeItem("claraos.shopping.openCart");
         }
         const { useWindowsStore } = await import("@claraos/core");
-        useWindowsStore.getState().openWindow("shopping", { title: "Shopping" });
+        useWindowsStore.getState().openWindow("shopping");
       },
     } as ContextMenuItem] : []),
     ...(isOwner ? [{ id: "tr2", label: "---" }, {
-      id: "papierkorb", label: "In den Papierkorb", icon: <Icon name="trash" size={14} />,
+      id: "papierkorb", label: t("detail.trash"), icon: <Icon name="trash" size={14} />,
       variant: "destructive" as const,
-      confirm: `„${obj.title}" in den Papierkorb legen?\n\n`
-        + "Der Eintrag bleibt im Papierkorb und lässt sich dort zurückholen.",
+      confirm: t("detail.trashConfirm", { title: obj.title }),
       onSelect: async () => {
         await ideasApi.deleteObject(obj.id);
         onChanged();
@@ -261,12 +259,12 @@ export function IdeaDetail({
   if (error) {
     return (
       <div className={styles.detail}>
-        <button className={styles.btnSecondary} onClick={onBack}>← Zurück</button>
+        <button className={styles.btnSecondary} onClick={onBack}>{t("detail.back")}</button>
         <div className={styles.error}>{error}</div>
       </div>
     );
   }
-  if (!obj) return <div className={styles.detail}><div className={styles.empty}>Lade…</div></div>;
+  if (!obj) return <div className={styles.detail}><div className={styles.empty}>{t("detail.loading")}</div></div>;
 
   return (
     <div className={`${styles.detail} ${isNarrow ? styles.detailSchmal : ""}`} ref={setWurzel}>
@@ -276,10 +274,10 @@ export function IdeaDetail({
             space. In the side peek it is omitted; its header carries it. */}
         {!kompakt && (
           <nav className={`${leiste.pfad} ${isNarrow ? leiste.pfadEigeneZeile : ""}`}
-               aria-label="Pfad">
+               aria-label={t("detail.path")}>
             <button className={leiste.pfadTeil} onClick={onBack}
-                    title={herkunft ? `Zurück zu „${herkunft.label}"` : "Zurück zur Übersicht"}>
-              {herkunft?.icon ? `${herkunft.icon} ` : ""}{herkunft?.label ?? "Übersicht"}
+                    title={herkunft ? t("detail.backTo", { label: herkunft.label }) : t("detail.backToOverview")}>
+              {herkunft?.icon ? `${herkunft.icon} ` : ""}{herkunft?.label ?? t("detail.overview")}
             </button>
             {/* On phones only the origin: on a typical phone (~400 px) the full
                 path collapsed to "📁 / …", and the title is right below as a heading anyway.
@@ -300,10 +298,10 @@ export function IdeaDetail({
             )}
           </nav>
         )}
-        <span className={styles.saveState}>{saving ? "Speichert…" : ""}</span>
+        <span className={styles.saveState}>{saving ? t("detail.saving") : ""}</span>
         <button
           className={styles.iconBtn}
-          title={isFav ? "Favorit entfernen" : "Als Favorit merken"}
+          title={isFav ? t("detail.unfav") : t("detail.fav")}
           onClick={async () => {
             if (isFav) await ideasApi.removeFavorite(obj.id);
             else await ideasApi.addFavorite(obj.id);
@@ -315,14 +313,14 @@ export function IdeaDetail({
         </button>
         <button
           className={styles.btnPrimary}
-          title="Inline-Chat zu genau diesem Objekt öffnen"
+          title={t("detail.chatTitle")}
           onClick={() => toggleClaraInline(windowId)}
-        ><Icon name="comment" size={14} className={styles.inlineIcon} />Mit {getBrand().assistant} entwickeln
+        ><Icon name="comment" size={14} className={styles.inlineIcon} />{t("detail.develop")}
         </button>
         {/* Versions, duplicate, shopping and especially trash live behind ⋯
             rather than as equal-ranked buttons, so delete is not one misclick
             away from the main action. */}
-        <button className={styles.iconBtn} title="Mehr"
+        <button className={styles.iconBtn} title={t("detail.more")}
                 onClick={(e) => {
                   const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
                   setMehr(mehr ? null : { x: Math.max(8, r.right - 240), y: r.bottom + 4 });
@@ -341,10 +339,10 @@ export function IdeaDetail({
           <div className={styles.titleRow}>
             <button
               className={styles.iconPickBtn}
-              title={obj.icon ? "Symbol ändern" : "Symbol hinzufügen"}
+              title={obj.icon ? t("detail.changeIcon") : t("detail.addIcon")}
               onClick={() => darfSchreiben && setIconEdit((v) => !v)}
             >
-              {obj.icon || <span className={styles.iconPickHint}>Symbol</span>}
+              {obj.icon || <span className={styles.iconPickHint}>{t("detail.icon")}</span>}
             </button>
             {iconEdit && (
               <input
@@ -400,7 +398,7 @@ export function IdeaDetail({
             }}
           />
 
-          <Suspense fallback={<div className={styles.empty}>Editor lädt…</div>}>
+          <Suspense fallback={<div className={styles.empty}>{t("detail.editorLoading")}</div>}>
             {/* onClickCapture: runs before ProseMirror, otherwise the editor only
                 sets the cursor and the click is lost. */}
             <div onClickCapture={onVerweisKlick}>
@@ -412,7 +410,7 @@ export function IdeaDetail({
               mobile={isNarrow && !kompakt}
               onNeueUnterseite={isOwner ? async () => {
                 const sub = await ideasApi.createObject({
-                  type: "note", title: "Neue Unterseite",
+                  type: "note", title: t("detail.newSubpage"),
                   visibility: obj.visibility === "shared" ? "private" : obj.visibility,
                   parent_id: obj.id,
                 } as never);
@@ -431,7 +429,7 @@ export function IdeaDetail({
               without linking to it (SiYuan pattern) */}
           {mentions.length > 0 && (
             <section className={styles.subpages}>
-              <h4>Unverlinkte Erwähnungen</h4>
+              <h4>{t("detail.unlinked")}</h4>
               <ul className={styles.subpageList}>
                 {mentions.slice(0, 8).map((m) => (
                   <li key={m.id}>
@@ -446,7 +444,7 @@ export function IdeaDetail({
 
           {/* Subpages (page tree) */}
           <section className={styles.subpages}>
-            {children.length > 0 && <h4>Unterseiten</h4>}
+            {children.length > 0 && <h4>{t("detail.subpages")}</h4>}
             <ul className={styles.subpageList}>
               {children.map((c) => (
                 <li key={c.id}>
@@ -459,10 +457,10 @@ export function IdeaDetail({
             {isOwner && (
               <button
                 className={styles.btnSecondary}
-                title="Neue Unterseite anlegen"
+                title={t("detail.createSubpage")}
                 onClick={async () => {
                   const sub = await ideasApi.createObject({
-                    type: "note", title: "Neue Unterseite",
+                    type: "note", title: t("detail.newSubpage"),
                     visibility: obj.visibility === "shared" ? "private" : obj.visibility,
                     parent_id: obj.id,
                   } as never);
@@ -470,7 +468,7 @@ export function IdeaDetail({
                   onOpenObject(sub.id);
                 }}
               >
-                ＋ Unterseite
+                {t("detail.addSubpage")}
               </button>
             )}
           </section>
@@ -492,18 +490,18 @@ export function IdeaDetail({
           />
 
           <section className={styles.activity}>
-            <h4>Verlauf</h4>
-            {obj.activity.length === 0 && <p className={styles.metaHint}>Noch nichts passiert.</p>}
+            <h4>{t("detail.activity")}</h4>
+            {obj.activity.length === 0 && <p className={styles.metaHint}>{t("detail.nothingYet")}</p>}
             <ul className={styles.activityList}>
               {obj.activity.map((a) => (
                 <li key={a.id} className={a.actor === "clara" ? styles.activityClara : ""}>
                   <span className={styles.activityHead}>
-                    {a.actor === "clara" ? `🤖 ${getBrand().assistant}` : a.actor} · {KIND_LABEL[a.kind] ?? a.kind} ·{" "}
+                    {a.actor === "clara" ? `🤖 ${getBrand().assistant}` : a.actor} · {KINDS.includes(a.kind) ? t(`detail.kind.${a.kind}`) : a.kind} ·{" "}
                     {new Date(a.created_at).toLocaleString(regionLocale(), { dateStyle: "short", timeStyle: "short" })}
                   </span>
                   {a.kind === "stage_change" ? (
                     <span className={styles.metaHint}>
-                      {String(a.meta?.from_stage ?? "—")} → {String(a.meta?.to_stage ?? "—")}
+                      {STAGE_BY_KEY[String(a.meta?.from_stage)]?.label ?? String(a.meta?.from_stage ?? "—")} → {STAGE_BY_KEY[String(a.meta?.to_stage)]?.label ?? String(a.meta?.to_stage ?? "—")}
                     </span>
                   ) : (
                     a.content && <div className={styles.activityContent}>{a.content}</div>
@@ -519,14 +517,14 @@ export function IdeaDetail({
 
         {schmal && !showMeta ? (
           <button className={styles.metaOpenBtn} onClick={() => setShowMeta(true)}>
-            ⚙ Eigenschaften, Zugriff &amp; Verknüpfungen
+            {t("detail.metaOpen")}
           </button>
         ) : null}
         <div className={schmal ? (showMeta ? styles.metaSheet : styles.metaHidden) : undefined}>
         {schmal && showMeta && (
           <div className={styles.metaSheetHead}>
-            <b>Eigenschaften</b>
-            <button className={styles.iconBtn} onClick={() => setShowMeta(false)} title="Schließen"><Icon name="close" size={14} title="Schließen" /></button>
+            <b>{t("detail.props")}</b>
+            <button className={styles.iconBtn} onClick={() => setShowMeta(false)} title={t("app.close")}><Icon name="close" size={14} title={t("app.close")} /></button>
           </div>
         )}
         <MetaSidebar
@@ -534,7 +532,7 @@ export function IdeaDetail({
           object={obj}
           isOwner={!!isOwner}
           canEdit={darfSchreiben}
-          propSchema={types.find((t) => t.id === obj.type)?.prop_schema ?? []}
+          propSchema={types.find((typ) => typ.id === obj.type)?.prop_schema ?? []}
           onSaveProp={(key, value) => {
             const props = { ...(obj.properties ?? {}) };
             if (value === null) delete props[key];

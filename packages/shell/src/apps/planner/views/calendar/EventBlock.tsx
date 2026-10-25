@@ -5,7 +5,7 @@ import styles from "../../PlannerApp.module.css";
 import { Icon } from "../../../../components/Icon";
 import type { CalEventFull } from "../../api";
 import type { PlacedEvent } from "./calLayout";
-import { regionLocale } from "@claraos/core";
+import { i18n, regionLocale } from "@claraos/core";
 
 const BUSY_CLASS: Record<string, string> = {
   free: "evFree",
@@ -27,7 +27,7 @@ export function busyClassOf(ev: CalEventFull): string {
 }
 
 export function eventTimeLabel(ev: CalEventFull): string {
-  if (ev.all_day) return "ganztägig";
+  if (ev.all_day) return i18n.t("planner:calendar.allDay");
   const f = (iso: string) => new Date(iso).toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" });
   return `${f(ev.start)}${ev.end ? `–${f(ev.end)}` : ""}`;
 }
@@ -55,7 +55,7 @@ export function EventBlock({
         borderLeftColor: ev.color || undefined,
         cursor: draggable ? "grab" : "pointer",
       }}
-      title={`${ev.summary} (${ev.calendar}) — ${eventTimeLabel(ev)}${ev.is_recurring ? " · Serie (im Editor ändern)" : ""}`}
+      title={`${ev.summary} (${ev.calendar}) — ${eventTimeLabel(ev)}${ev.is_recurring ? ` · ${i18n.t("planner:calendar.seriesEditHint")}` : ""}`}
       onClick={(e) => { e.stopPropagation(); onClick(ev); }}
       onPointerDown={(e) => draggable && onMoveStart!(e, placed)}
     >

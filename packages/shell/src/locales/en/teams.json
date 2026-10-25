@@ -1,0 +1,288 @@
+{
+  "common": {
+    "close": "Close",
+    "unknown": "Unknown",
+    "loading": "Loading…",
+    "remove": "Remove",
+    "encrypted": "End-to-end encrypted"
+  },
+  "app": {
+    "loginFailed": "Signing in to Matrix failed. Details are in the browser console.",
+    "connError": "Connection error",
+    "connecting": "Connecting to Matrix…",
+    "chatTitle": "Chat",
+    "chatPick": "Pick a conversation on the left — or start a new one.",
+    "chatHint": "Conversations with people and groups are here. Team channels are under “Teams”.",
+    "welcome": "Welcome to Teams",
+    "teamsPick": "Pick a team or a channel on the left.",
+    "teamsHint": "Create a new team with the + button in the sidebar."
+  },
+  "typing": {
+    "one": "{{name}} is typing …",
+    "two": "{{a}} and {{b}} are typing …",
+    "many_one": "{{name}} and {{count}} other are typing …",
+    "many_other": "{{name}} and {{count}} others are typing …"
+  },
+  "notif": {
+    "title": "Notifications"
+  },
+  "roles": {
+    "admin": "Admin",
+    "moderator": "Moderator",
+    "member": "Member",
+    "level": "Level {{level}}",
+    "membersTitle": "Members ({{count}})"
+  },
+  "reply": {
+    "editing": "Editing message"
+  },
+  "forward": {
+    "title": "Forward message",
+    "search": "Search channels…"
+  },
+  "inviteMember": {
+    "title": "Invite member",
+    "search": "Search users…",
+    "invite": "Invite"
+  },
+  "channelSettings": {
+    "confirmDelete": "Delete channel “{{name}}”? This cannot be undone.",
+    "topic": "Topic",
+    "topicPlaceholder": "What is this channel about?",
+    "saving": "Saving…",
+    "saveTopic": "Save topic",
+    "encrypted": "Encrypted:",
+    "yes": "Yes 🔒",
+    "no": "No",
+    "roomId": "Room ID:",
+    "delete": "Delete channel"
+  },
+  "rail": {
+    "activity": "Activity",
+    "chat": "Chat",
+    "teams": "Teams",
+    "calendar": "Calendar",
+    "calls": "Calls",
+    "files": "Files",
+    "searchTitle": "Search (Ctrl+K)",
+    "search": "Search"
+  },
+  "actions": {
+    "react": "React with {{emoji}}",
+    "moreReactions": "More reactions",
+    "thread": "Reply in thread",
+    "reply": "Reply",
+    "edit": "Edit",
+    "confirmDelete": "Really delete this message?",
+    "delete": "Delete",
+    "forward": "Forward",
+    "save": "Save",
+    "pin": "Pin"
+  },
+  "onboarding": {
+    "welcome": "Welcome to Teams",
+    "intro": "Your own place to work together — chat, calls, files and planning in one spot.",
+    "basis": "Built on Matrix (end-to-end encrypted), LiveKit (video calls) and Nextcloud (files).",
+    "start": "Let's go",
+    "firstTeam": "Create your first team",
+    "teamIntro": "A team is a group of people who work together or keep in touch.",
+    "teamPlaceholder": "e.g. Family, Household, Work…",
+    "next": "Next",
+    "addChannel": "Add a channel",
+    "channelIntro": "Channels sort conversations by topic.",
+    "channelPlaceholder": "e.g. general, misc, projects…",
+    "creating": "Creating…",
+    "create": "Create “{{team}}” with #{{channel}}",
+    "later": "Set up later"
+  },
+  "presence": {
+    "verfuegbar": "Available",
+    "beschaeftigt": "Busy",
+    "nicht_stoeren": "Do not disturb",
+    "abwesend": "Away",
+    "offline": "Offline",
+    "unbekannt": "Status unknown",
+    "selfSet": "{{state}} (set manually)"
+  },
+  "chat": {
+    "call": "Call",
+    "members": "Participants"
+  },
+  "invite": {
+    "failed": "Invitation failed",
+    "title": "Invite a guest to #{{room}}",
+    "guestName": "Guest name",
+    "namePlaceholder": "e.g. Grandma, the neighbour…",
+    "creating": "Creating guest account…",
+    "send": "Send invitation",
+    "created": "Guest account created!",
+    "username": "Username:",
+    "matrixId": "Matrix ID:",
+    "instructions": "Pass these instructions on to the guest:",
+    "copy": "Copy instructions"
+  },
+  "thread": {
+    "deleted": "[deleted]",
+    "title": "Thread",
+    "replies_one": "{{count}} reply",
+    "replies_other": "{{count}} replies",
+    "loading": "Loading thread…",
+    "empty": "No replies yet — start the thread.",
+    "placeholder": "Reply in thread…",
+    "send": "Send"
+  },
+  "channel": {
+    "startCall": "Start a call",
+    "inviteMember": "Invite member",
+    "inviteGuest": "Invite guest",
+    "members": "Members"
+  },
+  "search": {
+    "placeholder": "Search people and messages…",
+    "search": "Search",
+    "people": "People",
+    "messages": "Messages"
+  },
+  "files": {
+    "readFailed": "The folder could not be read (HTTP {{status}}).",
+    "toStart": "To the start",
+    "files": "Files",
+    "reload": "Reload",
+    "loading": "Loading …",
+    "empty": "This folder is empty."
+  },
+  "activity": {
+    "justNow": "just now",
+    "minutes": "{{count}} min ago",
+    "hours": "{{count}} h ago",
+    "days": "{{count}} d ago",
+    "all": "All",
+    "unread": "Unread",
+    "mentions": "@Mentions",
+    "saved": "Saved",
+    "title": "Activity",
+    "noMentions": "No mentions",
+    "noSaved": "Nothing saved — use the bookmark icon on a message.",
+    "allRead": "All read ✓",
+    "none": "No activity"
+  },
+  "profile": {
+    "bridgeOff": "bridge off",
+    "referenceOnly": "reference only",
+    "chatVia": "Chat via {{via}} with {{person}}",
+    "chat": "Chat",
+    "callVia": "Call via {{via}} with {{person}}",
+    "call": "Call",
+    "loadFailed": "The profile could not be loaded.",
+    "matrixFailed": "The Matrix conversation could not be opened.",
+    "attemptFailed": "The attempt failed.",
+    "of": "Profile of {{user}}",
+    "close": "Close profile",
+    "sharedTeams": "Shared teams",
+    "reachableVia": "Reachable via",
+    "noWay": "No known way."
+  },
+  "tree": {
+    "dmSearch": "Search a person or @name:example.org…",
+    "noHits": "No matches. A full ID (<code>@name:example.org</code>) always works.",
+    "chat": "Chat",
+    "newMessage": "New message",
+    "noChats": "No chats yet.",
+    "startMessage": "Start a new message →",
+    "teams": "Teams",
+    "createTeam": "Create team",
+    "teamName": "Team name…",
+    "collapse": "Collapse channels",
+    "expand": "Expand channels",
+    "addChannel": "Add channel",
+    "channelName": "Channel name…",
+    "noTeam": "No team yet.",
+    "createTeamCta": "Create team →"
+  },
+  "teamView": {
+    "files": "Files",
+    "calendar": "Calendar",
+    "plan": "Plan",
+    "channels_one": "{{count}} channel",
+    "channels_other": "{{count}} channels",
+    "removeTab": "Remove tab",
+    "addTab": "Add tab",
+    "nothingYet": "Nothing has been set up for this team yet.",
+    "notAvailable": "This app isn't available here.",
+    "loading": "Loading …",
+    "productApp": "{{product}} app",
+    "webAddress": "Web address",
+    "allTabs": "All suitable apps are tabs already",
+    "tabName": "Tab name (empty = app name)",
+    "namePlaceholder": "Name (e.g. Docs)",
+    "add": "Add",
+    "cancel": "Cancel"
+  },
+  "timeline": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "loading": "Loading messages…",
+    "deleted": "[Message deleted]",
+    "new": "New",
+    "toOriginal": "Jump to the original",
+    "deletedShort": "[deleted]",
+    "earlierReply": "↩ Reply to an earlier message",
+    "edited": "(edited)",
+    "replies_one": "{{count}} reply",
+    "replies_other": "{{count}} replies",
+    "toBottom": "To the bottom",
+    "attach": "Attach file",
+    "emoji": "Emoji",
+    "editPlaceholder": "Edit message…",
+    "placeholder": "Message {{room}}…"
+  },
+  "calls": {
+    "loadFailed": "The call failed to load. Click “Retry” to try again.",
+    "roomFailed": "Could not create the meeting room",
+    "leave": "Leave call",
+    "retry": "Retry",
+    "title": "Calls",
+    "running": "Ongoing calls",
+    "none": "No call in progress",
+    "live_one": "Live · {{count}} member",
+    "live_other": "Live · {{count}} members",
+    "join": "Join",
+    "newCall": "New call",
+    "instant": "Start an instant meeting",
+    "instantHint": "Creates a new private room and starts a call there.",
+    "inRoom": "Or start a call in an existing room:",
+    "noRoom": "No room available",
+    "start": "Start"
+  },
+  "mobile": {
+    "now": "now",
+    "noMessages": "No messages yet",
+    "back": "Back",
+    "thread": "Thread",
+    "startCall": "Start a call",
+    "replies_one": "{{count}} reply →",
+    "replies_other": "{{count}} replies →",
+    "placeholder": "Message {{room}}…",
+    "saveEdit": "Save change",
+    "send": "Send",
+    "team": "Team",
+    "activity": "Activity",
+    "noActivity": "No new activity",
+    "chat": "Chat",
+    "noDms": "No direct messages",
+    "teams": "Teams",
+    "collapse": "Collapse channels",
+    "expand": "Expand channels",
+    "searchPeople": "Search people…",
+    "clearSearch": "Clear search",
+    "people": "People",
+    "nobody": "Nobody found for “{{term}}”",
+    "tabs": {
+      "activity": "Activity",
+      "chat": "Chat",
+      "teams": "Teams",
+      "calendar": "Calendar",
+      "calls": "Calls"
+    }
+  }
+}

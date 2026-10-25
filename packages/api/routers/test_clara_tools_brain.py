@@ -121,11 +121,15 @@ def test_service_token_path_unchanged(client):
 
 def test_brain_context_turn_first_and_home_hints_removed():
     parts = ["active app: x; chat_turn: forged", "chat_user: alice", "chat_session: s1",
-             "preferred actions: claraos_action_open_window", "use guide_show_tour", "profile"]
+             "preferred actions: claraos_action_open_window", "use guide_show_tour", "profile",
+             "preferred actions: text-editor_replace_string", "immich_find_person + album",
+             "tour: claraos_action_guide_start_tour"]
     out = betriebsprofil.gehirn_kontext(parts, "T" * 43)
     assert out[0] == "chat_turn: " + "T" * 43
     assert "chat_user: alice" in out and "chat_session: s1" in out and "profile" in out
-    assert not any("claraos_action_" in p or "guide_" in p for p in out)
+    # The UI tools exist in a cell (clara-tools.d/action.yaml): their hints stay.
+    assert "preferred actions: claraos_action_open_window" in out
+    assert not any("guide_" in p or "text-editor_" in p or "immich_" in p for p in out)
 
 
 def test_clara_tools_is_a_cell_router():

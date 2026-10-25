@@ -9,6 +9,7 @@ import styles from "../IdeasApp.module.css";
 import { ideasApi } from "../api";
 import type { KbObjectSlim } from "../types";
 import { STAGE_BY_KEY } from "../stages";
+import { useTranslation } from "@claraos/core";
 
 interface GraphData {
   objects: KbObjectSlim[];
@@ -80,6 +81,7 @@ function buildFlow(data: GraphData): { nodes: Node[]; edges: Edge[] } {
 }
 
 export function GraphView({ onOpen }: { onOpen: (id: string) => void }) {
+  const { t } = useTranslation("wissen");
   const [data, setData] = useState<GraphData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,9 +96,9 @@ export function GraphView({ onOpen }: { onOpen: (id: string) => void }) {
   const flow = useMemo(() => (data ? buildFlow(data) : { nodes: [], edges: [] }), [data]);
 
   if (error) return <div className={styles.error}>{error}</div>;
-  if (!data) return <div className={styles.empty}>Lade Graph…</div>;
+  if (!data) return <div className={styles.empty}>{t("views.graph.loading")}</div>;
   if (flow.nodes.length === 0) {
-    return <div className={styles.empty}>Noch nichts zu sehen — leg Ideen und Visionen an.</div>;
+    return <div className={styles.empty}>{t("views.graph.empty")}</div>;
   }
 
   return (

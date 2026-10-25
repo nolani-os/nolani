@@ -1,7 +1,7 @@
 /** Ideas board — Kanban by maturity stage (pattern: planner/views/BoardView, HTML5 DnD).
  * Mobile: columns scroll horizontally with scroll snap; stages can also be changed
  * via the stepper in the detail view (touch DnD is unreliable). */
-import { getBrand } from "@claraos/core";
+import { useTranslation } from "@claraos/core";
 import { useState } from "react";
 import styles from "../IdeasApp.module.css";
 import { Icon } from "../../../components/Icon";
@@ -16,6 +16,7 @@ interface Props {
 }
 
 export function BoardView({ ideas, currentUser, onOpen, onMove }: Props) {
+  const { t } = useTranslation("wissen");
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropStage, setDropStage] = useState<Stage | null>(null);
 
@@ -59,11 +60,11 @@ export function BoardView({ ideas, currentUser, onOpen, onMove }: Props) {
                     <div className={styles.cardPreview}>{idea.body_preview}</div>
                   )}
                   <div className={styles.cardMeta}>
-                    {idea.visibility === "family" && <span title="Mit Familie geteilt">👪</span>}
+                    {idea.visibility === "family" && <span title={t("views.board.family")}>👪</span>}
                     {idea.owner !== currentUser && (
                       <span className={styles.cardOwner}>{idea.owner}</span>
                     )}
-                    {idea.created_by === "clara" && <span title={`Von ${getBrand().assistant} angelegt`}>🤖</span>}
+                    {idea.created_by === "clara" && <span title={t("views.board.byAssistant")}>🤖</span>}
                   </div>
                 </div>
               ))}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useMatrixStore } from "@claraos/core";
+import { useMatrixStore, useTranslation, i18n } from "@claraos/core";
 import { initMatrixClient, destroyMatrixClient } from "./matrixClient";
 import { LeftRail } from "./components/LeftRail";
 import { SpacesTree } from "./components/SpacesTree";
@@ -28,6 +28,7 @@ function useMobile() {
 }
 
 export default function TeamsApp({ windowId }: { windowId: string }) {
+  const { t } = useTranslation("teams");
   const isMobile = useMobile();
   const connected = useMatrixStore((s) => s.connected);
   const syncing = useMatrixStore((s) => s.syncing);
@@ -52,7 +53,7 @@ export default function TeamsApp({ windowId }: { windowId: string }) {
 
   useEffect(() => {
     initMatrixClient().then((ok) => {
-      if (!ok) setError("Anmeldung bei Matrix fehlgeschlagen. Einzelheiten stehen in der Browser-Konsole.");
+      if (!ok) setError(i18n.t("teams:app.loginFailed"));
     }).catch((err) => setError(String(err)));
     return () => destroyMatrixClient();
   }, []);
@@ -65,13 +66,13 @@ export default function TeamsApp({ windowId }: { windowId: string }) {
       <div className={styles.loading} data-teams-app>
         {error ? (
           <>
-            <span style={{ color: "var(--danger, #f38ba8)" }}>Verbindungsfehler</span>
+            <span style={{ color: "var(--danger, #f38ba8)" }}>{t("app.connError")}</span>
             <span style={{ fontSize: 11, maxWidth: 400, textAlign: "center" }}>{error}</span>
           </>
         ) : (
           <>
             <div className={styles.spinner} />
-            <span>Verbindung zu Matrix wird aufgebaut…</span>
+            <span>{t("app.connecting")}</span>
           </>
         )}
       </div>
@@ -118,10 +119,10 @@ export default function TeamsApp({ windowId }: { windowId: string }) {
         if (activeRoomId && !istKanal(activeRoomId)) return <ChatView roomId={activeRoomId} />;
         return (
           <div className={styles.emptyState}>
-            <h2>Chat</h2>
-            <p>Wähle links ein Gespräch — oder starte ein neues.</p>
+            <h2>{t("app.chatTitle")}</h2>
+            <p>{t("app.chatPick")}</p>
             <p className={styles.hint}>
-              Hier stehen Gespräche mit Personen und Gruppen. Team-Kanäle findest du unter „Teams".
+              {t("app.chatHint")}
             </p>
           </div>
         );
@@ -133,9 +134,9 @@ export default function TeamsApp({ windowId }: { windowId: string }) {
         if (activeSpaceId) return <TeamView spaceId={activeSpaceId} windowId={windowId} />;
         return (
           <div className={styles.emptyState}>
-            <h2>Willkommen bei Teams</h2>
-            <p>Wähle links ein Team oder einen Kanal.</p>
-            <p className={styles.hint}>Neues Team über den +-Knopf in der Seitenleiste.</p>
+            <h2>{t("app.welcome")}</h2>
+            <p>{t("app.teamsPick")}</p>
+            <p className={styles.hint}>{t("app.teamsHint")}</p>
           </div>
         );
     }

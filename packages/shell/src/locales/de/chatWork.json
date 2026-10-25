@@ -1,0 +1,485 @@
+{
+  "status": {
+    "running": "{{what}} …",
+    "runningDetail": "{{what}} „{{detail}}“ …",
+    "done": "{{what}} ✓",
+    "failed": "{{what}} – fehlgeschlagen",
+    "builtin": {
+      "webSearch": {
+        "run": "Suche im Web",
+        "done": "Websuche fertig"
+      },
+      "webFetch": {
+        "run": "Lese Webseite",
+        "done": "Webseite gelesen"
+      },
+      "showCard": {
+        "run": "Bereite Karte vor",
+        "done": "Karte angezeigt"
+      },
+      "askUser": {
+        "run": "Frage nach",
+        "done": "Antwort erhalten"
+      },
+      "todo": {
+        "run": "Plane Schritte",
+        "done": "Plan aktualisiert"
+      },
+      "memory": {
+        "run": "Schaue in meine Notizen",
+        "done": "Erinnerung gelesen"
+      },
+      "openApp": {
+        "run": "Öffne die App",
+        "done": "App geöffnet"
+      },
+      "readScreen": {
+        "run": "Schaue auf den Bildschirm",
+        "done": "Bildschirm gelesen"
+      }
+    },
+    "knowledge": {
+      "capture_idea": {
+        "run": "Halte Idee fest",
+        "done": "Idee festgehalten"
+      },
+      "list_ideas": {
+        "run": "Sehe Ideen durch",
+        "done": "Ideen gelesen"
+      },
+      "get_object": {
+        "run": "Öffne Notiz",
+        "done": "Notiz gelesen"
+      },
+      "create_object": {
+        "run": "Lege Notiz an",
+        "done": "Notiz angelegt"
+      },
+      "list_collections": {
+        "run": "Sehe Sammlungen durch",
+        "done": "Sammlungen gelesen"
+      },
+      "create_collection": {
+        "run": "Lege Sammlung an",
+        "done": "Sammlung angelegt"
+      },
+      "create_collection_from_template": {
+        "run": "Baue Sammlung aus Vorlage",
+        "done": "Sammlung mit Vorlage angelegt"
+      },
+      "add_to_collection": {
+        "run": "Füge zur Sammlung hinzu",
+        "done": "Zur Sammlung hinzugefügt"
+      },
+      "define_type": {
+        "run": "Lege Notiztyp an",
+        "done": "Notiztyp angelegt"
+      },
+      "update_object": {
+        "run": "Aktualisiere Notiz",
+        "done": "Notiz aktualisiert"
+      },
+      "add_insight": {
+        "run": "Ergänze Erkenntnis",
+        "done": "Erkenntnis ergänzt"
+      },
+      "link_objects": {
+        "run": "Verknüpfe Notizen",
+        "done": "Notizen verknüpft"
+      },
+      "promote_idea_to_plan": {
+        "run": "Mache aus der Idee einen Plan",
+        "done": "Plan angelegt"
+      },
+      "get_backlinks": {
+        "run": "Suche Verweise",
+        "done": "Verweise gefunden"
+      },
+      "move_object": {
+        "run": "Verschiebe Notiz",
+        "done": "Notiz verschoben"
+      },
+      "clip_url": {
+        "run": "Speichere Webseite",
+        "done": "Webseite gespeichert"
+      },
+      "comment_on_object": {
+        "run": "Schreibe Kommentar",
+        "done": "Kommentar geschrieben"
+      },
+      "query_collection": {
+        "run": "Durchsuche Sammlung",
+        "done": "Sammlung durchsucht"
+      },
+      "define_field": {
+        "run": "Lege Spalte an",
+        "done": "Spalte angelegt"
+      },
+      "create_view": {
+        "run": "Lege Ansicht an",
+        "done": "Ansicht angelegt"
+      },
+      "set_relation": {
+        "run": "Verknüpfe Einträge",
+        "done": "Einträge verknüpft"
+      },
+      "list_templates": {
+        "run": "Sehe Vorlagen durch",
+        "done": "Vorlagen gelesen"
+      },
+      "create_from_template": {
+        "run": "Lege Notiz aus Vorlage an",
+        "done": "Notiz aus Vorlage angelegt"
+      },
+      "duplicate_object": {
+        "run": "Kopiere Notiz",
+        "done": "Notiz kopiert"
+      },
+      "get_backmentions": {
+        "run": "Suche Erwähnungen",
+        "done": "Erwähnungen gefunden"
+      },
+      "get_history": {
+        "run": "Lese Versionen",
+        "done": "Versionen gelesen"
+      },
+      "restore_version": {
+        "run": "Stelle alte Version her",
+        "done": "Alte Version hergestellt"
+      },
+      "search_knowledge_db": {
+        "run": "Suche im Wissen",
+        "done": "Wissen durchsucht"
+      },
+      "search": {
+        "run": "Suche im Wissen",
+        "done": "Wissen durchsucht"
+      },
+      "list_goals": {
+        "run": "Sehe Ziele durch",
+        "done": "Ziele gelesen"
+      },
+      "suggest_ideas": {
+        "run": "Sammle Ideen zum Ziel",
+        "done": "Ideen vorgeschlagen"
+      },
+      "develop_concept": {
+        "run": "Arbeite Konzept aus",
+        "done": "Konzept ausgearbeitet"
+      },
+      "rate_contribution": {
+        "run": "Bewerte Beitrag",
+        "done": "Beitrag bewertet"
+      },
+      "link_to_goal": {
+        "run": "Verknüpfe mit Ziel",
+        "done": "Mit Ziel verknüpft"
+      },
+      "promote_to_action_plan": {
+        "run": "Lege Maßnahmenplan an",
+        "done": "Maßnahmenplan angelegt"
+      },
+      "run_five_why": {
+        "run": "Frage fünfmal warum",
+        "done": "5-Why fertig"
+      },
+      "pareto_analysis": {
+        "run": "Rechne Pareto-Analyse",
+        "done": "Pareto-Analyse fertig"
+      }
+    },
+    "planner": {
+      "list_projects": {
+        "run": "Sehe Projekte im Planner durch",
+        "done": "Projekte gelesen"
+      },
+      "list_tasks": {
+        "run": "Suche im Planner",
+        "done": "Aufgaben gelesen"
+      },
+      "count_tasks": {
+        "run": "Zähle Aufgaben",
+        "done": "Aufgaben gezählt"
+      },
+      "uebersicht": {
+        "run": "Hole Planner-Übersicht",
+        "done": "Übersicht gelesen"
+      },
+      "get_task": {
+        "run": "Öffne Aufgabe",
+        "done": "Aufgabe gelesen"
+      },
+      "create_task": {
+        "run": "Lege Aufgabe an",
+        "done": "Aufgabe angelegt"
+      },
+      "update_task": {
+        "run": "Ändere Aufgabe",
+        "done": "Aufgabe geändert"
+      },
+      "complete_task": {
+        "run": "Hake Aufgabe ab",
+        "done": "Aufgabe erledigt"
+      },
+      "set_dependency": {
+        "run": "Setze Abhängigkeit",
+        "done": "Abhängigkeit gesetzt"
+      },
+      "move_card": {
+        "run": "Verschiebe Karte",
+        "done": "Karte verschoben"
+      },
+      "add_comment": {
+        "run": "Schreibe Kommentar",
+        "done": "Kommentar geschrieben"
+      },
+      "set_estimate": {
+        "run": "Trage Schätzung ein",
+        "done": "Schätzung eingetragen"
+      },
+      "create_project_from_plan": {
+        "run": "Lege Projekt aus Plan an",
+        "done": "Projekt angelegt"
+      },
+      "start_work": {
+        "run": "Starte Arbeit an Aufgabe",
+        "done": "Arbeit gestartet"
+      },
+      "finish_work": {
+        "run": "Schließe Arbeit ab",
+        "done": "Arbeit abgeschlossen"
+      },
+      "start_adhoc_work": {
+        "run": "Lege Arbeitsauftrag an",
+        "done": "Arbeitsauftrag angelegt"
+      }
+    },
+    "mail": {
+      "list_messages": {
+        "run": "Sehe Mails durch",
+        "done": "Mails gelesen"
+      },
+      "count_messages": {
+        "run": "Zähle Mails",
+        "done": "Mails gezählt"
+      },
+      "create_draft": {
+        "run": "Schreibe Entwurf",
+        "done": "Entwurf gespeichert"
+      },
+      "get_message": {
+        "run": "Lese Mail",
+        "done": "Mail gelesen"
+      },
+      "list_mailboxes": {
+        "run": "Sehe Mailordner durch",
+        "done": "Mailordner gelesen"
+      },
+      "send_mail": {
+        "run": "Sende Mail",
+        "done": "Mail gesendet"
+      },
+      "create_mailbox": {
+        "run": "Lege Mailordner an",
+        "done": "Mailordner angelegt"
+      },
+      "get_attachment": {
+        "run": "Lese Anhang",
+        "done": "Anhang gelesen"
+      },
+      "delete_message": {
+        "run": "Lösche Mail",
+        "done": "Mail gelöscht"
+      },
+      "mark_read": {
+        "run": "Markiere als gelesen",
+        "done": "Als gelesen markiert"
+      },
+      "mark_unread": {
+        "run": "Markiere als ungelesen",
+        "done": "Als ungelesen markiert"
+      }
+    },
+    "nc_pim": {
+      "list_events": {
+        "run": "Sehe in den Kalender",
+        "done": "Termine gelesen"
+      },
+      "add_event": {
+        "run": "Trage Termin ein",
+        "done": "Termin angelegt"
+      },
+      "update_event": {
+        "run": "Verschiebe Termin",
+        "done": "Termin geändert"
+      },
+      "delete_event": {
+        "run": "Lösche Termin",
+        "done": "Termin gelöscht"
+      },
+      "list_contacts": {
+        "run": "Suche Kontakte",
+        "done": "Kontakte gelesen"
+      },
+      "add_contact": {
+        "run": "Lege Kontakt an",
+        "done": "Kontakt angelegt"
+      },
+      "update_contact": {
+        "run": "Ändere Kontakt",
+        "done": "Kontakt geändert"
+      }
+    },
+    "post": {
+      "mail_to_task": {
+        "run": "Mache Aufgabe aus der Mail",
+        "done": "Aufgabe aus Mail angelegt"
+      },
+      "mail_to_event": {
+        "run": "Mache Termin aus der Mail",
+        "done": "Termin aus Mail angelegt"
+      },
+      "mail_to_note": {
+        "run": "Mache Notiz aus der Mail",
+        "done": "Notiz aus Mail angelegt"
+      }
+    },
+    "lernen": {
+      "merke_praeferenz": {
+        "run": "Merke mir das",
+        "done": "Gemerkt"
+      },
+      "gelernter_weg": {
+        "run": "Schaue nach bewährtem Weg",
+        "done": "Weg nachgeschaut"
+      }
+    },
+    "office": {
+      "create_document": {
+        "run": "Erstelle Dokument",
+        "done": "Dokument erstellt"
+      }
+    }
+  },
+  "blocks": {
+    "today": "Heute",
+    "sent": "✓ Gesendet",
+    "open": {
+      "label": "Öffnen",
+      "failed": "Nicht geöffnet",
+      "done": "Geöffnet"
+    },
+    "undo": {
+      "label": "Rückgängig",
+      "done": "Rückgängig gemacht",
+      "failed": "Nicht möglich"
+    },
+    "task": {
+      "urgent": "Dringend",
+      "header": "Aufgabe angelegt · Planner",
+      "undone": "Rückgängig gemacht — die Aufgabe ist gelöscht."
+    },
+    "job": {
+      "status": {
+        "laeuft": "Läuft im Hintergrund",
+        "fertig": "Fertig",
+        "fehler": "Fehlgeschlagen"
+      },
+      "header": "Auftrag · {{status}}",
+      "title": "Auftrag",
+      "notifyHint": "Du bekommst eine Benachrichtigung, sobald er fertig ist.",
+      "openResult": "Ergebnis öffnen"
+    },
+    "result": {
+      "type": {
+        "bild": "Bild",
+        "pdf": "PDF",
+        "artefakt": "Artefakt",
+        "fenster": "Fenster",
+        "datei": "Datei"
+      },
+      "copyPath": "Pfad kopieren"
+    },
+    "list": {
+      "title": "Liste",
+      "art": { "aufgaben": "Aufgaben" },
+      "showAll_one": "Alle {{count}} anzeigen",
+      "showAll_other": "Alle {{count}} anzeigen"
+    },
+    "switch": {
+      "header": "Gerät · {{state}}",
+      "on": "eingeschaltet",
+      "off": "ausgeschaltet",
+      "toggled": "geschaltet"
+    },
+    "confirm": {
+      "notOpen": "Anfrage nicht mehr offen.",
+      "byRule": "Per Regel freigegeben",
+      "needed": "Bestätigung nötig",
+      "critical": "kritisch",
+      "once": "Einmal",
+      "always": "Immer",
+      "alwaysFor": "Immer für {{target}}",
+      "alwaysTitle": "Regel: genau diese Aktion künftig ohne Rückfrage",
+      "deny": "Nicht",
+      "timeout": "Ohne Antwort in {{seconds}} s: nicht ausführen",
+      "allowed": "✓ Freigegeben",
+      "denied": "⛔ Abgelehnt",
+      "expired": "Abgelaufen"
+    },
+    "draft": {
+      "noSubject": "(ohne Betreff)",
+      "error": "Fehler {{status}}",
+      "header": "E-Mail-Entwurf · nicht gesendet",
+      "to": "An: {{to}}",
+      "noRecipient": "– noch kein Empfänger –",
+      "cc": "Cc: {{cc}}",
+      "length_one": "({{count}} Zeichen)",
+      "length_other": "({{count}} Zeichen)",
+      "sendTitle": "Entwurf jetzt senden",
+      "needRecipient": "Erst in Post einen Empfänger eintragen",
+      "confirmSend": "Wirklich an {{to}}?",
+      "send": "Senden",
+      "openInPost": "In Post öffnen",
+      "discard": "Verwerfen",
+      "discarded": "Entwurf verworfen"
+    },
+    "chart": {
+      "title": "Diagramm",
+      "showValues": "Werte anzeigen"
+    },
+    "form": {
+      "choose": "Bitte wählen",
+      "yes": "Ja",
+      "no": "Nein",
+      "submit": "Absenden",
+      "failed": "Senden fehlgeschlagen."
+    }
+  },
+  "voice": {
+    "sdkIncomplete": "LiveKit-SDK unvollständig geladen",
+    "sdkLoadFailed": "LiveKit-SDK nicht ladbar",
+    "backendUnreachable": "Voice-Backend nicht erreichbar ({{status}})",
+    "micDenied": "Mikrofon nicht erlaubt — bitte im Browser freigeben.",
+    "micNotFound": "Kein Mikrofon gefunden.",
+    "micBusy": "Mikrofon ist durch eine andere App belegt.",
+    "micError": "Mikrofon-Fehler: {{error}}",
+    "micInsecure": "Mikrofon hier nicht verfügbar — {{product}} über HTTPS öffnen.",
+    "recordFailed": "Aufnahme nicht möglich: {{error}}",
+    "transcribeFailed": "Transkription fehlgeschlagen: {{error}}",
+    "liveChatTitle": "Live-Gespräch"
+  },
+  "errors": {
+    "unknown": "Unbekannter Fehler",
+    "modelNotFound": "{{assistant}} ist für dieses Konto nicht freigeschaltet (Modell nicht sichtbar).",
+    "imageUnreadable": "Bild nicht lesbar",
+    "attachmentFailed": "Anhang „{{name}}“ konnte nicht verarbeitet werden: {{error}}"
+  },
+  "notices": {
+    "slow": "Das dauert länger als erwartet ({{seconds}}s) — {{assistant}} arbeitet noch …"
+  },
+  "artifact": {
+    "pageTitle": "Seite von {{assistant}}",
+    "kindTitle": "{{kind}} von {{assistant}}"
+  }
+}

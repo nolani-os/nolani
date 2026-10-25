@@ -13,7 +13,7 @@
  * collection entries that carry a date (contract expires, recipe for
  * Saturday). Two different things that merely sound similar.
  */
-import { getBrand } from "@claraos/core";
+import { useTranslation, Trans } from "@claraos/core";
 import { useEffect, useMemo, useState } from "react";
 import styles from "./Wissen.module.css";
 import geteilt from "../ideas/IdeasApp.module.css";
@@ -47,6 +47,7 @@ interface Props {
 }
 
 export function StartSeite({ objekte, sammlungen, favoriten, onOpen, onClara }: Props) {
+  const { t } = useTranslation("wissen");
   const [datumsFelder, setDatumsFelder] = useState<KbField[]>([]);
 
   // The date columns of all collections — once when the start page opens.
@@ -109,11 +110,11 @@ export function StartSeite({ objekte, sammlungen, favoriten, onOpen, onClara }: 
           header feels like landing in the middle of something. */}
       {/* No icon: "Collections" below already has one, and the same symbol
           twice in a row says nothing new. */}
-      <h3 className={styles.startKopf}>Wissen</h3>
+      <h3 className={styles.startKopf}>{t("start.title")}</h3>
       {faellig.length > 0 && (
         <section className={styles.startBlock}>
           <h4 className={styles.startTitel}>
-            <Icon name="calendar" size={14} className={geteilt.inlineIcon} />Demnächst fällig
+            <Icon name="calendar" size={14} className={geteilt.inlineIcon} />{t("start.due")}
           </h4>
           {faellig.map((t) => eintrag(t.obj, (
             <Chip klein ton={t.tage < 0 ? 5 : t.tage === 0 ? 3 : undefined}
@@ -127,7 +128,7 @@ export function StartSeite({ objekte, sammlungen, favoriten, onOpen, onClara }: 
       {favoriten.length > 0 && (
         <section className={styles.startBlock}>
           <h4 className={styles.startTitel}>
-            <Icon name="star" size={14} className={geteilt.inlineIcon} />Gemerkt
+            <Icon name="star" size={14} className={geteilt.inlineIcon} />{t("start.starred")}
           </h4>
           {favoriten.slice(0, 6).map((o) => eintrag(o))}
         </section>
@@ -136,7 +137,7 @@ export function StartSeite({ objekte, sammlungen, favoriten, onOpen, onClara }: 
       {zuletzt.length > 0 && (
         <section className={styles.startBlock}>
           <h4 className={styles.startTitel}>
-            <Icon name="today" size={14} className={geteilt.inlineIcon} />Zuletzt bearbeitet
+            <Icon name="today" size={14} className={geteilt.inlineIcon} />{t("start.recent")}
           </h4>
           {zuletzt.map((o) => eintrag(o))}
         </section>
@@ -147,10 +148,9 @@ export function StartSeite({ objekte, sammlungen, favoriten, onOpen, onClara }: 
           example: people who don't know what they may say, say nothing. */}
       <section className={styles.startClara}>
         <span className={styles.startClaraText}>
-          Oder sag es einfach {getBrand().assistant} — <em>„Leg mir eine Sammlung für den Urlaub an,
-          mit Ort, Datum und Kosten"</em>.
+          <Trans t={t} i18nKey="start.sayIt" components={{ i: <em /> }} />
         </span>
-        <Button stufe="tonal" icon="sparkle" onClick={onClara}>Mit {getBrand().assistant} anlegen</Button>
+        <Button stufe="tonal" icon="sparkle" onClick={onClara}>{t("start.createWith")}</Button>
       </section>
     </div>
   );

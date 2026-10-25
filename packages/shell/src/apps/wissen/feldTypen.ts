@@ -14,6 +14,7 @@
  */
 import { FieldType } from "../ideas/types";
 import type { IconName } from "../../components/Icon";
+import { i18n } from "@claraos/core";
 
 export interface TypMarke {
   /** Drawn icon, if there is one that really fits. */
@@ -24,22 +25,27 @@ export interface TypMarke {
   label: string;
 }
 
+/** `label` is a getter: read in the UI language at the moment it is shown. */
+function marke(key: string, m: Omit<TypMarke, "label">): TypMarke {
+  return { ...m, get label() { return i18n.t(`wissen:fieldType.${key}`); } };
+}
+
 export const TYP_MARKE: Record<number, TypMarke> = {
-  [FieldType.Text]: { glyph: "Aa", label: "Text" },
-  [FieldType.Number]: { glyph: "#", label: "Zahl" },
-  [FieldType.Date]: { icon: "calendar", label: "Datum" },
-  [FieldType.Select]: { icon: "chevronDown", label: "Auswahl" },
-  [FieldType.MultiSelect]: { icon: "list", label: "Mehrfachauswahl" },
-  [FieldType.Url]: { icon: "link", label: "Link" },
-  [FieldType.Checkbox]: { icon: "check", label: "Häkchen" },
-  [FieldType.Checklist]: { icon: "done", label: "Checkliste" },
-  [FieldType.Media]: { icon: "attachment", label: "Medien" },
-  [FieldType.Person]: { icon: "person", label: "Person" },
-  [FieldType.Relation]: { icon: "graph", label: "Verknüpfung" },
-  [FieldType.Rollup]: { glyph: "Σ", label: "Rollup" },
-  [FieldType.CreatedTime]: { icon: "today", label: "Erstellt am" },
-  [FieldType.UpdatedTime]: { icon: "today", label: "Geändert am" },
-  [FieldType.Formula]: { glyph: "ƒ", label: "Formel" },
+  [FieldType.Text]: marke("text", { glyph: "Aa" }),
+  [FieldType.Number]: marke("number", { glyph: "#" }),
+  [FieldType.Date]: marke("date", { icon: "calendar" }),
+  [FieldType.Select]: marke("select", { icon: "chevronDown" }),
+  [FieldType.MultiSelect]: marke("multiSelect", { icon: "list" }),
+  [FieldType.Url]: marke("url", { icon: "link" }),
+  [FieldType.Checkbox]: marke("checkbox", { icon: "check" }),
+  [FieldType.Checklist]: marke("checklist", { icon: "done" }),
+  [FieldType.Media]: marke("media", { icon: "attachment" }),
+  [FieldType.Person]: marke("person", { icon: "person" }),
+  [FieldType.Relation]: marke("relation", { icon: "graph" }),
+  [FieldType.Rollup]: marke("rollup", { glyph: "Σ" }),
+  [FieldType.CreatedTime]: marke("createdTime", { icon: "today" }),
+  [FieldType.UpdatedTime]: marke("updatedTime", { icon: "today" }),
+  [FieldType.Formula]: marke("formula", { glyph: "ƒ" }),
 };
 
 /** Types that can be switched directly in the column menu — one click is enough. */
@@ -68,16 +74,11 @@ export const MIT_RUECKFRAGE: number[] = [
  *  remains the authority). */
 
 /** Aggregates the server knows (`services/kb_query.py`). */
+const agg = (key: string, nurZahl?: boolean) =>
+  ({ key, nurZahl, get label() { return i18n.t(`wissen:aggregate.${key || "none"}`); } });
 export const AGGREGATE: { key: string; label: string; nurZahl?: boolean }[] = [
-  { key: "", label: "Nichts" },
-  { key: "count", label: "Anzahl" },
-  { key: "count_not_empty", label: "Ausgefüllt" },
-  { key: "count_empty", label: "Leer" },
-  { key: "count_unique", label: "Verschiedene" },
-  { key: "sum", label: "Summe", nurZahl: true },
-  { key: "avg", label: "Mittelwert", nurZahl: true },
-  { key: "min", label: "Kleinster", nurZahl: true },
-  { key: "max", label: "Größter", nurZahl: true },
+  agg(""), agg("count"), agg("count_not_empty"), agg("count_empty"), agg("count_unique"),
+  agg("sum", true), agg("avg", true), agg("min", true), agg("max", true),
 ];
 
 /** Color tone of a chip.

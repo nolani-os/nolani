@@ -20,6 +20,7 @@ from pydantic import BaseModel
 from auth import get_current_user
 from database import user_tx
 from encryption import decrypt_credentials
+from services.download_policy import safe_media
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/claraos/files", tags=["files"])
@@ -486,12 +487,12 @@ async def raw_file(request: Request, path: str = ""):
             await resp.aclose()
             await client.aclose()
 
-    out_headers = {"Cache-Control": "private, max-age=300"}
+    # Callers fetch() this; a direct navigation must not render the file as a page.
+    media_type, inline, security = safe_media(resp.headers.get("content-type"), want_inline=True)
+    out_headers = {"Cache-Control": "private, max-age=300", **security}
+    if not inline:
+        out_headers["Content-Disposition"] = "attachment"
     if "content-length" in resp.headers:
         out_headers["Content-Length"] = resp.headers["content-length"]
 
-    return StreamingResponse(
-        body(),
-        media_type=resp.headers.get("content-type", "application/octet-stream"),
-        headers=out_headers,
-    )
+    return StreamingResponse(body(), media_type=media_type, headers=out_headers)

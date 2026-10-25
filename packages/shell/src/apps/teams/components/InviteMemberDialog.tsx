@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { searchUsers, inviteMember } from "../matrixClient";
 import styles from "./InviteMemberDialog.module.css";
+import { useTranslation } from "@claraos/core";
 
 export function InviteMemberDialog({ roomId, onClose }: { roomId: string; onClose: () => void }) {
+  const { t } = useTranslation("teams");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<{ userId: string; displayName: string }[]>([]);
   const [invited, setInvited] = useState<string[]>([]);
@@ -23,13 +25,13 @@ export function InviteMemberDialog({ roomId, onClose }: { roomId: string; onClos
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.dialog} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
-          <h3>Invite Member</h3>
-          <button aria-label="Schließen" title="Schließen" className={styles.closeBtn} onClick={onClose}>×</button>
+          <h3>{t("inviteMember.title")}</h3>
+          <button aria-label={t("common.close")} title={t("common.close")} className={styles.closeBtn} onClick={onClose}>×</button>
         </div>
         <input
           autoFocus
           className={styles.search}
-          placeholder="Nutzer suchen…"
+          placeholder={t("inviteMember.search")}
           value={query}
           onChange={(e) => handleSearch(e.target.value)}
         />
@@ -41,7 +43,7 @@ export function InviteMemberDialog({ roomId, onClose }: { roomId: string; onClos
               {invited.includes(r.userId) ? (
                 <span className={styles.check}>✓</span>
               ) : (
-                <button className={styles.inviteBtn} onClick={() => handleInvite(r.userId)}>Invite</button>
+                <button className={styles.inviteBtn} onClick={() => handleInvite(r.userId)}>{t("inviteMember.invite")}</button>
               )}
             </div>
           ))}

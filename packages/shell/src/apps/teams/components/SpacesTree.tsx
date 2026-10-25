@@ -11,7 +11,7 @@
  *    (files/calendar/plan), with the channels below — without "#".
  */
 import { useState } from "react";
-import { useMatrixStore } from "@claraos/core";
+import { useMatrixStore, useTranslation, Trans } from "@claraos/core";
 import { createSpace, createChannel, startDM, searchUsers } from "../matrixClient";
 import { Avatar } from "./Avatar";
 import { DienstPlakette } from "./DienstPlakette";
@@ -20,6 +20,7 @@ import { LockIcon, PhoneIcon, PlusIcon } from "./icons";
 import styles from "./SpacesTree.module.css";
 
 function NewDmForm({ onDone }: { onDone: (roomId: string | null) => void }) {
+  const { t } = useTranslation("teams");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<{ userId: string; displayName: string }[]>([]);
   const [busy, setBusy] = useState(false);
@@ -57,7 +58,7 @@ function NewDmForm({ onDone }: { onDone: (roomId: string | null) => void }) {
     <div className={styles.createForm}>
       <input
         autoFocus
-        placeholder="Person suchen oder @name:example.org…"
+        placeholder={t("tree.dmSearch")}
         value={query}
         onChange={(e) => suchen(e.target.value)}
         onKeyDown={(e) => e.key === "Escape" && onDone(null)}
@@ -71,7 +72,7 @@ function NewDmForm({ onDone }: { onDone: (roomId: string | null) => void }) {
       ))}
       {query.trim() && results.length === 0 && (
         <div className={styles.sectionLabel}>
-          Keine Treffer. Eine vollständige Kennung (<code>@name:example.org</code>) geht immer.
+          <Trans t={t} i18nKey="tree.noHits" components={{ code: <code /> }} />
         </div>
       )}
     </div>
@@ -89,6 +90,7 @@ function absenderKurz(sender: string, ich: string | null): string {
 }
 
 export function SpacesTree() {
+  const { t } = useTranslation("teams");
   const spaces = useMatrixStore((s) => s.spaces);
   const rooms = useMatrixStore((s) => s.rooms);
   const activeRoomId = useMatrixStore((s) => s.activeRoomId);
@@ -142,8 +144,8 @@ export function SpacesTree() {
     return (
       <div className={styles.tree}>
         <div className={styles.header}>
-          <span>Chat</span>
-          <button className={styles.addBtn} onClick={() => setShowNewDm(true)} title="Neue Nachricht">
+          <span>{t("tree.chat")}</span>
+          <button className={styles.addBtn} onClick={() => setShowNewDm(true)} title={t("tree.newMessage")}>
             <PlusIcon size={14} />
           </button>
         </div>
@@ -188,8 +190,8 @@ export function SpacesTree() {
         ))}
         {chats.length === 0 && !showNewDm && (
           <button className={styles.emptyCta} onClick={() => setShowNewDm(true)}>
-            Noch keine Chats.
-            <span>Neue Nachricht starten →</span>
+            {t("tree.noChats")}
+            <span>{t("tree.startMessage")}</span>
           </button>
         )}
       </div>
@@ -202,8 +204,8 @@ export function SpacesTree() {
   return (
     <div className={styles.tree}>
       <div className={styles.header}>
-        <span>Teams</span>
-        <button className={styles.addBtn} onClick={() => setShowCreateSpace(true)} title="Team anlegen">
+        <span>{t("tree.teams")}</span>
+        <button className={styles.addBtn} onClick={() => setShowCreateSpace(true)} title={t("tree.createTeam")}>
           <PlusIcon size={14} />
         </button>
       </div>
@@ -212,7 +214,7 @@ export function SpacesTree() {
         <div className={styles.createForm}>
           <input
             autoFocus
-            placeholder="Teamname…"
+            placeholder={t("tree.teamName")}
             value={newSpaceName}
             onChange={(e) => setNewSpaceName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleCreateSpace()}
@@ -233,7 +235,7 @@ export function SpacesTree() {
               <button
                 className={styles.chevronBtn}
                 onClick={(e) => { e.stopPropagation(); toggleSpaceExpanded(space.spaceId); }}
-                title={expandedSpaces[space.spaceId] ? "Kanäle einklappen" : "Kanäle ausklappen"}
+                title={expandedSpaces[space.spaceId] ? t("tree.collapse") : t("tree.expand")}
               >
                 {expandedSpaces[space.spaceId] ? "▾" : "▸"}
               </button>
@@ -257,7 +259,7 @@ export function SpacesTree() {
               <button
                 className={styles.addChannelBtn}
                 onClick={(e) => { e.stopPropagation(); setShowCreateChannel(space.spaceId); }}
-                title="Kanal hinzufügen"
+                title={t("tree.addChannel")}
               >
                 <PlusIcon size={13} />
               </button>
@@ -267,7 +269,7 @@ export function SpacesTree() {
               <div className={styles.createForm}>
                 <input
                   autoFocus
-                  placeholder="Kanalname…"
+                  placeholder={t("tree.channelName")}
                   value={newChannelName}
                   onChange={(e) => setNewChannelName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleCreateChannel(space.spaceId)}
@@ -308,8 +310,8 @@ export function SpacesTree() {
 
       {spaceList.length === 0 && !showCreateSpace && (
         <button className={styles.emptyCta} onClick={() => setShowCreateSpace(true)}>
-          Noch kein Team.
-          <span>Team anlegen →</span>
+          {t("tree.noTeam")}
+          <span>{t("tree.createTeamCta")}</span>
         </button>
       )}
     </div>

@@ -9,6 +9,7 @@
  *   if (await confirmDlg("Delete 3 folders?")) { … }
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "@claraos/core";
 import styles from "./Dialogs.module.css";
 
 type DialogKind = "confirm" | "prompt" | "alert" | "choose";
@@ -91,6 +92,7 @@ function DialogCard({
   dialog: DialogState;
   onClose: (value: string | boolean | ChoiceResult | null) => void;
 }) {
+  const { t } = useTranslation("chat");
   const [value, setValue] = useState(dialog.defaultValue ?? "");
   const [checked, setChecked] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -144,7 +146,7 @@ function DialogCard({
         {dialog.kind === "choose" ? (
           <div className={styles.actions}>
             <button type="button" className={styles.btn} onClick={cancel}>
-              Abbrechen
+              {t("camera.cancel")}
             </button>
             {(dialog.choices ?? []).map((c) => (
               <button
@@ -162,11 +164,11 @@ function DialogCard({
         <div className={styles.actions}>
           {dialog.kind !== "alert" && (
             <button type="button" className={styles.btn} onClick={cancel}>
-              Abbrechen
+              {t("camera.cancel")}
             </button>
           )}
           <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} onClick={ok} autoFocus={dialog.kind !== "prompt"}>
-            {dialog.confirmLabel ?? "OK"}
+            {dialog.confirmLabel ?? t("dialog.ok")}
           </button>
         </div>
         )}

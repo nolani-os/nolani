@@ -12,7 +12,7 @@
  * No lasso, no drag&drop, no F2, no Radix context menu.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useFileStore, type FileNode } from "@claraos/core";
+import { regionLocale, useFileStore, useTranslation, type FileNode } from "@claraos/core";
 import { ActionSheet } from "../../components/ActionSheet";
 import { Button } from "../../components/Button";
 import { Icon, iconFuerEmoji, type IconName } from "../../components/Icon";
@@ -25,6 +25,7 @@ import { useLongPress } from "../../Mobile/useLongPress";
 import { resolveFileApp, fileExt, sniffIsText } from "../../lib/fileTypeRouter";
 import { downloadFile, downloadMany } from "../../lib/downloadFile";
 import { NEW_FILE_TEMPLATES, templateLabel } from "../../lib/newFileTemplates";
+import { folderTypeName } from "../../lib/fileTypeMeta";
 import { useFileBrowserCore } from "./useFileBrowserCore";
 import { useArchiveOps } from "./useArchiveOps";
 import { useFileOps } from "./useFileOps";
@@ -63,6 +64,7 @@ export default function FileBrowserMobile({ windowId }: { windowId: string }) {
     handleNavigate, handleOpen, openWith,
     createFromTemplate: createFromTemplateCore,
   } = useFileBrowserCore(windowId);
+  const { t } = useTranslation("files");
   const favorites = useFileStore((s) => s.favorites);
   const loadFavorites = useFileStore((s) => s.loadFavorites);
   const setFavorite = useFileStore((s) => s.setFavorite);
@@ -103,7 +105,7 @@ export default function FileBrowserMobile({ windowId }: { windowId: string }) {
   const breadcrumbs = currentPath.split("/").filter(Boolean);
   const ordnerName = breadcrumbs.length > 0
     ? decodeURIComponent(breadcrumbs[breadcrumbs.length - 1])
-    : (sourceInfo?.name ?? "Dateien");
+    : (sourceInfo?.name ?? t("app.title"));
   const favSet = new Set((favorites ?? []).map((f) => f.path));
 
   const exitSelection = useCallback(() => {
@@ -127,7 +129,7 @@ export default function FileBrowserMobile({ windowId }: { windowId: string }) {
     if (node.isDir) { handleOpen(node); return; }
     const src = node.source || activeSource;
     if (fileExt(node.name) === "zip" && src === "nextcloud") {
-      void confirmDlg(`„${node.name}“ nach hier entpacken?`, "Entpacken").then((ok) => {
+      void confirmDlg(t("confirm.extractHere", { name: node.name }), t("actions.extract")).then((ok) => {
         if (ok) void extractItem(node);
       });
       return;
@@ -139,7 +141,7 @@ export default function FileBrowserMobile({ windowId }: { windowId: string }) {
       return;
     }
     setOpenWithNode(node);
-  }, [handleOpen, activeSource, confirmDlg, extractItem, openWithOverrides, openWith]);
+  }, [handleOpen, activeSource, confirmDlg, extractItem, openWithOverrides, openWith, t]);
 
   const showItemSheet = useCallback((node: FileNode) => {
     setActionSheet({
@@ -162,37 +164,40 @@ export default function FileBrowserMobile({ windowId }: { windowId: string }) {
         onToggleFavorite: isNc ? (n) => { void setFavorite(n.path, !favSet.has(n.path)); } : undefined,
         isFavorite: favSet.has(node.path),
         onRename: (n) => {
-          void promptDlg(`„${n.name}“ umbenennen:`, n.name).then((v) => {
+          void promptDlg(t("rename.prompt", { name: n.name }), n.name).then((v) => {
             if (v && v.trim() && v.trim() !== n.name) void renameFile(activeSource, n.path, v.trim());
           });
         },
         onDelete: async (n) => {
           const msg = isNc
-            ? `„${n.name}“ in den Papierkorb verschieben?`
-            : `„${n.name}“ endgültig löschen? (kein Papierkorb)`;
-          if (await confirmDlg(msg, isNc ? "Verschieben" : "Löschen")) {
+            ? t("confirm.trashOne", { name: n.name })
+            : t("confirm.deleteOneNoTrash", { name: n.name });
+          if (await confirmDlg(msg, isNc ? t("actions.move") : t("actions.delete"))) {
             await ops.remove(activeSource, [n.path]);
           }
         },
         onProperties: (n) => {
-          void alertDlg(
-            `${n.name}\n\nPfad: ${n.path}\nGröße: ${formatSize(n.size) || "—"}\nGeändert: ${n.modified ? new Date(n.modified).toLocaleString() : "—"}`,
-          );
+          void alertDlg(t("details.text", {
+            name: n.name,
+            path: n.path,
+            size: formatSize(n.size) || "—",
+            modified: n.modified ? new Date(n.modified).toLocaleString(regionLocale()) : "—",
+          }));
         },
       }),
     });
   }, [openWithOverrides, isNc, openNode, openWith, activeSource, archiveItem, extractItem,
       encryptItem, setClipboard, promptDlg, renameFile, confirmDlg, ops, alertDlg,
-      hasPrinter, clipboard, setFavorite, favSet]);
+      hasPrinter, clipboard, setFavorite, favSet, t]);
 
   const deleteSelected = useCallback(async () => {
     const msg = isNc
-      ? `${selectedFiles.length} Elemente in den Papierkorb verschieben?`
-      : `${selectedFiles.length} Elemente endgültig löschen? (kein Papierkorb)`;
-    if (!(await confirmDlg(msg, isNc ? "Verschieben" : "Löschen"))) return;
+      ? t("confirm.trashMany", { count: selectedFiles.length })
+      : t("confirm.deleteManyNoTrash", { count: selectedFiles.length });
+    if (!(await confirmDlg(msg, isNc ? t("actions.move") : t("actions.delete")))) return;
     await ops.remove(activeSource, selectedFiles);
     exitSelection();
-  }, [isNc, selectedFiles, confirmDlg, ops, activeSource, exitSelection]);
+  }, [isNc, selectedFiles, confirmDlg, ops, activeSource, exitSelection, t]);
 
   const goUp = useCallback(() => {
     const parent = "/" + breadcrumbs.slice(0, -1).join("/");
@@ -200,43 +205,43 @@ export default function FileBrowserMobile({ windowId }: { windowId: string }) {
   }, [breadcrumbs, handleNavigate, activeSource]);
 
   const mehrItems: ContextMenuItem[] = [
-    { id: "sources", label: "Quelle wechseln", icon: sym("devices"), onSelect: () => setSourceSheetOpen(true) },
-    { id: "refresh", label: "Aktualisieren", icon: sym("reload"), onSelect: () => loadTree(activeSource, currentPath || "/") },
-    { id: "view", label: gridView ? "Als Liste anzeigen" : "Als Raster anzeigen", icon: sym(gridView ? "list" : "image"), onSelect: () => setGridView(!gridView) },
-    { id: "hidden", label: "Versteckte Dateien", checked: showHidden, onSelect: () => toggleHidden() },
+    { id: "sources", label: t("sidebar.switchSource"), icon: sym("devices"), onSelect: () => setSourceSheetOpen(true) },
+    { id: "refresh", label: t("actions.refresh"), icon: sym("reload"), onSelect: () => loadTree(activeSource, currentPath || "/") },
+    { id: "view", label: gridView ? t("view.asList") : t("view.asGrid"), icon: sym(gridView ? "list" : "image"), onSelect: () => setGridView(!gridView) },
+    { id: "hidden", label: t("view.hiddenFiles"), checked: showHidden, onSelect: () => toggleHidden() },
     {
-      id: "sort", label: "Sortieren nach", icon: sym("arrowUp"),
+      id: "sort", label: t("sort.by"), icon: sym("arrowUp"),
       submenu: [
-        { id: "s-name", label: "Name", checked: sortKey === "name", onSelect: () => setSort("name") },
-        { id: "s-mod", label: "Änderungsdatum", checked: sortKey === "modified", onSelect: () => setSort("modified") },
-        { id: "s-size", label: "Größe", checked: sortKey === "size", onSelect: () => setSort("size") },
-        { id: "s-type", label: "Typ", checked: sortKey === "type", onSelect: () => setSort("type") },
+        { id: "s-name", label: t("sort.name"), checked: sortKey === "name", onSelect: () => setSort("name") },
+        { id: "s-mod", label: t("sort.modified"), checked: sortKey === "modified", onSelect: () => setSort("modified") },
+        { id: "s-size", label: t("sort.size"), checked: sortKey === "size", onSelect: () => setSort("size") },
+        { id: "s-type", label: t("sort.type"), checked: sortKey === "type", onSelect: () => setSort("type") },
         { id: "sep", label: "---" },
-        { id: "s-asc", label: "Aufsteigend", checked: sortDir === "asc", onSelect: () => setSort(sortKey, "asc") },
-        { id: "s-desc", label: "Absteigend", checked: sortDir === "desc", onSelect: () => setSort(sortKey, "desc") },
+        { id: "s-asc", label: t("sort.asc"), checked: sortDir === "asc", onSelect: () => setSort(sortKey, "asc") },
+        { id: "s-desc", label: t("sort.desc"), checked: sortDir === "desc", onSelect: () => setSort(sortKey, "desc") },
       ],
     },
   ];
 
   const neuItems: ContextMenuItem[] = [
     {
-      id: "new-folder", label: "Neuer Ordner", icon: sym("folder"),
+      id: "new-folder", label: t("new.folder"), icon: sym("folder"),
       onSelect: () => {
-        void promptDlg("Name des neuen Ordners:").then((name) => {
+        void promptDlg(t("new.folderPrompt")).then((name) => {
           if (name?.trim()) void createFolder(activeSource, currentPath.replace(/\/$/, "") + "/" + name.trim());
         });
       },
     },
-    { id: "upload", label: "Dateien hochladen", icon: sym("export"), onSelect: () => fileInputRef.current?.click() },
+    { id: "upload", label: t("actions.uploadFiles"), icon: sym("export"), onSelect: () => fileInputRef.current?.click() },
     {
-      id: "new-file", label: "Neue Datei", icon: sym("document"),
+      id: "new-file", label: t("new.file"), icon: sym("document"),
       submenu: NEW_FILE_TEMPLATES.map((tpl) => ({
         id: `tpl-${tpl.ext}`,
         label: `${templateLabel(tpl)} (${tpl.ext})`,
         onSelect: () => {
           void createFromTemplateCore(tpl.ext).then((created) => {
             if (created) {
-              void promptDlg("Dateiname:", created.name).then((v) => {
+              void promptDlg(t("new.fileNamePrompt"), created.name).then((v) => {
                 if (v && v.trim() && v.trim() !== created.name) void renameFile(activeSource, created.path, v.trim());
               });
             }
@@ -247,14 +252,14 @@ export default function FileBrowserMobile({ windowId }: { windowId: string }) {
   ];
 
   // ── Header ──────────────────────────────────────────────────────────
-  const kopfTitel = bereich === "favoriten" ? "Favoriten" : bereich === "papierkorb" ? "Papierkorb" : ordnerName;
+  const kopfTitel = bereich === "favoriten" ? t("sections.favorites") : bereich === "papierkorb" ? t("sections.trash") : ordnerName;
   const kopfSymbol: IconName = bereich === "favoriten" ? "star" : bereich === "papierkorb" ? "trash"
     : breadcrumbs.length ? "folder" : "cloud";
   const kopfSub = bereich === "favoriten"
-    ? `${favorites?.length ?? 0} markiert`
+    ? t("mobile.starred", { count: favorites?.length ?? 0 })
     : bereich === "papierkorb"
-      ? `${trashItems?.length ?? 0} Elemente · wiederherstellbar`
-      : `${sourceInfo?.name ?? activeSource}${!loading && !error ? ` · ${items.length} ${items.length === 1 ? "Element" : "Elemente"}` : ""}`;
+      ? t("trash.restorable", { count: trashItems?.length ?? 0 })
+      : `${sourceInfo?.name ?? activeSource}${!loading && !error ? ` · ${t("count.items", { count: items.length })}` : ""}`;
 
   const suchtRekursiv = searchLoading || searchResults !== null;
 
@@ -262,17 +267,17 @@ export default function FileBrowserMobile({ windowId }: { windowId: string }) {
     <div className={styles.root}>
       {selectionMode ? (
         <header className={styles.auswahlKopf}>
-          <button className={styles.kopfKnopf} aria-label="Auswahl beenden" onClick={exitSelection}>
+          <button className={styles.kopfKnopf} aria-label={t("mobile.endSelection")} onClick={exitSelection}>
             <Icon name="close" size={22} />
           </button>
-          <span className={styles.auswahlTitel}>{selectedFiles.length} ausgewählt</span>
-          <button className={styles.textKnopf} onClick={() => setSelection(allPaths)}>Alle</button>
+          <span className={styles.auswahlTitel}>{t("count.selected", { count: selectedFiles.length })}</span>
+          <button className={styles.textKnopf} onClick={() => setSelection(allPaths)}>{t("mobile.all")}</button>
         </header>
       ) : (
         <header className={styles.kopf}>
           <div className={styles.titelZeile}>
             {bereich === "dateien" && breadcrumbs.length > 0 && (
-              <button className={styles.kopfKnopf} aria-label="Übergeordneter Ordner" onClick={goUp}>
+              <button className={styles.kopfKnopf} aria-label={t("mobile.parentFolder")} onClick={goUp}>
                 <Icon name="back" size={22} />
               </button>
             )}
@@ -289,15 +294,15 @@ export default function FileBrowserMobile({ windowId }: { windowId: string }) {
                 type="search"
                 enterKeyHint="search"
                 value={filterQuery}
-                placeholder={`In „${ordnerName}“ suchen …`}
-                aria-label="Suchen"
+                placeholder={t("search.in", { name: ordnerName })}
+                aria-label={t("search.label")}
                 onChange={(e) => { setFilterQuery(e.target.value); if (!e.target.value) clearSearch(); }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && filterQuery.trim()) { e.preventDefault(); void searchRecursive(filterQuery); }
                 }}
               />
               {filterQuery && (
-                <button className={styles.suchLeeren} aria-label="Suche leeren"
+                <button className={styles.suchLeeren} aria-label={t("search.clear")}
                         onClick={() => { setFilterQuery(""); clearSearch(); }}>
                   <Icon name="close" size={16} />
                 </button>
@@ -331,10 +336,10 @@ export default function FileBrowserMobile({ windowId }: { windowId: string }) {
       <div className={styles.listArea}>
         {bereich === "favoriten" ? (
           favorites === null ? (
-            <div className={styles.emptyState}>Laden …</div>
+            <div className={styles.emptyState}>{t("status.loadingMobile")}</div>
           ) : favorites.length === 0 ? (
-            <Leerzustand symbol={<Icon name="star" size={32} />} titel="Noch keine Favoriten"
-                         hinweis="Im Menü einer Datei oder eines Ordners „Zu Favoriten hinzufügen“." />
+            <Leerzustand symbol={<Icon name="star" size={32} />} titel={t("empty.noFavorites")}
+                         hinweis={t("empty.noFavoritesHint")} />
           ) : (
             <div className={styles.list}>
               {favorites.map((f) => (
@@ -353,35 +358,35 @@ export default function FileBrowserMobile({ windowId }: { windowId: string }) {
           )
         ) : bereich === "papierkorb" ? (
           trashLoading ? (
-            <div className={styles.emptyState}>Laden …</div>
+            <div className={styles.emptyState}>{t("status.loadingMobile")}</div>
           ) : (trashItems ?? []).length === 0 ? (
-            <Leerzustand symbol={<Icon name="trash" size={32} />} titel="Papierkorb ist leer"
-                         hinweis="Gelöschtes aus Nextcloud landet hier und lässt sich wiederherstellen." />
+            <Leerzustand symbol={<Icon name="trash" size={32} />} titel={t("empty.trash")}
+                         hinweis={t("empty.trashHint")} />
           ) : (
             <>
               <div className={styles.korbLeiste}>
                 <Button stufe="text" groesse="s" icon="trash" onClick={() => {
-                  void confirmDlg(`Papierkorb leeren? ${(trashItems ?? []).length} Elemente werden endgültig gelöscht.`, "Leeren")
+                  void confirmDlg(t("confirm.emptyTrash", { count: (trashItems ?? []).length }), t("actions.emptyConfirm"))
                     .then((ok) => { if (ok) void emptyTrash(); });
-                }}>Papierkorb leeren</Button>
+                }}>{t("actions.emptyTrash")}</Button>
               </div>
               <div className={styles.list}>
-                {(trashItems ?? []).map((t) => (
+                {(trashItems ?? []).map((it) => (
                   <MobileFileRow
-                    key={t.trashPath}
-                    node={{ name: t.name, path: t.trashPath, isDir: t.isDir, size: t.size } as FileNode}
+                    key={it.trashPath}
+                    node={{ name: it.name, path: it.trashPath, isDir: it.isDir, size: it.size } as FileNode}
                     source="trash" grid={false} selected={false} selectionMode={false}
-                    meta={`aus ${"/" + (t.originalPath || "").split("/").slice(0, -1).join("/").replace(/^\//, "")}`
-                      + (t.deletedAt ? ` · ${new Date(t.deletedAt * 1000).toLocaleDateString()}` : "")}
+                    meta={t("trash.from", { folder: "/" + (it.originalPath || "").split("/").slice(0, -1).join("/").replace(/^\//, "") })
+                      + (it.deletedAt ? ` · ${new Date(it.deletedAt * 1000).toLocaleDateString(regionLocale())}` : "")}
                     onTap={() => setActionSheet({
-                      title: t.name,
+                      title: it.name,
                       items: [
-                        { id: "restore", label: "Wiederherstellen", icon: sym("restore"), onSelect: () => { void restoreTrashItem(t.trashPath); } },
+                        { id: "restore", label: t("actions.restore"), icon: sym("restore"), onSelect: () => { void restoreTrashItem(it.trashPath); } },
                         {
-                          id: "purge", label: "Endgültig löschen", icon: sym("trash"), variant: "destructive",
+                          id: "purge", label: t("actions.deletePermanently"), icon: sym("trash"), variant: "destructive",
                           onSelect: () => {
-                            void confirmDlg(`„${t.name}“ endgültig löschen? Das kann nicht rückgängig gemacht werden.`, "Endgültig löschen")
-                              .then((ok) => { if (ok) void purgeTrashItem(t.trashPath); });
+                            void confirmDlg(t("confirm.purge", { name: it.name }), t("actions.deletePermanently"))
+                              .then((ok) => { if (ok) void purgeTrashItem(it.trashPath); });
                           },
                         },
                       ],
@@ -396,10 +401,10 @@ export default function FileBrowserMobile({ windowId }: { windowId: string }) {
           )
         ) : suchtRekursiv ? (
           searchLoading ? (
-            <div className={styles.emptyState}>Suche …</div>
+            <div className={styles.emptyState}>{t("search.searchingMobile")}</div>
           ) : (searchResults ?? []).length === 0 ? (
-            <Leerzustand symbol={<Icon name="search" size={32} />} titel="Keine Treffer"
-                         aktionen={[{ label: "Suche leeren", onClick: () => { setFilterQuery(""); clearSearch(); } }]} />
+            <Leerzustand symbol={<Icon name="search" size={32} />} titel={t("empty.noHits")}
+                         aktionen={[{ label: t("search.clear"), onClick: () => { setFilterQuery(""); clearSearch(); } }]} />
           ) : (
             <div className={styles.list}>
               {(searchResults ?? []).map((n) => (
@@ -415,34 +420,34 @@ export default function FileBrowserMobile({ windowId }: { windowId: string }) {
             </div>
           )
         ) : loading ? (
-          <div className={styles.emptyState}>Laden …</div>
+          <div className={styles.emptyState}>{t("status.loadingMobile")}</div>
         ) : error ? (
           <div className={styles.errorPanel}>
             <div className={styles.errorIcon}><Icon name={error.code === "device_offline" ? "devices" : "warning"} size={40} /></div>
             <div className={styles.errorTitle}>
               {error.code === "device_offline"
                 ? error.status === "sshd_down"
-                  ? `${error.device ?? ordnerName} erreichbar, aber SSH läuft nicht`
-                  : `${error.device ?? ordnerName} ist offline`
-                : "Ordner konnte nicht geladen werden"}
+                  ? t("errors.sshdDownShort", { device: error.device ?? ordnerName })
+                  : t("errors.offlineShort", { device: error.device ?? ordnerName })
+                : t("errors.loadFolder")}
             </div>
             <Button stufe="tonal" icon="reload"
                     onClick={() => { void loadSources(true).then(() => loadTree(activeSource, currentPath || "/")); }}>
-              Erneut versuchen
+              {t("actions.retry")}
             </Button>
           </div>
         ) : items.length === 0 ? (
           filterQuery ? (
-            <Leerzustand symbol={<Icon name="search" size={32} />} titel="Nichts gefunden"
-                         hinweis="Enter sucht auch in Unterordnern."
-                         aktionen={[{ label: "In Unterordnern suchen", onClick: () => { void searchRecursive(filterQuery); } }]} />
+            <Leerzustand symbol={<Icon name="search" size={32} />} titel={t("empty.nothingFound")}
+                         hinweis={t("empty.nothingFoundHint")}
+                         aktionen={[{ label: t("empty.searchSubfolders"), onClick: () => { void searchRecursive(filterQuery); } }]} />
           ) : (
             <Leerzustand
               symbol={<Icon name="folder" size={32} />}
-              titel="Ordner ist leer"
+              titel={t("empty.folder")}
               aktionen={[
-                { label: "Dateien hochladen", onClick: () => fileInputRef.current?.click() },
-                ...(clipboard ? [{ label: "Hier einfügen", onClick: () => { void ops.paste(activeSource, currentPath || "/"); } }] : []),
+                { label: t("actions.uploadFiles"), onClick: () => fileInputRef.current?.click() },
+                ...(clipboard ? [{ label: t("actions.pasteHere"), onClick: () => { void ops.paste(activeSource, currentPath || "/"); } }] : []),
               ]}
             />
           )
@@ -479,13 +484,12 @@ export default function FileBrowserMobile({ windowId }: { windowId: string }) {
         <div className={styles.ablage} role="status">
           <Icon name={clipboard.action === "cut" ? "scissors" : "copy"} size={18} />
           <span className={styles.ablageText}>
-            {clipboard.paths.length} {clipboard.paths.length === 1 ? "Element" : "Elemente"}{" "}
-            {clipboard.action === "cut" ? "ausgeschnitten" : "kopiert"}
+            {t(clipboard.action === "cut" ? "clipboard.cut" : "clipboard.copied", { count: clipboard.paths.length })}
           </span>
           <button className={styles.ablageKnopf} onClick={() => { void ops.paste(activeSource, currentPath || "/"); }}>
-            Hier einfügen
+            {t("actions.pasteHere")}
           </button>
-          <button className={styles.kopfKnopf} aria-label="Zwischenablage leeren" onClick={clearClipboard}>
+          <button className={styles.kopfKnopf} aria-label={t("clipboard.clear")} onClick={clearClipboard}>
             <Icon name="close" size={18} />
           </button>
         </div>
@@ -494,7 +498,9 @@ export default function FileBrowserMobile({ windowId }: { windowId: string }) {
       {ops.upload && (
         <div className={styles.uploadToast} role="status">
           <span className={styles.uploadName}>
-            Lädt hoch{ops.upload.count > 1 ? ` ${ops.upload.index + 1}/${ops.upload.count}` : ""} · {ops.upload.name}
+            {ops.upload.count > 1
+              ? t("upload.mobileCount", { index: ops.upload.index + 1, total: ops.upload.count, name: ops.upload.name })
+              : t("upload.mobile", { name: ops.upload.name })}
           </span>
           <span className={styles.uploadBar}><span style={{ width: `${Math.round(ops.upload.fraction * 100)}%` }} /></span>
         </div>
@@ -504,30 +510,30 @@ export default function FileBrowserMobile({ windowId }: { windowId: string }) {
       {selectionMode ? (
         <Werkzeugleiste
           eintraege={[
-            { key: "copy", label: "Kopieren", icon: "copy",
+            { key: "copy", label: t("actions.copy"), icon: "copy",
               onClick: () => { setClipboard("copy", activeSource, selectedFiles); exitSelection(); } },
-            { key: "cut", label: "Ausschneiden", icon: "scissors",
+            { key: "cut", label: t("actions.cut"), icon: "scissors",
               onClick: () => { setClipboard("cut", activeSource, selectedFiles); exitSelection(); } },
-            { key: "download", label: "Herunterladen", icon: "import",
+            { key: "download", label: t("actions.download"), icon: "import",
               onClick: () => { downloadMany(activeSource, selectedFiles); exitSelection(); } },
-            { key: "delete", label: "Löschen", icon: "trash", onClick: () => { void deleteSelected(); } },
+            { key: "delete", label: t("actions.delete"), icon: "trash", onClick: () => { void deleteSelected(); } },
           ]}
         />
       ) : (
         <Werkzeugleiste
           eintraege={[
-            { key: "dateien", label: "Dateien", icon: "folder", active: bereich === "dateien",
+            { key: "dateien", label: t("sections.files"), icon: "folder", active: bereich === "dateien",
               onClick: () => (bereich === "dateien" ? handleNavigate(activeSource, sourceInfo?.default_path ?? "/") : wechsleBereich("dateien")) },
             ...(isNc || bereich !== "dateien" ? [
-              { key: "favoriten", label: "Favoriten", icon: "star" as IconName, active: bereich === "favoriten",
+              { key: "favoriten", label: t("sections.favorites"), icon: "star" as IconName, active: bereich === "favoriten",
                 onClick: () => wechsleBereich("favoriten") },
-              { key: "papierkorb", label: "Papierkorb", icon: "trash" as IconName, active: bereich === "papierkorb",
+              { key: "papierkorb", label: t("sections.trash"), icon: "trash" as IconName, active: bereich === "papierkorb",
                 onClick: () => wechsleBereich("papierkorb") },
             ] : []),
-            { key: "quellen", label: "Quellen", icon: "devices", onClick: () => setSourceSheetOpen(true) },
-            { key: "mehr", label: "Mehr", icon: "more", onClick: () => setActionSheet({ title: "Ansicht", items: mehrItems }) },
+            { key: "quellen", label: t("sections.sources"), icon: "devices", onClick: () => setSourceSheetOpen(true) },
+            { key: "mehr", label: t("sections.more"), icon: "more", onClick: () => setActionSheet({ title: t("view.title"), items: mehrItems }) },
           ]}
-          fab={bereich === "dateien" ? { label: "Neu / Hochladen", onClick: () => setActionSheet({ title: "Neu", items: neuItems }) } : undefined}
+          fab={bereich === "dateien" ? { label: t("new.fab"), onClick: () => setActionSheet({ title: t("new.title"), items: neuItems }) } : undefined}
         />
       )}
 
@@ -545,7 +551,7 @@ export default function FileBrowserMobile({ windowId }: { windowId: string }) {
       />
 
       {/* Sources sheet */}
-      <BottomSheet open={sourceSheetOpen} onClose={() => setSourceSheetOpen(false)} title="Quellen">
+      <BottomSheet open={sourceSheetOpen} onClose={() => setSourceSheetOpen(false)} title={t("sections.sources")}>
         {sources.map((src) => (
           <button
             key={src.id}
@@ -562,9 +568,9 @@ export default function FileBrowserMobile({ windowId }: { windowId: string }) {
             <span className={styles.sourceName}>{src.name}</span>
             <span
               className={`${styles.sourceDot} ${src.connected ? styles.dotOnline : styles.dotOffline}`}
-              title={src.connected ? "online"
-                : src.status === "kein_zugang" ? "kein Zugang hinterlegt"
-                : src.status === "sshd_down" ? "SSH aus" : "offline"}
+              title={src.connected ? t("source.online")
+                : src.status === "kein_zugang" ? t("source.noAccess")
+                : src.status === "sshd_down" ? t("source.sshOff") : t("source.offline")}
             />
           </button>
         ))}
@@ -612,6 +618,7 @@ function MobileFileRow({ node, source, grid, selected, selectionMode, cut, meta,
   onTap: () => void; onLongPress: () => void; onMore: () => void;
 }) {
   const press = useLongPress({ onTap, onLongPress });
+  const { t } = useTranslation("files");
   const thumbSource = source === "trash" ? "" : (node.source ?? source);
   // A selection made from outside (Clara's navigate_files) must be on screen:
   // in the phone split view the list is short and the marked file sat below
@@ -639,8 +646,8 @@ function MobileFileRow({ node, source, grid, selected, selectionMode, cut, meta,
         <span className={styles.rowMeta}>
           {meta ?? (
             <>
-              {node.isDir ? "Ordner" : formatSize(node.size)}
-              {node.modified ? ` · ${new Date(node.modified).toLocaleDateString()}` : ""}
+              {node.isDir ? folderTypeName() : formatSize(node.size)}
+              {node.modified ? ` · ${new Date(node.modified).toLocaleDateString(regionLocale())}` : ""}
             </>
           )}
         </span>
@@ -650,7 +657,7 @@ function MobileFileRow({ node, source, grid, selected, selectionMode, cut, meta,
       ) : !hideMore && (
         <button
           className={styles.mehrKnopf}
-          aria-label="Aktionen"
+          aria-label={t("actions.more")}
           onClick={(e) => { e.stopPropagation(); onMore(); }}
           onPointerDown={(e) => e.stopPropagation()}
         >

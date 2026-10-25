@@ -6,7 +6,9 @@
  * frame of the Collabora session and may speak the postMessage API.
  * The action-bus actions for `app_id="office-viewer"` run through here:
  *
- *   insert  args: { content, mime?, save? }   → Action_Paste at cursor position
+ *   insert  args: { content, mime?, save?, position? }
+ *           → Action_Paste at the cursor, or with position "end" at the end of the
+ *             document; plain text is read as Markdown and pasted as HTML
  *   save    args: {}                          → Action_Save
  *
  * Collabora only accepts host messages after the handshake
@@ -14,8 +16,9 @@
  * Addressing: payload.window_id, otherwise the most recently focused
  * office-viewer window.
  */
-import { registerActionHandler } from "../../Chat/actionBus";
-import { useUIStore, appUrl } from "@claraos/core";
+import { registerActionHandler, meldeErgebnis, type ActionPayload } from "../../Chat/actionBus";
+import { useUIStore, appUrl, i18n } from "@claraos/core";
+import { markdownToHtml } from "../../lib/markdownHtml";
 
 export const COLLABORA_ORIGIN = appUrl("collabora");
 
@@ -76,7 +79,7 @@ function pickTarget(windowId?: string | null): FrameEntry | undefined {
 
 function notify(message: string): void {
   try {
-    useUIStore.getState().addNotification({ title: "Office", body: message, icon: "📄" });
+    useUIStore.getState().addNotification({ title: i18n.t("viewers:office.notifyTitle"), body: message, icon: "📄" });
   } catch {
     console.warn("[officeViewer]", message);
   }
@@ -85,22 +88,36 @@ function notify(message: string): void {
 function officeAction(
   action: string,
   args: Record<string, unknown>,
-  payload: { window_id?: string | null },
+  payload: ActionPayload,
 ): void {
   const entry = pickTarget(payload.window_id);
   if (!entry) {
-    notify("Kein Office-Dokument geöffnet — Einfügen nicht möglich.");
+    notify(i18n.t("viewers:office.noDocument"));
+    meldeErgebnis(payload, false, "No office document is open — nothing inserted.");
     return;
   }
   switch (action) {
     case "insert": {
       const content = String(args.content ?? "");
-      if (!content) return;
-      const mime = String(args.mime ?? "text/plain;charset=utf-8");
+      if (!content) {
+        meldeErgebnis(payload, false, "insert without content — nothing inserted.");
+        return;
+      }
+      // Plain text (the default) is treated as Markdown and pasted as HTML, so
+      // headings and lists arrive formatted; an explicit mime is passed through.
+      const html = !args.mime || String(args.mime).startsWith("text/plain");
+      const mime = html ? "text/html" : String(args.mime);
+      const amEnde = args.position === "end";
+      if (amEnde) {
+        // A new paragraph after the last one, so the pasted block does not take
+        // over the style of whatever line the document ends with.
+        send(entry, { MessageId: "Send_UNO_Command", Values: { Command: ".uno:GoToEndOfDoc" } });
+        send(entry, { MessageId: "Send_UNO_Command", Values: { Command: ".uno:InsertPara" } });
+      }
       send(entry, {
         MessageId: "Action_Paste",
         SendTime: Date.now(),
-        Values: { Mimetype: mime, Data: content },
+        Values: { Mimetype: mime, Data: html ? markdownToHtml(content) : content },
       });
       if (args.save === true) {
         send(entry, {
@@ -108,6 +125,13 @@ function officeAction(
           Values: { DontTerminateEdit: true, DontSaveIfUnmodified: true, Notify: false },
         });
       }
+      // Without an ack the assistant waited into the timeout and told the user the
+      // insert might have failed — although the text was there (showcase takes 3–5).
+      meldeErgebnis(payload, true,
+        `Pasted ${content.length} characters ${amEnde ? "at the end of" : "at the cursor in"} `
+        + `the document${entry.ready ? "" : " (queued until the document has loaded)"}`
+        + `${args.save === true ? " and saved" : ""}. Collabora does not report back what it `
+        + "rendered; read_screen shows the document.");
       return;
     }
     case "save":
@@ -115,9 +139,11 @@ function officeAction(
         MessageId: "Action_Save",
         Values: { DontTerminateEdit: true, DontSaveIfUnmodified: true, Notify: false },
       });
+      meldeErgebnis(payload, true, "Save sent to the document.");
       return;
     default:
       console.debug("[officeViewer] unknown action", action);
+      meldeErgebnis(payload, false, `The office viewer does not know the action "${action}".`);
   }
 }
 

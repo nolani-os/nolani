@@ -1,0 +1,485 @@
+{
+  "status": {
+    "running": "{{what}} …",
+    "runningDetail": "{{what}} “{{detail}}” …",
+    "done": "{{what}} ✓",
+    "failed": "{{what}} – failed",
+    "builtin": {
+      "webSearch": {
+        "run": "Searching the web",
+        "done": "Web search done"
+      },
+      "webFetch": {
+        "run": "Reading web page",
+        "done": "Web page read"
+      },
+      "showCard": {
+        "run": "Preparing card",
+        "done": "Card shown"
+      },
+      "askUser": {
+        "run": "Asking you",
+        "done": "Answer received"
+      },
+      "todo": {
+        "run": "Planning steps",
+        "done": "Plan updated"
+      },
+      "memory": {
+        "run": "Checking my notes",
+        "done": "Memory read"
+      },
+      "openApp": {
+        "run": "Opening the app",
+        "done": "App opened"
+      },
+      "readScreen": {
+        "run": "Looking at the screen",
+        "done": "Screen read"
+      }
+    },
+    "knowledge": {
+      "capture_idea": {
+        "run": "Capturing idea",
+        "done": "Idea captured"
+      },
+      "list_ideas": {
+        "run": "Going through ideas",
+        "done": "Ideas read"
+      },
+      "get_object": {
+        "run": "Opening note",
+        "done": "Note read"
+      },
+      "create_object": {
+        "run": "Creating note",
+        "done": "Note created"
+      },
+      "list_collections": {
+        "run": "Going through collections",
+        "done": "Collections read"
+      },
+      "create_collection": {
+        "run": "Creating collection",
+        "done": "Collection created"
+      },
+      "create_collection_from_template": {
+        "run": "Building collection from template",
+        "done": "Collection created from template"
+      },
+      "add_to_collection": {
+        "run": "Adding to collection",
+        "done": "Added to collection"
+      },
+      "define_type": {
+        "run": "Creating note type",
+        "done": "Note type created"
+      },
+      "update_object": {
+        "run": "Updating note",
+        "done": "Note updated"
+      },
+      "add_insight": {
+        "run": "Adding insight",
+        "done": "Insight added"
+      },
+      "link_objects": {
+        "run": "Linking notes",
+        "done": "Notes linked"
+      },
+      "promote_idea_to_plan": {
+        "run": "Turning the idea into a plan",
+        "done": "Plan created"
+      },
+      "get_backlinks": {
+        "run": "Looking for references",
+        "done": "References found"
+      },
+      "move_object": {
+        "run": "Moving note",
+        "done": "Note moved"
+      },
+      "clip_url": {
+        "run": "Saving web page",
+        "done": "Web page saved"
+      },
+      "comment_on_object": {
+        "run": "Writing comment",
+        "done": "Comment written"
+      },
+      "query_collection": {
+        "run": "Searching collection",
+        "done": "Collection searched"
+      },
+      "define_field": {
+        "run": "Creating column",
+        "done": "Column created"
+      },
+      "create_view": {
+        "run": "Creating view",
+        "done": "View created"
+      },
+      "set_relation": {
+        "run": "Linking entries",
+        "done": "Entries linked"
+      },
+      "list_templates": {
+        "run": "Going through templates",
+        "done": "Templates read"
+      },
+      "create_from_template": {
+        "run": "Creating note from template",
+        "done": "Note created from template"
+      },
+      "duplicate_object": {
+        "run": "Copying note",
+        "done": "Note copied"
+      },
+      "get_backmentions": {
+        "run": "Looking for mentions",
+        "done": "Mentions found"
+      },
+      "get_history": {
+        "run": "Reading versions",
+        "done": "Versions read"
+      },
+      "restore_version": {
+        "run": "Restoring old version",
+        "done": "Old version restored"
+      },
+      "search_knowledge_db": {
+        "run": "Searching knowledge",
+        "done": "Knowledge searched"
+      },
+      "search": {
+        "run": "Searching knowledge",
+        "done": "Knowledge searched"
+      },
+      "list_goals": {
+        "run": "Going through goals",
+        "done": "Goals read"
+      },
+      "suggest_ideas": {
+        "run": "Collecting ideas for the goal",
+        "done": "Ideas suggested"
+      },
+      "develop_concept": {
+        "run": "Working out concept",
+        "done": "Concept worked out"
+      },
+      "rate_contribution": {
+        "run": "Rating contribution",
+        "done": "Contribution rated"
+      },
+      "link_to_goal": {
+        "run": "Linking to goal",
+        "done": "Linked to goal"
+      },
+      "promote_to_action_plan": {
+        "run": "Creating action plan",
+        "done": "Action plan created"
+      },
+      "run_five_why": {
+        "run": "Asking why five times",
+        "done": "5 Whys done"
+      },
+      "pareto_analysis": {
+        "run": "Running Pareto analysis",
+        "done": "Pareto analysis done"
+      }
+    },
+    "planner": {
+      "list_projects": {
+        "run": "Going through projects in Planner",
+        "done": "Projects read"
+      },
+      "list_tasks": {
+        "run": "Searching Planner",
+        "done": "Tasks read"
+      },
+      "count_tasks": {
+        "run": "Counting tasks",
+        "done": "Tasks counted"
+      },
+      "uebersicht": {
+        "run": "Getting Planner overview",
+        "done": "Overview read"
+      },
+      "get_task": {
+        "run": "Opening task",
+        "done": "Task read"
+      },
+      "create_task": {
+        "run": "Creating task",
+        "done": "Task created"
+      },
+      "update_task": {
+        "run": "Changing task",
+        "done": "Task changed"
+      },
+      "complete_task": {
+        "run": "Checking off task",
+        "done": "Task done"
+      },
+      "set_dependency": {
+        "run": "Setting dependency",
+        "done": "Dependency set"
+      },
+      "move_card": {
+        "run": "Moving card",
+        "done": "Card moved"
+      },
+      "add_comment": {
+        "run": "Writing comment",
+        "done": "Comment written"
+      },
+      "set_estimate": {
+        "run": "Entering estimate",
+        "done": "Estimate entered"
+      },
+      "create_project_from_plan": {
+        "run": "Creating project from plan",
+        "done": "Project created"
+      },
+      "start_work": {
+        "run": "Starting work on task",
+        "done": "Work started"
+      },
+      "finish_work": {
+        "run": "Finishing work",
+        "done": "Work finished"
+      },
+      "start_adhoc_work": {
+        "run": "Creating work order",
+        "done": "Work order created"
+      }
+    },
+    "mail": {
+      "list_messages": {
+        "run": "Going through mail",
+        "done": "Mail read"
+      },
+      "count_messages": {
+        "run": "Counting mail",
+        "done": "Mail counted"
+      },
+      "create_draft": {
+        "run": "Writing draft",
+        "done": "Draft saved"
+      },
+      "get_message": {
+        "run": "Reading mail",
+        "done": "Mail read"
+      },
+      "list_mailboxes": {
+        "run": "Going through mail folders",
+        "done": "Mail folders read"
+      },
+      "send_mail": {
+        "run": "Sending mail",
+        "done": "Mail sent"
+      },
+      "create_mailbox": {
+        "run": "Creating mail folder",
+        "done": "Mail folder created"
+      },
+      "get_attachment": {
+        "run": "Reading attachment",
+        "done": "Attachment read"
+      },
+      "delete_message": {
+        "run": "Deleting mail",
+        "done": "Mail deleted"
+      },
+      "mark_read": {
+        "run": "Marking as read",
+        "done": "Marked as read"
+      },
+      "mark_unread": {
+        "run": "Marking as unread",
+        "done": "Marked as unread"
+      }
+    },
+    "nc_pim": {
+      "list_events": {
+        "run": "Checking the calendar",
+        "done": "Events read"
+      },
+      "add_event": {
+        "run": "Adding event",
+        "done": "Event created"
+      },
+      "update_event": {
+        "run": "Moving event",
+        "done": "Event changed"
+      },
+      "delete_event": {
+        "run": "Deleting event",
+        "done": "Event deleted"
+      },
+      "list_contacts": {
+        "run": "Searching contacts",
+        "done": "Contacts read"
+      },
+      "add_contact": {
+        "run": "Creating contact",
+        "done": "Contact created"
+      },
+      "update_contact": {
+        "run": "Changing contact",
+        "done": "Contact changed"
+      }
+    },
+    "post": {
+      "mail_to_task": {
+        "run": "Turning the mail into a task",
+        "done": "Task created from mail"
+      },
+      "mail_to_event": {
+        "run": "Turning the mail into an event",
+        "done": "Event created from mail"
+      },
+      "mail_to_note": {
+        "run": "Turning the mail into a note",
+        "done": "Note created from mail"
+      }
+    },
+    "lernen": {
+      "merke_praeferenz": {
+        "run": "Remembering that",
+        "done": "Remembered"
+      },
+      "gelernter_weg": {
+        "run": "Looking up a proven approach",
+        "done": "Approach looked up"
+      }
+    },
+    "office": {
+      "create_document": {
+        "run": "Creating document",
+        "done": "Document created"
+      }
+    }
+  },
+  "blocks": {
+    "today": "Today",
+    "sent": "✓ Sent",
+    "open": {
+      "label": "Open",
+      "failed": "Not opened",
+      "done": "Opened"
+    },
+    "undo": {
+      "label": "Undo",
+      "done": "Undone",
+      "failed": "Not possible"
+    },
+    "task": {
+      "urgent": "Urgent",
+      "header": "Task created · Planner",
+      "undone": "Undone — the task has been deleted."
+    },
+    "job": {
+      "status": {
+        "laeuft": "Running in the background",
+        "fertig": "Done",
+        "fehler": "Failed"
+      },
+      "header": "Job · {{status}}",
+      "title": "Job",
+      "notifyHint": "You'll get a notification as soon as it's done.",
+      "openResult": "Open result"
+    },
+    "result": {
+      "type": {
+        "bild": "Image",
+        "pdf": "PDF",
+        "artefakt": "Artifact",
+        "fenster": "Window",
+        "datei": "File"
+      },
+      "copyPath": "Copy path"
+    },
+    "list": {
+      "title": "List",
+      "art": { "aufgaben": "Tasks" },
+      "showAll_one": "Show all {{count}}",
+      "showAll_other": "Show all {{count}}"
+    },
+    "switch": {
+      "header": "Device · {{state}}",
+      "on": "switched on",
+      "off": "switched off",
+      "toggled": "switched"
+    },
+    "confirm": {
+      "notOpen": "Request no longer open.",
+      "byRule": "Allowed by rule",
+      "needed": "Confirmation needed",
+      "critical": "critical",
+      "once": "Once",
+      "always": "Always",
+      "alwaysFor": "Always for {{target}}",
+      "alwaysTitle": "Rule: run exactly this action without asking from now on",
+      "deny": "Don't",
+      "timeout": "No answer within {{seconds}} s: not run",
+      "allowed": "✓ Allowed",
+      "denied": "⛔ Denied",
+      "expired": "Expired"
+    },
+    "draft": {
+      "noSubject": "(no subject)",
+      "error": "Error {{status}}",
+      "header": "Email draft · not sent",
+      "to": "To: {{to}}",
+      "noRecipient": "– no recipient yet –",
+      "cc": "Cc: {{cc}}",
+      "length_one": "({{count}} character)",
+      "length_other": "({{count}} characters)",
+      "sendTitle": "Send draft now",
+      "needRecipient": "Add a recipient in Post first",
+      "confirmSend": "Really send to {{to}}?",
+      "send": "Send",
+      "openInPost": "Open in Post",
+      "discard": "Discard",
+      "discarded": "Draft discarded"
+    },
+    "chart": {
+      "title": "Chart",
+      "showValues": "Show values"
+    },
+    "form": {
+      "choose": "Please choose",
+      "yes": "Yes",
+      "no": "No",
+      "submit": "Submit",
+      "failed": "Sending failed."
+    }
+  },
+  "voice": {
+    "sdkIncomplete": "LiveKit SDK loaded incompletely",
+    "sdkLoadFailed": "LiveKit SDK could not be loaded",
+    "backendUnreachable": "Voice backend unreachable ({{status}})",
+    "micDenied": "Microphone not allowed — please allow it in the browser.",
+    "micNotFound": "No microphone found.",
+    "micBusy": "The microphone is in use by another app.",
+    "micError": "Microphone error: {{error}}",
+    "micInsecure": "Microphone not available here — open {{product}} over HTTPS.",
+    "recordFailed": "Recording not possible: {{error}}",
+    "transcribeFailed": "Transcription failed: {{error}}",
+    "liveChatTitle": "Live conversation"
+  },
+  "errors": {
+    "unknown": "Unknown error",
+    "modelNotFound": "{{assistant}} is not enabled for this account (model not visible).",
+    "imageUnreadable": "Image not readable",
+    "attachmentFailed": "Attachment “{{name}}” could not be processed: {{error}}"
+  },
+  "notices": {
+    "slow": "This is taking longer than expected ({{seconds}}s) — {{assistant}} is still working …"
+  },
+  "artifact": {
+    "pageTitle": "Page by {{assistant}}",
+    "kindTitle": "{{kind}} by {{assistant}}"
+  }
+}

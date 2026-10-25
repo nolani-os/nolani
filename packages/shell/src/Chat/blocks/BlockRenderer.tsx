@@ -13,7 +13,7 @@ import { dispatchWhenReady } from "../actionBus";
 import { Markdown } from "../Markdown";
 import { oeffneShellZiel } from "../../Notifications/notificationActions";
 import styles from "./blocks.module.css";
-import { regionLocale } from "@claraos/core";
+import { regionLocale, useTranslation, i18n } from "@claraos/core";
 
 type Props = Record<string, unknown>;
 const str = (v: unknown, fallback = ""): string => (typeof v === "string" ? v : typeof v === "number" ? String(v) : fallback);
@@ -26,11 +26,12 @@ function datumKurz(iso: string): string {
   const heute = new Date();
   const gleich = d.toDateString() === heute.toDateString();
   const zeit = d.getHours() || d.getMinutes() ? ` ${d.toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" })}` : "";
-  return (gleich ? "Heute" : d.toLocaleDateString(regionLocale(), { day: "numeric", month: "short" })) + zeit;
+  return (gleich ? i18n.t("chatWork:blocks.today") : d.toLocaleDateString(regionLocale(), { day: "numeric", month: "short" })) + zeit;
 }
 
 /** "Open": replay the same shell action that Clara had triggered. */
-function OeffnenKnopf({ oeffnen, label = "Öffnen" }: { oeffnen: unknown; label?: string }) {
+function OeffnenKnopf({ oeffnen, label }: { oeffnen: unknown; label?: string }) {
+  const { t } = useTranslation("chatWork");
   const o = obj(oeffnen);
   const [zustand, setZustand] = useState<"" | "läuft" | "ok" | "fehler">("");
   if (!o || typeof o.action !== "string") return null;
@@ -46,13 +47,14 @@ function OeffnenKnopf({ oeffnen, label = "Öffnen" }: { oeffnen: unknown; label?
         window.setTimeout(() => setZustand(""), 1500);
       }}
     >
-      {zustand === "fehler" ? "Nicht geöffnet" : zustand === "ok" ? "Geöffnet" : label}
+      {zustand === "fehler" ? t("blocks.open.failed") : zustand === "ok" ? t("blocks.open.done") : label ?? t("blocks.open.label")}
     </button>
   );
 }
 
 /** Undo: a described HTTP call (method + URL), never arbitrary code. */
 function UndoKnopf({ undo, onDone }: { undo: unknown; onDone: () => void }) {
+  const { t } = useTranslation("chatWork");
   const u = obj(undo);
   const [zustand, setZustand] = useState<"" | "läuft" | "ok" | "fehler">("");
   if (!u || typeof u.url !== "string" || !(u.url as string).startsWith("/api/claraos/")) return null;
@@ -76,24 +78,25 @@ function UndoKnopf({ undo, onDone }: { undo: unknown; onDone: () => void }) {
         }
       }}
     >
-      {zustand === "ok" ? "Rückgängig gemacht" : zustand === "fehler" ? "Nicht möglich" : zustand === "läuft" ? "…" : "Rückgängig"}
+      {zustand === "ok" ? t("blocks.undo.done") : zustand === "fehler" ? t("blocks.undo.failed") : zustand === "läuft" ? "…" : t("blocks.undo.label")}
     </button>
   );
 }
 
 function AufgabeKarte({ p }: { p: Props }) {
+  const { t } = useTranslation("chatWork");
   const [weg, setWeg] = useState(false);
   const titel = str(p.titel);
   if (!titel) return null;
   const faellig = datumKurz(str(p.faellig));
-  const prio = typeof p.prioritaet === "number" && p.prioritaet >= 4 ? "Dringend" : "";
+  const prio = typeof p.prioritaet === "number" && p.prioritaet >= 4 ? t("blocks.task.urgent") : "";
   return (
     <div className={`${styles.karte} ${weg ? styles.karteWeg : ""}`} data-kind="aufgabe">
-      <div className={styles.kopf}>Aufgabe angelegt · Planner</div>
+      <div className={styles.kopf}>{t("blocks.task.header")}</div>
       <div className={styles.titel}>{titel}</div>
       {(faellig || prio) && <div className={styles.meta}>{[faellig, prio].filter(Boolean).join(" · ")}</div>}
       {weg ? (
-        <div className={styles.hinweis}>Rückgängig gemacht — die Aufgabe ist gelöscht.</div>
+        <div className={styles.hinweis}>{t("blocks.task.undone")}</div>
       ) : (
         <div className={styles.aktionen}>
           <OeffnenKnopf oeffnen={p.oeffnen} />
@@ -105,10 +108,11 @@ function AufgabeKarte({ p }: { p: Props }) {
 }
 
 type JobStatus = "laeuft" | "fertig" | "fehler";
-const JOB_STATUS: Record<JobStatus, { symbol: string; text: string }> = {
-  laeuft: { symbol: "⏳", text: "Läuft im Hintergrund" },
-  fertig: { symbol: "✅", text: "Fertig" },
-  fehler: { symbol: "⚠️", text: "Fehlgeschlagen" },
+// Texts are catalog keys (blocks.job.status.*), resolved at render time.
+const JOB_SYMBOL: Record<JobStatus, string> = {
+  laeuft: "⏳",
+  fertig: "✅",
+  fehler: "⚠️",
 };
 const jobStatus = (v: unknown): JobStatus | null => (v === "laeuft" || v === "fertig" || v === "fehler" ? v : null);
 
@@ -127,6 +131,7 @@ function ergebnisOeffnen(url: string) {
  * so a job that ended while the chat was closed shows its result on reopening.
  */
 function JobKarte({ p }: { p: Props }) {
+  const { t } = useTranslation("chatWork");
   const jobId = str(p.job_id);
   const [stand, setStand] = useState<{ status: JobStatus | null; titel: string; url: string; fehler: string }>(() => ({
     status: jobStatus(p.status), titel: str(p.titel), url: str(p.ergebnis_url), fehler: str(p.fehler),
@@ -175,22 +180,23 @@ function JobKarte({ p }: { p: Props }) {
   }, [jobId, laeuft]);
 
   if (!jobId) return null;
-  const s = JOB_STATUS[stand.status ?? "laeuft"];
+  const st = stand.status ?? "laeuft";
+  const s = { symbol: JOB_SYMBOL[st], text: t(`blocks.job.status.${st}`) };
   return (
     <div className={`${styles.karte} ${stand.status === "fehler" ? styles.karteWarn : ""}`} data-kind="job" data-status={stand.status ?? "laeuft"}>
       <div className={styles.zeile}>
         <span className={styles.symbol} aria-hidden="true">{s.symbol}</span>
         <div className={styles.text}>
-          <div className={styles.kopf}>Auftrag · {s.text}</div>
-          <div className={styles.titel}>{stand.titel || "Auftrag"}</div>
+          <div className={styles.kopf}>{t("blocks.job.header", { status: s.text })}</div>
+          <div className={styles.titel}>{stand.titel || t("blocks.job.title")}</div>
         </div>
       </div>
       {stand.status === "fehler" && stand.fehler && <div className={styles.meta}>{stand.fehler}</div>}
-      {laeuft && <div className={styles.hinweis}>Du bekommst eine Benachrichtigung, sobald er fertig ist.</div>}
+      {laeuft && <div className={styles.hinweis}>{t("blocks.job.notifyHint")}</div>}
       {stand.status === "fertig" && stand.url && (
         <div className={styles.aktionen}>
           <button type="button" className={`${styles.btn} ${styles.btnPrimaer}`} onClick={() => ergebnisOeffnen(stand.url)}>
-            Ergebnis öffnen
+            {t("blocks.job.openResult")}
           </button>
         </div>
       )}
@@ -199,11 +205,12 @@ function JobKarte({ p }: { p: Props }) {
 }
 
 function ErgebnisKarte({ p }: { p: Props }) {
+  const { t } = useTranslation("chatWork");
   const titel = str(p.titel);
   if (!titel) return null;
   const typ = str(p.typ, "datei");
   const symbol = typ === "bild" ? "🖼️" : typ === "pdf" ? "📄" : typ === "artefakt" ? "🧩" : typ === "fenster" ? "🪟" : "📎";
-  const label = typ === "bild" ? "Bild" : typ === "pdf" ? "PDF" : typ === "artefakt" ? "Artefakt" : typ === "fenster" ? "Fenster" : "Datei";
+  const label = t(`blocks.result.type.${typ === "bild" || typ === "pdf" || typ === "artefakt" || typ === "fenster" ? typ : "datei"}`);
   return (
     <div className={styles.karte} data-kind="ergebnis">
       <div className={styles.zeile}>
@@ -221,7 +228,7 @@ function ErgebnisKarte({ p }: { p: Props }) {
             className={`${styles.btn} ${styles.btnLeise}`}
             onClick={() => { navigator.clipboard?.writeText(p.pfad as string).catch(() => undefined); }}
           >
-            Pfad kopieren
+            {t("blocks.result.copyPath")}
           </button>
         )}
       </div>
@@ -230,12 +237,18 @@ function ErgebnisKarte({ p }: { p: Props }) {
 }
 
 function ListeKarte({ p }: { p: Props }) {
+  const { t } = useTranslation("chatWork");
   const zeilen = Array.isArray(p.zeilen) ? (p.zeilen as Props[]) : [];
   if (!zeilen.length) return null;
   const gesamt = typeof p.gesamt === "number" ? p.gesamt : zeilen.length;
+  // `art` names a known list (e.g. "aufgaben") so the heading follows the UI language;
+  // `titel` stays the fallback for lists the shell has no text for.
+  const titel = str(p.titel) || t("blocks.list.title");
+  const art = str(p.art);
+  const kopf = art ? t(`blocks.list.art.${art}`, { defaultValue: titel }) : titel;
   return (
     <div className={styles.karte} data-kind="liste">
-      <div className={styles.kopf}>{str(p.titel, "Liste")}{gesamt > zeilen.length ? ` · ${gesamt}` : ""}</div>
+      <div className={styles.kopf}>{kopf}{gesamt > zeilen.length ? ` · ${gesamt}` : ""}</div>
       <ul className={styles.liste}>
         {zeilen.slice(0, 5).map((z, i) => (
           <li key={i} className={z.erledigt ? styles.erledigt : ""}>
@@ -246,13 +259,14 @@ function ListeKarte({ p }: { p: Props }) {
         ))}
       </ul>
       <div className={styles.aktionen}>
-        <OeffnenKnopf oeffnen={p.oeffnen} label={gesamt > zeilen.length ? `Alle ${gesamt} anzeigen` : "Öffnen"} />
+        <OeffnenKnopf oeffnen={p.oeffnen} label={gesamt > zeilen.length ? t("blocks.list.showAll", { count: gesamt }) : t("blocks.open.label")} />
       </div>
     </div>
   );
 }
 
 function SchalterKarte({ p }: { p: Props }) {
+  const { t } = useTranslation("chatWork");
   const geraet = str(p.geraet);
   if (!geraet) return null;
   const an = str(p.zustand) === "an";
@@ -261,7 +275,7 @@ function SchalterKarte({ p }: { p: Props }) {
       <div className={styles.zeile}>
         <span className={styles.symbol} aria-hidden="true">{an ? "💡" : "○"}</span>
         <div className={styles.text}>
-          <div className={styles.kopf}>Gerät · {an ? "eingeschaltet" : str(p.zustand) === "aus" ? "ausgeschaltet" : "geschaltet"}</div>
+          <div className={styles.kopf}>{t("blocks.switch.header", { state: an ? t("blocks.switch.on") : str(p.zustand) === "aus" ? t("blocks.switch.off") : t("blocks.switch.toggled") })}</div>
           <div className={styles.titel}>{geraet}</div>
         </div>
       </div>
@@ -276,6 +290,7 @@ function SchalterKarte({ p }: { p: Props }) {
  * settings. Without an answer the request expires server-side = No.
  */
 function BestaetigungKarte({ p }: { p: Props }) {
+  const { t } = useTranslation("chatWork");
   const id = str(p.confirm_id);
   const token = str(p.token);
   const [status, setStatus] = useState<string>(str(p.status, "offen"));
@@ -302,7 +317,7 @@ function BestaetigungKarte({ p }: { p: Props }) {
             body: JSON.stringify({ action }),
           });
       if (r.ok) setStatus(action);
-      else { setStatus("abgelaufen"); setFehler("Anfrage nicht mehr offen."); }
+      else { setStatus("abgelaufen"); setFehler(t("blocks.confirm.notOpen")); }
     } catch (e) {
       setStatus("offen"); setFehler(String(e));
     }
@@ -314,25 +329,25 @@ function BestaetigungKarte({ p }: { p: Props }) {
   const ohneImmer = /(^|[_-])(ssh|docker)_|vault/i.test(str(p.tool));
   return (
     <div className={`${styles.karte} ${gefaehrlich ? styles.karteWarn : ""}`} data-kind="bestaetigung">
-      <div className={styles.kopf}>{p.auto ? "Per Regel freigegeben" : "Bestätigung nötig"}{gefaehrlich ? " · kritisch" : ""}</div>
+      <div className={styles.kopf}>{p.auto ? t("blocks.confirm.byRule") : t("blocks.confirm.needed")}{gefaehrlich ? ` · ${t("blocks.confirm.critical")}` : ""}</div>
       <div className={styles.titel}>{str(p.text, str(p.tool))}</div>
       <div className={styles.meta}>{str(p.tool)}{ziel ? ` · ${ziel}` : ""}</div>
       {status === "offen" || status === "läuft" ? (
         <>
           <div className={styles.aktionen}>
-            <button type="button" className={`${styles.btn} ${styles.btnPrimaer}`} disabled={status === "läuft"} onClick={() => antworten("allow")}>Einmal</button>
+            <button type="button" className={`${styles.btn} ${styles.btnPrimaer}`} disabled={status === "läuft"} onClick={() => antworten("allow")}>{t("blocks.confirm.once")}</button>
             {!ohneImmer && (
-              <button type="button" className={styles.btn} disabled={status === "läuft"} onClick={() => antworten("allow", true)} title="Regel: genau diese Aktion künftig ohne Rückfrage">
-                Immer{ziel ? ` für ${ziel.length > 18 ? ziel.slice(0, 16) + "…" : ziel}` : ""}
+              <button type="button" className={styles.btn} disabled={status === "läuft"} onClick={() => antworten("allow", true)} title={t("blocks.confirm.alwaysTitle")}>
+                {ziel ? t("blocks.confirm.alwaysFor", { target: ziel.length > 18 ? ziel.slice(0, 16) + "…" : ziel }) : t("blocks.confirm.always")}
               </button>
             )}
-            <button type="button" className={`${styles.btn} ${styles.btnWarn}`} disabled={status === "läuft"} onClick={() => antworten("deny")}>Nicht</button>
+            <button type="button" className={`${styles.btn} ${styles.btnWarn}`} disabled={status === "läuft"} onClick={() => antworten("deny")}>{t("blocks.confirm.deny")}</button>
           </div>
-          <div className={styles.hinweis}>Ohne Antwort in {typeof p.timeout_s === "number" ? p.timeout_s : 120} s: nicht ausführen{fehler ? ` · ${fehler}` : ""}</div>
+          <div className={styles.hinweis}>{t("blocks.confirm.timeout", { seconds: typeof p.timeout_s === "number" ? p.timeout_s : 120 })}{fehler ? ` · ${fehler}` : ""}</div>
         </>
       ) : (
         <div className={styles.hinweis}>
-          {status === "allow" ? "✓ Freigegeben" : status === "deny" ? "⛔ Abgelehnt" : "Abgelaufen"}
+          {status === "allow" ? t("blocks.confirm.allowed") : status === "deny" ? t("blocks.confirm.denied") : t("blocks.confirm.expired")}
         </div>
       )}
     </div>
@@ -345,13 +360,14 @@ function BestaetigungKarte({ p }: { p: Props }) {
  * undone); the send route only accepts a signed-in person, never a tool.
  */
 function MailEntwurfKarte({ p }: { p: Props }) {
+  const { t } = useTranslation("chatWork");
   const id = str(p.draft_id);
   const [status, setStatus] = useState<string>(str(p.status, "offen"));
   const [fehler, setFehler] = useState("");
   const [sicher, setSicher] = useState(false);
   if (!id || !/^\d+$/.test(id)) return null;
   const an = str(p.an);
-  const betreff = str(p.betreff, "(ohne Betreff)");
+  const betreff = str(p.betreff) || t("blocks.draft.noSubject");
   const vorschau = str(p.vorschau);
   const laenge = typeof p.laenge === "number" ? p.laenge : vorschau.length;
   const aufrufen = async (was: "send" | "discard") => {
@@ -361,7 +377,7 @@ function MailEntwurfKarte({ p }: { p: Props }) {
         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: "{}",
       });
       if (r.ok) { setStatus(was === "send" ? "gesendet" : "verworfen"); return; }
-      let detail = `Fehler ${r.status}`;
+      let detail = t("blocks.draft.error", { status: r.status });
       try { const j = await r.json(); if (typeof j?.detail === "string") detail = j.detail; } catch { /* no body */ }
       setStatus("offen"); setFehler(detail);
     } catch (e) {
@@ -380,29 +396,29 @@ function MailEntwurfKarte({ p }: { p: Props }) {
   const offen = status === "offen" || status === "läuft";
   return (
     <div className={`${styles.karte} ${status === "verworfen" ? styles.karteWeg : ""}`} data-kind="mail_entwurf">
-      <div className={styles.kopf}>E-Mail-Entwurf · nicht gesendet</div>
+      <div className={styles.kopf}>{t("blocks.draft.header")}</div>
       <div className={styles.titel}>{betreff}</div>
-      <div className={styles.meta}>An: {an || "– noch kein Empfänger –"}{str(p.cc) ? ` · Cc: ${str(p.cc)}` : ""}</div>
+      <div className={styles.meta}>{t("blocks.draft.to", { to: an || t("blocks.draft.noRecipient") })}{str(p.cc) ? ` · ${t("blocks.draft.cc", { cc: str(p.cc) })}` : ""}</div>
       {vorschau && (
         <div className={styles.mailVorschau}>
           {vorschau.length > 280 ? `${vorschau.slice(0, 278)}…` : vorschau}
-          {laenge > 280 && <span className={styles.hinweis}> ({laenge} Zeichen)</span>}
+          {laenge > 280 && <span className={styles.hinweis}> {t("blocks.draft.length", { count: laenge })}</span>}
         </div>
       )}
       {offen ? (
         <>
           <div className={styles.aktionen}>
             <button type="button" className={`${styles.btn} ${styles.btnPrimaer}`} disabled={status === "läuft" || !an}
-                    onClick={senden} title={an ? "Entwurf jetzt senden" : "Erst in Post einen Empfänger eintragen"}>
-              {status === "läuft" ? "…" : sicher ? `Wirklich an ${an.length > 22 ? an.slice(0, 20) + "…" : an}?` : "Senden"}
+                    onClick={senden} title={an ? t("blocks.draft.sendTitle") : t("blocks.draft.needRecipient")}>
+              {status === "läuft" ? "…" : sicher ? t("blocks.draft.confirmSend", { to: an.length > 22 ? an.slice(0, 20) + "…" : an }) : t("blocks.draft.send")}
             </button>
-            <button type="button" className={styles.btn} disabled={status === "läuft"} onClick={() => void inPost()}>In Post öffnen</button>
-            <button type="button" className={`${styles.btn} ${styles.btnLeise}`} disabled={status === "läuft"} onClick={() => void aufrufen("discard")}>Verwerfen</button>
+            <button type="button" className={styles.btn} disabled={status === "läuft"} onClick={() => void inPost()}>{t("blocks.draft.openInPost")}</button>
+            <button type="button" className={`${styles.btn} ${styles.btnLeise}`} disabled={status === "läuft"} onClick={() => void aufrufen("discard")}>{t("blocks.draft.discard")}</button>
           </div>
           {fehler && <div className={styles.hinweis}>{fehler}</div>}
         </>
       ) : (
-        <div className={styles.hinweis}>{status === "gesendet" ? "✓ Gesendet" : "Entwurf verworfen"}</div>
+        <div className={styles.hinweis}>{status === "gesendet" ? t("blocks.sent") : t("blocks.draft.discarded")}</div>
       )}
     </div>
   );
@@ -422,6 +438,7 @@ function TextKarte({ p }: { p: Props }) {
 /** Small chart, one series, one color (accent): bars or line.
  *  Text in text tokens, values switchable to a table (accessibility). */
 function DiagrammKarte({ p }: { p: Props }) {
+  const { t } = useTranslation("chatWork");
   const roh = Array.isArray(p.werte) ? (p.werte as Props[]) : [];
   const werte = roh
     .filter((w) => w && typeof w === "object" && typeof (w as Props).wert === "number" && Number.isFinite((w as Props).wert as number))
@@ -450,7 +467,7 @@ function DiagrammKarte({ p }: { p: Props }) {
           <tbody>{werte.map((w, i) => <tr key={i}><td>{w.label}</td><td>{fmt(w.wert)}</td></tr>)}</tbody>
         </table>
       ) : (
-        <svg viewBox={`0 0 ${W} ${H}`} className={styles.svg} role="img" aria-label={`${str(p.titel, "Diagramm")}: ${werte.map((w) => `${w.label} ${fmt(w.wert)}`).join(", ")}`}>
+        <svg viewBox={`0 0 ${W} ${H}`} className={styles.svg} role="img" aria-label={`${str(p.titel) || t("blocks.chart.title")}: ${werte.map((w) => `${w.label} ${fmt(w.wert)}`).join(", ")}`}>
           <line x1={padL} x2={W - padR} y1={nullY} y2={nullY} className={styles.achse} />
           {typ === "balken" ? werte.map((w, i) => {
             const top = Math.min(y(w.wert), nullY), h = Math.max(2, Math.abs(y(w.wert) - nullY));
@@ -484,7 +501,7 @@ function DiagrammKarte({ p }: { p: Props }) {
       )}
       <div className={styles.aktionen}>
         <button type="button" className={`${styles.btn} ${styles.btnLeise}`} onClick={() => setTabelle((t) => !t)}>
-          {tabelle ? "Diagramm" : "Werte anzeigen"}
+          {tabelle ? t("blocks.chart.title") : t("blocks.chart.showValues")}
         </button>
       </div>
     </div>
@@ -492,6 +509,7 @@ function DiagrammKarte({ p }: { p: Props }) {
 }
 
 function GalerieKarte({ p }: { p: Props }) {
+  const { t } = useTranslation("chatWork");
   const bilder = (Array.isArray(p.bilder) ? (p.bilder as Props[]) : [])
     .filter((b) => b && typeof b === "object" && (typeof b.pfad === "string" || typeof b.url === "string"))
     .slice(0, 8);
@@ -502,7 +520,7 @@ function GalerieKarte({ p }: { p: Props }) {
       <div className={styles.galerie}>
         {bilder.map((b, i) => {
           const pfad = str(b.pfad); const url = str(b.url);
-          const name = str(b.titel) || (pfad ? pfad.split("/").pop() : "Bild");
+          const name = str(b.titel) || (pfad ? pfad.split("/").pop() : t("blocks.result.type.bild"));
           return (
             <button
               key={i}
@@ -526,6 +544,7 @@ function GalerieKarte({ p }: { p: Props }) {
 
 const FELD_TYPEN = new Set(["text", "zahl", "datum", "auswahl", "ja_nein"]);
 function FormularKarte({ p }: { p: Props }) {
+  const { t } = useTranslation("chatWork");
   const felder = (Array.isArray(p.felder) ? (p.felder as Props[]) : [])
     .filter((f) => f && typeof f === "object" && typeof f.name === "string" && (f.name as string).length && FELD_TYPEN.has(str(f.typ, "text")))
     .slice(0, 6);
@@ -556,15 +575,16 @@ function FormularKarte({ p }: { p: Props }) {
             <span className={styles.feldLabel}>{label}</span>
             {typ === "auswahl" ? (
               <select className={styles.eingabe} value={wert} onChange={(e) => setze(e.target.value)} disabled={status === "ok"}>
-                <option value="">Bitte wählen</option>
+                <option value="">{t("blocks.form.choose")}</option>
                 {(Array.isArray(f.optionen) ? (f.optionen as unknown[]) : []).slice(0, 12).map((o, i) => (
                   <option key={i} value={String(o)}>{String(o)}</option>
                 ))}
               </select>
             ) : typ === "ja_nein" ? (
               <span className={styles.jaNein}>
-                {["Ja", "Nein"].map((o) => (
-                  <button key={o} type="button" className={`${styles.btn} ${wert === o ? styles.btnPrimaer : ""}`} onClick={() => setze(o)} disabled={status === "ok"}>{o}</button>
+                {/* The values "Ja"/"Nein" go to the model as the answer; only the labels are translated. */}
+                {(["Ja", "Nein"] as const).map((o) => (
+                  <button key={o} type="button" className={`${styles.btn} ${wert === o ? styles.btnPrimaer : ""}`} onClick={() => setze(o)} disabled={status === "ok"}>{o === "Ja" ? t("blocks.form.yes") : t("blocks.form.no")}</button>
                 ))}
               </span>
             ) : (
@@ -581,11 +601,11 @@ function FormularKarte({ p }: { p: Props }) {
       })}
       <div className={styles.aktionen}>
         {status === "ok" ? (
-          <span className={styles.hinweis}>✓ Gesendet</span>
+          <span className={styles.hinweis}>{t("blocks.sent")}</span>
         ) : (
-          <button type="submit" className={`${styles.btn} ${styles.btnPrimaer}`} disabled={status === "läuft"}>{str(p.senden, "Absenden")}</button>
+          <button type="submit" className={`${styles.btn} ${styles.btnPrimaer}`} disabled={status === "läuft"}>{str(p.senden) || t("blocks.form.submit")}</button>
         )}
-        {status === "fehler" && <span className={styles.hinweis}>Senden fehlgeschlagen.</span>}
+        {status === "fehler" && <span className={styles.hinweis}>{t("blocks.form.failed")}</span>}
       </div>
     </form>
   );

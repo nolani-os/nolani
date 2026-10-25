@@ -26,7 +26,12 @@ import { TYP_MARKE, AGGREGATE, MIT_RUECKFRAGE, plakettenTon } from "../../wissen
 import { gruppiere } from "../../wissen/gruppieren";
 import { Leerzustand } from "../../../components/Leerzustand";
 import { SammlungTeilen } from "../../wissen/SammlungTeilen";
-import { regionLocale } from "@claraos/core";
+import { regionLocale, useTranslation, i18n } from "@claraos/core";
+import { typName, typNameVonId } from "../typName";
+
+/** Weekday initials Monday..Sunday in the UI language. */
+const WOCHENTAGE = () => Array.from({ length: 7 }, (_, i) =>
+  new Date(2024, 0, 1 + i).toLocaleDateString(regionLocale(), { weekday: "short" }));
 
 interface Props {
   collection: KbCollection;
@@ -64,6 +69,7 @@ function isSpecial(f: KbField) {
 }
 
 export function CollectionView({ collection, types, currentUser, mobile, onOpen, onChanged, onDeleted, onBack }: Props) {
+  const { t } = useTranslation("wissen");
   const [rows, setRows] = useState<KbRow[]>([]);
   const [fields, setFields] = useState<KbField[]>([]);
   const [views, setViews] = useState<KbView[]>([]);
@@ -110,7 +116,7 @@ export function CollectionView({ collection, types, currentUser, mobile, onOpen,
   const darfUmbauen = darfSchreiben && !gesperrt;
   const [teilenOffen, setTeilenOffen] = useState(false);
   const zeilenVorlagen = collection.settings?.zeilen_vorlagen ?? [];
-  const type = types.find((t) => t.id === (collection.default_type ?? "note"));
+  const type = types.find((typ) => typ.id === (collection.default_type ?? "note"));
 
   const reload = useCallback(() => setReloadTick((n) => n + 1), []);
 
@@ -222,7 +228,7 @@ export function CollectionView({ collection, types, currentUser, mobile, onOpen,
     try {
       const neu = `${f.key}_kopie_${Date.now().toString(36).slice(-4)}`;
       await ideasApi.createField(collection.id, {
-        key: neu, name: `${f.name} (Kopie)`,
+        key: neu, name: i18n.t("wissen:coll.copy", { name: f.name }),
         field_type: f.field_type, type_option: f.type_option ?? undefined,
       });
       const mitWert = rows.filter((r) => r.properties?.[f.key] !== undefined
@@ -244,7 +250,7 @@ export function CollectionView({ collection, types, currentUser, mobile, onOpen,
     try {
       await ideasApi.createField(collection.id, {
         key: `feld_${Date.now().toString(36)}`,
-        name: `Spalte ${n}`,
+        name: i18n.t("wissen:coll.column", { n }),
         field_type: FieldType.Text,
       });
       reload();
@@ -321,7 +327,7 @@ export function CollectionView({ collection, types, currentUser, mobile, onOpen,
   /** Turn an existing row into a template — the only authoring UI we need
    *  for this: what you want already exists somewhere. */
   const alsVorlageSichern = async (row: KbRow) => {
-    const name = window.prompt("Name der Vorlage?", row.title);
+    const name = window.prompt(i18n.t("wissen:coll.templateName"), row.title);
     if (!name) return;
     const props = { ...(row.properties ?? {}) };
     const neu = [...zeilenVorlagen, { name: name.trim(), properties: props }].slice(-8);
@@ -349,7 +355,7 @@ export function CollectionView({ collection, types, currentUser, mobile, onOpen,
       const bad = typeof v === "string" && v.startsWith("⚠");
       return (
         <span className={bad ? styles.formulaError : styles.cellMuted}
-              title={bad ? String(v) : "Formel-Ergebnis (berechnet)"}>
+              title={bad ? String(v) : t("coll.formulaResult")}>
           {v === null || v === undefined || v === "" ? "—" : String(v)}
         </span>
       );
@@ -370,7 +376,7 @@ export function CollectionView({ collection, types, currentUser, mobile, onOpen,
       const ids = (row.properties?.[f.key] as string[]) ?? [];
       const namen = ids.map((id) => relTitel[id]).filter(Boolean);
       return (
-        <button className={styles.relCell} title="Verknüpfungen bearbeiten"
+        <button className={styles.relCell} title={t("coll.editLinks")}
                 disabled={!darfSchreiben}
                 onClick={() => setRelEdit({ rowId: row.id, key: f.key })}>
           {ids.length === 0 ? "＋"
@@ -391,7 +397,7 @@ export function CollectionView({ collection, types, currentUser, mobile, onOpen,
       return (
         <button className={styles.cellTitle} style={{ fontWeight: 400 }}
                 disabled={!schreibbar}
-                title={schreibbar ? "Zum Ändern klicken" : undefined}
+                title={schreibbar ? t("coll.clickToChange") : undefined}
                 onClick={() => setBearbeitet(`${row.id}:${f.key}`)}>
           {v ? <Plakette wert={v} optionen={(f.type_option?.options as string[]) ?? undefined} />
              : <span className={tab.leerZeichen}>—</span>}
@@ -403,7 +409,7 @@ export function CollectionView({ collection, types, currentUser, mobile, onOpen,
       return (
         <button className={styles.cellTitle} style={{ fontWeight: 400 }}
                 disabled={!schreibbar}
-                title={schreibbar ? "Zum Ändern klicken" : undefined}
+                title={schreibbar ? t("coll.clickToChange") : undefined}
                 onClick={() => setBearbeitet(`${row.id}:${f.key}`)}>
           <Plaketten werte={Array.isArray(werte) ? werte : []}
                      optionen={(f.type_option?.options as string[]) ?? undefined} />
@@ -427,20 +433,20 @@ export function CollectionView({ collection, types, currentUser, mobile, onOpen,
   const leerAnzeige = () => (gefiltert ? (
     <Leerzustand
       symbol="⚙"
-      titel="Kein Eintrag passt zu dieser Ansicht"
-      hinweis={`„${activeView?.name}" filtert die Sammlung. Die Einträge sind da — sie erfüllen nur die Regeln nicht.`}
+      titel={t("coll.noMatch")}
+      hinweis={t("coll.noMatchHint", { view: activeView?.name })}
       aktionen={darfSchreiben ? [{
-        label: "Filter zurücksetzen", zweitrangig: true,
+        label: t("coll.resetFilter"), zweitrangig: true,
         onClick: () => void patchView({ filters: {} as never }),
       }] : []}
     />
   ) : (
     <Leerzustand
       symbol={collection.icon ?? "🗂️"}
-      titel="Noch kein Eintrag"
-      hinweis={collection.description || "Hier sammelt sich, was zu dieser Sammlung gehört."}
+      titel={t("coll.empty")}
+      hinweis={collection.description || t("coll.emptyHint")}
       aktionen={darfSchreiben ? [{
-        label: "＋ Ersten Eintrag anlegen",
+        label: t("coll.firstEntry"),
         onClick: () => neuFeld.current?.focus(),
       }] : []}
     />
@@ -457,7 +463,7 @@ export function CollectionView({ collection, types, currentUser, mobile, onOpen,
             : f.field_type === FieldType.Formula
               ? o.formulas?.[f.key]
               : f.field_type === FieldType.Relation
-                ? `${((o.properties?.[f.key] as string[]) ?? []).length} verknüpft`
+                ? t("coll.linked", { count: ((o.properties?.[f.key] as string[]) ?? []).length })
                 : propDisplay(fieldToDef(f), o.properties?.[f.key]);
           if (val === undefined || val === null || val === "" || val === "—") return null;
           return (
@@ -494,10 +500,10 @@ export function CollectionView({ collection, types, currentUser, mobile, onOpen,
           {/* Only on hover — a permanently visible remove button in
               every row is visual noise and invites misclicks. */}
           <button className={`${styles.linkRemove} ${tab.zeilenAktion}`}
-                  title="Diese Zeile als Vorlage sichern"
+                  title={t("coll.saveAsTemplate")}
                   onClick={() => void alsVorlageSichern(o)}>⧉</button>
           <button className={`${styles.linkRemove} ${tab.zeilenAktion}`}
-                  title="Aus Sammlung entfernen"
+                  title={t("coll.removeFromColl")}
                   onClick={async () => {
                     await ideasApi.removeFromCollection(collection.id, o.id);
                     reload();
@@ -512,27 +518,27 @@ export function CollectionView({ collection, types, currentUser, mobile, onOpen,
     <div className={`${styles.collView}${layout === "table" && !mobile ? ` ${styles.collViewTabelle}` : ""}`}>
       <div className={styles.collHead}>
         {mobile && onBack && (
-          <button className={tab.zurueckKnopf} title="Zurück zu den Sammlungen"
+          <button className={tab.zurueckKnopf} title={t("coll.backToColls")}
                   onClick={onBack}>‹</button>
         )}
         <h3>{collection.icon ?? "🗂️"} {collection.name}
-          {collection.visibility === "family" && <span title="Mit Familie geteilt"> 👪</span>}
+          {collection.visibility === "family" && <span title={t("coll.family")}> 👪</span>}
         </h3>
         <div className={styles.collHeadRight}>
           {!isOwner && collection.permission && (
-            <span className={styles.metaHint} title={`Geteilt von ${collection.owner}`}>
-              von {collection.owner}{collection.permission === "read" ? " · nur lesen" : ""}
+            <span className={styles.metaHint} title={t("coll.sharedBy", { owner: collection.owner })}>
+              {t("coll.from", { owner: collection.owner })}{collection.permission === "read" ? t("coll.readOnly") : ""}
             </span>
           )}
-          <span className={styles.metaHint}>{type ? `${type.icon ?? ""} ${type.name}` : ""}</span>
+          <span className={styles.metaHint}>{type ? `${type.icon ?? ""} ${typName(type)}` : ""}</span>
           <button className={tab.schloss}
-                  title={isOwner ? "Teilen — wer hat Zugriff?" : "Wer hat Zugriff?"}
+                  title={isOwner ? t("coll.shareOwner") : t("coll.whoAccess")}
                   onClick={() => setTeilenOffen(true)}><Icon name="people" size={15} /></button>
           {isOwner && (
             <button className={tab.schloss}
                     title={gesperrt
-                      ? "Aufbau entsperren — Spalten und Ansichten wieder änderbar"
-                      : "Aufbau sperren — Einträge bleiben schreibbar, nur Spalten und Ansichten sind geschützt"}
+                      ? t("coll.unlock")
+                      : t("coll.lock")}
                     onClick={() => {
                       void ideasApi.patchCollection(collection.id, {
                         settings: { ...(collection.settings ?? {}), gesperrt: !gesperrt },
@@ -540,11 +546,10 @@ export function CollectionView({ collection, types, currentUser, mobile, onOpen,
                     }}><Icon name={gesperrt ? "lock" : "lockOpen"} size={15} /></button>
           )}
           {isOwner && !gesperrt && (
-            <button className={styles.collDelete} title="Sammlung löschen (Einträge bleiben erhalten)"
+            <button className={styles.collDelete} title={t("coll.delete")}
                     onClick={async () => {
                       if (!window.confirm(
-                        `Sammlung „${collection.name}“ wirklich löschen?\n\n` +
-                        "Die Einträge selbst bleiben erhalten — nur die Sammlung verschwindet.")) return;
+                        t("coll.confirmDelete", { name: collection.name }))) return;
                       await ideasApi.deleteCollection(collection.id);
                       onDeleted();
                     }}><Icon name="trash" size={14} /></button>
@@ -602,7 +607,7 @@ export function CollectionView({ collection, types, currentUser, mobile, onOpen,
       {darfSchreiben && (layout !== "table" || mobile) && (
         <div className={styles.collAdd}>
           <input className={styles.input} ref={mobile ? neuFeld : undefined}
-                 placeholder={`Neu in „${collection.name}“ (Enter)`}
+                 placeholder={t("coll.newIn", { name: collection.name })}
                  value={newTitle} onChange={(e) => setNewTitle(e.target.value)}
                  onKeyDown={(e) => { if (e.key === "Enter") void addEntry(); }} />
         </div>
@@ -646,7 +651,7 @@ export function CollectionView({ collection, types, currentUser, mobile, onOpen,
           <table className={styles.collTable}>
             <thead>
               <tr>
-                <th className={fixiertBis ? tab.fixiert : ""}>Titel</th>
+                <th className={fixiertBis ? tab.fixiert : ""}>{t("coll.title")}</th>
                 {visibleFields.map((f) => {
                   const marke = TYP_MARKE[f.field_type];
                   const sort = (activeView?.sorts ?? []).find((x) => x.key === f.key);
@@ -693,10 +698,7 @@ export function CollectionView({ collection, types, currentUser, mobile, onOpen,
                                     && r.properties?.[f.key] !== "").length;
                               if (typ === FieldType.Formula && mitWerten > 0
                                   && !window.confirm(
-                                    `„${f.name}" hat in ${mitWerten} Zeile(n) Werte.\n\n`
-                                    + "Als Formel zeigt die Spalte stattdessen das Rechenergebnis. "
-                                    + "Die Werte bleiben gespeichert und sind wieder da, sobald du "
-                                    + "den Typ zurückstellst.")) return;
+                                    t("coll.confirmFormula", { name: f.name, count: mitWerten }))) return;
                               setMenueKey(null);
                               setEinrichten({ feld: f, typ });
                             } else {
@@ -751,7 +753,7 @@ export function CollectionView({ collection, types, currentUser, mobile, onOpen,
                     </th>
                   );
                 })}
-                <th>Geändert</th>
+                <th>{t("coll.changed")}</th>
                 {darfSchreiben && <th />}
               </tr>
             </thead>
@@ -764,7 +766,7 @@ export function CollectionView({ collection, types, currentUser, mobile, onOpen,
                     <tr className={tab.gruppenZeile}>
                       <td colSpan={visibleFields.length + 3}>
                         <button className={tab.gruppenKopf} aria-expanded={!zu}
-                                title={zu ? "Gruppe aufklappen" : "Gruppe zuklappen"}
+                                title={zu ? t("coll.expandGroup") : t("coll.collapseGroup")}
                                 onClick={() => setZugeklappt((s) => {
                                   const n = new Set(s);
                                   if (n.has(g.schluessel)) n.delete(g.schluessel); else n.add(g.schluessel);
@@ -795,12 +797,12 @@ export function CollectionView({ collection, types, currentUser, mobile, onOpen,
                     <span className={tab.neueZeile}>
                       <input className={tab.neueZeileFeld}
                              ref={neuFeld}
-                             placeholder="＋ Neuer Eintrag"
+                             placeholder={t("coll.newEntry")}
                              value={newTitle}
                              onChange={(e) => setNewTitle(e.target.value)}
                              onKeyDown={(e) => { if (e.key === "Enter") void addEntry(); }} />
                       {zeilenVorlagen.length > 0 && (
-                        <button className={tab.neueZeileMehr} title="Aus einer Vorlage anlegen"
+                        <button className={tab.neueZeileMehr} title={t("coll.fromTemplate")}
                                 onClick={(e) => {
                                   const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
                                   setVorlagenMenue(vorlagenMenue ? null : { x: r.left - 180, y: r.bottom + 4 });
@@ -846,10 +848,10 @@ export function CollectionView({ collection, types, currentUser, mobile, onOpen,
           {/* Hidden columns stay reachable — otherwise they are lost. */}
           {darfSchreiben && versteckte.length > 0 && (
             <div className={tab.versteckteSpalten}>
-              <span>Ausgeblendet:</span>
+              <span>{t("coll.hidden")}</span>
               {versteckte.map((f) => (
                 <button key={f.key} className={tab.versteckteSpalte}
-                        title="Wieder einblenden"
+                        title={t("coll.showAgain")}
                         onClick={() => void patchView({ field_settings: {
                           ...(activeView?.field_settings ?? {}),
                           [f.key]: { ...(activeView?.field_settings?.[f.key] ?? {}), visible: true },
@@ -1056,7 +1058,7 @@ function CalendarGrid({ rows, dateKey, onOpen }: {
                 onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}>›</button>
       </div>
       <div className={styles.calGrid}>
-        {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d) => (
+        {WOCHENTAGE().map((d) => (
           <div key={d} className={styles.calDow}>{d}</div>
         ))}
         {Array.from({ length: lead }).map((_, i) => <div key={`x${i}`} className={styles.calCell} />)}
@@ -1086,6 +1088,7 @@ function RelationPicker({ rowId, fieldKey, current, onClose, onSaved }: {
   rowId: string; fieldKey: string; current: string[];
   onClose: () => void; onSaved: () => void;
 }) {
+  const { t } = useTranslation("wissen");
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<KbObjectSlim[]>([]);
   const [picked, setPicked] = useState<string[]>(current);
@@ -1108,26 +1111,26 @@ function RelationPicker({ rowId, fieldKey, current, onClose, onSaved }: {
     <div className={styles.modalBackdrop} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHead}>
-          <h3>🔗 Verknüpfungen</h3>
-          <button className={styles.iconBtn} onClick={onClose} title="Schließen"><Icon name="close" size={14} title="Schließen" /></button>
+          <h3>{t("coll.links")}</h3>
+          <button className={styles.iconBtn} onClick={onClose} title={t("app.close")}><Icon name="close" size={14} title={t("app.close")} /></button>
         </div>
         <div className={styles.chipRow}>
           {picked.map((id) => (
-            <button key={id} className={styles.chip} title="Entfernen"
+            <button key={id} className={styles.chip} title={t("coll.remove")}
                     onClick={() => setPicked((p) => p.filter((x) => x !== id))}>
               {titles[id] ?? id.slice(0, 8)} ✕
             </button>
           ))}
-          {picked.length === 0 && <span className={styles.metaHint}>Noch nichts verknüpft.</span>}
+          {picked.length === 0 && <span className={styles.metaHint}>{t("coll.nothingLinked")}</span>}
         </div>
-        <input className={styles.input} placeholder="Objekt suchen…" autoFocus
+        <input className={styles.input} placeholder={t("coll.searchObject")} autoFocus
                value={q} onChange={(e) => setQ(e.target.value)} />
         <div className={styles.listRows} style={{ maxHeight: 220, overflowY: "auto" }}>
           {hits.filter((o) => o.id !== rowId && !picked.includes(o.id)).slice(0, 12).map((o) => (
             <button key={o.id} className={styles.listRow}
                     onClick={() => setPicked((p) => [...p, o.id])}>
               <span className={styles.listTitle}>{o.title}</span>
-              <span className={styles.listMeta}>{o.type}</span>
+              <span className={styles.listMeta}>{typNameVonId(o.type)}</span>
             </button>
           ))}
         </div>
@@ -1136,7 +1139,7 @@ function RelationPicker({ rowId, fieldKey, current, onClose, onSaved }: {
                   onClick={async () => {
                     await ideasApi.setRelation(rowId, fieldKey, picked);
                     onSaved();
-                  }}>Speichern</button>
+                  }}>{t("coll.save")}</button>
         </div>
       </div>
     </div>
@@ -1150,6 +1153,7 @@ function RelationPicker({ rowId, fieldKey, current, onClose, onSaved }: {
 function TimelineView({ rows, startKey, endKey, onOpen }: {
   rows: KbRow[]; startKey: string; endKey: string; onOpen: (id: string) => void;
 }) {
+  const { t } = useTranslation("wissen");
   const parsed = rows
     .map((r) => {
       const s = String(r.properties?.[startKey] ?? "").slice(0, 10);
@@ -1162,7 +1166,7 @@ function TimelineView({ rows, startKey, endKey, onOpen }: {
     .filter(Boolean) as { row: KbRow; start: number; end: number }[];
 
   if (parsed.length === 0) {
-    return <div className={styles.empty}>Keine Einträge mit gültigem Datum in dieser Ansicht.</div>;
+    return <div className={styles.empty}>{t("coll.noDates")}</div>;
   }
 
   const min = Math.min(...parsed.map((p) => p.start));

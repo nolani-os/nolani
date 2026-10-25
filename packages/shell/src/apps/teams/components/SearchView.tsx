@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useMatrixStore } from "@claraos/core";
+import { useMatrixStore, useTranslation } from "@claraos/core";
 import { getMatrixClient } from "../matrixClient";
 import { personenSuchen, type Person } from "../personenApi";
 import { Avatar } from "./Avatar";
@@ -16,6 +16,7 @@ interface SearchResult {
 }
 
 export function SearchView() {
+  const { t } = useTranslation("teams");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -77,20 +78,20 @@ export function SearchView() {
         <input
           autoFocus
           className={styles.searchInput}
-          placeholder="Personen und Nachrichten suchen…"
+          placeholder={t("search.placeholder")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
         />
         <button className={styles.searchBtn} onClick={handleSearch} disabled={loading}>
-          {loading ? "..." : "Search"}
+          {loading ? "..." : t("search.search")}
         </button>
       </div>
       <div className={styles.body}>
       <div className={styles.results}>
         {personen.length > 0 && (
           <>
-            <h3 className={styles.abschnitt}>Personen</h3>
+            <h3 className={styles.abschnitt}>{t("search.people")}</h3>
             {personen.map((p) => (
               <button
                 key={p.username}
@@ -106,7 +107,7 @@ export function SearchView() {
             ))}
           </>
         )}
-        {results.length > 0 && <h3 className={styles.abschnitt}>Nachrichten</h3>}
+        {results.length > 0 && <h3 className={styles.abschnitt}>{t("search.messages")}</h3>}
         {results.length === 0 && personen.length === 0 && !loading && query && (
           <div className={styles.empty}>Nichts gefunden für „{query}"</div>
         )}

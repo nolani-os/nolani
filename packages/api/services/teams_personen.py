@@ -29,6 +29,7 @@ from typing import Any
 
 from services import kontakte_abgleich as abgleich
 from services import kontakte_dienste as dienste_mod
+from sprache import sprache_jetzt
 
 logger = logging.getLogger(__name__)
 
@@ -48,10 +49,9 @@ async def _matrix_mxid(username: str) -> str | None:
         return None
 
 
-def _weg(dienst_id: str, handle: str, quelle: str) -> dict[str, Any]:
+def _weg(dienst_id: str, handle: str, quelle: str, lang: str = "de") -> dict[str, Any]:
     """A way to reach someone, enriched with what ClaraOS can do there."""
-    name, klasse, _platzhalter, hinweis = dienste_mod.DIENSTE.get(
-        dienst_id, (dienst_id, dienste_mod.VERWEIS, "", ""))
+    name, klasse, _platzhalter, hinweis = dienste_mod.texte(dienst_id, lang)
     return {
         "dienst": dienst_id,
         "name": name,
@@ -73,12 +73,13 @@ ANRUF_DIENSTE = {"matrix", "nctalk"}
 async def _wege_fuer_konto(username: str) -> list[dict[str, Any]]:
     """The ways every ClaraOS user has purely by virtue of their account."""
     wege: list[dict[str, Any]] = []
+    lang = await sprache_jetzt()
     mxid = await _matrix_mxid(username)
     if mxid:
-        wege.append(_weg("matrix", mxid, "konto"))
+        wege.append(_weg("matrix", mxid, "konto", lang))
     # The Nextcloud account is named like the ClaraOS user; Talk is installed
     # (spreed). Both are bound to the account, not to a contact entry.
-    wege.append(_weg("nctalk", username, "konto"))
+    wege.append(_weg("nctalk", username, "konto", lang))
     return wege
 
 
@@ -90,8 +91,9 @@ async def _wege_aus_kontakt(caller: str, username: str) -> list[dict[str, Any]]:
     """
     try:
         from services import kontakte_store as store
+        lang = await sprache_jetzt()
         return [
-            _weg(h["service"], h["handle"], "kontakt")
+            _weg(h["service"], h["handle"], "kontakt", lang)
             for h in await store.handles_fuer_verknuepften_nutzer(caller, username)
         ]
     except AttributeError:

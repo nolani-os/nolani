@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import styles from "./UserAdminApp.module.css";
-import { regionLocale, getBrand } from "@claraos/core";
+import { regionLocale, i18n, useTranslation } from "@claraos/core";
 
 const UA = "/api/claraos/user-admin";
 
@@ -33,6 +33,7 @@ interface Props {
 }
 
 export function UserDetail({ user, onBack, onImpersonate, onFullView, onChanged }: Props) {
+  const { t } = useTranslation("userAdmin");
   const [groups, setGroups] = useState<string[]>(user.groups);
   const [allGroups, setAllGroups] = useState<string[]>([]);
   const [apps, setApps] = useState<AppRow[]>([]);
@@ -111,7 +112,7 @@ export function UserDetail({ user, onBack, onImpersonate, onFullView, onChanged 
   };
 
   const revokeInvite = async () => {
-    if (!confirm(`Offene Einladungslinks für ${user.username} widerrufen?`)) return;
+    if (!confirm(t("detail.confirmRevoke", { user: user.username }))) return;
     setInviteBusy(true); setError("");
     try {
       const r = await fetch(`${UA}/users/${encodeURIComponent(user.username)}/invite`, { method: "DELETE" });
@@ -123,7 +124,7 @@ export function UserDetail({ user, onBack, onImpersonate, onFullView, onChanged 
 
   const saveBudget = async () => {
     const val = parseFloat(budgetEdit);
-    if (isNaN(val) || val < 0) { setError("Ungültiger Budget-Wert"); return; }
+    if (isNaN(val) || val < 0) { setError(t("detail.invalidBudget")); return; }
     setBudgetSaving(true); setError("");
     try {
       const r = await fetch(`${UA}/users/${encodeURIComponent(user.username)}/budget`, {
@@ -159,7 +160,7 @@ export function UserDetail({ user, onBack, onImpersonate, onFullView, onChanged 
   };
 
   const resetPassword = async () => {
-    if (!confirm(`Passwort für ${user.username} zurücksetzen? Bestehende Sitzungen werden beendet.`)) return;
+    if (!confirm(t("detail.confirmReset", { user: user.username }))) return;
     setBusy(true); setError("");
     try {
       const r = await fetch(`${UA}/users/${encodeURIComponent(user.username)}/reset-password`, { method: "POST" });
@@ -183,13 +184,13 @@ export function UserDetail({ user, onBack, onImpersonate, onFullView, onChanged 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       loadApps();
     } catch (e) {
-      setError(`Freigabe konnte nicht geändert werden: ${e}`);
+      setError(t("detail.overrideFailed", { error: String(e) }));
       loadApps();   // reset the display to the actual server state
     }
   };
 
   const deactivate = async () => {
-    if (!confirm(`${user.username} deaktivieren? Login gesperrt, Daten bleiben erhalten.`)) return;
+    if (!confirm(t("detail.confirmDeactivate", { user: user.username }))) return;
     setBusy(true); setError("");
     try {
       const r = await fetch(`${UA}/users/${encodeURIComponent(user.username)}/deactivate`, { method: "POST" });
@@ -200,7 +201,7 @@ export function UserDetail({ user, onBack, onImpersonate, onFullView, onChanged 
   };
 
   const deleteUser = async () => {
-    if (!confirm(`${user.username} ENDGÜLTIG aus Authentik löschen? Nur für falsch angelegte Konten — für Familienmitglieder lieber deaktivieren.`)) return;
+    if (!confirm(t("detail.confirmDelete", { user: user.username }))) return;
     setBusy(true); setError("");
     try {
       const r = await fetch(`${UA}/users/${encodeURIComponent(user.username)}`, { method: "DELETE" });
@@ -211,38 +212,39 @@ export function UserDetail({ user, onBack, onImpersonate, onFullView, onChanged 
   };
 
   const availableGroups = allGroups.filter((g) => !groups.includes(g));
-  const visibleApps = apps.filter((a) => !appFilter || a.name.toLowerCase().includes(appFilter.toLowerCase()));
+  const appName = (a: AppRow) => i18n.t(`apps:${a.id}.name`, { defaultValue: a.name });
+  const visibleApps = apps.filter((a) => !appFilter || appName(a).toLowerCase().includes(appFilter.toLowerCase()));
 
   return (
     <div className={styles.detail}>
       <div className={styles.detailHead}>
-        <button className={styles.btn} onClick={onBack}>← Zurück</button>
+        <button className={styles.btn} onClick={onBack}>{t("common.back")}</button>
         <h2>{user.name} <span className={styles.detailSub}>{user.username}</span></h2>
-        {!user.is_active && <span className={styles.inactiveBadge}>inaktiv</span>}
+        {!user.is_active && <span className={styles.inactiveBadge}>{t("common.inactive")}</span>}
         <span style={{ marginLeft: "auto" }} />
         <button className={styles.btn} onClick={() => onImpersonate(user.username)} disabled={!user.is_active}
-          title={`Zeigt nur die ${getBrand().product}-Oberfläche des Users`}>{getBrand().product}-Ansicht →</button>
+          title={t("detail.viewTitle")}>{t("detail.view")}</button>
         <button className={styles.btn} onClick={() => onFullView(user.username)} disabled={!user.is_active}
-          title="Voll-Ansicht inkl. Fremd-Apps (Nextcloud, Immich …) im Browser-Stream">🔎 Voll-Ansicht →</button>
+          title={t("detail.fullViewTitle")}>{t("detail.fullView")}</button>
       </div>
 
       {error && <div className={styles.error}>{error}</div>}
 
       {/* Password reset */}
       <section className={styles.section}>
-        <h3>Passwort</h3>
+        <h3>{t("detail.password")}</h3>
         {pwResult ? (
           <div className={styles.pwBox}>
-            <span className={styles.hint}>Neues Start-Passwort (einmalig):</span>
+            <span className={styles.hint}>{t("detail.newPassword")}</span>
             <code className={styles.pwValue}>{pwResult}</code>
             <button className={styles.btn} onClick={() => { navigator.clipboard.writeText(pwResult); setCopied(true); setTimeout(() => setCopied(false), 1500); }}>
-              {copied ? "✓" : "Kopieren"}
+              {copied ? "✓" : t("common.copy")}
             </button>
           </div>
         ) : (
           <button className={styles.btn} onClick={resetPassword} disabled={busy || protectedUser}
-            title={protectedUser ? "Geschützter Account" : ""}>
-            {busy ? "…" : "🔑 Passwort zurücksetzen"}
+            title={protectedUser ? t("detail.protected") : ""}>
+            {busy ? "…" : t("detail.resetPassword")}
           </button>
         )}
       </section>
@@ -250,27 +252,23 @@ export function UserDetail({ user, onBack, onImpersonate, onFullView, onChanged 
       {/* Guide: Clara companion — rollout progress + parent view for children */}
       {guide && (
         <section className={styles.section} data-testid="guide-status">
-          <h3>✦ {getBrand().assistant}-Begleitung
-            {guide.kid && <span className={styles.hint}> (Kind — Leitplanken aktiv)</span>}
+          <h3>{t("detail.guide")}
+            {guide.kid && <span className={styles.hint}>{t("detail.kid")}</span>}
           </h3>
           <p className={styles.hint}>
             {guide.profil_felder > 0
-              ? `Profil: ${guide.profil_felder} Felder, zuletzt ${guide.updated_at
-                  ? new Date(guide.updated_at).toLocaleDateString(regionLocale()) : "?"} ` +
-                (guide.updated_by === "clara" ? `(von ${getBrand().assistant} gelernt)` : "(vom User gepflegt)")
-              : `Profil: noch keins — ${getBrand().assistant} kennt diesen User noch nicht.`}
-            {guide.optout && " · 🔕 Vorschläge abgeschaltet"}
+              ? t("detail.profile", { count: guide.profil_felder, date: guide.updated_at
+                  ? new Date(guide.updated_at).toLocaleDateString(regionLocale()) : "?" }) +
+                (guide.updated_by === "clara" ? t("detail.learned") : t("detail.byUser"))
+              : t("detail.noProfile")}
+            {guide.optout && t("detail.optout")}
           </p>
           <p className={styles.hint}>
             {(["welcome", "device-setup", "files-tour", "fotos-tour"] as const).map((id, i) => {
-              const labels: Record<string, string> = {
-                welcome: "Willkommen", "device-setup": "Geräte-Setup",
-                "files-tour": "Files-Tour", "fotos-tour": "Fotos-Tour",
-              };
               const n = guide.nudges[id] ?? {};
               const stateTxt = n.done ? "✓" : n.dismissed
-                ? `⏸ ${n.dismissed}× später` : "–";
-              return `${i > 0 ? " · " : "Impulse: "}${labels[id]} ${stateTxt}`;
+                ? t("detail.later", { count: n.dismissed }) : "–";
+              return `${i > 0 ? " · " : t("detail.nudgesPrefix")}${t(`detail.nudge.${id}`)} ${stateTxt}`;
             }).join("")}
           </p>
           {guide.kid && guide.profil && Object.keys(guide.profil).length > 0 && (
@@ -285,18 +283,18 @@ export function UserDetail({ user, onBack, onImpersonate, onFullView, onChanged 
 
       {/* Setup assistant (invite link for the public onboarding portal) */}
       <section className={styles.section}>
-        <h3>Einrichtungsassistent</h3>
+        <h3>{t("detail.setup")}</h3>
         {invite ? (
           <div>
             <span className={styles.hint}>
-              Link nur JETZT sichtbar (gültig bis {new Date(invite.expires_at).toLocaleDateString(regionLocale())}):
+              {t("detail.linkNow", { date: new Date(invite.expires_at).toLocaleDateString(regionLocale()) })}
             </span>
             <div className={styles.pwBox}>
               <code className={styles.pwValue} style={{ fontSize: 11, wordBreak: "break-all" }}>{invite.invite_url}</code>
               <button className={styles.btn} onClick={() => {
                 navigator.clipboard.writeText(invite.invite_url);
                 setInviteCopied(true); setTimeout(() => setInviteCopied(false), 1500);
-              }}>{inviteCopied ? "✓" : "Kopieren"}</button>
+              }}>{inviteCopied ? "✓" : t("common.copy")}</button>
             </div>
             <div style={{ background: "#fff", borderRadius: 10, padding: 12, width: "fit-content", marginTop: 8 }}>
               <QRCodeSVG value={invite.invite_url} size={130} marginSize={1} />
@@ -305,12 +303,12 @@ export function UserDetail({ user, onBack, onImpersonate, onFullView, onChanged 
         ) : (
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <button className={styles.btn} onClick={createInvite} disabled={inviteBusy || !user.is_active}>
-              {inviteBusy ? "…" : "\u{1F517} Neuen Einladungslink erzeugen"}
+              {inviteBusy ? "…" : t("detail.newInvite")}
             </button>
             {inviteStatus === "offen" && (
               <>
-                <span className={styles.hint}>Ein offener Link existiert (neu erzeugen ersetzt ihn).</span>
-                <button className={styles.btn} onClick={revokeInvite} disabled={inviteBusy}>Widerrufen</button>
+                <span className={styles.hint}>{t("detail.openLink")}</span>
+                <button className={styles.btn} onClick={revokeInvite} disabled={inviteBusy}>{t("detail.revoke")}</button>
               </>
             )}
           </div>
@@ -319,11 +317,11 @@ export function UserDetail({ user, onBack, onImpersonate, onFullView, onChanged 
 
       {/* Budget */}
       <section className={styles.section}>
-        <h3>{getBrand().assistant}-Budget <span className={styles.hint}>(Token-Kosten pro Monat)</span></h3>
+        <h3>{t("detail.budget")} <span className={styles.hint}>{t("detail.budgetHint")}</span></h3>
         {budget === null ? (
-          <span className={styles.hint}>lädt…</span>
+          <span className={styles.hint}>{t("detail.budgetLoading")}</span>
         ) : budget.available === false ? (
-          <span className={styles.hint}>Budget-System nicht erreichbar.</span>
+          <span className={styles.hint}>{t("detail.budgetUnavailable")}</span>
         ) : (
           <>
             <div className={styles.budgetRow}>
@@ -335,17 +333,17 @@ export function UserDetail({ user, onBack, onImpersonate, onFullView, onChanged 
               </div>
               <span className={styles.budgetLabel}>
                 {(budget.current_month_eur ?? 0).toFixed(2)} € / {(budget.monthly_budget_eur ?? 0).toFixed(2)} €
-                {budget.budget_exceeded && <span className={styles.inactiveBadge}>überschritten</span>}
+                {budget.budget_exceeded && <span className={styles.inactiveBadge}>{t("detail.exceeded")}</span>}
               </span>
             </div>
             <div className={styles.budgetEdit}>
-              <label>Monatslimit €</label>
+              <label>{t("detail.monthlyLimit")}</label>
               <input className={styles.input} type="number" min="0" step="1" style={{ width: 90 }}
                 value={budgetEdit} onChange={(e) => setBudgetEdit(e.target.value)} />
               <button className={styles.btn} onClick={saveBudget} disabled={budgetSaving}>
-                {budgetSaving ? "…" : "Setzen"}
+                {budgetSaving ? "…" : t("detail.set")}
               </button>
-              <span className={styles.hint}>0 = unbegrenzt</span>
+              <span className={styles.hint}>{t("detail.unlimited")}</span>
             </div>
           </>
         )}
@@ -353,7 +351,7 @@ export function UserDetail({ user, onBack, onImpersonate, onFullView, onChanged 
 
       {/* Groups */}
       <section className={styles.section}>
-        <h3>Gruppen</h3>
+        <h3>{t("detail.groups")}</h3>
         <div className={styles.groupChips}>
           {groups.map((g) => (
             <span key={g} className={`${styles.chip} ${styles.chipOn}`}>
@@ -363,7 +361,7 @@ export function UserDetail({ user, onBack, onImpersonate, onFullView, onChanged 
         </div>
         {availableGroups.length > 0 && (
           <details className={styles.addGroup}>
-            <summary>+ Gruppe hinzufügen</summary>
+            <summary>{t("detail.addGroup")}</summary>
             <div className={styles.groupChips}>
               {availableGroups.map((g) => (
                 <button key={g} className={styles.chip} onClick={() => addGroup(g)}>{g}</button>
@@ -375,25 +373,25 @@ export function UserDetail({ user, onBack, onImpersonate, onFullView, onChanged 
 
       {/* App visibility */}
       <section className={styles.section}>
-        <h3>App-Berechtigungen <span className={styles.hint}>({apps.filter((a) => a.effective).length}/{apps.length} sichtbar)</span></h3>
-        <input className={styles.input} style={{ maxWidth: 220, marginBottom: 8 }} placeholder="Apps filtern…"
+        <h3>{t("detail.appPermissions")} <span className={styles.hint}>{t("detail.visibleCount", { visible: apps.filter((a) => a.effective).length, total: apps.length })}</span></h3>
+        <input className={styles.input} style={{ maxWidth: 220, marginBottom: 8 }} placeholder={t("detail.filterApps")}
           value={appFilter} onChange={(e) => setAppFilter(e.target.value)} />
         <div className={styles.appList}>
           {visibleApps.map((a) => (
             <div key={a.id} className={styles.appRow}>
-              <span className={styles.appName}>{a.name}</span>
+              <span className={styles.appName}>{appName(a)}</span>
               <span className={styles.appCat}>{a.category}</span>
               <span className={`${styles.appState} ${a.effective ? styles.appOn : styles.appOff}`}>
-                {a.effective ? "sichtbar" : "verborgen"}
-                {a.override !== null && <span className={styles.overrideDot} title="Per-User-Override">•</span>}
+                {a.effective ? t("detail.visible") : t("detail.hidden")}
+                {a.override !== null && <span className={styles.overrideDot} title={t("detail.override")}>•</span>}
               </span>
               <div className={styles.appActions}>
                 <button className={`${styles.miniBtn} ${a.override === true ? styles.miniOn : ""}`}
-                  onClick={() => setAppOverride(a.id, "on")} title="Immer sichtbar">an</button>
+                  onClick={() => setAppOverride(a.id, "on")} title={t("detail.alwaysOn")}>{t("detail.on")}</button>
                 <button className={`${styles.miniBtn} ${a.override === false ? styles.miniOn : ""}`}
-                  onClick={() => setAppOverride(a.id, "off")} title="Immer verborgen">aus</button>
+                  onClick={() => setAppOverride(a.id, "off")} title={t("detail.alwaysOff")}>{t("detail.off")}</button>
                 {a.override !== null && (
-                  <button className={styles.miniBtn} onClick={() => setAppOverride(a.id, "default")} title="Gruppen-Standard">auto</button>
+                  <button className={styles.miniBtn} onClick={() => setAppOverride(a.id, "default")} title={t("detail.groupDefault")}>{t("detail.auto")}</button>
                 )}
               </div>
             </div>
@@ -404,16 +402,16 @@ export function UserDetail({ user, onBack, onImpersonate, onFullView, onChanged 
       {/* Danger zone */}
       {!protectedUser && (
         <section className={styles.section}>
-          <h3>Konto</h3>
+          <h3>{t("detail.account")}</h3>
           <div style={{ display: "flex", gap: 10 }}>
             <button className={styles.btn} onClick={deactivate} disabled={busy || !user.is_active}>
-              Deaktivieren
+              {t("detail.deactivate")}
             </button>
             <button className={styles.btnDanger} onClick={deleteUser} disabled={busy}>
-              Löschen
+              {t("detail.delete")}
             </button>
           </div>
-          <span className={styles.hint}>Familienmitglieder deaktivieren (Datenerhalt); Löschen nur für Fehlanlagen.</span>
+          <span className={styles.hint}>{t("detail.accountHint")}</span>
         </section>
       )}
     </div>

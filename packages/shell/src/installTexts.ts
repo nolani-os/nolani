@@ -14,13 +14,21 @@ export interface InstallTexts {
   deviceOffline: string;
 }
 
+import { i18n } from "@claraos/core";
+
 const heimConfig = import.meta.glob<{ UI_TEXTS?: Partial<InstallTexts> }>("./heim.config.ts", { eager: true });
 
+const overrides: Partial<InstallTexts> = Object.values(heimConfig)[0]?.UI_TEXTS ?? {};
+
+/** Neutral defaults come from the catalog (`common:install.*`), read at use time. */
+function text(key: keyof InstallTexts): string {
+  return overrides[key] ?? i18n.t(`common:install.${key}`);
+}
+
 export const INSTALL_TEXTS: InstallTexts = {
-  pushNetworkHint: "",
-  shareLinkReach: "Erreichbar sind Links allerdings nur im lokalen Netz.",
-  mailSecretMissing: "⚠ Stalwart-Admin-Secret fehlt — Mail wird übersprungen.",
-  deviceSshdDown: "Auf dem Gerät den SSH-Dienst (sshd) starten.",
-  deviceOffline: "Gerät einschalten und mit dem Netzwerk verbinden, dann erneut versuchen.",
-  ...Object.values(heimConfig)[0]?.UI_TEXTS,
+  get pushNetworkHint() { return overrides.pushNetworkHint ?? ""; },
+  get shareLinkReach() { return text("shareLinkReach"); },
+  get mailSecretMissing() { return text("mailSecretMissing"); },
+  get deviceSshdDown() { return text("deviceSshdDown"); },
+  get deviceOffline() { return text("deviceOffline"); },
 };

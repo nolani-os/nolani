@@ -15,7 +15,7 @@
  * from the image and must not get lost.
  */
 import { useEffect, useState } from "react";
-import { useMatrixStore, useIstZelle } from "@claraos/core";
+import { useMatrixStore, useIstZelle, useTranslation } from "@claraos/core";
 import { startCall } from "../matrixClient";
 import { Avatar } from "./Avatar";
 import { ChatTimeline } from "./ChatTimeline";
@@ -28,6 +28,7 @@ import { LockIcon, PhoneIcon, UserPlusIcon, LinkIcon, PanelUsersIcon } from "./i
 import styles from "./ChannelView.module.css";
 
 export function ChannelView({ roomId }: { roomId: string }) {
+  const { t } = useTranslation("teams");
   const room = useMatrixStore((s) => s.rooms[roomId]);
   const setRailView = useMatrixStore((s) => s.setRailView);
   const setCallToJoin = useMatrixStore((s) => s.setCallToJoin);
@@ -59,24 +60,24 @@ export function ChannelView({ roomId }: { roomId: string }) {
           <Avatar name={room?.name ?? "?"} url={room?.avatarUrl} size={28} />
         </span>
         <button className={styles.roomNameBtn} onClick={() => setShowSettings(true)}>
-          {room?.name ?? "Unbekannt"}
+          {room?.name ?? t("common.unknown")}
         </button>
         {room?.isEncrypted && (
-          <span className={styles.schloss} title="Ende-zu-Ende-verschlüsselt">
+          <span className={styles.schloss} title={t("common.encrypted")}>
             <LockIcon size={13} />
           </span>
         )}
         {room?.topic && <span className={styles.topic}>{room.topic}</span>}
         <div className={styles.actions}>
-          <button className={styles.headerBtn} onClick={handleStartCall} title="Anruf starten">
+          <button className={styles.headerBtn} onClick={handleStartCall} title={t("channel.startCall")}>
             <PhoneIcon size={17} />
           </button>
-          <button className={styles.headerBtn} onClick={() => setShowInviteMember(true)} title="Mitglied einladen">
+          <button className={styles.headerBtn} onClick={() => setShowInviteMember(true)} title={t("channel.inviteMember")}>
             <UserPlusIcon size={17} />
           </button>
           {/* Guest invites run through the VPN control server — a cell has no VPN. */}
           {!istZelle && (
-            <button className={styles.headerBtn} onClick={() => setShowInvite(true)} title="Gast einladen">
+            <button className={styles.headerBtn} onClick={() => setShowInvite(true)} title={t("channel.inviteGuest")}>
               <LinkIcon size={17} />
             </button>
           )}
@@ -86,7 +87,7 @@ export function ChannelView({ roomId }: { roomId: string }) {
               setActiveThreadRoot(null); // side panel is exclusive
               setShowMembers((v) => !v);
             }}
-            title="Mitglieder"
+            title={t("channel.members")}
           >
             <PanelUsersIcon size={17} />
             <span className={styles.memberCount}>{room?.members.length ?? 0}</span>

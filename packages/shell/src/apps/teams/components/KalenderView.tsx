@@ -54,7 +54,7 @@ export function KalenderView() {
   // full context lives (project, checklist, costs, comments). So we open the
   // Planner window instead of building a second task view here.
   const aufgabeOeffnen = useCallback(() => {
-    useWindowsStore.getState().openWindow("planner", { title: "Planner" });
+    useWindowsStore.getState().openWindow("planner");
   }, []);
 
   return (

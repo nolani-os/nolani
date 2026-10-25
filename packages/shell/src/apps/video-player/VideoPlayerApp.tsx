@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useWindowsStore, buildObjectUri } from "@claraos/core";
+import { useWindowsStore, buildObjectUri, useTranslation } from "@claraos/core";
 import { FilePickerModal } from "../../Chat/FilePickerModal";
 import { useIsMobile } from "../../Mobile/useIsMobile";
 import { fileUrl } from "../../lib/downloadFile";
@@ -10,6 +10,7 @@ import { Icon } from "../../components/Icon";
 import css from "../image-viewer/ImageViewerApp.module.css";
 
 export default function VideoPlayerApp({ windowId }: { windowId: string }) {
+  const { t } = useTranslation("viewers");
   const [videoUrl, setVideoUrl] = useState<string>("");
   const [videoName, setVideoName] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -55,7 +56,7 @@ export default function VideoPlayerApp({ windowId }: { windowId: string }) {
       <div className={css.leiste}>
         {istHandy && (
           <button onClick={() => closeWindow(windowId)} className={css.knopf}
-            aria-label="Zurück zu den Dateien" title="Zurück">
+            aria-label={t("common.backToFiles")} title={t("common.back")}>
             <Icon name="back" size={20} />
           </button>
         )}
@@ -63,21 +64,21 @@ export default function VideoPlayerApp({ windowId }: { windowId: string }) {
             Photos, i.e. outside ClaraOS. Instead ClaraOS's own file picker, the
             same on both platforms. */}
         <button onClick={() => setWaehlerOffen(true)} className={css.knopf}
-          aria-label="Anderes Video öffnen" title="Anderes Video öffnen">
-          <Icon name="folder" size={18} />{!istHandy && "Öffnen"}
+          aria-label={t("video.openOther")} title={t("video.openOther")}>
+          <Icon name="folder" size={18} />{!istHandy && t("common.open")}
         </button>
         {videoUrl && !fehler && (
           <>
             <button onClick={() => videoRef.current && (videoRef.current.currentTime = 0)}
-              className={css.knopf} aria-label="Von vorn" title="Von vorn">
-              <Icon name="restore" size={16} />{!istHandy && "Von vorn"}
+              className={css.knopf} aria-label={t("video.restart")} title={t("video.restart")}>
+              <Icon name="restore" size={16} />{!istHandy && t("video.restart")}
             </button>
             <button onClick={() => {
               if (!videoRef.current) return;
               if (document.fullscreenElement) document.exitFullscreen();
               else videoRef.current.requestFullscreen();
-            }} className={css.knopf} aria-label="Vollbild" title="Vollbild">
-              <Icon name="fullscreen" size={16} />{!istHandy && "Vollbild"}
+            }} className={css.knopf} aria-label={t("video.fullscreen")} title={t("video.fullscreen")}>
+              <Icon name="fullscreen" size={16} />{!istHandy && t("video.fullscreen")}
             </button>
           </>
         )}
@@ -89,10 +90,10 @@ export default function VideoPlayerApp({ windowId }: { windowId: string }) {
         {videoUrl && fehler ? (
           <div className={css.hinweis} role="alert">
             <Icon name="warning" size={40} className={css.fehlerSymbol} />
-            <div className={css.hinweisTitel}>„{videoName}“ lässt sich nicht abspielen</div>
+            <div className={css.hinweisTitel}>{t("video.cannotPlay", { name: videoName })}</div>
             <div className={css.hinweisText}>{fehler}</div>
             <button className={css.hauptknopf} onClick={() => setWaehlerOffen(true)}>
-              Anderes Video öffnen
+              {t("video.openOther")}
             </button>
           </div>
         ) : videoUrl ? (
@@ -108,19 +109,19 @@ export default function VideoPlayerApp({ windowId }: { windowId: string }) {
             />
             {laedt && (
               <div className={css.hinweis} style={{ position: "absolute", pointerEvents: "none" }}>
-                <div className={css.kreisel} aria-label="Video wird geladen" />
+                <div className={css.kreisel} aria-label={t("video.loading")} />
               </div>
             )}
           </>
         ) : (
           <div className={css.hinweis}>
             <Icon name="play" size={48} />
-            <div className={css.hinweisTitel}>Video öffnen, um es abzuspielen</div>
+            <div className={css.hinweisTitel}>{t("video.emptyTitle")}</div>
             <div className={css.hinweisText}>
-              MP4, WebM und MOV laufen im Browser; MKV und AVI nur, wenn ihr Inhalt es zulässt
+              {t("video.emptyFormats")}
             </div>
             <button className={css.hauptknopf} onClick={() => setWaehlerOffen(true)}>
-              Video auswählen
+              {t("video.pick")}
             </button>
           </div>
         )}

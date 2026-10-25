@@ -4,7 +4,7 @@ import styles from "../IdeasApp.module.css";
 import { Icon } from "../../../components/Icon";
 import type { KbObjectSlim, Stage } from "../types";
 import { STAGES, STAGE_BY_KEY } from "../stages";
-import { regionLocale } from "@claraos/core";
+import { regionLocale, useTranslation } from "@claraos/core";
 
 interface Props {
   ideas: KbObjectSlim[];
@@ -13,6 +13,7 @@ interface Props {
 }
 
 export function ListView({ ideas, currentUser, onOpen }: Props) {
+  const { t } = useTranslation("wissen");
   const [stageFilter, setStageFilter] = useState<Stage | "all">("all");
   const [q, setQ] = useState("");
   const [mineOnly, setMineOnly] = useState(false);
@@ -32,7 +33,7 @@ export function ListView({ ideas, currentUser, onOpen }: Props) {
       <div className={styles.listFilters}>
         <input
           className={styles.input}
-          placeholder="Filtern…"
+          placeholder={t("views.list.filter")}
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -41,14 +42,14 @@ export function ListView({ ideas, currentUser, onOpen }: Props) {
           value={stageFilter}
           onChange={(e) => setStageFilter(e.target.value as Stage | "all")}
         >
-          <option value="all">Alle Stufen</option>
+          <option value="all">{t("views.list.allStages")}</option>
           {STAGES.map((s) => (
             <option key={s.key} value={s.key}><Icon name={s.iconName} size={14} /> {s.label}</option>
           ))}
         </select>
         <label className={styles.checkLabel}>
           <input type="checkbox" checked={mineOnly} onChange={(e) => setMineOnly(e.target.checked)} />
-          Nur meine
+          {t("views.list.mine")}
         </label>
       </div>
       <div className={styles.listRows}>
@@ -69,7 +70,7 @@ export function ListView({ ideas, currentUser, onOpen }: Props) {
           );
         })}
         {filtered.length === 0 && (
-          <div className={styles.empty}>Keine Ideen gefunden — leg mit „＋ Idee" los.</div>
+          <div className={styles.empty}>{t("views.list.none")}</div>
         )}
       </div>
     </div>

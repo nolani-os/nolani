@@ -8,7 +8,7 @@ import { Icon } from "../../../components/Icon";
 import { kalenderApi, ncApi, plannerApi, type CalEventFull, type CalTask } from "../api";
 import { KalenderEinstellungen, KalenderTeilenDialog, type KalenderPrefs } from "./calendar/Phase5";
 import type { VikTask } from "../types";
-import { addDays, MS_DAY, startOfWeek, ymdOf } from "./calendar/calLayout";
+import { addDays, startOfWeek, ymdOf } from "./calendar/calLayout";
 import { TimeGrid } from "./calendar/TimeGrid";
 import { MonthGrid } from "./calendar/MonthGrid";
 import { AgendaList } from "./calendar/AgendaList";
@@ -17,30 +17,28 @@ import { TaskSidebar } from "./calendar/TaskSidebar";
 import { BottomSheet } from "../../../components/BottomSheet";
 import { useIsMobile } from "../../../Mobile/useIsMobile";
 import { busyClassOf, eventTimeLabel } from "./calendar/EventBlock";
-import { regionLocale } from "@claraos/core";
+import { regionLocale, useTranslation } from "@claraos/core";
 
 type ViewMode = "month" | "week" | "workweek" | "day" | "agenda";
 const LS_VIEW = "claraos.planner.calView";
 const LS_VIEW_MOBILE = "claraos.planner.calView.mobile";
 const AGENDA_DAYS = 14;
 
-const VIEW_LABELS: { key: ViewMode; label: string }[] = [
-  { key: "day", label: "Tag" },
-  { key: "workweek", label: "Arbeitswoche" },
-  { key: "week", label: "Woche" },
-  { key: "month", label: "Monat" },
-  { key: "agenda", label: "Agenda" },
-];
+// Labels come from planner:calendar.views.<key> at render time.
+const VIEW_MODES: ViewMode[] = ["day", "workweek", "week", "month", "agenda"];
 // Mobile: no week view (7 columns unusable), agenda is the default
-const VIEW_LABELS_MOBILE = VIEW_LABELS.filter((v) => v.key !== "week" && v.key !== "workweek");
+const VIEW_MODES_MOBILE = VIEW_MODES.filter((v) => v !== "week" && v !== "workweek");
 
 export function CalendarView({
-  allTasks, onOpenTask, onReloadTasks,
+  allTasks, onOpenTask, onReloadTasks, focusDate,
 }: {
   allTasks: VikTask[];
   onOpenTask: (t: VikTask) => void;
   onReloadTasks: () => void;
+  /** Jump target from a deep link (/calendar/YYYY-MM-DD) — "open next week". */
+  focusDate?: Date | null;
 }) {
+  const { t } = useTranslation("planner");
   const isMobile = useIsMobile();
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (window.innerWidth < 768) {
@@ -49,7 +47,8 @@ export function CalendarView({
     }
     return (localStorage.getItem(LS_VIEW) as ViewMode) || "week";
   });
-  const [anchor, setAnchor] = useState(() => new Date());
+  const [anchor, setAnchor] = useState(() => focusDate ?? new Date());
+  useEffect(() => { if (focusDate) setAnchor(focusDate); }, [focusDate]);
   const [daySheet, setDaySheet] = useState<Date | null>(null);
   const [events, setEvents] = useState<CalEventFull[]>([]);
   const [tasks, setTasks] = useState<CalTask[]>([]);
@@ -84,8 +83,9 @@ export function CalendarView({
     if (viewMode === "month") {
       const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
       const wd = (first.getDay() + 6) % 7;
-      const gridStart = new Date(first.getTime() - wd * MS_DAY);
-      return { start: gridStart, end: new Date(gridStart.getTime() + 42 * MS_DAY) };
+      // Calendar days, not 24h steps: a DST day has 23 or 25 hours.
+      const gridStart = addDays(first, -wd);
+      return { start: gridStart, end: addDays(gridStart, 42) };
     }
     if (viewMode === "week" || viewMode === "workweek") {
       const s = startOfWeek(anchor);
@@ -122,12 +122,13 @@ export function CalendarView({
       if (rs[0]?.states?.length) setStates(rs[0].states);
       setHolidays(rs.flatMap((r) => r.holidays).map((h) => ({
         uid: `holiday:${h.date}`, summary: h.name, start: h.date, end: h.date, all_day: true,
-        calendar: "Feiertage", color: "#9ca3af", task_id: null, location: "", description: h.regional ? "regionaler Feiertag" : "bundesweiter Feiertag",
+        calendar: t("calendar.holidays.calendarName"), color: "#9ca3af", task_id: null, location: "",
+        description: h.regional ? t("calendar.holidays.regional") : t("calendar.holidays.national"),
         busy_status: "free", recurrence_id: null, is_recurring: false, rrule_raw: "", rrule_simple: null,
         alarm_minutes: null, organizer: null, attendees: [],
       })));
     }).catch(() => setHolidays([]));
-  }, [range, kPrefs.show_holidays, kPrefs.holiday_state]);
+  }, [range, kPrefs.show_holidays, kPrefs.holiday_state, t]);
   const shown = useMemo(() => (holidays.length ? [...holidays, ...events] : events), [holidays, events]);
 
   const navigate = (dir: -1 | 1) => {
@@ -145,8 +146,8 @@ export function CalendarView({
       const e = addDays(s, viewMode === "workweek" ? 4 : 6);
       return `${s.toLocaleDateString(regionLocale(), { day: "numeric", month: "short" })} – ${e.toLocaleDateString(regionLocale(), { day: "numeric", month: "short", year: "numeric" })}`;
     }
-    return `ab ${anchor.toLocaleDateString(regionLocale(), { day: "numeric", month: "long" })}`;
-  }, [viewMode, anchor]);
+    return t("calendar.fromDate", { date: anchor.toLocaleDateString(regionLocale(), { day: "numeric", month: "long" }) });
+  }, [viewMode, anchor, t]);
 
   const openTaskById = useCallback((taskId: number) => {
     plannerApi.getTask(taskId).then(onOpenTask).catch(() => undefined);
@@ -239,32 +240,32 @@ export function CalendarView({
   return (
     <div className={styles.view} style={{ maxWidth: "none" }}>
       <header className={styles.viewHeader}>
-        <h2><Icon name="calendar" size={18} /> Kalender</h2>
+        <h2><Icon name="calendar" size={18} /> {t("calendar.title")}</h2>
         <div className={styles.viewTools}>
           <div className={styles.calSwitch}>
-            {(isMobile ? VIEW_LABELS_MOBILE : VIEW_LABELS).map((v) => (
-              <button key={v.key}
-                      className={`${styles.projTab} ${viewMode === v.key ? styles.projTabActive : ""}`}
-                      onClick={() => setViewMode(v.key)}>
-                {v.label}
+            {(isMobile ? VIEW_MODES_MOBILE : VIEW_MODES).map((v) => (
+              <button key={v}
+                      className={`${styles.projTab} ${viewMode === v ? styles.projTabActive : ""}`}
+                      onClick={() => setViewMode(v)}>
+                {t(`calendar.views.${v}`)}
               </button>
             ))}
           </div>
           <button className={styles.btn} onClick={() => navigate(-1)}>‹</button>
           <span className={styles.calMonthLabel}>{rangeLabel}</span>
           <button className={styles.btn} onClick={() => navigate(1)}>›</button>
-          <button className={styles.btn} onClick={() => setAnchor(new Date())}>Heute</button>
+          <button className={styles.btn} onClick={() => setAnchor(new Date())}>{t("calendar.today")}</button>
           {!isMobile && (
-            <button className={styles.btn} title="Kalender freigeben" onClick={() => setTeilen(true)}><Icon name="share" size={14} /></button>
+            <button className={styles.btn} title={t("calendar.shareTooltip")} onClick={() => setTeilen(true)}><Icon name="share" size={14} /></button>
           )}
-          <button className={styles.btn} title="Kalender-Einstellungen (Feiertage, Erinnerungen)" onClick={() => setEinstellungen(true)}><Icon name="gear" size={14} /></button>
+          <button className={styles.btn} title={t("calendar.settingsTooltip")} onClick={() => setEinstellungen(true)}><Icon name="gear" size={14} /></button>
           {isMobile && (
-            <button className={styles.btnPrimary} title="Neuer Termin"
+            <button className={styles.btnPrimary} title={t("calendar.newEvent")}
                     onClick={() => {
                       const s = new Date();
                       s.setMinutes(s.getMinutes() < 30 ? 30 : 60, 0, 0);
                       setEditor({ mode: "create", start: s });
-                    }}>＋ Termin</button>
+                    }}>＋ {t("calendar.addEvent")}</button>
           )}
           {!isMobile && (
             <button className={styles.btnPrimary}
@@ -273,14 +274,14 @@ export function CalendarView({
                       s.setMinutes(s.getMinutes() < 30 ? 30 : 60, 0, 0);
                       setEditor({ mode: "create", start: s });
                     }}>
-              + Termin
+              + {t("calendar.addEvent")}
             </button>
           )}
         </div>
       </header>
       {error && <div className={styles.errorBox}>{error} <button className={styles.btn} onClick={() => { setError(null); load(); }}>↻</button></div>}
       {notice && <div className={styles.hint}>{notice} <button className={styles.btn} onClick={() => setNotice(null)}>OK</button></div>}
-      {loading ? <div className={styles.loading}>Lade Kalender…</div> : (
+      {loading ? <div className={styles.loading}>{t("calendar.loading")}</div> : (
         <div className={showGrid ? styles.calWithSidebar : undefined}>
           <div className={styles.calMain}>
             {viewMode === "month" && (
@@ -354,7 +355,7 @@ export function CalendarView({
                 ),
               )}
               {dayItems(daySheet).length === 0 && (
-                <div className={styles.empty}>Nichts an diesem Tag — „+" legt einen Termin an.</div>
+                <div className={styles.empty}>{t("calendar.daySheetEmpty")}</div>
               )}
             </div>
           )}

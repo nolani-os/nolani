@@ -10,7 +10,7 @@
  * UI does better.
  */
 import { useCallback, useEffect, useState } from "react";
-import { useIstZelle } from "@claraos/core";
+import { useIstZelle, useTranslation } from "@claraos/core";
 import { INSTALL_TEXTS } from "../../installTexts";
 import styles from "./ShareDialog.module.css";
 
@@ -30,6 +30,7 @@ interface Props {
 
 export function ShareDialog({ path, name, onClose }: Props) {
   const istZelle = useIstZelle();
+  const { t } = useTranslation("files");
   const [shares, setShares] = useState<Share[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -45,13 +46,13 @@ export function ShareDialog({ path, name, onClose }: Props) {
       const r = await fetch(`/api/claraos/files/v2/shares?path=${encodeURIComponent(path)}`);
       const d = await r.json();
       setShares(r.ok ? (d.shares ?? []) : []);
-      if (!r.ok) setError(d.detail ?? "Freigaben konnten nicht geladen werden.");
+      if (!r.ok) setError(d.detail ?? t("share.loadFailed"));
     } catch (e) {
       setError(String(e));
     } finally {
       setLoading(false);
     }
-  }, [path]);
+  }, [path, t]);
 
   useEffect(() => {
     void load();
@@ -75,7 +76,7 @@ export function ShareDialog({ path, name, onClose }: Props) {
       });
       const d = await r.json();
       if (!r.ok) {
-        setError(d.detail || "Link konnte nicht erstellt werden.");
+        setError(d.detail || t("share.createFailed"));
         return;
       }
       setPassword("");
@@ -102,7 +103,7 @@ export function ShareDialog({ path, name, onClose }: Props) {
       setCopied(url);
       setTimeout(() => setCopied(""), 2000);
     } catch {
-      setError("Kopieren ging nicht — Link bitte von Hand markieren.");
+      setError(t("share.copyFailed"));
     }
   };
 
@@ -112,28 +113,28 @@ export function ShareDialog({ path, name, onClose }: Props) {
         className={styles.dialog}
         role="dialog"
         aria-modal="true"
-        aria-label={`„${name}“ teilen`}
+        aria-label={t("share.title", { name })}
         onClick={(e) => e.stopPropagation()}
       >
         <div className={styles.header}>
-          <span>„{name}“ teilen</span>
-          <button onClick={onClose} aria-label="Schließen">×</button>
+          <span>{t("share.title", { name })}</span>
+          <button onClick={onClose} aria-label={t("actions.close")}>×</button>
         </div>
 
         {error && <div className={styles.error}>{error}</div>}
 
         <div className={styles.form}>
           <label>
-            Passwort (optional)
+            {t("share.password")}
             <input
               type="text"
               value={password}
-              placeholder="ohne Passwort"
+              placeholder={t("share.noPassword")}
               onChange={(e) => setPassword(e.target.value)}
             />
           </label>
           <label>
-            Läuft ab am (optional)
+            {t("share.expires")}
             <input
               type="date"
               value={expires}
@@ -146,44 +147,43 @@ export function ShareDialog({ path, name, onClose }: Props) {
               checked={writable}
               onChange={(e) => setWritable(e.target.checked)}
             />
-            Hochladen und Ändern erlauben
+            {t("share.allowUpload")}
           </label>
           <button className={styles.primary} disabled={busy} onClick={() => void create()}>
-            Link erstellen
+            {t("share.create")}
           </button>
         </div>
 
         <div className={styles.notice}>
-          Der Empfänger braucht kein Konto — der Link fragt höchstens das hier
-          gesetzte Passwort ab.{" "}
+          {t("share.noticeAccount")}{" "}
           {istZelle
-            ? "Der Link ist aus dem Internet erreichbar — ein Passwort ist deshalb sinnvoll."
+            ? t("share.noticeInternet")
             : INSTALL_TEXTS.shareLinkReach}
         </div>
 
         <div className={styles.list}>
-          {loading && <p className={styles.hint}>Freigaben werden geladen…</p>}
+          {loading && <p className={styles.hint}>{t("share.loading")}</p>}
           {!loading && shares.length === 0 && (
-            <p className={styles.hint}>Noch kein Link vorhanden.</p>
+            <p className={styles.hint}>{t("share.none")}</p>
           )}
           {shares.map((s) => (
             <div key={s.id} className={styles.share}>
               <input readOnly value={s.url} onFocus={(e) => e.currentTarget.select()} />
               <button onClick={() => void copy(s.url)}>
-                {copied === s.url ? "Kopiert ✓" : "Kopieren"}
+                {copied === s.url ? t("share.copied") : t("actions.copy")}
               </button>
               <button
                 className={styles.danger}
                 disabled={busy}
                 onClick={() => void remove(s.id)}
-                title="Link zurückziehen"
+                title={t("share.revoke")}
               >
-                Entfernen
+                {t("share.remove")}
               </button>
               <div className={styles.meta}>
-                {s.hasPassword ? "🔒 mit Passwort" : "ohne Passwort"}
-                {s.expiration ? ` · bis ${s.expiration}` : ""}
-                {s.permissions && s.permissions > 1 ? " · Hochladen erlaubt" : ""}
+                {s.hasPassword ? t("share.withPassword") : t("share.noPassword")}
+                {s.expiration ? ` · ${t("share.until", { date: s.expiration })}` : ""}
+                {s.permissions && s.permissions > 1 ? ` · ${t("share.uploadAllowed")}` : ""}
               </div>
             </div>
           ))}

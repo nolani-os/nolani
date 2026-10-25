@@ -16,27 +16,28 @@ import geteilt from "../ideas/IdeasApp.module.css";
 import { ideasApi } from "../ideas/api";
 import { FieldType } from "../ideas/types";
 import type { KbField } from "../ideas/types";
+import { useTranslation } from "@claraos/core";
 
 /** Exactly the functions that `services/kb_formula.py` knows. This list mirrors
  *  the server: if it lists something the server cannot do, the user gets an
  *  error instead of a formula. If something is missing here, it is unusable —
  *  but never unsafe, because the server remains the authority. */
-const FUNKTIONEN: { ruf: string; was: string }[] = [
-  { ruf: 'prop("schlüssel")', was: "Wert einer Spalte dieser Zeile" },
-  { ruf: 'rollup("schlüssel")', was: "Wert einer Rollup-Spalte" },
-  { ruf: "if(bedingung, dann, sonst)", was: "Fallunterscheidung" },
-  { ruf: "round(zahl, stellen)", was: "runden" },
-  { ruf: "abs(zahl)", was: "Betrag" },
-  { ruf: "min(a, b, …)", was: "kleinster Wert" },
-  { ruf: "max(a, b, …)", was: "größter Wert" },
-  { ruf: "num(wert)", was: "als Zahl lesen" },
-  { ruf: "len(text)", was: "Anzahl Zeichen" },
-  { ruf: 'concat(a, " ", b)', was: "aneinanderhängen" },
-  { ruf: 'contains(text, "wort")', was: "enthält?" },
-  { ruf: "empty(wert)", was: "leer?" },
-  { ruf: "today()", was: "heutiges Datum" },
-  { ruf: "days_between(a, b)", was: "Tage zwischen zwei Daten" },
-  { ruf: "days_until(datum)", was: "Tage bis dahin" },
+const FUNKTIONEN: { id: string; ruf: string }[] = [
+  { id: "prop", ruf: 'prop("schlüssel")' },
+  { id: "rollup", ruf: 'rollup("schlüssel")' },
+  { id: "if", ruf: "if(bedingung, dann, sonst)" },
+  { id: "round", ruf: "round(zahl, stellen)" },
+  { id: "abs", ruf: "abs(zahl)" },
+  { id: "min", ruf: "min(a, b, …)" },
+  { id: "max", ruf: "max(a, b, …)" },
+  { id: "num", ruf: "num(wert)" },
+  { id: "len", ruf: "len(text)" },
+  { id: "concat", ruf: 'concat(a, " ", b)' },
+  { id: "contains", ruf: 'contains(text, "wort")' },
+  { id: "empty", ruf: "empty(wert)" },
+  { id: "today", ruf: "today()" },
+  { id: "days_between", ruf: "days_between(a, b)" },
+  { id: "days_until", ruf: "days_until(datum)" },
 ];
 
 const BEISPIELE = [
@@ -54,6 +55,7 @@ interface Props {
 }
 
 export function FormelEditor({ feld, sammlungId, felder, onFertig, onAbbrechen }: Props) {
+  const { t } = useTranslation("wissen");
   const [ausdruck, setAusdruck] = useState(String(feld.type_option?.expression ?? ""));
   const [pruefung, setPruefung] = useState<{
     ok: boolean; fehler: string | null; proben: { titel: string; wert: unknown }[];
@@ -84,7 +86,7 @@ export function FormelEditor({ feld, sammlungId, felder, onFertig, onAbbrechen }
   return (
     <div className={geteilt.modalBackdrop} onClick={onAbbrechen}>
       <div className={`${geteilt.modal} ${styles.formelModal}`} onClick={(e) => e.stopPropagation()}>
-        <h3>Formel für „{feld.name}"</h3>
+        <h3>{t("formula.title", { name: feld.name })}</h3>
 
         <textarea
           className={styles.formelFeld}
@@ -99,19 +101,19 @@ export function FormelEditor({ feld, sammlungId, felder, onFertig, onAbbrechen }
         <div className={styles.formelStatus}>
           {!ausdruck.trim() ? (
             <span className={geteilt.metaHint}>
-              Fang mit einem Beispiel an:{" "}
+              {t("formula.startWith")}{" "}
               {BEISPIELE.map((b) => (
                 <button key={b} className={styles.leisteChip} style={{ marginRight: 4 }}
                         onClick={() => setAusdruck(b)}>{b}</button>
               ))}
             </span>
           ) : laeuft ? (
-            <span className={geteilt.metaHint}>prüft…</span>
+            <span className={geteilt.metaHint}>{t("formula.checking")}</span>
           ) : pruefung && !pruefung.ok ? (
             <span className={styles.formelFehler}>⚠ {pruefung.fehler}</span>
           ) : pruefung ? (
             <div className={styles.formelProben}>
-              <span className={geteilt.metaHint}>So sähe es aus:</span>
+              <span className={geteilt.metaHint}>{t("formula.preview")}</span>
               {pruefung.proben.map((pb, i) => (
                 <div key={i} className={styles.formelProbe}>
                   <span className={styles.formelProbeTitel}>{pb.titel}</span>
@@ -123,7 +125,7 @@ export function FormelEditor({ feld, sammlungId, felder, onFertig, onAbbrechen }
               ))}
               {pruefung.proben.length === 0 && (
                 <span className={geteilt.metaHint}>
-                  Noch keine Zeile da, an der man es zeigen könnte.
+                  {t("formula.noRow")}
                 </span>
               )}
             </div>
@@ -132,7 +134,7 @@ export function FormelEditor({ feld, sammlungId, felder, onFertig, onAbbrechen }
 
         <div className={styles.formelHilfe}>
           <div>
-            <h4 className={styles.leisteTitel}>Spalten</h4>
+            <h4 className={styles.leisteTitel}>{t("formula.columns")}</h4>
             <div className={styles.leisteChips}>
               {spalten.map((f) => (
                 <button key={f.key} className={styles.leisteChip}
@@ -140,18 +142,18 @@ export function FormelEditor({ feld, sammlungId, felder, onFertig, onAbbrechen }
                         onClick={() => einfuegen(`prop("${f.key}")`)}>{f.name}</button>
               ))}
               {spalten.length === 0 && (
-                <span className={geteilt.metaHint}>Diese Sammlung hat noch keine Spalten.</span>
+                <span className={geteilt.metaHint}>{t("formula.noColumns")}</span>
               )}
             </div>
           </div>
           <div>
-            <h4 className={styles.leisteTitel}>Funktionen</h4>
+            <h4 className={styles.leisteTitel}>{t("formula.functions")}</h4>
             <div className={styles.formelFunktionen}>
               {FUNKTIONEN.map((fn) => (
                 <button key={fn.ruf} className={styles.formelFunktion}
                         onClick={() => einfuegen(fn.ruf)}>
                   <code>{fn.ruf}</code>
-                  <span>{fn.was}</span>
+                  <span>{t(`formula.fn.${fn.id}`)}</span>
                 </button>
               ))}
             </div>
@@ -159,11 +161,11 @@ export function FormelEditor({ feld, sammlungId, felder, onFertig, onAbbrechen }
         </div>
 
         <div className={geteilt.modalFoot}>
-          <button className={geteilt.btnSecondary} onClick={onAbbrechen}>Abbrechen</button>
+          <button className={geteilt.btnSecondary} onClick={onAbbrechen}>{t("common.cancel")}</button>
           <button className={geteilt.btnPrimary}
                   disabled={!ausdruck.trim() || laeuft || (pruefung ? !pruefung.ok : true)}
                   onClick={() => onFertig(ausdruck.trim())}>
-            Übernehmen
+            {t("common.apply")}
           </button>
         </div>
       </div>

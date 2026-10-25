@@ -27,10 +27,12 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
 import time
 from typing import Any
 
 import httpx
+from betriebsprofil import IS_CELL
 from services import datenklasse
 
 logger = logging.getLogger(__name__)
@@ -38,7 +40,11 @@ logger = logging.getLogger(__name__)
 # ── Vision pre-pass cache (snapshot-hash → (timestamp, description)) ────────
 _VISION_CACHE: dict[str, tuple[float, str]] = {}
 _VISION_TTL_S = 300
-_VISION_MODEL = "cheap/gemini-flash"
+# The vision model as the gateway names it: a cell's LiteLLM lists plain names
+# (deploy/cell), the home gateway tiered ones. With the wrong name every image was
+# answered with "description not available". CLARAOS_VISION_MODEL overrides both.
+_VISION_MODEL = (os.environ.get("CLARAOS_VISION_MODEL")
+                 or ("gemini-flash" if IS_CELL else "cheap/gemini-flash"))
 
 
 async def vision_describe(

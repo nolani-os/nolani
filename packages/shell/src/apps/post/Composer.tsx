@@ -10,6 +10,8 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./PostApp.module.css";
+import { sanitizeMailHtml } from "./mailHtml";
+import { useTranslation } from "@claraos/core";
 import { Icon } from "../../components/Icon";
 import {
   postApi, postSchreiben, postBusiness,
@@ -39,6 +41,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function AdressFeld({ label, werte, onChange, autoFocus }: {
   label: string; werte: Adresse[]; onChange: (v: Adresse[]) => void; autoFocus?: boolean;
 }) {
+  const { t } = useTranslation("post");
   const [eingabe, setEingabe] = useState("");
   const [vorschlaege, setVorschlaege] = useState<Vorschlag[]>([]);
   const [verteiler, setVerteiler] = useState<Verteiler[]>([]);
@@ -106,11 +109,11 @@ function AdressFeld({ label, werte, onChange, autoFocus }: {
         {werte.map((w) => (
           <span key={w.email} className={styles.adressChip} title={w.email}>
             {w.name ? w.name : w.email}
-            <button type="button" onClick={() => onChange(werte.filter((x) => x.email !== w.email))} title="Entfernen">×</button>
+            <button type="button" onClick={() => onChange(werte.filter((x) => x.email !== w.email))} title={t("common.remove")}>×</button>
           </span>
         ))}
         <input className={styles.adressInput} value={eingabe} autoFocus={autoFocus}
-               placeholder={werte.length ? "" : "Name oder Adresse…"}
+               placeholder={werte.length ? "" : t("composer.addressPlaceholder")}
                onChange={(e) => setEingabe(e.target.value)}
                onKeyDown={(e) => {
                  if (e.key === "ArrowDown") { e.preventDefault(); setAktiv((a) => Math.min(a + 1, verteilerTreffer.length + vorschlaege.length - 1)); }
@@ -129,8 +132,8 @@ function AdressFeld({ label, werte, onChange, autoFocus }: {
               <button type="button" key={`vt-${v.name}`} className={`${styles.vorschlag} ${i === aktiv ? styles.vorschlagAktiv : ""}`}
                       onMouseDown={(e) => { e.preventDefault(); void verteilerUebernehmen(v); }}>
                 <span>{v.name}</span>
-                <span className={styles.hinweis}>{v.mitglieder.length} Empfänger</span>
-                <span className={styles.hinweis}>Verteiler</span>
+                <span className={styles.hinweis}>{t("composer.recipients", { count: v.mitglieder.length })}</span>
+                <span className={styles.hinweis}>{t("composer.distributionList")}</span>
               </button>
             ))}
             {vorschlaege.map((v, i0) => { const i = i0 + verteilerTreffer.length; return (
@@ -138,7 +141,7 @@ function AdressFeld({ label, werte, onChange, autoFocus }: {
                       onMouseDown={(e) => { e.preventDefault(); uebernehmen(v); }}>
                 <span>{v.name || v.email}</span>
                 {v.name && <span className={styles.hinweis}>{v.email}</span>}
-                <span className={styles.hinweis}>{v.source === "kontakte" ? "Kontakt" : "zuletzt"}</span>
+                <span className={styles.hinweis}>{v.source === "kontakte" ? t("composer.sourceContact") : t("composer.sourceRecent")}</span>
               </button>
             ); })}
           </div>
@@ -149,6 +152,7 @@ function AdressFeld({ label, werte, onChange, autoFocus }: {
 }
 
 export default function Composer({ start, identitaeten, prefs, onClose, melde, onGesendet }: Props) {
+  const { t } = useTranslation("post");
   const [identityId, setIdentityId] = useState<string>(() =>
     (identitaeten.find((i) => i.id === prefs.default_identity) ?? identitaeten[0])?.id ?? "");
   const [to, setTo] = useState<Adresse[]>(start.to ?? []);
@@ -179,7 +183,7 @@ export default function Composer({ start, identitaeten, prefs, onClose, melde, o
       ? `<div><br></div><div class="claraos-signatur">${identity.html_signature}</div>`
       : (prefs.signature_on !== false && identity?.text_signature
         ? `<div><br></div><div class="claraos-signatur">${identity.text_signature.split("\n").map((l) => l.replace(/&/g, "&amp;").replace(/</g, "&lt;")).join("<br>")}</div>` : "");
-    ed.innerHTML = start.draftId ? (start.html ?? "") : `<div><br></div>${sig}${start.html ?? ""}`;
+    ed.innerHTML = sanitizeMailHtml(start.draftId ? (start.html ?? "") : `<div><br></div>${sig}${start.html ?? ""}`);
     ed.focus();
     const sel = window.getSelection();
     if (sel && ed.firstChild) { const r = document.createRange(); r.setStart(ed.firstChild, 0); r.collapse(true); sel.removeAllRanges(); sel.addRange(r); }
@@ -259,18 +263,18 @@ export default function Composer({ start, identitaeten, prefs, onClose, melde, o
     try {
       const r = await postSchreiben.entwurf(daten());
       setDraftId(r.draft_id); setGeaendert(false);
-      if (!leise) melde("Entwurf gespeichert");
+      if (!leise) melde(t("composer.draftSaved"));
       return r.draft_id;
     } catch (e) { melde(e instanceof Error ? e.message : String(e), true); return null; }
     finally { setLaeuft(""); }
   };
 
   const senden = async (sendAt?: string) => {
-    if (!to.length && !cc.length && !bcc.length) { melde("Mindestens ein Empfänger fehlt", true); return; }
-    if (!subject.trim() && !window.confirm("Ohne Betreff senden?")) return;
-    const eigenerText = (editorRef.current?.innerText ?? "").replace(/Am .* schrieb .*:[\s\S]*$/, "");
+    if (!to.length && !cc.length && !bcc.length) { melde(t("composer.noRecipient"), true); return; }
+    if (!subject.trim() && !window.confirm(t("composer.confirmNoSubject"))) return;
+    const eigenerText = (editorRef.current?.innerText ?? "").replace(/(?:Am .* schrieb .*:|On .* wrote:)[\s\S]*$/, "");
     if (!anhaenge.length && /\b(anhang|anh[äa]ng|anbei|angeh[äa]ngt|beigef[üu]gt|attached|attachment)/i.test(eigenerText)
-        && !window.confirm("Im Text steht etwas von einem Anhang, aber es hängt keiner dran. Trotzdem senden?")) return;
+        && !window.confirm(t("composer.confirmNoAttachment"))) return;
     setLaeuft("senden");
     try {
       const undoS = sendAt ? 0 : Math.max(0, Math.min(prefs.undo_s ?? 10, 600));
@@ -293,7 +297,7 @@ export default function Composer({ start, identitaeten, prefs, onClose, melde, o
 
   const schliessen = async () => {
     if (geaendert || (!draftId && (to.length || subject || (editorRef.current?.innerText ?? "").trim()))) {
-      const wahl = window.confirm("Entwurf speichern? (Abbrechen = verwerfen)");
+      const wahl = window.confirm(t("composer.confirmSaveDraft"));
       if (wahl) { await entwurfSpeichern(); onClose("entwurf"); return; }
       await verwerfen(); return;
     }
@@ -310,48 +314,48 @@ export default function Composer({ start, identitaeten, prefs, onClose, melde, o
     return () => window.removeEventListener("keydown", h);
   });
 
-  const titel = start.forwardOf ? "Weiterleiten" : start.inReplyTo ? "Antworten" : start.draftId ? "Entwurf" : "Neue E-Mail";
+  const titel = start.forwardOf ? t("composer.forward") : start.inReplyTo ? t("composer.reply") : start.draftId ? t("composer.draft") : t("composer.new");
 
   return (
     <div className={styles.composer} onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); void schliessen(); } }}>
       <div className={styles.composerKopf}>
         <strong>{titel}</strong>
-        <span className={styles.hinweis}>{draftId ? "Entwurf" : ""}{laeuft === "upload" ? " · lädt Anhang…" : ""}</span>
+        <span className={styles.hinweis}>{draftId ? t("composer.draft") : ""}{laeuft === "upload" ? t("composer.uploading") : ""}</span>
         <span style={{ flex: 1 }} />
-        <button className={styles.iconKnopf} title="Schließen (Esc)" onClick={() => void schliessen()}><Icon name="close" size={16} /></button>
+        <button className={styles.iconKnopf} title={t("composer.closeTitle")} onClick={() => void schliessen()}><Icon name="close" size={16} /></button>
       </div>
 
       <div className={styles.adressZeile}>
-        <span className={styles.adressLabel}>Von</span>
+        <span className={styles.adressLabel}>{t("composer.from")}</span>
         <select className={styles.vonSelect} value={identityId} onChange={(e) => { setIdentityId(e.target.value); setGeaendert(true); }}>
           {identitaeten.map((i) => <option key={i.id} value={i.id}>{i.name ? `${i.name} <${i.email}>` : i.email}</option>)}
         </select>
-        {!ccSichtbar && <button className={styles.link} type="button" onClick={() => setCcSichtbar(true)}>Cc/Bcc</button>}
+        {!ccSichtbar && <button className={styles.link} type="button" onClick={() => setCcSichtbar(true)}>{t("composer.ccBcc")}</button>}
       </div>
-      <AdressFeld label="An" werte={to} onChange={(v) => { setTo(v); setGeaendert(true); }} autoFocus={!start.to?.length} />
+      <AdressFeld label={t("composer.to")} werte={to} onChange={(v) => { setTo(v); setGeaendert(true); }} autoFocus={!start.to?.length} />
       {ccSichtbar && <AdressFeld label="Cc" werte={cc} onChange={(v) => { setCc(v); setGeaendert(true); }} />}
       {ccSichtbar && <AdressFeld label="Bcc" werte={bcc} onChange={(v) => { setBcc(v); setGeaendert(true); }} />}
       <div className={styles.adressZeile}>
-        <span className={styles.adressLabel}>Betreff</span>
-        <input className={styles.betreffInput} value={subject} placeholder="Betreff hinzufügen"
+        <span className={styles.adressLabel}>{t("composer.subject")}</span>
+        <input className={styles.betreffInput} value={subject} placeholder={t("composer.subjectPlaceholder")}
                onChange={(e) => { setSubject(e.target.value); setGeaendert(true); }} />
       </div>
 
       <div className={styles.editorLeiste}>
-        <button type="button" title="Fett (Strg+B)" onMouseDown={(e) => { e.preventDefault(); cmd("bold"); }}><b>F</b></button>
-        <button type="button" title="Kursiv (Strg+I)" onMouseDown={(e) => { e.preventDefault(); cmd("italic"); }}><i>K</i></button>
-        <button type="button" title="Unterstrichen (Strg+U)" onMouseDown={(e) => { e.preventDefault(); cmd("underline"); }}><u>U</u></button>
-        <button type="button" title="Aufzählung" onMouseDown={(e) => { e.preventDefault(); cmd("insertUnorderedList"); }}>• Liste</button>
-        <button type="button" title="Nummerierung" onMouseDown={(e) => { e.preventDefault(); cmd("insertOrderedList"); }}>1. Liste</button>
-        <button type="button" title="Link" onMouseDown={(e) => { e.preventDefault(); const u = window.prompt("Link-Adresse:", "https://"); if (u) cmd("createLink", u); }}>Link</button>
-        <button type="button" title="Formatierung entfernen" onMouseDown={(e) => { e.preventDefault(); cmd("removeFormat"); }}>T̶</button>
+        <button type="button" title={t("composer.bold")} onMouseDown={(e) => { e.preventDefault(); cmd("bold"); }}><b>{t("composer.boldLetter")}</b></button>
+        <button type="button" title={t("composer.italic")} onMouseDown={(e) => { e.preventDefault(); cmd("italic"); }}><i>{t("composer.italicLetter")}</i></button>
+        <button type="button" title={t("composer.underline")} onMouseDown={(e) => { e.preventDefault(); cmd("underline"); }}><u>{t("composer.underlineLetter")}</u></button>
+        <button type="button" title={t("composer.bullets")} onMouseDown={(e) => { e.preventDefault(); cmd("insertUnorderedList"); }}>{t("composer.bulletsLabel")}</button>
+        <button type="button" title={t("composer.numbering")} onMouseDown={(e) => { e.preventDefault(); cmd("insertOrderedList"); }}>{t("composer.numberingLabel")}</button>
+        <button type="button" title={t("composer.link")} onMouseDown={(e) => { e.preventDefault(); const u = window.prompt(t("composer.linkPrompt"), "https://"); if (u) cmd("createLink", u); }}>{t("composer.link")}</button>
+        <button type="button" title={t("composer.clearFormat")} onMouseDown={(e) => { e.preventDefault(); cmd("removeFormat"); }}>T̶</button>
         <span className={styles.trenner} />
-        <button type="button" title="Anhang" onClick={() => dateiRef.current?.click()}><Icon name="attachment" size={14} /> Anhang</button>
+        <button type="button" title={t("composer.attachment")} onClick={() => dateiRef.current?.click()}><Icon name="attachment" size={14} /> {t("composer.attachment")}</button>
         <span className={styles.bausteinAnker}>
-          <button type="button" title="Textbaustein aus der Wissens-App (Notiz mit Titel „Baustein: …“)" onClick={() => void bausteineLaden()}><Icon name="note" size={14} /> Baustein</button>
+          <button type="button" title={t("composer.snippetTitle")} onClick={() => void bausteineLaden()}><Icon name="note" size={14} /> {t("composer.snippet")}</button>
           {bausteinOffen && bausteine && (
             <div className={styles.vorschlagListe} style={{ minWidth: 220 }}>
-              {bausteine.length === 0 && <div className={styles.vorschlag} style={{ cursor: "default" }}><span className={styles.hinweis}>Keine Bausteine. In der Wissens-App eine Notiz „Baustein: Name“ anlegen.</span></div>}
+              {bausteine.length === 0 && <div className={styles.vorschlag} style={{ cursor: "default" }}><span className={styles.hinweis}>{t("composer.noSnippets")}</span></div>}
               {bausteine.map((b) => (
                 <button type="button" key={b.id} className={styles.vorschlag} onMouseDown={(e) => { e.preventDefault(); einfuegenHtml(b.html); setBausteinOffen(false); }}>{b.title}</button>
               ))}
@@ -359,8 +363,8 @@ export default function Composer({ start, identitaeten, prefs, onClose, melde, o
           )}
         </span>
         <input ref={dateiRef} type="file" multiple style={{ display: "none" }} onChange={(e) => { void hochladen(e.target.files); e.target.value = ""; }} />
-        <label className={styles.mdnLabel} title="Empfänger wird um Lesebestätigung gebeten">
-          <input type="checkbox" checked={mdn} onChange={(e) => { setMdn(e.target.checked); setGeaendert(true); }} /> Lesebestätigung
+        <label className={styles.mdnLabel} title={t("composer.mdnTitle")}>
+          <input type="checkbox" checked={mdn} onChange={(e) => { setMdn(e.target.checked); setGeaendert(true); }} /> {t("composer.mdn")}
         </label>
       </div>
 
@@ -394,26 +398,26 @@ export default function Composer({ start, identitaeten, prefs, onClose, melde, o
           {anhaenge.map((a) => (
             <span key={a.blob_id + a.name} className={styles.anhang}>
               <Icon name="attachment" size={13} /> {a.name}
-              <button type="button" className={styles.link} onClick={() => { setAnhaenge((l) => l.filter((x) => x.blob_id !== a.blob_id)); setGeaendert(true); }} title="Entfernen">×</button>
+              <button type="button" className={styles.link} onClick={() => { setAnhaenge((l) => l.filter((x) => x.blob_id !== a.blob_id)); setGeaendert(true); }} title={t("common.remove")}>×</button>
             </span>
           ))}
         </div>
       )}
 
       <div className={styles.composerFuss}>
-        <button className={`${styles.chip} ${styles.chipAktiv}`} disabled={!!laeuft} onClick={() => void senden()} title="Strg+Enter">
-          <Icon name="export" size={14} /> {laeuft === "senden" ? "Sendet…" : "Senden"}
+        <button className={`${styles.chip} ${styles.chipAktiv}`} disabled={!!laeuft} onClick={() => void senden()} title={t("composer.sendShortcut")}>
+          <Icon name="export" size={14} /> {laeuft === "senden" ? t("composer.sending") : t("composer.send")}
         </button>
-        <button className={styles.chip} disabled={!!laeuft} onClick={() => setSpaeterOffen((v) => !v)}>Später senden</button>
+        <button className={styles.chip} disabled={!!laeuft} onClick={() => setSpaeterOffen((v) => !v)}>{t("composer.sendLater")}</button>
         {spaeterOffen && (
           <span className={styles.spaeterBox}>
             <input type="datetime-local" value={spaeter} onChange={(e) => setSpaeter(e.target.value)} className={styles.spaeterInput} />
-            <button className={styles.chip} disabled={!spaeter || !!laeuft} onClick={() => void senden(spaeter)}>Planen</button>
+            <button className={styles.chip} disabled={!spaeter || !!laeuft} onClick={() => void senden(spaeter)}>{t("composer.schedule")}</button>
           </span>
         )}
-        <button className={styles.chip} disabled={!!laeuft} onClick={() => void entwurfSpeichern()}>Entwurf speichern</button>
+        <button className={styles.chip} disabled={!!laeuft} onClick={() => void entwurfSpeichern()}>{t("composer.saveDraft")}</button>
         <span style={{ flex: 1 }} />
-        <button className={styles.chip} disabled={!!laeuft} onClick={() => void verwerfen()} title="Ohne Speichern schließen (löscht auch den automatisch gespeicherten Entwurf)"><Icon name="trash" size={14} /> Verwerfen</button>
+        <button className={styles.chip} disabled={!!laeuft} onClick={() => void verwerfen()} title={t("composer.discardTitle")}><Icon name="trash" size={14} /> {t("composer.discard")}</button>
       </div>
     </div>
   );

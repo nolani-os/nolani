@@ -73,6 +73,7 @@ URL_PATTERNS: dict[str, dict[str, str]] = {
         "myday": "/myday",
         "tasks": "/tasks",
         "calendar": "/calendar",
+        "calendar_date": "/calendar/{date}",       # calendar on the week/day of YYYY-MM-DD
     },
 }
 

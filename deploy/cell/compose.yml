@@ -314,6 +314,11 @@ services:
       # Titles/tags/follow-ups with a small model — not with the chat model (with an
       # external brain those background calls have no chat turn and would be refused).
       TASK_MODEL_EXTERNAL: claude-haiku-4-5
+      # Document context into the system message. Otherwise Open WebUI rewrites the last
+      # user message with its RAG template, the context block with the chat turn is no
+      # longer at its start, and the brain refuses the turn (403) for every attachment.
+      # A plain environment switch, not a persisted setting.
+      RAG_SYSTEM_CONTEXT: "true"
       WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY}
       OPENAI_API_BASE_URL: http://litellm:4000/v1
       OPENAI_API_KEY: ${LITELLM_MASTER_KEY}

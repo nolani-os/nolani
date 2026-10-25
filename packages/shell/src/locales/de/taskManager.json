@@ -1,0 +1,59 @@
+{
+  "tabs": {
+    "windows": "Anwendungen",
+    "widgets": "Widgets",
+    "containers": "Container",
+    "system": "System"
+  },
+  "col": {
+    "name": "Name",
+    "app": "App",
+    "status": "Status",
+    "action": "Aktion",
+    "type": "Typ",
+    "workspace": "Workspace",
+    "position": "Position",
+    "size": "Größe",
+    "target": "Ziel",
+    "cpu": "CPU",
+    "ram": "RAM",
+    "disk": "Disk",
+    "uptime": "Laufzeit",
+    "container": "Container",
+    "image": "Image"
+  },
+  "noWindows": "Keine offenen Fenster",
+  "state": {
+    "minimized": "minimiert",
+    "maximized": "maximiert",
+    "active": "aktiv"
+  },
+  "focus": "Fokussieren",
+  "quit": "Beenden",
+  "remove": "Entfernen",
+  "noWidgets": "Keine Widgets in diesem Workspace",
+  "loading": "Lade…",
+  "system": {
+    "kindVm": "VM",
+    "kindDevice": "Gerät",
+    "noTargets": "Keine Monitoring-Ziele verfügbar",
+    "refreshNote": "Werte aktualisieren sich alle 15 s"
+  },
+  "containers": {
+    "hostsFailed": "Hosts nicht ladbar: {{error}}",
+    "confirmRestart": "Container „{{name}}“ neu starten?",
+    "restarted": "„{{name}}“ neu gestartet ✓",
+    "hostCount_one": "{{count}} Container",
+    "hostCount_other": "{{count}} Container",
+    "filter": "Filtern…",
+    "refresh": "Aktualisieren",
+    "unreachable": "Nicht erreichbare Hosts: SSH-Key fehlt — über Network Manager → Host → „Setup SSH Key“ einrichten.",
+    "statsMissing": "CPU/RAM-Werte gerade nicht verfügbar (docker stats langsam/fehlgeschlagen).",
+    "noMatch": "Kein Treffer für den Filter",
+    "none": "Keine Container",
+    "protectedTitle": "Neustart gesperrt — würde {{product}} selbst treffen",
+    "protected": "geschützt",
+    "restart": "Neustart",
+    "footer": "{{running}}/{{total}} laufen · Werte aktualisieren sich alle 20 s"
+  }
+}

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import styles from "./IdeasApp.module.css";
 import { Icon } from "../../components/Icon";
+import { useTranslation, i18n } from "@claraos/core";
 
 interface Props {
   onCapture: (title: string, note: string) => Promise<void>;
@@ -14,8 +15,9 @@ interface Props {
 }
 
 export function QuickCapture({
-  onCapture, onClose, heading = "💡 Neue Idee", submitLabel = "Als Funke speichern",
+  onCapture, onClose, heading = i18n.t("wissen:app.ideaHeading"), submitLabel = i18n.t("wissen:app.saveSpark"),
 }: Props) {
+  const { t } = useTranslation("wissen");
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -43,19 +45,19 @@ export function QuickCapture({
            onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}>
         <div className={styles.modalHead}>
           <h3>{heading}</h3>
-          <button className={styles.iconBtn} onClick={onClose} title="Schließen"><Icon name="close" size={14} title="Schließen" /></button>
+          <button className={styles.iconBtn} onClick={onClose} title={t("app.close")}><Icon name="close" size={14} title={t("app.close")} /></button>
         </div>
         <input
           ref={titleRef}
           className={styles.input}
-          placeholder="Worum geht's? (Enter = speichern)"
+          placeholder={t("capture.placeholder")}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") void submit(); }}
         />
         <textarea
           className={styles.input}
-          placeholder="Optionale Notiz — alles was dir dazu im Kopf ist…"
+          placeholder={t("capture.notePlaceholder")}
           rows={3}
           value={note}
           onChange={(e) => setNote(e.target.value)}

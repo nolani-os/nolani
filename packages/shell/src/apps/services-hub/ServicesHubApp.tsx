@@ -10,7 +10,7 @@
  * backend is the source of truth: if the probe returns 403, the tabs do not exist.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useAppCenterStore, useAppRegistryStore, useWindowsStore, type AppManifest } from "@claraos/core";
+import { useAppCenterStore, useAppRegistryStore, useWindowsStore, useTranslation, type AppManifest } from "@claraos/core";
 import { AppIcon } from "../../components/AppIcon";
 import { WindowContextMenu, type ContextMenuItem } from "../../components/WindowContextMenu";
 import * as api from "./api";
@@ -39,13 +39,14 @@ function ServiceTile({ app, onOpen, onZugang }: {
   /** only set when the service declares its own credential fields. */
   onZugang?: (app: AppManifest) => void;
 }) {
+  const { t } = useTranslation("servicesHub");
   const pinnedAppIds = useAppCenterStore((s) => s.pinnedAppIds);
   const pinned = pinnedAppIds.includes(app.id);
   const menu: ContextMenuItem[] = [
-    { id: "open", label: "Öffnen", onSelect: () => onOpen(app) },
+    { id: "open", label: t("tile.open"), onSelect: () => onOpen(app) },
     {
       id: "pin",
-      label: pinned ? "Von „Angepinnt“ lösen" : "Anpinnen (Start + Taskbar)",
+      label: pinned ? t("tile.unpin") : t("tile.pin"),
       onSelect: () => {
         const store = useAppCenterStore.getState();
         if (pinned) store.unpinApp(app.id);
@@ -58,7 +59,7 @@ function ServiceTile({ app, onOpen, onZugang }: {
   if (onZugang) {
     menu.push({
       id: "zugang",
-      label: "Zugang hinterlegen …",
+      label: t("tile.credentials"),
       onSelect: () => onZugang(app),
     });
   }
@@ -77,7 +78,7 @@ function ServiceTile({ app, onOpen, onZugang }: {
         <span className={styles.tileName}>{app.name}</span>
         <span className={styles.tileHost}>{baseHost(app.config?.url || "")}</span>
         {app.config?.vaultItemId && (
-          <span className={styles.tileBadge} title="Credentials im Vault hinterlegt">🔑</span>
+          <span className={styles.tileBadge} title={t("tile.vaultBadge")}>🔑</span>
         )}
       </button>
     </WindowContextMenu>
@@ -107,6 +108,7 @@ function ServiceForm({
   onSubmit: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation("servicesHub");
   return (
     <form
       className={styles.form}
@@ -117,19 +119,19 @@ function ServiceForm({
       }}
     >
       <div className={styles.formTitle}>
-        {form.editingId ? `Dienst bearbeiten: ${form.editingId}` : "Neuen Dienst anlegen"}
+        {form.editingId ? t("form.editTitle", { id: form.editingId }) : t("form.newTitle")}
       </div>
       <label className={styles.field}>
-        <span>Name</span>
+        <span>{t("form.name")}</span>
         <input
           value={form.name}
           required
-          placeholder="z. B. Netflix"
+          placeholder={t("form.namePlaceholder")}
           onChange={(e) => onChange({ ...form, name: e.target.value })}
         />
       </label>
       <label className={styles.field}>
-        <span>URL</span>
+        <span>{t("form.url")}</span>
         <input
           value={form.url}
           required
@@ -140,7 +142,7 @@ function ServiceForm({
       </label>
       <div className={styles.fieldRow}>
         <label className={styles.field}>
-          <span>Emoji</span>
+          <span>{t("form.emoji")}</span>
           <input
             value={form.icon || ""}
             maxLength={4}
@@ -148,7 +150,7 @@ function ServiceForm({
           />
         </label>
         <label className={`${styles.field} ${styles.fieldGrow}`}>
-          <span>Icon-URL (optional)</span>
+          <span>{t("form.iconUrl")}</span>
           <input
             value={form.iconUrl || ""}
             placeholder="https://…/logo.svg"
@@ -161,7 +163,7 @@ function ServiceForm({
           Other groups from existing tiles are offered too, so that switching over
           does not silently discard an existing setting. */}
       <fieldset className={styles.field} data-testid="hub-form-groups">
-        <legend>Sichtbar für Gruppen (nichts gewählt = alle)</legend>
+        <legend>{t("form.groups")}</legend>
         {Array.from(new Set([...GROUP_SUGGESTIONS, ...(form.requiredGroups || [])])).map(
           (gruppe) => {
             const aktiv = (form.requiredGroups || []).includes(gruppe);
@@ -186,12 +188,12 @@ function ServiceForm({
         )}
       </fieldset>
       <label className={styles.field}>
-        <span>Tresor-Eintrag (Zugangsdaten)</span>
+        <span>{t("form.vaultItem")}</span>
         <select
           value={form.vaultItemId || ""}
           onChange={(e) => onChange({ ...form, vaultItemId: e.target.value || undefined })}
         >
-          <option value="">— keins verknüpft —</option>
+          <option value="">{t("form.noVaultItem")}</option>
           {vaultItems.map((it) => (
             <option key={it.id} value={it.id}>
               {it.name}{it.username ? ` (${it.username})` : ""}
@@ -201,11 +203,11 @@ function ServiceForm({
       </label>
       <div className={styles.formActions}>
         <button type="submit" className={styles.primaryBtn} disabled={busy}>
-          {form.editingId ? "Speichern" : "Anlegen"}
+          {form.editingId ? t("form.save") : t("form.create")}
         </button>
         {form.editingId && (
           <button type="button" className={styles.ghostBtn} onClick={onCancel}>
-            Abbrechen
+            {t("form.cancel")}
           </button>
         )}
       </div>
@@ -216,6 +218,7 @@ function ServiceForm({
 // ── Main component ───────────────────────────────────────────────────────────
 
 export default function ServicesHubApp({ windowId: _windowId }: { windowId: string }) {
+  const { t } = useTranslation("servicesHub");
   const apps = useAppRegistryStore((s) => s.apps);
   const reloadApps = useAppRegistryStore((s) => s.reloadApps);
   const openWindow = useWindowsStore((s) => s.openWindow);
@@ -318,10 +321,10 @@ export default function ServicesHubApp({ windowId: _windowId }: { windowId: stri
           vaultItemId: form.vaultItemId,
           requiredGroups: form.requiredGroups,
         });
-        flash(`„${form.name}“ gespeichert.`);
+        flash(t("msg.saved", { name: form.name }));
       } else {
         const created = await api.createService(form);
-        flash(`„${created.name}“ angelegt — Kachel ist sofort im Hub.`);
+        flash(t("msg.created", { name: created.name }));
       }
       setForm(EMPTY_FORM);
       await refreshAdmin();
@@ -331,7 +334,7 @@ export default function ServicesHubApp({ windowId: _windowId }: { windowId: stri
     } finally {
       setBusy(false);
     }
-  }, [form, refreshAdmin, reloadApps]);
+  }, [form, refreshAdmin, reloadApps, t]);
 
   const handleToggle = useCallback(
     async (row: HubServiceRow) => {
@@ -351,11 +354,11 @@ export default function ServicesHubApp({ windowId: _windowId }: { windowId: stri
 
   const handleDelete = useCallback(
     async (row: HubServiceRow) => {
-      if (!window.confirm(`Dienst „${row.name}“ endgültig löschen?`)) return;
+      if (!window.confirm(t("msg.confirmDelete", { name: row.name }))) return;
       setBusy(true);
       try {
         await api.deleteService(row.id);
-        flash(`„${row.name}“ gelöscht.`);
+        flash(t("msg.deleted", { name: row.name }));
         await refreshAdmin();
         await reloadApps();
       } catch (e) {
@@ -364,7 +367,7 @@ export default function ServicesHubApp({ windowId: _windowId }: { windowId: stri
         setBusy(false);
       }
     },
-    [refreshAdmin, reloadApps],
+    [refreshAdmin, reloadApps, t],
   );
 
   const editRow = (row: HubServiceRow) =>
@@ -386,8 +389,8 @@ export default function ServicesHubApp({ windowId: _windowId }: { windowId: stri
     setSyncing(true);
     try {
       const r = await api.syncVault();
-      const uebersprungen = r.skipped.length ? `, ${r.skipped.length} übersprungen` : "";
-      setNotice(`${r.created.length} Kachel(n) angelegt${uebersprungen}.`);
+      const uebersprungen = r.skipped.length ? t("msg.skipped", { count: r.skipped.length }) : "";
+      setNotice(t("msg.synced", { count: r.created.length, skipped: uebersprungen }));
       // Reload both lists: the tiles AND the reconciliation, otherwise the tab keeps
       // showing the entries just created as "without service".
       setRows(await api.listServices());
@@ -418,28 +421,28 @@ export default function ServicesHubApp({ windowId: _windowId }: { windowId: stri
         <input
           className={styles.search}
           data-testid="hub-search"
-          placeholder="Dienst suchen…"
+          placeholder={t("search")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
         {isAdmin && (
           <nav className={styles.tabs}>
             <button className={tab === "grid" ? styles.tabActive : styles.tab} onClick={() => setTab("grid")}>
-              Dienste
+              {t("tabs.grid")}
             </button>
             <button
               className={tab === "manage" ? styles.tabActive : styles.tab}
               data-testid="hub-tab-manage"
               onClick={() => setTab("manage")}
             >
-              Verwalten
+              {t("tabs.manage")}
             </button>
             <button
               className={tab === "vault" ? styles.tabActive : styles.tab}
               data-testid="hub-tab-vault"
               onClick={() => setTab("vault")}
             >
-              Vault-Abgleich
+              {t("tabs.vault")}
             </button>
           </nav>
         )}
@@ -453,14 +456,14 @@ export default function ServicesHubApp({ windowId: _windowId }: { windowId: stri
         <div className={styles.zugangPanel} data-testid="hub-zugang">
           <div className={styles.zugangKopf}>
             <span className={styles.zugangTitel}>
-              {zugangFuer.icon} {zugangFuer.name} — dein Zugang
+              {zugangFuer.icon} {t("access.title", { name: zugangFuer.name })}
             </span>
             <button className={styles.ghostBtn} onClick={() => setZugangFuer(null)}>
-              Schließen
+              {t("access.close")}
             </button>
           </div>
           <p className={styles.zugangHinweis}>
-            Gilt nur für dich. Andere im Haushalt hinterlegen ihren eigenen Zugang.
+            {t("access.hint")}
           </p>
           <CredentialAccounts
             appId={zugangFuer.id}
@@ -482,8 +485,8 @@ export default function ServicesHubApp({ windowId: _windowId }: { windowId: stri
           {visible.length === 0 && (
             <div className={styles.empty}>
               {services.length === 0
-                ? "Für dich sind noch keine Dienste freigeschaltet."
-                : "Kein Dienst passt zur Suche."}
+                ? t("grid.noneForYou")
+                : t("grid.noMatch")}
             </div>
           )}
         </div>
@@ -506,23 +509,23 @@ export default function ServicesHubApp({ windowId: _windowId }: { windowId: stri
                 <div className={styles.rowMain}>
                   <span className={styles.rowName}>
                     {row.name}
-                    {!row.enabled && <em className={styles.rowOff}> · deaktiviert</em>}
+                    {!row.enabled && <em className={styles.rowOff}>{t("row.disabled")}</em>}
                   </span>
                   <span className={styles.rowMeta}>
-                    {baseHost(row.url)} · {row.createdBy === "system" ? "Seed" : "per Formular"}
+                    {baseHost(row.url)} · {row.createdBy === "system" ? t("row.seed") : t("row.byForm")}
                     {row.requiredGroups.length > 0 && ` · ${row.requiredGroups.join(", ")}`}
-                    {row.vaultItemId && " · 🔑 Vault"}
+                    {row.vaultItemId && t("row.vault")}
                   </span>
                 </div>
                 <div className={styles.rowActions}>
                   {row.createdBy === "hub" && (
-                    <button className={styles.ghostBtn} onClick={() => editRow(row)}>Bearbeiten</button>
+                    <button className={styles.ghostBtn} onClick={() => editRow(row)}>{t("row.edit")}</button>
                   )}
                   <button className={styles.ghostBtn} onClick={() => void handleToggle(row)}>
-                    {row.enabled ? "Deaktivieren" : "Aktivieren"}
+                    {row.enabled ? t("row.deactivate") : t("row.activate")}
                   </button>
                   {row.createdBy === "hub" && (
-                    <button className={styles.dangerBtn} onClick={() => void handleDelete(row)}>Löschen</button>
+                    <button className={styles.dangerBtn} onClick={() => void handleDelete(row)}>{t("row.delete")}</button>
                   )}
                 </div>
               </div>
@@ -533,39 +536,39 @@ export default function ServicesHubApp({ windowId: _windowId }: { windowId: stri
 
       {tab === "vault" && isAdmin && (
         <div className={styles.vault} data-testid="hub-vault">
-          {!vault && !error && <div className={styles.empty}>Vault wird gelesen…</div>}
+          {!vault && !error && <div className={styles.empty}>{t("vault.reading")}</div>}
           {vault && (
             <>
-              <h3 className={styles.vaultTitle}>Dienste</h3>
+              <h3 className={styles.vaultTitle}>{t("vault.services")}</h3>
               {vault.services.map((s) => (
                 <div key={s.id} className={styles.row}>
                   <div className={styles.rowMain}>
                     <span className={styles.rowName}>{s.name}</span>
                     <span className={styles.rowMeta}>
-                      {s.matched.length === 0 && "⚠️ keine Credentials gefunden"}
+                      {s.matched.length === 0 && t("vault.noCredentials")}
                       {s.matched.map((m) =>
-                        `${m.itemName} (${m.via === "explicit" ? "verknüpft" : "Domain-Treffer"})`,
+                        `${m.itemName} (${m.via === "explicit" ? t("vault.explicit") : t("vault.domain")})`,
                       ).join(" · ")}
                     </span>
                   </div>
                 </div>
               ))}
               <h3 className={styles.vaultTitle}>
-                Vault-Items ohne Dienst
+                {t("vault.orphans")}
                 {vault.orphanItems.length > 0 && (
                   <button
                     className={styles.ghostBtn}
                     data-testid="hub-sync-vault"
                     disabled={syncing}
                     onClick={syncFromVault}
-                    title="Legt für jeden Eintrag ohne Kachel eine an. Löscht nie etwas."
+                    title={t("vault.syncTitle")}
                   >
-                    {syncing ? "Lege an…" : `Alle ${vault.orphanItems.length} anlegen`}
+                    {syncing ? t("vault.syncing") : t("vault.syncAll", { count: vault.orphanItems.length })}
                   </button>
                 )}
               </h3>
               {vault.orphanItems.length === 0 && (
-                <div className={styles.empty}>Alle Login-Items sind einem Dienst zugeordnet. ✓</div>
+                <div className={styles.empty}>{t("vault.allAssigned")}</div>
               )}
               {vault.orphanItems.map((it) => (
                 <div key={it.id} className={styles.row}>
@@ -575,7 +578,7 @@ export default function ServicesHubApp({ windowId: _windowId }: { windowId: stri
                   </div>
                   <div className={styles.rowActions}>
                     <button className={styles.ghostBtn} onClick={() => prefillFromOrphan(it)}>
-                      Dienst anlegen
+                      {t("vault.createService")}
                     </button>
                   </div>
                 </div>

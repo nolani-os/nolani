@@ -2,7 +2,7 @@
  * due date/reminder/repeat, priority, labels, assignment,
  * dependencies, comments, estimates (_meta). */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useWindowsStore } from "@claraos/core";
+import { i18n, useTranslation, useWindowsStore } from "@claraos/core";
 import { ausfuehrenLokal } from "../../Chat/shellActionHandler";
 import styles from "./PlannerApp.module.css";
 import { Icon } from "../../components/Icon";
@@ -11,7 +11,7 @@ import {
   hasDate, type TaskMeta, type VikAttachment, type VikComment, type VikLabel, type VikTask, type VikUser,
 } from "./types";
 import { appendChecklistItem, parseChecklist, toggleChecklistLine } from "./checklist";
-import { dueLabel, fmtEur, fmtMins, fmtTokens } from "./shared";
+import { dueLabel, fmtEur, fmtMins, fmtTokens, prioLabel } from "./shared";
 import { datumInWorten } from "../../lib/datumsWorte";
 import type { TaskCost } from "./types";
 import { FilePickerModal, type PickedRef } from "../../Chat/FilePickerModal";
@@ -19,12 +19,16 @@ import { regionLocale } from "@claraos/core";
 
 type MetaLink = NonNullable<TaskMeta["links"]>[number];
 
-const REPEAT_OPTIONS: { label: string; seconds: number }[] = [
-  { label: "Nie", seconds: 0 },
-  { label: "Täglich", seconds: 86400 },
-  { label: "Wöchentlich", seconds: 604800 },
-  { label: "Alle 2 Wochen", seconds: 1209600 },
-  { label: "Monatlich (30 T.)", seconds: 2592000 },
+/** Repeat presets; `label` is a getter, so it is always in the current UI language. */
+const repeatOption = (key: string, seconds: number) => ({
+  seconds, get label() { return i18n.t(`planner:detail.repeatOption.${key}`); },
+});
+const REPEAT_OPTIONS: { readonly label: string; seconds: number }[] = [
+  repeatOption("never", 0),
+  repeatOption("daily", 86400),
+  repeatOption("weekly", 604800),
+  repeatOption("biweekly", 1209600),
+  repeatOption("monthly", 2592000),
 ];
 
 function isoToLocalInput(iso?: string): string {
@@ -51,15 +55,21 @@ function isoToLocalInput(iso?: string): string {
 function DatumFeld({ wert, onSetzen, mitZeit = true }: {
   wert?: string; onSetzen: (iso: string | null) => void; mitZeit?: boolean;
 }) {
+  const { t } = useTranslation("planner");
   const [offen, setOffen] = useState(false);
   const gesetzt = hasDate(wert);
   if (!offen) {
     return (
       <button className={styles.datumText} onClick={() => setOffen(true)}
-              title={gesetzt ? "Ändern" : "Datum wählen"}>
+              title={gesetzt ? t("actions.edit") : t("dates.pickDate")}>
         {gesetzt
-          ? `${datumInWorten(wert)}${mitZeit ? `, ${new Date(wert!).toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" })} Uhr` : ""}`
-          : <span className={styles.datumLeer}>kein Datum</span>}
+          ? (mitZeit
+              ? t("dates.atTime", {
+                  date: datumInWorten(wert),
+                  time: new Date(wert!).toLocaleTimeString(regionLocale(), { hour: "2-digit", minute: "2-digit" }),
+                })
+              : datumInWorten(wert))
+          : <span className={styles.datumLeer}>{t("dates.noDateLower")}</span>}
       </button>
     );
   }
@@ -86,6 +96,7 @@ export function TaskDetail({
   onClose: () => void;
   onChanged: () => void;
 }) {
+  const { t } = useTranslation("planner");
   const [task, setTask] = useState<VikTask | null>(null);
   const [comments, setComments] = useState<VikComment[]>([]);
   const [labels, setLabels] = useState<VikLabel[]>([]);
@@ -112,12 +123,12 @@ export function TaskDetail({
   const load = useCallback(async () => {
     try {
       setError(null);
-      const t = await plannerApi.getTask(taskId);
-      setTask(t);
+      const fetched = await plannerApi.getTask(taskId);
+      setTask(fetched);
       const [cs, ls, ms, atts] = await Promise.all([
         plannerApi.listComments(taskId).catch(() => []),
         plannerApi.listLabels().then((x) => x || []).catch(() => []),
-        plannerApi.projectUsers(t.project_id).catch(() => []),
+        plannerApi.projectUsers(fetched.project_id).catch(() => []),
         plannerApi.listAttachments(taskId).then((x) => x || []).catch(() => []),
       ]);
       setComments(cs || []);
@@ -126,7 +137,7 @@ export function TaskDetail({
       setAttachments(atts);
       // Actual costs (per-task row from the project costs endpoint) — soft:
       // clara-agent unreachable/no data → the section simply stays empty.
-      plannerApi.projectCosts(t.project_id)
+      plannerApi.projectCosts(fetched.project_id)
         .then((c) => setTaskCost(c.tasks.find((x) => x.task_id === taskId) ?? null))
         .catch(() => setTaskCost(null));
     } catch (e) {
@@ -184,9 +195,9 @@ export function TaskDetail({
     return (
       <aside className={styles.detail}>
         <div className={styles.detailHeader}>
-          <button className={styles.btn} onClick={onClose}><Icon name="close" size={14} title="Schließen" /></button>
+          <button className={styles.btn} onClick={onClose}><Icon name="close" size={14} title={t("actions.close")} /></button>
         </div>
-        {error ? <div className={styles.errorBox}>{error}</div> : <div className={styles.loading}>Lade…</div>}
+        {error ? <div className={styles.errorBox}>{error}</div> : <div className={styles.loading}>{t("app.loading")}</div>}
       </aside>
     );
   }
@@ -205,7 +216,7 @@ export function TaskDetail({
           {task.done ? "✓" : ""}
         </button>
         <span className={styles.detailProject}>{projectTitles.get(task.project_id) ?? ""}</span>
-        <button className={styles.btn} onClick={onClose}><Icon name="close" size={14} title="Schließen" /></button>
+        <button className={styles.btn} onClick={onClose}><Icon name="close" size={14} title={t("actions.close")} /></button>
       </div>
 
       {error && <div className={styles.errorBox}>{error}</div>}
@@ -223,15 +234,16 @@ export function TaskDetail({
 
       {task._meta?.in_work_by && (
         <div className={styles.detailInWork}>
-          ● {task._meta.in_work_by} arbeitet hieran
-          {task._meta.in_work_since && <> seit {new Date(task._meta.in_work_since).toLocaleString(regionLocale())}</>}
+          ● {t("detail.inWorkBy", { who: task._meta.in_work_by })}
+          {task._meta.in_work_since && <> {t("detail.inWorkSince", { since: new Date(task._meta.in_work_since).toLocaleString(regionLocale()) })}</>}
           {/* Stale guard: the discipline is prompt-driven — stuck entries
               (session dead, finish_work forgotten) can be resolved manually. */}
           <button
             className={styles.btn}
-            title="„Arbeitet hieran“ zurücksetzen (räumt auch den Worklog-Eintrag ab)"
+            title={t("detail.resetInWork")}
             onClick={async () => {
               try {
+                // Work-log note stored server-side (data, not UI) — stays German.
                 await plannerApi.finishWork(task.project_id, task.id, "manuell zurückgesetzt (UI)");
                 setTask({ ...task, _meta: { ...task._meta, in_work_by: null, in_work_since: null } });
                 onChanged();
@@ -240,15 +252,15 @@ export function TaskDetail({
               }
             }}
           >
-            Zurücksetzen
+            {t("actions.reset")}
           </button>
         </div>
       )}
 
       {/* Checklist */}
       <section className={styles.detailSection}>
-        <h4>Checkliste {checklist.items.length > 0 && `(${checklist.items.filter((i) => i.checked).length}/${checklist.items.length})`}</h4>
-        {checklist.isHtml && <div className={styles.hint}>Beschreibung ist formatiert — Checkliste bitte im Planner-Backend bearbeiten.</div>}
+        <h4>{t("task.checklist")} {checklist.items.length > 0 && `(${checklist.items.filter((i) => i.checked).length}/${checklist.items.length})`}</h4>
+        {checklist.isHtml && <div className={styles.hint}>{t("detail.htmlHint")}</div>}
         {checklist.items.map((it) => (
           <label key={it.line} className={styles.checkItem}>
             <input type="checkbox" checked={it.checked}
@@ -258,7 +270,7 @@ export function TaskDetail({
         ))}
         {!checklist.isHtml && (
           <div className={styles.quickAdd}>
-            <input className={styles.input} placeholder="Punkt hinzufügen…" value={newItem}
+            <input className={styles.input} placeholder={t("detail.addChecklistItem")} value={newItem}
                    onChange={(e) => setNewItem(e.target.value)}
                    onKeyDown={(e) => {
                      if (e.key === "Enter" && newItem.trim()) {
@@ -273,38 +285,38 @@ export function TaskDetail({
 
       {/* Dates */}
       <section className={styles.detailSection}>
-        <h4>Planung</h4>
+        <h4>{t("detail.planning")}</h4>
         <div className={styles.fieldRow}>
-          <label>Fällig</label>
+          <label>{t("dates.due")}</label>
           <DatumFeld wert={task.due_date}
                      onSetzen={(iso) => save({ due_date: iso ?? "0001-01-01T00:00:00Z" })} />
         </div>
         <div className={styles.fieldRow}>
-          <label>Wiederholen</label>
+          <label>{t("detail.repeat")}</label>
           <select className={styles.select} value={task.repeat_after ?? 0}
                   onChange={(e) => save({ repeat_after: Number(e.target.value) })}>
             {REPEAT_OPTIONS.map((o) => <option key={o.seconds} value={o.seconds}>{o.label}</option>)}
             {task.repeat_after && !REPEAT_OPTIONS.some((o) => o.seconds === task.repeat_after)
-              ? <option value={task.repeat_after}>Alle {Math.round(task.repeat_after / 86400)} Tage</option> : null}
+              ? <option value={task.repeat_after}>{t("detail.repeatEvery", { count: Math.round(task.repeat_after / 86400) })}</option> : null}
           </select>
         </div>
         <div className={styles.fieldRow}>
-          <label>Erinnerung</label>
+          <label>{t("detail.reminder")}</label>
           <DatumFeld wert={task.reminders?.[0]?.reminder}
                      onSetzen={(iso) => save({ reminders: iso ? [{ reminder: iso }] : [] })} />
         </div>
         <div className={styles.fieldRow}>
-          <label>Einplanen</label>
+          <label>{t("detail.schedule")}</label>
           {task._meta?.event_uid ? (
             <span className={styles.scheduledRow}>
-              <span className={styles.metaBadge}>📅 im Kalender ({task._meta.event_calendar ?? "?"})</span>
+              <span className={styles.metaBadge}>📅 {t("detail.inCalendar", { calendar: task._meta.event_calendar ?? "?" })}</span>
               <button className={styles.btn}
                       onClick={async () => {
                         try {
                           await plannerApi.unscheduleTask(task.id, task.project_id);
                           load(); onChanged();
                         } catch (e) { setError(String(e)); }
-                      }}><Icon name="close" size={14} title="Schließen" /></button>
+                      }}><Icon name="close" size={14} title={t("actions.close")} /></button>
             </span>
           ) : (
             /* Important: show German text here too: a single field in
@@ -323,25 +335,24 @@ export function TaskDetail({
           )}
         </div>
         <div className={styles.fieldRow}>
-          <label>Priorität</label>
+          <label>{t("priority.label")}</label>
           <select className={styles.select} value={task.priority ?? 0}
                   onChange={(e) => save({ priority: Number(e.target.value) })}>
-            <option value={0}>Keine</option><option value={1}>Niedrig</option><option value={2}>Mittel</option>
-            <option value={3}>Hoch</option><option value={4}>Dringend</option><option value={5}>SOFORT</option>
+            {[0, 1, 2, 3, 4, 5].map((p) => <option key={p} value={p}>{prioLabel(p)}</option>)}
           </select>
         </div>
         <div className={styles.fieldRow}>
-          <label>Start</label>
+          <label>{t("detail.start")}</label>
           <DatumFeld wert={task.start_date}
                      onSetzen={(iso) => save({ start_date: iso ?? "0001-01-01T00:00:00Z" })} />
         </div>
         <div className={styles.fieldRow}>
-          <label>Ende</label>
+          <label>{t("detail.end")}</label>
           <DatumFeld wert={task.end_date}
                      onSetzen={(iso) => save({ end_date: iso ?? "0001-01-01T00:00:00Z" })} />
         </div>
         <div className={styles.fieldRow}>
-          <label>Fortschritt</label>
+          <label>{t("detail.progress")}</label>
           {/* Vikunja stores percent_done as 0–1 (fraction), the UI shows percent. */}
           <select className={styles.select} value={Math.round((task.percent_done ?? 0) * 100)}
                   onChange={(e) => save({ percent_done: Number(e.target.value) / 100 })}>
@@ -354,7 +365,7 @@ export function TaskDetail({
 
       {/* Labels */}
       <section className={styles.detailSection}>
-        <h4>Tags</h4>
+        <h4>{t("detail.tags")}</h4>
         <div className={styles.labelPicker}>
           {labels.map((l) => {
             const active = task.labels?.some((x) => x.id === l.id);
@@ -383,11 +394,11 @@ export function TaskDetail({
 
       {/* Assignment */}
       <section className={styles.detailSection}>
-        <h4>Zugewiesen</h4>
+        <h4>{t("detail.assigned")}</h4>
         <div className={styles.labelPicker}>
           {(task.assignees ?? []).map((a) => (
             <button key={a.id} className={`${styles.labelChip} ${styles.labelChipActive}`}
-                    title="Entfernen"
+                    title={t("actions.remove")}
                     onClick={() => plannerApi.removeAssignee(task.id, a.id).then(() => { load(); onChanged(); })}>
               👤 {a.username} ✕
             </button>
@@ -403,36 +414,36 @@ export function TaskDetail({
 
       {/* Dependencies + subtasks (set/resolve) */}
       <section className={styles.detailSection}>
-        <h4>Abhängigkeiten</h4>
+        <h4>{t("detail.dependencies")}</h4>
         <RelationGroup
-          label="⛔ Wird blockiert von:" items={relBlockedBy} kind="blocked"
+          label={`⛔ ${t("detail.blockedBy")}`} items={relBlockedBy} kind="blocked"
           task={task} allTasks={allTasks} onOpenTask={onOpenTask}
           onMutated={() => { load(); onChanged(); }} onError={setError}
         />
         <RelationGroup
-          label="⏳ Blockiert:" items={relBlocking} kind="blocking"
+          label={`⏳ ${t("detail.blocking")}`} items={relBlocking} kind="blocking"
           task={task} allTasks={allTasks} onOpenTask={onOpenTask}
           onMutated={() => { load(); onChanged(); }} onError={setError}
         />
         <div className={styles.relGroup}>
-          <span className={styles.relLabel}>Teilaufgaben:</span>
+          <span className={styles.relLabel}>{t("detail.subtasks")}</span>
           {relSubtasks.map((r) => (
             <div key={r.id} className={`${styles.relItem} ${r.done ? styles.taskDone : ""}`}
                  onClick={() => onOpenTask?.(r.id)}
                  style={onOpenTask ? { cursor: "pointer" } : undefined}>
               {r.done ? "✓ " : "○ "}{r.title}
-              <button className={styles.savedChipDel} title="Verknüpfung lösen"
+              <button className={styles.savedChipDel} title={t("actions.unlink")}
                       onClick={async (e) => {
                         e.stopPropagation();
                         try {
                           await plannerApi.removeRelation(task.id, "subtask", r.id);
                           load(); onChanged();
                         } catch (err) { setError(String(err)); }
-                      }}><Icon name="close" size={14} title="Schließen" /></button>
+                      }}><Icon name="close" size={14} title={t("actions.close")} /></button>
             </div>
           ))}
           <div className={styles.quickAdd}>
-            <input className={styles.input} placeholder="Neue Teilaufgabe…" value={newSubtask}
+            <input className={styles.input} placeholder={t("detail.newSubtask")} value={newSubtask}
                    onChange={(e) => setNewSubtask(e.target.value)}
                    onKeyDown={async (e) => {
                      if (e.key !== "Enter" || !newSubtask.trim()) return;
@@ -450,22 +461,22 @@ export function TaskDetail({
 
       {/* Attachments (Vikunja) + cross-app links (sidecar links JSONB) */}
       <section className={styles.detailSection}>
-        <h4>Anhänge & Links</h4>
+        <h4>{t("detail.attachments")}</h4>
         {attachments.map((a) => (
           <div key={a.id} className={styles.attachRow}>
             <a className={styles.attachName}
                href={plannerApi.attachmentUrl(task.id, a.id)} download={a.file?.name}>
-              📎 {a.file?.name ?? `Anhang #${a.id}`}
+              📎 {a.file?.name ?? t("detail.attachment", { id: a.id })}
             </a>
             {a.file?.size != null && <span className={styles.metaBadge}>{formatBytes(a.file.size)}</span>}
-            <button className={styles.savedChipDel} title="Anhang löschen"
+            <button className={styles.savedChipDel} title={t("detail.deleteAttachment")}
                     onClick={async () => {
-                      if (!window.confirm(`Anhang „${a.file?.name ?? a.id}“ löschen?`)) return;
+                      if (!window.confirm(t("detail.confirmDeleteAttachment", { name: a.file?.name ?? a.id }))) return;
                       try {
                         await plannerApi.deleteAttachment(task.id, a.id);
                         load();
                       } catch (e) { setError(String(e)); }
-                    }}><Icon name="close" size={14} title="Schließen" /></button>
+                    }}><Icon name="close" size={14} title={t("actions.close")} /></button>
           </div>
         ))}
         {(task._meta?.links ?? []).map((l, i) => (
@@ -474,19 +485,19 @@ export function TaskDetail({
               {linkIcon(l)} {l.label || l.uri}
             </button>
             {(l.kind === "url" || l.kind === "file") && (
-              <button className={styles.savedChipDel} title="Link entfernen"
-                      onClick={() => saveLinks((task._meta?.links ?? []).filter((_, j) => j !== i))}><Icon name="close" size={14} title="Schließen" /></button>
+              <button className={styles.savedChipDel} title={t("detail.removeLink")}
+                      onClick={() => saveLinks((task._meta?.links ?? []).filter((_, j) => j !== i))}><Icon name="close" size={14} title={t("actions.close")} /></button>
             )}
           </div>
         ))}
         <div className={styles.labelPicker}>
           <button className={styles.labelChip} disabled={uploading}
                   onClick={() => fileInputRef.current?.click()}>
-            {uploading ? "Lädt hoch…" : "⬆ Datei hochladen"}
+            {uploading ? t("detail.uploading") : `⬆ ${t("detail.upload")}`}
           </button>
-          <button className={styles.labelChip} onClick={() => setFilePicker(true)}>🗂 Aus Dateien…</button>
+          <button className={styles.labelChip} onClick={() => setFilePicker(true)}>🗂 {t("detail.fromFiles")}</button>
           <button className={styles.labelChip} onClick={() => { setLinkUrl(""); setLinkLabel(""); setLinkDialog(true); }}>
-            🔗 Link…
+            🔗 {t("detail.link")}
           </button>
           <input ref={fileInputRef} type="file" multiple style={{ display: "none" }}
                  onChange={async (e) => {
@@ -509,26 +520,26 @@ export function TaskDetail({
       {/* Effort: actual costs (clara-agent by-ref) + estimates (sidecar) */}
       {(taskCost != null || task._meta?.estimate_eur != null || task._meta?.estimate_minutes != null || task._meta?.estimate_tokens != null) && (
         <section className={styles.detailSection}>
-          <h4>Aufwand</h4>
+          <h4>{t("detail.effort")}</h4>
           {taskCost != null && (taskCost.cost_eur != null || taskCost.worked_minutes != null) && (
             <div className={styles.estimates}>
               <span className={styles.metaBadge}>
-                Ist: {fmtEur(taskCost.cost_eur)}
+                {t("detail.actualCost", { value: fmtEur(taskCost.cost_eur) })}
                 {taskCost.estimate_eur != null && taskCost.cost_eur != null && taskCost.cost_eur > taskCost.estimate_eur ? " ⚠" : ""}
               </span>
               {taskCost.input_tokens != null && (
-                <span className={styles.metaBadge}>🪙 {fmtTokens((taskCost.input_tokens || 0) + (taskCost.output_tokens || 0))} Tokens</span>
+                <span className={styles.metaBadge}>🪙 {t("detail.tokens", { value: fmtTokens((taskCost.input_tokens || 0) + (taskCost.output_tokens || 0)) })}</span>
               )}
-              {taskCost.worked_minutes != null && <span className={styles.metaBadge}>⏱ gearbeitet: {fmtMins(taskCost.worked_minutes)}</span>}
-              {taskCost.open_sessions > 0 && <span className={styles.inWorkBadge}>● arbeitet</span>}
+              {taskCost.worked_minutes != null && <span className={styles.metaBadge}>⏱ {t("detail.worked", { value: fmtMins(taskCost.worked_minutes) })}</span>}
+              {taskCost.open_sessions > 0 && <span className={styles.inWorkBadge}>● {t("detail.working")}</span>}
             </div>
           )}
           {(task._meta?.estimate_eur != null || task._meta?.estimate_minutes != null || task._meta?.estimate_tokens != null) && (
             <div className={styles.estimates}>
-              <span className={styles.metaBadge}>Schätzung:</span>
+              <span className={styles.metaBadge}>{t("detail.estimate")}</span>
               {task._meta?.estimate_minutes != null && <span className={styles.metaBadge}>⏱ {task._meta.estimate_minutes} min</span>}
-              {task._meta?.estimate_eur != null && <span className={styles.metaBadge}>💶 {task._meta.estimate_eur.toFixed(2)} €</span>}
-              {task._meta?.estimate_tokens != null && <span className={styles.metaBadge}>🪙 {task._meta.estimate_tokens.toLocaleString(regionLocale())} Tokens</span>}
+              {task._meta?.estimate_eur != null && <span className={styles.metaBadge}>💶 {fmtEur(task._meta.estimate_eur)}</span>}
+              {task._meta?.estimate_tokens != null && <span className={styles.metaBadge}>🪙 {t("detail.tokens", { value: task._meta.estimate_tokens.toLocaleString(regionLocale()) })}</span>}
             </div>
           )}
         </section>
@@ -536,11 +547,11 @@ export function TaskDetail({
 
       {/* Description (plain text, pre-wrap — house style) */}
       <section className={styles.detailSection}>
-        <h4>Notizen</h4>
+        <h4>{t("detail.notes")}</h4>
         <textarea
           className={styles.textarea}
           rows={4}
-          placeholder="Beschreibung / Notizen…"
+          placeholder={t("detail.notesPlaceholder")}
           value={descDraft ?? task.description ?? ""}
           onChange={(e) => setDescDraft(e.target.value)}
           onBlur={() => {
@@ -552,7 +563,7 @@ export function TaskDetail({
 
       {/* Comments */}
       <section className={styles.detailSection}>
-        <h4>Kommentare</h4>
+        <h4>{t("detail.comments")}</h4>
         {comments.map((c) => (
           <div key={c.id} className={styles.comment}>
             <span className={styles.commentAuthor}>{c.author?.username ?? "?"}</span>
@@ -561,7 +572,7 @@ export function TaskDetail({
           </div>
         ))}
         <div className={styles.quickAdd}>
-          <input className={styles.input} placeholder="Kommentar…" value={newComment}
+          <input className={styles.input} placeholder={t("detail.commentPlaceholder")} value={newComment}
                  onChange={(e) => setNewComment(e.target.value)}
                  onKeyDown={async (e) => {
                    if (e.key === "Enter" && newComment.trim()) {
@@ -576,13 +587,13 @@ export function TaskDetail({
       {linkDialog && (
         <div className={styles.dialogOverlay} onClick={() => setLinkDialog(false)}>
           <div className={styles.dialog} onClick={(e) => e.stopPropagation()}>
-            <h3>Link anhängen</h3>
+            <h3>{t("detail.attachLink")}</h3>
             <input className={styles.input} autoFocus placeholder="https://…" value={linkUrl}
                    onChange={(e) => setLinkUrl(e.target.value)} />
-            <input className={styles.input} placeholder="Bezeichnung (optional)" value={linkLabel}
+            <input className={styles.input} placeholder={t("detail.linkLabelPlaceholder")} value={linkLabel}
                    onChange={(e) => setLinkLabel(e.target.value)} />
             <div className={styles.dialogActions}>
-              <button className={styles.btn} onClick={() => setLinkDialog(false)}>Abbrechen</button>
+              <button className={styles.btn} onClick={() => setLinkDialog(false)}>{t("actions.cancel")}</button>
               <button className={styles.btnPrimary} disabled={!linkUrl.trim()}
                       onClick={() => {
                         const uri = linkUrl.trim();
@@ -590,7 +601,7 @@ export function TaskDetail({
                         saveLinks([...(task._meta?.links ?? []),
                                    { kind: "url", uri, label: linkLabel.trim() || uri }]);
                       }}>
-                Anhängen
+                {t("actions.attach")}
               </button>
             </div>
           </div>
@@ -609,16 +620,16 @@ export function TaskDetail({
       />
 
       <div className={styles.detailFooter}>
-        {hasDate(task.due_date) && <span>Fällig: {dueLabel(task.due_date)}</span>}
+        {hasDate(task.due_date) && <span>{t("dates.dueOn", { date: dueLabel(task.due_date) })}</span>}
         <button className={styles.btnDanger}
                 onClick={async () => {
-                  if (window.confirm(`Aufgabe „${task.title}“ löschen?`)) {
+                  if (window.confirm(t("detail.confirmDeleteTask", { title: task.title }))) {
                     await plannerApi.deleteTask(task.id);
                     onChanged();
                     onClose();
                   }
                 }}>
-          Löschen
+          {t("actions.delete")}
         </button>
       </div>
     </aside>
@@ -652,7 +663,7 @@ function openMetaLink(l: MetaLink): void {
   if (l.kind === "goal" && l.uri.startsWith("claraos://ideas/object/")) {
     const objectId = l.uri.slice("claraos://ideas/object/".length);
     sessionStorage.setItem("claraos.ideas.openObject", objectId);
-    useWindowsStore.getState().openWindow("ideas", { title: "Ideen" });
+    useWindowsStore.getState().openWindow("ideas", { title: i18n.t("planner:app.ideasWindowTitle") });
     return;
   }
   if (l.kind === "file" && l.uri.startsWith("claraos-file://")) {
@@ -686,6 +697,7 @@ function RelationGroup({
   onMutated: () => void;
   onError: (msg: string) => void;
 }) {
+  const { t } = useTranslation("planner");
   if (items.length === 0 && !allTasks?.length) return null;
   return (
     <div className={styles.relGroup}>
@@ -695,14 +707,14 @@ function RelationGroup({
              onClick={() => onOpenTask?.(r.id)}
              style={onOpenTask ? { cursor: "pointer" } : undefined}>
           {r.done ? "✓ " : "○ "}{r.title}
-          <button className={styles.savedChipDel} title="Verknüpfung lösen"
+          <button className={styles.savedChipDel} title={t("actions.unlink")}
                   onClick={async (e) => {
                     e.stopPropagation();
                     try {
                       await plannerApi.removeRelation(task.id, kind, r.id);
                       onMutated();
                     } catch (err) { onError(String(err)); }
-                  }}><Icon name="close" size={14} title="Schließen" /></button>
+                  }}><Icon name="close" size={14} title={t("actions.close")} /></button>
         </div>
       ))}
       {allTasks && allTasks.length > 0 && (
@@ -729,48 +741,50 @@ function TaskPicker({
   exclude: number[];
   onPick: (t: VikTask) => Promise<void> | void;
 }) {
+  const { t } = useTranslation("planner");
   const [editing, setEditing] = useState(false);
   const [q, setQ] = useState("");
   if (!editing) {
-    return <button className={styles.labelChip} onClick={() => setEditing(true)}>+ Aufgabe verknüpfen</button>;
+    return <button className={styles.labelChip} onClick={() => setEditing(true)}>+ {t("detail.linkTask")}</button>;
   }
   const needle = q.trim().toLowerCase();
   const hits = needle
     ? allTasks
-        .filter((t) => !t.done && !exclude.includes(t.id) && t.title.toLowerCase().includes(needle))
+        .filter((x) => !x.done && !exclude.includes(x.id) && x.title.toLowerCase().includes(needle))
         .slice(0, 8)
     : [];
   return (
     <div className={styles.pickerWrap}>
-      <input className={styles.input} autoFocus placeholder="Aufgabe suchen…" value={q}
+      <input className={styles.input} autoFocus placeholder={t("detail.searchTask")} value={q}
              onChange={(e) => setQ(e.target.value)}
              onKeyDown={(e) => e.key === "Escape" && (setEditing(false), setQ(""))} />
       {hits.length > 0 && (
         <div className={styles.pickerPop}>
-          {hits.map((t) => (
-            <button key={t.id} className={styles.pickerItem}
+          {hits.map((hit) => (
+            <button key={hit.id} className={styles.pickerItem}
                     onClick={async () => {
                       setEditing(false); setQ("");
-                      await onPick(t);
+                      await onPick(hit);
                     }}>
-              {t.title}
+              {hit.title}
             </button>
           ))}
         </div>
       )}
-      <button className={styles.btn} onClick={() => { setEditing(false); setQ(""); }}><Icon name="close" size={14} title="Schließen" /></button>
+      <button className={styles.btn} onClick={() => { setEditing(false); setQ(""); }}><Icon name="close" size={14} title={t("actions.close")} /></button>
     </div>
   );
 }
 
 function NewLabelInput({ onCreate }: { onCreate: (title: string) => Promise<void> }) {
+  const { t } = useTranslation("planner");
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState("");
   if (!editing) {
-    return <button className={styles.labelChip} onClick={() => setEditing(true)}>+ Tag</button>;
+    return <button className={styles.labelChip} onClick={() => setEditing(true)}>+ {t("detail.addTag")}</button>;
   }
   return (
-    <input className={styles.inputSmall} autoFocus placeholder="Neuer Tag…" value={val}
+    <input className={styles.inputSmall} autoFocus placeholder={t("detail.newTag")} value={val}
            onChange={(e) => setVal(e.target.value)}
            onBlur={() => { setEditing(false); setVal(""); }}
            onKeyDown={async (e) => {

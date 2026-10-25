@@ -6,7 +6,7 @@ import { IconButton } from "../../../components/Button";
 import { plannerApi } from "../api";
 import type { VikTask } from "../types";
 import { TaskRow, isDueToday, isOverdue } from "../shared";
-import { regionLocale } from "@claraos/core";
+import { regionLocale, useTranslation } from "@claraos/core";
 
 export function MyDayView({
   tasks, projectTitles, onToggle, onOpen, onReload,
@@ -17,6 +17,7 @@ export function MyDayView({
   onOpen: (t: VikTask) => void;
   onReload: () => void;
 }) {
+  const { t } = useTranslation("planner");
   const [quickTitle, setQuickTitle] = useState("");
   // "New task" FAB of the phone toolbar → put the cursor here.
   const eingabe = useRef<HTMLInputElement>(null);
@@ -42,7 +43,7 @@ export function MyDayView({
       // Inbox = the user's first project (Vikunja creates "Inbox"); due today.
       const projects = await plannerApi.listProjects();
       const inbox = projects.find((p) => p.title.toLowerCase() === "inbox") ?? projects[0];
-      if (!inbox) throw new Error("Kein Projekt vorhanden");
+      if (!inbox) throw new Error(t("errors.noProject"));
       const due = new Date();
       due.setHours(18, 0, 0, 0);
       await plannerApi.createTask(inbox.id, { title, due_date: due.toISOString() });
@@ -57,8 +58,8 @@ export function MyDayView({
     items.length > 0 && (
       <section className={styles.section}>
         <h3 className={`${styles.sectionTitle} ${cls ?? ""}`}>{label} <span className={styles.count}>{items.length}</span></h3>
-        {items.map((t) => (
-          <TaskRow key={t.id} task={t} projectTitle={projectTitles.get(t.project_id)}
+        {items.map((task) => (
+          <TaskRow key={task.id} task={task} projectTitle={projectTitles.get(task.project_id)}
                    onToggle={onToggle} onOpen={onOpen} />
         ))}
       </section>
@@ -69,7 +70,7 @@ export function MyDayView({
   return (
     <div className={styles.view}>
       <header className={styles.viewHeader}>
-        <h2><Icon name="today" size={18} /> Mein Tag</h2>
+        <h2><Icon name="today" size={18} /> {t("nav.myDay")}</h2>
         <span className={styles.viewSub}>
           {new Date().toLocaleDateString(regionLocale(), { weekday: "long", day: "numeric", month: "long" })}
         </span>
@@ -78,18 +79,18 @@ export function MyDayView({
         <input
           ref={eingabe}
           className={styles.input}
-          placeholder="Aufgabe für heute hinzufügen…"
+          placeholder={t("myDay.quickAddPlaceholder")}
           value={quickTitle}
           onChange={(e) => setQuickTitle(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addQuick()}
         />
-        <IconButton label="Aufgabe hinzufügen" icon="arrowRight" stufe="filled" groesse="s"
+        <IconButton label={t("task.add")} icon="arrowRight" stufe="filled" groesse="s"
                     disabled={!quickTitle.trim() || busy} onClick={addQuick} />
       </div>
-      {section("Überfällig", overdue, styles.overdue)}
-      {section("Heute", today)}
-      {section("In Arbeit", inWork)}
-      {empty && <div className={styles.empty}>Nichts für heute — genieß den Tag!</div>}
+      {section(t("dates.overdue"), overdue, styles.overdue)}
+      {section(t("dates.today"), today)}
+      {section(t("myDay.inWork"), inWork)}
+      {empty && <div className={styles.empty}>{t("myDay.empty")}</div>}
     </div>
   );
 }

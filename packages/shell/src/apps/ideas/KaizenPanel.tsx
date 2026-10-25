@@ -14,7 +14,7 @@ import { ideasApi } from "./api";
 import type { Analysis, GoalNode } from "./types";
 import { FiveWhyModal } from "./FiveWhyModal";
 import { ParetoModal } from "./ParetoModal";
-import { regionLocale } from "@claraos/core";
+import { regionLocale, useTranslation, i18n } from "@claraos/core";
 
 interface Props {
   goal: GoalNode;
@@ -24,6 +24,7 @@ interface Props {
 }
 
 export function KaizenPanel({ goal, canEdit, onOpen, onChanged }: Props) {
+  const { t } = useTranslation("wissen");
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [mode, setMode] = useState<"why" | "pareto" | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -45,10 +46,10 @@ export function KaizenPanel({ goal, canEdit, onOpen, onChanged }: Props) {
   const toTask = async (title: string, why?: string) => {
     try {
       await ideasApi.addPlanTask(goal.id, title, why);
-      setNote(`„${title}" steht jetzt im Aktionsplan.`);
+      setNote(i18n.t("wissen:kaizen.inPlan", { title }));
       onChanged();
     } catch (e) {
-      setNote(e instanceof Error ? e.message : "Übernahme fehlgeschlagen");
+      setNote(e instanceof Error ? e.message : i18n.t("wissen:kaizen.takeFailed"));
     }
   };
 
@@ -57,16 +58,16 @@ export function KaizenPanel({ goal, canEdit, onOpen, onChanged }: Props) {
       {stockt && (
         <div className={styles.kaizenHead}>
           <span>
-            <><Icon name={status === "behind" ? "behind" : "at_risk"} size={16} className={styles.inlineIcon} />{status === "behind" ? "Dieses Ziel ist hinterher." : "Dieses Ziel wackelt."}</>
-            {" "}Die Frage ist, woran es liegt.
+            <><Icon name={status === "behind" ? "behind" : "at_risk"} size={16} className={styles.inlineIcon} />{status === "behind" ? t("kaizen.behind") : t("kaizen.atRisk")}</>
+            {" "}{t("kaizen.question")}
           </span>
           {canEdit && (
             <span>
               <button className={styles.btnGhost} onClick={() => setMode("why")}>
-                Ursache suchen (5-Why)
+                {t("kaizen.fiveWhy")}
               </button>
               <button className={styles.btnGhost} onClick={() => setMode("pareto")}>
-                Pareto
+                {t("kaizen.pareto")}
               </button>
             </span>
           )}
@@ -85,9 +86,9 @@ export function KaizenPanel({ goal, canEdit, onOpen, onChanged }: Props) {
               <span className={styles.metaHint}>
                 {new Date(a.created_at).toLocaleDateString(regionLocale())}
               </span>
-              {a.root_cause && <p className={styles.metaHint}>Grundursache: {a.root_cause}</p>}
+              {a.root_cause && <p className={styles.metaHint}>{t("kaizen.rootCause", { cause: a.root_cause })}</p>}
               {a.vital_few.length > 0 && (
-                <p className={styles.metaHint}>Die wenigen Wichtigen: {a.vital_few.join(", ")}</p>
+                <p className={styles.metaHint}>{t("kaizen.vitalFew", { list: a.vital_few.join(", ") })}</p>
               )}
               {canEdit && a.countermeasures.length > 0 && (
                 <ul className={styles.counterList}>
@@ -96,7 +97,7 @@ export function KaizenPanel({ goal, canEdit, onOpen, onChanged }: Props) {
                       <span>{m.title}</span>
                       <button className={styles.btnGhost}
                               onClick={() => void toTask(m.title, m.why)}>
-                        → Aktionsplan
+                        {t("kaizen.toPlan")}
                       </button>
                     </li>
                   ))}

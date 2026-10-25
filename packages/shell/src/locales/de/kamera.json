@@ -1,0 +1,134 @@
+{
+  "modes": {
+    "foto": {
+      "name": "Foto",
+      "hint": ""
+    },
+    "dokument": {
+      "name": "Dokument",
+      "hint": "Blatt ganz ins Bild — der Rahmen zeigt, was erkannt wird"
+    },
+    "essen": {
+      "name": "Essen",
+      "hint": "Hand, Karte oder Münze mit ins Bild — dann wird automatisch eingetragen"
+    }
+  },
+  "archive": {
+    "paperless": "· Paperless Nr. {{nr}}",
+    "pending": "· wird in Paperless eingelesen …"
+  },
+  "msg": {
+    "collected_one": "{{count}} Seite gesammelt (+{{mb}} MB).",
+    "collected_other": "{{count}} Seiten gesammelt (+{{mb}} MB).",
+    "error": "Fehler {{status}}",
+    "barcodeUnknown": "Strichcode {{code}} ist nicht bekannt.",
+    "arrived": "Aufnahme angekommen — wird einsortiert.",
+    "arrivedMany": "{{count}} Aufnahmen angekommen — werden einsortiert.",
+    "cropped": " {{count}}× freigestellt.",
+    "sendFailed": "Senden fehlgeschlagen.",
+    "pagesSent": "{{count}} Seiten als ein Dokument gesendet.",
+    "restored_one": "{{count}} Seite von vorhin wiederhergestellt.",
+    "restored_other": "{{count}} Seiten von vorhin wiederhergestellt.",
+    "browserNoCamera": "Dieser Browser kann keine Kamera öffnen.",
+    "cameraUnavailable": "Kamera nicht verfügbar.",
+    "captureFailed": "Aufnahme fehlgeschlagen.",
+    "booked": "{{done}} von {{total}} eingetragen",
+    "notFound": " — nicht gefunden: {{list}}",
+    "quality": " (Güte {{quality}}).",
+    "bookFailed": "Eintragen fehlgeschlagen.",
+    "removed": "Aufnahme entfernt.",
+    "removeFailed": "Entfernen fehlgeschlagen.",
+    "needGrams": "Bitte eine Menge in Gramm angeben.",
+    "diaryDone": "{{name}}: {{grams}} g im Ernährungstagebuch.",
+    "notBooked": "Nicht eingetragen — {{reason}}",
+    "unknownReason": "unbekannter Grund",
+    "multiPageStart": "Jede Aufnahme wird eine Seite. Am Ende auf ‚Fertig‘ tippen."
+  },
+  "finder": {
+    "darkLight": "Zu dunkel — Leuchte einschalten oder mehr Licht",
+    "dark": "Zu dunkel — bitte für mehr Licht sorgen",
+    "tooSmall": "Näher rangehen — der Beleg soll das Bild längs ausfüllen",
+    "sheet": "Blatt erkannt — wird gerade gezogen und zugeschnitten",
+    "area": "Blatt erkannt — Ränder unklar, es wird nur zugeschnitten",
+    "sending": "Wird gesendet …",
+    "inFlight": "{{count}} unterwegs — weiter geht's",
+    "systemCameraHint": "Über „Systemkamera“ geht es trotzdem.",
+    "opening": "Kamera wird geöffnet …"
+  },
+  "bar": {
+    "modes": "Aufnahmeart",
+    "queue": "Warteschlange und Verlauf",
+    "more": "Weitere Aufnahmearten",
+    "lightOff": "Leuchte ausschalten",
+    "lightOn": "Leuchte einschalten",
+    "shutter": "Aufnehmen"
+  },
+  "big": {
+    "unedited": " · unbearbeitet",
+    "showCropped": "Zugeschnittenes zeigen",
+    "showOriginal": "Original zeigen",
+    "remove": "Entfernen",
+    "close": "Schliessen"
+  },
+  "menu": {
+    "multiPage": "Mehrseitiges Dokument",
+    "tour3d": "3D-Rundgang aufnehmen",
+    "gallery": "Aus der Galerie wählen",
+    "systemCamera": "Systemkamera (beste Bildqualität)",
+    "installedHint": "In der installierten App öffnet das ggf. nur die Galerie — dann den Auslöser oben nehmen."
+  },
+  "collect": {
+    "pages_one": "{{count}} Seite gesammelt",
+    "pages_other": "{{count}} Seiten gesammelt",
+    "send": "Fertig — senden",
+    "cancel": "Abbrechen"
+  },
+  "guide": {
+    "title": "So wird der Rundgang gut",
+    "slow": "<b>Langsam gehen.</b> Nerfstudio will ~3 Bilder je Sekunde — gemessen: mehr Bilder machen es <i>schlechter</i> (2668 Bilder ergaben 33 Bruchstücke). Was zählt, ist die Bewegung, nicht die Bildrate.",
+    "around": "<b>Um das Objekt herum</b>, nicht daraufzu. Der Blickwinkel muss sich ändern, sonst fehlt die Parallaxe.",
+    "steady": "<b>Gleichmäßig schwenken.</b> Ruckartige Schwenks erzeugen Bewegungsunschärfe, und unscharfe Bilder findet COLMAP nicht wieder.",
+    "avoid": "<b>Meiden:</b> Spiegel, Glas, große weiße Wände ohne Struktur, bewegte Dinge. Das sind die bekannten Killer.",
+    "duration": "<b>Ein bis zwei Minuten</b> reichen für einen Raum.",
+    "start": "Verstanden — Rundgang aufnehmen"
+  },
+  "product": {
+    "kcal": "{{kcal}} kcal je 100 g",
+    "grams": "Menge in Gramm",
+    "book": "Eintragen",
+    "discard": "Verwerfen"
+  },
+  "queue": {
+    "title": "Warteschlange und Verlauf",
+    "inFlight": "{{count}} unterwegs",
+    "close": "Schliessen",
+    "empty": "Noch nichts aufgenommen.",
+    "viewLarge": "Aufnahme gross ansehen",
+    "sorting": "⏳ wird einsortiert …",
+    "failed": "⚠️ nicht abgelegt — {{reason}}",
+    "unknownReason": "Grund unbekannt",
+    "meal": "Mahlzeit",
+    "quality": " · Güte {{quality}}",
+    "nutrients_one": "{{count}} Nährwert",
+    "nutrients_other": "{{count}} Nährwerte",
+    "source": "Quelle: {{source}} · gesucht als „{{term}}“",
+    "byGroup": " · nur über die Warengruppe zugeordnet",
+    "autoBooked": "✓ automatisch eingetragen ({{done}} von {{total}})",
+    "notFound": "nicht gefunden: {{list}}",
+    "booking": "Wird eingetragen …",
+    "bookDiary": "Ins Tagebuch eintragen",
+    "noEstimate": "🍽 Mengen nicht geschätzt — {{reason}}",
+    "delete": "Löschen",
+    "keep": "Behalten",
+    "remove": "Aufnahme entfernen",
+    "footer": "Alles liegt im Ordner <b>Posteingang</b> — zu finden in „Dateien“ und in Nextcloud. Falsch einsortiert? Einfach dort verschieben."
+  },
+  "camera": {
+    "noBrowser": "Dieser Browser kann keine Kamera öffnen.",
+    "denied": "Kamerazugriff wurde abgelehnt.",
+    "notFound": "Keine Kamera gefunden.",
+    "cannotOpen": "Kamera lässt sich nicht öffnen.",
+    "noImage": "Kein Bild vom Sucher.",
+    "captureFailed": "Aufnahme fehlgeschlagen."
+  }
+}

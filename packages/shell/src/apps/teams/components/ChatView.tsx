@@ -10,7 +10,7 @@
  * badge and call button; the timeline below. No tabs.
  */
 import { useEffect, useState } from "react";
-import { useMatrixStore } from "@claraos/core";
+import { useMatrixStore, useTranslation } from "@claraos/core";
 import { startCall, markAsRead } from "../matrixClient";
 import { Avatar } from "./Avatar";
 import { ChatTimeline } from "./ChatTimeline";
@@ -22,6 +22,7 @@ import { PhoneIcon, PanelUsersIcon, LockIcon } from "./icons";
 import styles from "./ChatView.module.css";
 
 export function ChatView({ roomId }: { roomId: string }) {
+  const { t } = useTranslation("teams");
   const room = useMatrixStore((s) => s.rooms[roomId]);
   const activeThreadRootId = useMatrixStore((s) => s.activeThreadRootId);
   const setActiveThreadRoot = useMatrixStore((s) => s.setActiveThreadRoot);
@@ -52,14 +53,14 @@ export function ChatView({ roomId }: { roomId: string }) {
           <Avatar name={room?.name ?? "?"} url={room?.avatarUrl} size={32} />
           <DienstPlakette dienst={dienst} />
         </span>
-        <span className={styles.name}>{room?.name ?? "Unbekannt"}</span>
+        <span className={styles.name}>{room?.name ?? t("common.unknown")}</span>
         {room?.isEncrypted && (
-          <span className={styles.schloss} title="Ende-zu-Ende-verschlüsselt">
+          <span className={styles.schloss} title={t("common.encrypted")}>
             <LockIcon size={13} />
           </span>
         )}
         <span className={styles.fueller} />
-        <button className={styles.knopf} onClick={anrufen} title="Anrufen">
+        <button className={styles.knopf} onClick={anrufen} title={t("chat.call")}>
           <PhoneIcon size={17} />
         </button>
         {istGruppe && (
@@ -69,7 +70,7 @@ export function ChatView({ roomId }: { roomId: string }) {
               setActiveThreadRoot(null); // side panel is exclusive
               setShowMembers(!showMembers);
             }}
-            title="Teilnehmer"
+            title={t("chat.members")}
           >
             <PanelUsersIcon size={17} />
             <span className={styles.zahl}>{room?.members.length ?? 0}</span>

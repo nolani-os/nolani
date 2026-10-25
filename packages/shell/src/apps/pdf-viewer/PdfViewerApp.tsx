@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { useWindowsStore, buildObjectUri } from "@claraos/core";
+import { useWindowsStore, buildObjectUri, i18n, useTranslation } from "@claraos/core";
 import { fileUrl } from "../../lib/downloadFile";
 
 // Without a built-in PDF viewer (Android WebView of the companion app) we render
@@ -8,6 +8,7 @@ const EINGEBAUTER_ANZEIGER = navigator.pdfViewerEnabled !== false;
 const PdfSeiten = lazy(() => import("./PdfSeiten"));
 
 export default function PdfViewerApp({ windowId }: { windowId: string }) {
+  const { t } = useTranslation("viewers");
   const [pdfUrl, setPdfUrl] = useState<string>("");
   const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -33,7 +34,7 @@ export default function PdfViewerApp({ windowId }: { windowId: string }) {
       // The blob URL stays: the companion's own renderer needs local bytes.
       const resp = await fetch(fileUrl(winSource, winPath, { inline: true })).catch(() => null);
       if (cancelled || !resp?.ok) {
-        if (!cancelled) setError("Failed to load PDF");
+        if (!cancelled) setError(i18n.t("viewers:pdf.loadFailed"));
         return;
       }
       const blob = new Blob([await resp.arrayBuffer()], { type: "application/pdf" });
@@ -57,7 +58,7 @@ export default function PdfViewerApp({ windowId }: { windowId: string }) {
       setPdfUrl(url);
       setError("");
     } else {
-      setError("Please select a PDF file.");
+      setError(t("pdf.pickPdf"));
     }
   };
 
@@ -69,17 +70,17 @@ export default function PdfViewerApp({ windowId }: { windowId: string }) {
         background: "#323233", borderBottom: "1px solid #444",
       }}>
         <button onClick={() => fileInputRef.current?.click()} style={btnStyle}>
-          PDF öffnen
+          {t("pdf.open")}
         </button>
         <input ref={fileInputRef} type="file" accept=".pdf" onChange={handleFileSelect}
           style={{ display: "none" }} />
         {pdfUrl && EINGEBAUTER_ANZEIGER && (
           <button onClick={() => window.open(pdfUrl, "_blank")} style={btnStyle}>
-            In neuem Reiter öffnen
+            {t("pdf.newTab")}
           </button>
         )}
         <span style={{ flex: 1 }} />
-        <span style={{ color: "#888", fontSize: 12 }}>PDF Viewer</span>
+        <span style={{ color: "#888", fontSize: 12 }}>{t("pdf.title")}</span>
       </div>
 
       {/* Content */}
@@ -92,7 +93,7 @@ export default function PdfViewerApp({ windowId }: { windowId: string }) {
           <iframe
             src={pdfUrl}
             style={{ width: "100%", height: "100%", border: "none" }}
-            title="PDF Viewer"
+            title={t("pdf.title")}
           />
         ) : (
           <div style={{
@@ -106,10 +107,10 @@ export default function PdfViewerApp({ windowId }: { windowId: string }) {
               <line x1="16" y1="17" x2="8" y2="17" />
               <polyline points="10 9 9 9 8 9" />
             </svg>
-            <p style={{ fontSize: 16 }}>PDF öffnen, um sie anzusehen</p>
+            <p style={{ fontSize: 16 }}>{t("pdf.emptyTitle")}</p>
             <button onClick={() => fileInputRef.current?.click()}
               style={{ ...btnStyle, padding: "8px 24px", fontSize: 14 }}>
-              Select PDF
+              {t("pdf.pick")}
             </button>
             {error && <p style={{ color: "#f38ba8" }}>{error}</p>}
           </div>

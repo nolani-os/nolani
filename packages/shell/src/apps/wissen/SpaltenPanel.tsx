@@ -16,6 +16,7 @@ import { Icon } from "../../components/Icon";
 import { FieldType } from "../ideas/types";
 import type { KbField, KbView } from "../ideas/types";
 import { MIT_RUECKFRAGE, TYP_MARKE, UMSCHALTBAR } from "./feldTypen";
+import { useTranslation } from "@claraos/core";
 
 interface Props {
   felder: KbField[];
@@ -31,16 +32,16 @@ interface Props {
 export function SpaltenPanel({
   felder, ansicht, onUmbenennen, onTypWechsel, onSichtbar, onLoeschen, onNeu, onSchliessen,
 }: Props) {
+  const { t } = useTranslation("wissen");
   const [offen, setOffen] = useState<string | null>(null);
   const typListe = [...UMSCHALTBAR, ...MIT_RUECKFRAGE];
 
   return (
     <div className={geteilt.modalBackdrop} onClick={onSchliessen}>
       <div className={geteilt.modal} onClick={(e) => e.stopPropagation()}>
-        <h3>Spalten</h3>
+        <h3>{t("columns.title")}</h3>
         <p className={geteilt.metaHint}>
-          Was die Sammlung erfasst. Das Auge blendet eine Spalte nur in dieser
-          Ansicht aus — die Werte bleiben.
+          {t("columns.intro")}
         </p>
 
         <div className={styles.spaltenListe}>
@@ -61,20 +62,19 @@ export function SpaltenPanel({
                       if (n && n !== f.name) onUmbenennen(f, n);
                     }}
                   />
-                  <button className={styles.leisteWeg} title={sichtbar ? "Ausblenden" : "Einblenden"}
+                  <button className={styles.leisteWeg} title={sichtbar ? t("columns.hide") : t("columns.show")}
                           onClick={() => onSichtbar(f, !sichtbar)}>
                     <Icon name={sichtbar ? "blind" : "check"} size={14} />
                   </button>
                   <button className={styles.leisteWeg}
                           title={f.field_type === FieldType.Formula
-                            ? "Formeln lassen sich hier nicht umschalten"
-                            : "Typ ändern"}
+                            ? t("columns.noFormulaSwitch")
+                            : t("columns.changeType")}
                           disabled={f.field_type === FieldType.Formula}
                           onClick={() => setOffen(offen === f.key ? null : f.key)}>⌄</button>
-                  <button className={styles.leisteWeg} title="Spalte löschen"
+                  <button className={styles.leisteWeg} title={t("columns.delete")}
                           onClick={() => {
-                            if (window.confirm(`Spalte „${f.name}" löschen?\n\n`
-                              + "Die Werte in dieser Spalte gehen dabei verloren."))
+                            if (window.confirm(t("columns.confirmDelete", { name: f.name })))
                               onLoeschen(f);
                           }}><Icon name="trash" size={14} /></button>
                 </div>
@@ -95,8 +95,8 @@ export function SpaltenPanel({
         </div>
 
         <div className={geteilt.modalFoot}>
-          <button className={geteilt.btnSecondary} onClick={onNeu}>＋ Spalte</button>
-          <button className={geteilt.btnPrimary} onClick={onSchliessen}>Fertig</button>
+          <button className={geteilt.btnSecondary} onClick={onNeu}>{t("columns.add")}</button>
+          <button className={geteilt.btnPrimary} onClick={onSchliessen}>{t("columns.done")}</button>
         </div>
       </div>
     </div>

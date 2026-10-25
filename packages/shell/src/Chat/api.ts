@@ -2,7 +2,7 @@
  * Thin client for /api/claraos/chat/v2/* — Open WebUI proxy.
  * No state, no caching, no React. Pure fetch wrappers.
  */
-import { getBrand } from "@claraos/core";
+import { i18n } from "@claraos/core";
 import type { ChatSurface } from "@claraos/core";
 
 const BASE = "/api/claraos/chat/v2";
@@ -378,13 +378,13 @@ export async function streamCompletion(
   // An error that looks like silence is the worst kind of error.
   const ctype = resp.headers.get("content-type") ?? "";
   if (ctype.includes("application/json")) {
-    let detail = "Unbekannter Fehler";
+    let detail = i18n.t("chatWork:errors.unknown");
     try {
       const j = await resp.json();
       detail = typeof j?.detail === "string" ? j.detail : JSON.stringify(j).slice(0, 200);
     } catch { /* empty body */ }
     onChunk({ error: detail === "Model not found"
-      ? `${getBrand().assistant} ist für dieses Konto nicht freigeschaltet (Modell nicht sichtbar).`
+      ? i18n.t("chatWork:errors.modelNotFound")
       : detail });
     return;
   }
@@ -451,7 +451,7 @@ export async function streamCompletion(
         if (typeof j?.detail === "string") detail = j.detail;
       } catch { /* not JSON */ }
       onChunk({ error: detail === "Model not found"
-        ? `${getBrand().assistant} ist für dieses Konto nicht freigeschaltet (Modell nicht sichtbar).`
+        ? i18n.t("chatWork:errors.modelNotFound")
         : detail });
       return;
     }
@@ -481,7 +481,7 @@ export async function bildVerkleinern(
     const img = await new Promise<HTMLImageElement>((res, rej) => {
       const i = new Image();
       i.onload = () => res(i);
-      i.onerror = () => rej(new Error("Bild nicht lesbar"));
+      i.onerror = () => rej(new Error(i18n.t("chatWork:errors.imageUnreadable")));
       i.src = url;
     });
     const zeichne = (grenze: number, qualitaet: number) => {

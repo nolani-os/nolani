@@ -1,0 +1,71 @@
+{
+  "tile": {
+    "open": "Open",
+    "unpin": "Unpin",
+    "pin": "Pin (start + taskbar)",
+    "credentials": "Store access …",
+    "vaultBadge": "Credentials stored in the vault"
+  },
+  "form": {
+    "editTitle": "Edit service: {{id}}",
+    "newTitle": "Create a new service",
+    "name": "Name",
+    "namePlaceholder": "e.g. Netflix",
+    "url": "URL",
+    "emoji": "Emoji",
+    "iconUrl": "Icon URL (optional)",
+    "groups": "Visible to groups (none selected = everyone)",
+    "vaultItem": "Vault entry (credentials)",
+    "noVaultItem": "— none linked —",
+    "save": "Save",
+    "create": "Create",
+    "cancel": "Cancel"
+  },
+  "msg": {
+    "saved": "“{{name}}” saved.",
+    "created": "“{{name}}” created — the tile is in the hub right away.",
+    "confirmDelete": "Delete service “{{name}}” permanently?",
+    "deleted": "“{{name}}” deleted.",
+    "synced_one": "{{count}} tile created{{skipped}}.",
+    "synced_other": "{{count}} tiles created{{skipped}}.",
+    "skipped": ", {{count}} skipped"
+  },
+  "search": "Search services…",
+  "tabs": {
+    "grid": "Services",
+    "manage": "Manage",
+    "vault": "Vault reconciliation"
+  },
+  "access": {
+    "title": "{{name}} — your access",
+    "close": "Close",
+    "hint": "Applies only to you. Others in the household store their own access."
+  },
+  "grid": {
+    "noneForYou": "No services have been enabled for you yet.",
+    "noMatch": "No service matches the search."
+  },
+  "row": {
+    "disabled": " · disabled",
+    "seed": "Seed",
+    "byForm": "via form",
+    "vault": " · 🔑 Vault",
+    "edit": "Edit",
+    "deactivate": "Deactivate",
+    "activate": "Activate",
+    "delete": "Delete"
+  },
+  "vault": {
+    "reading": "Reading the vault…",
+    "services": "Services",
+    "noCredentials": "⚠️ no credentials found",
+    "explicit": "linked",
+    "domain": "domain match",
+    "orphans": "Vault entries without a service",
+    "syncTitle": "Creates a tile for every entry without one. Never deletes anything.",
+    "syncing": "Creating…",
+    "syncAll": "Create all {{count}}",
+    "allAssigned": "Every login entry is assigned to a service. ✓",
+    "createService": "Create service"
+  }
+}

@@ -11,7 +11,7 @@
  * Submitting sends the JSON object {name: value} as the answer over the same
  * endpoint; the option buttons stay below it as secondary actions.
  */
-import { getBrand } from "@claraos/core";
+import { useTranslation } from "@claraos/core";
 import { useState, type FormEvent } from "react";
 import type { ClaraPendingQuestion, ClaraQuestionField } from "./api";
 import { buildFormAnswer, FIELD_MAX_LEN, type FormValues } from "./questionForm";
@@ -87,6 +87,7 @@ function FieldInput({
 }
 
 export function QuestionCard({ question }: QuestionCardProps) {
+  const { t } = useTranslation("chat");
   const [answered, setAnswered] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -105,7 +106,7 @@ export function QuestionCard({ question }: QuestionCardProps) {
     if (ok) {
       setAnswered(true);
     } else {
-      setError("Antwort konnte nicht gesendet werden — bitte nochmal klicken oder direkt in den Chat tippen.");
+      setError(t("question.sendFailed"));
     }
   };
 
@@ -113,7 +114,7 @@ export function QuestionCard({ question }: QuestionCardProps) {
     e.preventDefault();
     const { answer, missing } = buildFormAnswer(fields, values);
     if (missing.length) {
-      setError(`Bitte noch ausfüllen: ${missing.join(", ")}`);
+      setError(t("question.missing", { fields: missing.join(", ") }));
       return;
     }
     void send(answer);
@@ -131,7 +132,7 @@ export function QuestionCard({ question }: QuestionCardProps) {
               <label id={`qf-${f.name}-label`} htmlFor={`qf-${f.name}`} className={form.label}>
                 {f.label}
                 {f.required && (
-                  <span className={form.req} title="Pflichtfeld" aria-label="Pflichtfeld">
+                  <span className={form.req} title={t("question.required")} aria-label={t("question.required")}>
                     *
                   </span>
                 )}
@@ -150,17 +151,17 @@ export function QuestionCard({ question }: QuestionCardProps) {
           <div className={form.footer}>
             <span className={form.hint}>
               {answered
-                ? `${getBrand().assistant} hat deine Angaben`
+                ? t("question.received")
                 : anyRequired
-                  ? `* Pflichtfeld · leere Felder: ${getBrand().assistant} nimmt etwas Sinnvolles an`
-                  : `Leere Felder: ${getBrand().assistant} nimmt etwas Sinnvolles an`}
+                  ? t("question.hintRequired")
+                  : t("question.hint")}
             </span>
             <button
               type="submit"
               className={`${styles.btn} ${styles.btnPrimary} ${form.submit}`}
               disabled={locked}
             >
-              {submitting ? "Sende…" : answered ? "Gesendet" : "Absenden"}
+              {submitting ? t("question.sending") : answered ? t("question.sent") : t("question.submit")}
             </button>
           </div>
         </form>

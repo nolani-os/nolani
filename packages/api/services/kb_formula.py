@@ -29,6 +29,9 @@ MAX_STR = 2000         # length of a string result
 MAX_POW = 1_000_000    # upper bound for power results
 
 
+from sprache import Text, fuer, t
+
+
 class FormulaError(ValueError):
     """Invalid or unsafe formula — shown to the user."""
 
@@ -136,18 +139,18 @@ def _check(tree: ast.AST) -> None:
         nonlocal count
         count += 1
         if count > MAX_NODES:
-            raise FormulaError("Formel zu komplex")
+            raise FormulaError(Text("formula.tooComplex"))
         if depth > MAX_DEPTH:
-            raise FormulaError("Formel zu tief verschachtelt")
+            raise FormulaError(Text("formula.tooDeep"))
         if not isinstance(node, _ALLOWED_NODES):
-            raise FormulaError(f"In Formeln nicht erlaubt: {type(node).__name__}")
+            raise FormulaError(Text("formula.notAllowed", what=type(node).__name__))
         if isinstance(node, ast.Call):
             if not isinstance(node.func, ast.Name):
-                raise FormulaError("Nur einfache Funktionsaufrufe sind erlaubt")
+                raise FormulaError(Text("formula.simpleCalls"))
             if node.func.id not in FUNCTION_NAMES:
-                raise FormulaError(f"Unbekannte Funktion: {node.func.id}()")
+                raise FormulaError(Text("formula.unknownFn", name=node.func.id))
             if node.keywords:
-                raise FormulaError("Benannte Argumente sind nicht erlaubt")
+                raise FormulaError(Text("formula.noKeywords"))
         for child in ast.iter_child_nodes(node):
             walk(child, depth + 1)
     walk(tree, 0)
@@ -158,7 +161,7 @@ def _eval(node, funcs: dict):
         return _eval(node.body, funcs)
     if isinstance(node, ast.Constant):
         if isinstance(node.value, str) and len(node.value) > MAX_STR:
-            raise FormulaError("Text in der Formel zu lang")
+            raise FormulaError(Text("formula.textTooLong"))
         return node.value
     if isinstance(node, ast.Name):
         # bare names are constants like true/false/null
@@ -179,12 +182,12 @@ def _eval(node, funcs: dict):
         if isinstance(node.op, ast.Add) and (isinstance(a, str) or isinstance(b, str)):
             out = f"{a}{b}"
             if len(out) > MAX_STR:
-                raise FormulaError("Ergebnis zu lang")
+                raise FormulaError(Text("formula.resultTooLong"))
             return out
         if isinstance(node.op, ast.Mult) and not (_numeric(a) and _numeric(b)):
             # Cell values arrive as text ("1200") and may be computed with; REAL
             # text times a number, however, would be a convenient memory bomb.
-            raise FormulaError("Text kann nicht multipliziert werden (nutze concat)")
+            raise FormulaError(Text("formula.textMultiply"))
         x, y = _num(a), _num(b)
         if isinstance(node.op, ast.Add):
             return x + y
@@ -200,10 +203,10 @@ def _eval(node, funcs: dict):
             return x % y if y else 0
         if isinstance(node.op, ast.Pow):
             if abs(y) > 32 or abs(x) > 1000:
-                raise FormulaError("Potenz zu groß")
+                raise FormulaError(Text("formula.powerTooBig"))
             r = x ** y
             if abs(r) > MAX_POW:
-                raise FormulaError("Ergebnis zu groß")
+                raise FormulaError(Text("formula.resultTooBig"))
             return r
     if isinstance(node, ast.Compare):
         left = _eval(node.left, funcs)
@@ -223,25 +226,25 @@ def _eval(node, funcs: dict):
     if isinstance(node, ast.Call):
         fn = funcs.get(node.func.id)
         if fn is None:
-            raise FormulaError(f"Unbekannte Funktion: {node.func.id}()")
+            raise FormulaError(Text("formula.unknownFn", name=node.func.id))
         return fn(*[_eval(a, funcs) for a in node.args])
-    raise FormulaError("Ausdruck nicht auswertbar")
+    raise FormulaError(Text("formula.notEvaluable"))
 
 
 def validate(expression: str) -> None:
     """Check syntax and safety — without evaluating values."""
     if not expression or not expression.strip():
-        raise FormulaError("Formel ist leer")
+        raise FormulaError(Text("formula.empty"))
     if len(expression) > MAX_LEN:
-        raise FormulaError(f"Formel zu lang (max. {MAX_LEN} Zeichen)")
+        raise FormulaError(Text("formula.tooLong", max=MAX_LEN))
     try:
         tree = ast.parse(_preprocess(expression), mode="eval")
     except SyntaxError as exc:
-        raise FormulaError(f"Syntaxfehler: {exc.msg}")
+        raise FormulaError(Text("formula.syntax", msg=exc.msg))
     _check(tree)
 
 
-def evaluate(expression: str, properties: dict, rollups: dict | None = None):
+def evaluate(expression: str, properties: dict, rollups: dict | None = None, lang: str = "de"):
     """Evaluate a formula for ONE row. Errors are returned as text so a broken
     formula does not make the table unusable."""
     try:
@@ -254,6 +257,6 @@ def evaluate(expression: str, properties: dict, rollups: dict | None = None):
             return val[:MAX_STR]
         return val
     except FormulaError as exc:
-        return f"⚠ {exc}"
+        return f"⚠ {fuer(lang, exc.args[0]) if exc.args else exc}"
     except Exception:  # noqa: BLE001 — never break the whole query
-        return "⚠ Formel fehlerhaft"
+        return "⚠ " + t(lang, "formula.broken")

@@ -11,7 +11,7 @@
  * view renders its own useDialogs() instance.
  */
 import { useCallback, useState } from "react";
-import { useFileStore, type ConflictMode, type FileOpResult } from "@claraos/core";
+import { i18n, useFileStore, type ConflictMode, type FileOpResult } from "@claraos/core";
 import type { ChoiceResult, DialogChoice } from "../../Chat/Dialogs";
 
 export interface OpItem {
@@ -35,11 +35,18 @@ const leaf = (p: string) => p.replace(/\/+$/, "").split("/").pop() ?? p;
 const parentOf = (p: string) => p.replace(/\/+$/, "").split("/").slice(0, -1).join("/") || "/";
 const norm = (p: string) => "/" + p.replace(/^\/+|\/+$/g, "");
 
-const CONFLICT_CHOICES: DialogChoice[] = [
-  { value: "skip", label: "Überspringen" },
-  { value: "overwrite", label: "Ersetzen" },
-  { value: "rename", label: "Beide behalten", primary: true },
+const tr = (key: string, opts?: Record<string, unknown>) => i18n.t(`files:${key}`, opts);
+
+/** Built per prompt, so the labels follow the current UI language. */
+const conflictChoices = (): DialogChoice[] => [
+  { value: "skip", label: tr("ops.conflict.skip") },
+  { value: "overwrite", label: tr("ops.conflict.overwrite") },
+  { value: "rename", label: tr("ops.conflict.rename"), primary: true },
 ];
+
+/** "N of M done.\n\nFailed:\n" header of the partial-failure alert. */
+const failureHeader = (summaryKey: string, done: number, total: number) =>
+  `${tr(summaryKey, { done, total })}\n\n${tr("ops.failedHeader")}\n`;
 
 /** Upload in progress (for the progress indicator). */
 export interface UploadState {
@@ -62,7 +69,7 @@ function putFile(url: string, file: File, onProgress: (f: number) => void): Prom
       try { const d = JSON.parse(xhr.responseText)?.detail; detail = typeof d === "string" ? d : d?.message ?? ""; } catch { /* not JSON */ }
       resolve({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, detail });
     };
-    xhr.onerror = () => resolve({ ok: false, status: 0, detail: "Verbindung abgebrochen" });
+    xhr.onerror = () => resolve({ ok: false, status: 0, detail: tr("ops.connectionLost") });
     xhr.send(file);
   });
 }
@@ -90,9 +97,9 @@ export function useFileOps({ alertDlg, chooseDlg }: Deps) {
       let r = await run(it, sticky ?? "fail");
       if (!r.ok && r.conflict?.code === "exists") {
         const pick = await chooseDlg(
-          `„${r.conflict.name ?? leaf(it.path)}“ gibt es im Zielordner schon.`,
-          CONFLICT_CHOICES,
-          items.length > 1 ? "Für alle weiteren Konflikte übernehmen" : undefined,
+          tr("ops.existsInTarget", { name: r.conflict.name ?? leaf(it.path) }),
+          conflictChoices(),
+          items.length > 1 ? tr("ops.applyToAll") : undefined,
         );
         if (!pick) { sum.cancelled = true; break; }
         if (pick.checked) sticky = pick.value as ConflictMode;
@@ -105,9 +112,8 @@ export function useFileOps({ alertDlg, chooseDlg }: Deps) {
 
     st.loadTree();
     if (sum.failed.length > 0) {
-      const verb = action === "copy" ? "kopiert" : "verschoben";
       await alertDlg(
-        `${sum.done} von ${items.length} ${verb}.\n\nNicht geklappt:\n`
+        failureHeader(action === "copy" ? "ops.summary.copied" : "ops.summary.moved", sum.done, items.length)
         + sum.failed.map((f) => `• ${f.name} — ${f.why}`).join("\n"),
       );
     }
@@ -120,12 +126,12 @@ export function useFileOps({ alertDlg, chooseDlg }: Deps) {
     const sum: OpSummary = { done: 0, skipped: 0, failed: [], cancelled: false };
     for (const p of paths) {
       if (await st.deleteFile(source, p, false, permanent)) sum.done++;
-      else sum.failed.push({ name: leaf(p), why: "Löschen fehlgeschlagen" });
+      else sum.failed.push({ name: leaf(p), why: tr("ops.deleteFailed") });
     }
     st.clearSelection();
     st.loadTree();
     if (sum.failed.length > 0) {
-      await alertDlg(`${sum.done} von ${paths.length} gelöscht.\n\nNicht geklappt:\n`
+      await alertDlg(failureHeader("ops.summary.deleted", sum.done, paths.length)
         + sum.failed.map((f) => `• ${f.name}`).join("\n"));
     }
     return sum;
@@ -159,8 +165,8 @@ export function useFileOps({ alertDlg, chooseDlg }: Deps) {
       if (shown.has(f.name.toLowerCase())) {
         if (sticky) mode = sticky;
         else {
-          const pick = await chooseDlg(`„${f.name}“ gibt es in diesem Ordner schon.`, CONFLICT_CHOICES,
-            files.length > 1 ? "Für alle weiteren Konflikte übernehmen" : undefined);
+          const pick = await chooseDlg(tr("ops.existsHere", { name: f.name }), conflictChoices(),
+            files.length > 1 ? tr("ops.applyToAll") : undefined);
           if (!pick) { sum.cancelled = true; break; }
           mode = pick.value as ConflictMode;
           if (pick.checked) sticky = mode;
@@ -172,12 +178,12 @@ export function useFileOps({ alertDlg, chooseDlg }: Deps) {
       const r = await putFile(`/api/claraos/files/v2/upload-stream?${q.toString()}`, f,
         (fraction) => setUpload({ name: f.name, index: i, count: files.length, fraction }));
       if (r.ok) sum.done++;
-      else sum.failed.push({ name: f.name, why: r.status === 409 ? "gibt es schon" : r.detail || `HTTP ${r.status}` });
+      else sum.failed.push({ name: f.name, why: r.status === 409 ? tr("ops.alreadyExists") : r.detail || `HTTP ${r.status}` });
     }
     setUpload(null);
     st.loadTree();
     if (sum.failed.length > 0) {
-      await alertDlg(`${sum.done} von ${files.length} hochgeladen.\n\nNicht geklappt:\n`
+      await alertDlg(failureHeader("ops.summary.uploaded", sum.done, files.length)
         + sum.failed.map((x) => `• ${x.name} — ${x.why}`).join("\n"));
     }
     return sum;

@@ -7,7 +7,7 @@
  * Important: the calculation works at DAY granularity. Comparing milliseconds
  * would turn a task due today at 9:00 into "yesterday" at 10:00.
  */
-import { regionLocale } from "@claraos/core";
+import { i18n, regionLocale } from "@claraos/core";
 
 /** Distance in whole days: today = 0, tomorrow = 1, yesterday = −1. */
 export function tagesDiff(iso: string): number | null {
@@ -19,21 +19,22 @@ export function tagesDiff(iso: string): number | null {
   return Math.round((a - b) / 86400000);
 }
 
-/** "Heute", "Morgen", "Gestern", "Do., 20. Aug.", "vor 3 Tagen", "20. Aug 2027".
+/** "Today", "Tomorrow", "Yesterday", "Thu, Aug 20", "3 days ago", "Aug 20, 2027"
+ *  (words in the UI language, dates in the region format).
  *  Empty string if the date cannot be parsed. */
 export function datumInWorten(iso?: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
   const tage = tagesDiff(iso);
   if (tage === null) return "";
-  if (tage === 0) return "Heute";
-  if (tage === 1) return "Morgen";
-  if (tage === -1) return "Gestern";
+  if (tage === 0) return i18n.t("common:dateWords.today");
+  if (tage === 1) return i18n.t("common:dateWords.tomorrow");
+  if (tage === -1) return i18n.t("common:dateWords.yesterday");
   // The coming week with weekday — that is what people actually ask for day to day.
   if (tage > 1 && tage <= 7) {
     return d.toLocaleDateString(regionLocale(), { weekday: "short", day: "numeric", month: "short" });
   }
-  if (tage < -1 && tage >= -13) return `vor ${-tage} Tagen`;
+  if (tage < -1 && tage >= -13) return i18n.t("common:dateWords.daysAgo", { count: -tage });
   const gleichesJahr = d.getFullYear() === new Date().getFullYear();
   return d.toLocaleDateString(regionLocale(), gleichesJahr
     ? { day: "numeric", month: "short" }

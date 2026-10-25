@@ -15,7 +15,7 @@
  * planner.
  */
 import { useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { useUIStore, useWindowsStore, useWrappStore, getBrand } from "@claraos/core";
+import { useUIStore, useWindowsStore, useWrappStore, getBrand, useTranslation } from "@claraos/core";
 import { navigateIframe } from "../apps/iframeNavigator";
 import { SparklesIcon } from "./icons";
 import { useClaraWork, type ActiveStream, type PlannerWork } from "./claraWork";
@@ -37,6 +37,7 @@ interface ActiveAgentsPanelProps {
 }
 
 export function ActiveAgentsPanel({ excludeSurface, excludeAppId, hideHeader, kompakt }: ActiveAgentsPanelProps = {}) {
+  const { t } = useTranslation("chat");
   const { streams, plannerWork, taskTitles } = useClaraWork();
   const [offen, setOffen] = useState(!kompakt);
   const [zeigeVeraltet, setZeigeVeraltet] = useState(false);
@@ -100,7 +101,7 @@ export function ActiveAgentsPanel({ excludeSurface, excludeAppId, hideHeader, ko
             className={styles.item}
             onClick={() => focusFromStream(s)}
             role="button"
-            title="Klick → Quell-Window fokussieren"
+            title={t("agents.focusSourceTitle")}
           >
             <span className={styles.spinner} aria-hidden="true" />
             <span className={styles.itemBody}>
@@ -124,8 +125,8 @@ export function ActiveAgentsPanel({ excludeSurface, excludeAppId, hideHeader, ko
             onClick={() => openPlannerTask(w)}
             role="button"
             title={w.stale
-              ? "Eintrag ist alt (>6h) — im Task-Detail zurücksetzbar. Klick → Task öffnen"
-              : "Klick → Task im Planner öffnen"}
+              ? t("agents.staleTitle")
+              : t("agents.openTaskTitle")}
           >
             <span className={styles.spinner} aria-hidden="true" />
             <span className={styles.itemBody}>
@@ -134,7 +135,7 @@ export function ActiveAgentsPanel({ excludeSurface, excludeAppId, hideHeader, ko
               </span>
               <span className={styles.itemSub}>
                 {w.in_work_by === "clara" || w.in_work_by === "clara-agent" ? getBrand().assistant : w.in_work_by}
-                {w.stale ? " · ⚠ hängt (>6h)" : ""}
+                {w.stale ? ` · ⚠ ${t("agents.stuck")}` : ""}
               </span>
             </span>
             <span className={styles.duration}>{w.since ? formatSince(w.since) : ""}</span>
@@ -154,18 +155,18 @@ export function ActiveAgentsPanel({ excludeSurface, excludeAppId, hideHeader, ko
       onClick={(e) => { e.stopPropagation(); setZeigeVeraltet((v) => !v); }}
     >
       {zeigeVeraltet
-        ? `${veraltet.length} veraltete ausblenden`
-        : `${veraltet.length} veraltete${veraltet.length === 1 ? "r Eintrag" : " Einträge"} (>6 h) — anzeigen`}
+        ? t("agents.hideStale", { count: veraltet.length })
+        : t("agents.showStale", { count: veraltet.length })}
     </button>
   );
 
   return (
-    <div className={styles.panel} role="region" aria-label={`Aktive ${getBrand().assistant}-Aufgaben`} data-kompakt={kompakt ? "true" : undefined}>
+    <div className={styles.panel} role="region" aria-label={t("agents.regionLabel")} data-kompakt={kompakt ? "true" : undefined}>
       <header
         className={`${styles.header} ${kompakt ? styles.headerTippbar : ""}`}
         {...(kompakt
           ? { role: "button" as const, tabIndex: 0, "aria-expanded": offen,
-              title: offen ? "Liste einklappen" : "Liste aufklappen",
+              title: offen ? t("agents.collapse") : t("agents.expand"),
               onClick: () => setOffen((o) => !o),
               onKeyDown: (e: ReactKeyboardEvent) => {
                 if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOffen((o) => !o); }
@@ -173,7 +174,7 @@ export function ActiveAgentsPanel({ excludeSurface, excludeAppId, hideHeader, ko
           : {})}
       >
         <span className={styles.brandIcon}><SparklesIcon size={12} /></span>
-        <span className={styles.title}>{getBrand().assistant} arbeitet</span>
+        <span className={styles.title}>{t("agents.title")}</span>
         {/* The counter names what is running NOW. Stale entries are in the
             footer — otherwise the number claims work nobody is doing. */}
         <span className={styles.count}>{anzahl}</span>

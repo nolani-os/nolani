@@ -36,6 +36,17 @@ import re
 import uuid as uuid_mod
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, UploadFile
+from sprache import Text, fuer, sprache_jetzt, t as _t, tx
+
+# Reasons of `kontakte_regeln.darf_erreichen` (German, also logged) → catalog keys.
+_GRUENDE = {"ausdrücklich geblockt": "blocked", "Teamzugehörigkeit nicht prüfbar": "teamUnknown",
+            "nicht im selben Team": "notSameTeam", "weder im Team noch in der Kontaktliste": "neither",
+            "nicht prüfbar": "uncheckable"}
+
+
+def _grund(grund: str):
+    """The reason as a Text when it is a known one, else unchanged."""
+    return Text(f"reach.{_GRUENDE[grund]}") if grund in _GRUENDE else grund
 from fastapi.responses import Response
 from pydantic import BaseModel
 
@@ -631,14 +642,14 @@ async def _fetch_visible(conn, object_id: str, user: str):
         object_id, user,
     )
     if not row:
-        raise HTTPException(status_code=404, detail="Objekt nicht gefunden")
+        raise HTTPException(status_code=404, detail=Text("knowledge.objectNotFound"))
     return row
 
 
 async def _require_owner(conn, object_id: str, user: str):
     row = await _fetch_visible(conn, object_id, user)
     if row["owner"] != user:
-        raise HTTPException(status_code=403, detail="Nur der Besitzer darf dieses Objekt ändern")
+        raise HTTPException(status_code=403, detail=Text("knowledge.ownerOnly"))
     return row
 
 
@@ -655,7 +666,7 @@ async def _require_editable(conn, object_id: str, user: str):
     if not ok:
         raise HTTPException(
             status_code=403,
-            detail="Nur der Besitzer oder ein Mitglied mit Schreibrecht darf dieses Objekt ändern")
+            detail=Text("knowledge.ownerOrWriter"))
     return row
 
 
@@ -1024,7 +1035,7 @@ async def _patch_object(object_id: str, user: str, actor: str, body: ObjectPatch
     async with user_tx(user) as conn:
         cur = await _require_editable(conn, object_id, user)
         if body.visibility is not None and cur["owner"] != user:
-            raise HTTPException(status_code=403, detail="Die Sichtbarkeit ändert nur der Besitzer")
+            raise HTTPException(status_code=403, detail=Text("knowledge.visibilityOwner"))
         if cur["type"] == "kpi" and body.properties is not None:
             _validate_kpi_source(body.properties)
         sets, params = ["updated_at = NOW()"], [object_id]
@@ -1219,14 +1230,14 @@ async def move_object(object_id: str, body: ObjectMove, request: Request):
         await _require_owner(conn, object_id, user)
         if parent_id:
             if parent_id == object_id:
-                raise HTTPException(status_code=400, detail="Objekt kann nicht sein eigenes Elternteil sein")
+                raise HTTPException(status_code=400, detail=Text("knowledge.ownParent"))
             await _fetch_visible(conn, parent_id, user)
             # The cycle check must see the WHOLE subtree, also pages of other
             # users below this one (RLS would hide them): SECURITY DEFINER helper.
             cycle = await conn.fetchval(
                 "SELECT claraos_kb_ist_nachfahre($1::uuid, $2::uuid)", object_id, parent_id)
             if cycle:
-                raise HTTPException(status_code=400, detail="Zyklus: Ziel ist ein Nachfahre des Objekts")
+                raise HTTPException(status_code=400, detail=Text("knowledge.cycle"))
         # Determine neighbours (in the target parent, visible, sorted by position)
         prev_pos = None
         if after_id:
@@ -1331,7 +1342,7 @@ async def get_history_version(object_id: str, version: int, request: Request):
             "FROM claraos_kb_history WHERE object_id = $1::uuid AND version = $2",
             object_id, version)
     if not r:
-        raise HTTPException(status_code=404, detail="Version nicht gefunden")
+        raise HTTPException(status_code=404, detail=Text("knowledge.versionNotFound"))
     props = r["properties"] if not isinstance(r["properties"], str) else json.loads(r["properties"])
     return {"version": {"version": r["version"], "title": r["title"], "body": r["body"],
                         "properties": props, "actor": r["actor"],
@@ -1352,7 +1363,7 @@ async def restore_history_version(object_id: str, version: int, request: Request
             "SELECT title, body, properties FROM claraos_kb_history "
             "WHERE object_id = $1::uuid AND version = $2", object_id, version)
         if not snap:
-            raise HTTPException(status_code=404, detail="Version nicht gefunden")
+            raise HTTPException(status_code=404, detail=Text("knowledge.versionNotFound"))
         props = snap["properties"] if isinstance(snap["properties"], str) \
             else json.dumps(snap["properties"] or {})
         row = await conn.fetchrow(
@@ -1411,7 +1422,7 @@ async def upload_attachment(object_id: str, request: Request, file: UploadFile):
     object_id = _uuid(object_id, "object_id")
     data = await file.read()
     if len(data) > _ATTACH_MAX:
-        raise HTTPException(status_code=413, detail="Datei zu groß (max. 20 MB)")
+        raise HTTPException(status_code=413, detail=Text("knowledge.fileTooLarge"))
     if not data:
         raise HTTPException(status_code=400, detail="Leere Datei")
     ctype = (file.content_type or "application/octet-stream").split(";")[0].strip().lower()
@@ -1443,7 +1454,7 @@ async def serve_attachment(attachment_id: str, filename: str, request: Request):
             "SELECT object_id, filename, content_type, data FROM claraos_kb_attachments "
             "WHERE id = $1::uuid", attachment_id)
         if not row:
-            raise HTTPException(status_code=404, detail="Anhang nicht gefunden")
+            raise HTTPException(status_code=404, detail=Text("knowledge.attachmentNotFound"))
         await _fetch_visible(conn, str(row["object_id"]), user)  # 404 instead of a leak
     inline = row["content_type"] in _ATTACH_INLINE
     disposition = "inline" if inline else "attachment"
@@ -1516,7 +1527,7 @@ async def add_activity(object_id: str, body: ActivityCreate, request: Request):
         # 'family' visibility only allows comments; everything else is owner-only
         # (or Clara on the owner's behalf, since Clara always acts as the chat user).
         if row["owner"] != user and body.kind != "comment":
-            raise HTTPException(status_code=403, detail="Auf geteilten Objekten sind nur Kommentare erlaubt")
+            raise HTTPException(status_code=403, detail=Text("knowledge.commentsOnly"))
         await _log_activity(conn, object_id, actor, body.kind, body.content, body.meta)
     return {"ok": True}
 
@@ -1537,7 +1548,7 @@ async def create_link(object_id: str, body: LinkCreate, request: Request):
     to_id = _uuid(body.to_id, "to_id")
     _validate(body.rel, LINK_RELS, "rel")
     if object_id == to_id:
-        raise HTTPException(status_code=400, detail="Ein Objekt kann nicht mit sich selbst verknüpft werden")
+        raise HTTPException(status_code=400, detail=Text("knowledge.linkSelf"))
     async with user_tx(user) as conn:
         await _require_owner(conn, object_id, user)
         await _fetch_visible(conn, to_id, user)
@@ -1568,7 +1579,7 @@ async def delete_link(link_id: str, request: Request):
             link_id, user,
         )
     if int(res.split()[-1] or 0) == 0:
-        raise HTTPException(status_code=404, detail="Link nicht gefunden")
+        raise HTTPException(status_code=404, detail=Text("knowledge.linkNotFound"))
     return {"ok": True}
 
 
@@ -1764,7 +1775,7 @@ async def _planner_call(method: str, path: str, user: str, request: Request,
 async def _require_goal(conn, goal_id: str, user: str, owner_only: bool):
     row = await (_require_owner if owner_only else _fetch_visible)(conn, goal_id, user)
     if row["type"] not in GOAL_TREE_TYPES:
-        raise HTTPException(status_code=400, detail="Objekt ist kein Ziel und keine Vision")
+        raise HTTPException(status_code=400, detail=Text("knowledge.notGoal"))
     return row
 
 
@@ -1798,10 +1809,10 @@ async def goal_create_action_plan(goal_id: str, request: Request):
     })
     if resp.status_code not in (200, 201):
         raise HTTPException(status_code=502,
-                            detail=f"Planner lehnte die Projekt-Anlage ab ({resp.status_code})")
+                            detail=Text("knowledge.plannerRejected", status=resp.status_code))
     project_id = (resp.json() or {}).get("id")
     if not project_id:
-        raise HTTPException(status_code=502, detail="Planner lieferte keine Projekt-Nummer")
+        raise HTTPException(status_code=502, detail=Text("knowledge.plannerNoId"))
 
     props["planner_project_id"] = project_id
     async with user_tx(user) as conn:
@@ -1844,7 +1855,7 @@ async def goal_action_plan(goal_id: str, request: Request):
                      for t in resp.json() if isinstance(t, dict)]
         else:
             # Do not swallow: an unreadable project is not an empty plan.
-            warnung = f"Projekt {project_id} nicht lesbar (HTTP {resp.status_code})"
+            warnung = await tx("knowledge.projectUnreadable", project=project_id, status=resp.status_code)
 
     linked = await _planner_call("GET", "/by-object", user, request, params={"object_id": goal_id})
     if linked.status_code == 200:
@@ -1853,7 +1864,7 @@ async def goal_action_plan(goal_id: str, request: Request):
             if (t["project_id"], t["task_id"]) not in known:
                 tasks.append(t)
     elif warnung is None:
-        warnung = f"Verknüpfte Aufgaben nicht lesbar (HTTP {linked.status_code})"
+        warnung = await tx("knowledge.tasksUnreadable", status=linked.status_code)
 
     done = sum(1 for t in tasks if t["done"])
     faellig = sorted(t["due_date"] for t in tasks
@@ -1888,7 +1899,7 @@ async def goal_link_task(goal_id: str, body: GoalTaskLink, request: Request):
     })
     if resp.status_code != 200:
         raise HTTPException(status_code=502,
-                            detail=f"Verknüpfung im Planner fehlgeschlagen ({resp.status_code})")
+                            detail=Text("knowledge.plannerLinkFailed", status=resp.status_code))
     return {"ok": True}
 
 
@@ -1903,7 +1914,7 @@ async def goal_unlink_task(goal_id: str, task_id: int, project_id: int, request:
     })
     if resp.status_code != 200:
         raise HTTPException(status_code=502,
-                            detail=f"Lösen der Verknüpfung fehlgeschlagen ({resp.status_code})")
+                            detail=Text("knowledge.plannerUnlinkFailed", status=resp.status_code))
     return {"ok": True}
 
 
@@ -2098,7 +2109,7 @@ async def goal_remove_contribution(goal_id: str, object_id: str, request: Reques
             "DELETE FROM claraos_kb_links WHERE from_id = $1::uuid AND to_id = $2::uuid "
             "AND rel = 'contributes_to'", object_id, goal_id)
     if int(res.split()[-1] or 0) == 0:
-        raise HTTPException(status_code=404, detail="Verknüpfung nicht gefunden")
+        raise HTTPException(status_code=404, detail=Text("knowledge.linkNotFound"))
     return {"ok": True}
 
 
@@ -2170,7 +2181,7 @@ async def goal_promote_to_plan(goal_id: str, object_id: str, request: Request):
                                           "description": (obj["body"] or "")[:4000]})
     if resp.status_code not in (200, 201):
         raise HTTPException(status_code=502,
-                            detail=f"Aufgabe konnte nicht angelegt werden ({resp.status_code})")
+                            detail=Text("knowledge.taskFailed", status=resp.status_code))
     task_id = (resp.json() or {}).get("id")
 
     # Back reference: the task points to the goal, the object remembers the task.
@@ -2367,7 +2378,7 @@ async def goal_add_plan_task(goal_id: str, body: PlanTaskCreate, request: Reques
                                           "description": (body.description or "")[:4000]})
     if resp.status_code not in (200, 201):
         raise HTTPException(status_code=502,
-                            detail=f"Aufgabe konnte nicht angelegt werden ({resp.status_code})")
+                            detail=Text("knowledge.taskFailed", status=resp.status_code))
     task_id = (resp.json() or {}).get("id")
     await _planner_call("POST", "/meta/links", user, request, json_body={
         "project_id": project_id, "task_id": task_id,
@@ -2492,7 +2503,7 @@ class KpiValueAdd(BaseModel):
 async def _require_kpi(conn, kpi_id: str, user: str, owner_only: bool):
     row = await (_require_owner if owner_only else _fetch_visible)(conn, kpi_id, user)
     if row["type"] != "kpi":
-        raise HTTPException(status_code=400, detail="Objekt ist keine Kennzahl")
+        raise HTTPException(status_code=400, detail=Text("knowledge.notKpi"))
     return row
 
 
@@ -2550,7 +2561,7 @@ async def kpi_delete_value(kpi_id: str, value_id: str, request: Request):
             "DELETE FROM claraos_kb_kpi_values WHERE id = $1::uuid AND kpi_id = $2::uuid",
             value_id, kpi_id)
     if int(res.split()[-1] or 0) == 0:
-        raise HTTPException(status_code=404, detail="Messwert nicht gefunden")
+        raise HTTPException(status_code=404, detail=Text("knowledge.valueNotFound"))
     return {"ok": True}
 
 
@@ -2749,7 +2760,7 @@ async def add_share(object_id: str, body: ShareAdd, request: Request,
     if not target:
         raise HTTPException(status_code=400, detail="username darf nicht leer sein")
     if target == user:
-        raise HTTPException(status_code=400, detail="Mit dir selbst musst du nicht teilen")
+        raise HTTPException(status_code=400, detail=Text("knowledge.shareSelf"))
 
     # Warning: this path must check reachability. Without it anyone could deliver
     # anything to anyone. The reachability rule ("team/contacts only") is a SERVER
@@ -2760,11 +2771,11 @@ async def add_share(object_id: str, body: ShareAdd, request: Request,
         darf, grund = await _regeln.darf_erreichen(user, target)
     except Exception as exc:                       # noqa: BLE001
         logger.warning("Erreichbarkeitspruefung fehlgeschlagen (%s→%s): %s", user, target, exc)
-        darf, grund = False, "nicht pruefbar"      # when in doubt, deny
+        darf, grund = False, "nicht prüfbar"      # when in doubt, deny
     if not darf:
         raise HTTPException(
             status_code=409,
-            detail=f"{target} nimmt derzeit nichts von dir an ({grund}).")
+            detail=Text("knowledge.notAccepting", target=target, reason=_grund(grund)))
 
     async with user_tx(user) as conn:
         row = await _require_owner(conn, object_id, user)
@@ -2876,12 +2887,12 @@ async def _fetch_coll(conn, collection_id: str, user: str, owner_only: bool = Fa
         collection_id, user,
     )
     if not row:
-        raise HTTPException(status_code=404, detail="Sammlung nicht gefunden")
+        raise HTTPException(status_code=404, detail=Text("knowledge.collectionNotFound"))
     if owner_only and row["owner"] != user:
-        raise HTTPException(status_code=403, detail="Nur der Besitzer darf diese Sammlung ändern")
+        raise HTTPException(status_code=403, detail=Text("knowledge.collectionOwner"))
     if write and row["owner"] != user and row["share_permission"] != "write":
         raise HTTPException(status_code=403,
-                            detail="Dafür braucht es Schreibrecht an dieser Sammlung")
+                            detail=Text("knowledge.collectionWrite"))
     return row
 
 
@@ -2936,7 +2947,7 @@ async def patch_collection(collection_id: str, body: CollectionPatch, request: R
     async with user_tx(user) as conn:
         cur = await _fetch_coll(conn, collection_id, user, write=True)
         if body.visibility is not None and cur["owner"] != user:
-            raise HTTPException(status_code=403, detail="Die Sichtbarkeit ändert nur der Besitzer")
+            raise HTTPException(status_code=403, detail=Text("knowledge.visibilityOwner"))
         sets, params = ["updated_at = NOW()"], [collection_id]
         for col in ("name", "icon", "description", "default_type", "visibility"):
             val = getattr(body, col)
@@ -3048,10 +3059,9 @@ async def _push_collection_share(recipient: str, actor: str, coll_name: str,
                                  collection_id: str, permission: str) -> None:
     try:
         from services import ntfy_publish
-        was = "bearbeiten" if permission == "write" else "lesen und kommentieren"
         await ntfy_publish.notify_users(
-            [recipient], f"{actor} hat die Sammlung „{coll_name}“ mit dir geteilt",
-            f"Du kannst darin {was}. In der Wissens-App unter Sammlungen.",
+            [recipient], Text("knowledgePush.shareTitle", actor=actor, name=coll_name),
+            Text("knowledgePush.shareWrite" if permission == "write" else "knowledgePush.shareRead"),
             app_id="knowledge", action="open_collection",
             args={"collection_id": str(collection_id)})
     except Exception as exc:  # noqa: BLE001
@@ -3071,7 +3081,7 @@ async def add_collection_share(collection_id: str, body: CollShareAdd, request: 
     if not target:
         raise HTTPException(status_code=400, detail="username darf nicht leer sein")
     if target == user:
-        raise HTTPException(status_code=400, detail="Mit dir selbst musst du nicht teilen")
+        raise HTTPException(status_code=400, detail=Text("knowledge.shareSelf"))
     _validate(body.permission, COLL_PERMISSIONS, "permission")
     # Same server-side gate as for object shares: the recipient's reachability
     # rule decides, not the UI.
@@ -3080,10 +3090,10 @@ async def add_collection_share(collection_id: str, body: CollShareAdd, request: 
         darf, grund = await _regeln.darf_erreichen(user, target)
     except Exception as exc:                       # noqa: BLE001
         logger.warning("Erreichbarkeitspruefung fehlgeschlagen (%s→%s): %s", user, target, exc)
-        darf, grund = False, "nicht pruefbar"
+        darf, grund = False, "nicht prüfbar"
     if not darf:
         raise HTTPException(status_code=409,
-                            detail=f"{target} nimmt derzeit nichts von dir an ({grund}).")
+                            detail=Text("knowledge.notAccepting", target=target, reason=_grund(grund)))
     async with user_tx(user) as conn:
         coll = await _fetch_coll(conn, collection_id, user, owner_only=True)
         row = await conn.fetchrow(
@@ -3113,7 +3123,7 @@ async def patch_collection_share(collection_id: str, username: str, body: CollSh
             "RETURNING shared_with, permission, created_by, created_at",
             collection_id, username.strip().lower(), body.permission)
     if not row:
-        raise HTTPException(status_code=404, detail="Freigabe nicht gefunden")
+        raise HTTPException(status_code=404, detail=Text("knowledge.shareNotFound"))
     return {"ok": True, "share": _row_coll_share(row)}
 
 
@@ -3127,7 +3137,7 @@ async def remove_collection_share(collection_id: str, username: str, request: Re
     async with user_tx(user) as conn:
         coll = await _fetch_coll(conn, collection_id, user)
         if coll["owner"] != user and target != user:
-            raise HTTPException(status_code=403, detail="Nur der Besitzer darf Freigaben entfernen")
+            raise HTTPException(status_code=403, detail=Text("knowledge.shareOwner"))
         await conn.execute(
             "DELETE FROM claraos_kb_collection_shares WHERE collection_id = $1::uuid AND shared_with = $2",
             collection_id, target)
@@ -3153,7 +3163,7 @@ async def _clip_to_object(user: str, actor: str, body: ClipRequest,
                           background: BackgroundTasks) -> dict:
     url = (body.url or "").strip()
     if not url:
-        raise HTTPException(status_code=400, detail="URL fehlt")
+        raise HTTPException(status_code=400, detail=Text("knowledge.urlMissing"))
     if not re.match(r"^https?://", url, re.I):
         url = "https://" + url
     data = {"title": "", "markdown": "", "description": ""}
@@ -3168,7 +3178,7 @@ async def _clip_to_object(user: str, actor: str, body: ClipRequest,
             # has the page in front of them.
             warning = str(exc)
         except Exception as exc:  # noqa: BLE001
-            warning = f"Seite konnte nicht geladen werden ({type(exc).__name__})"
+            warning = await tx("knowledge.pageNotLoaded", error=type(exc).__name__)
     title = (body.title or data.get("title") or url)[:280]
     md = kb_clip.build_body(url, data, body.selection, body.note)
     if warning:
@@ -3206,23 +3216,29 @@ async def clip_bookmarklet(request: Request):
     approval or update maintenance."""
     await _ensure_tables()
     _caller(request)
+    lang = await sprache_jetzt()
+
+    def js_text(key: str, **werte) -> str:
+        """A catalog text as a single-quoted JS string literal."""
+        s = _t(lang, f"knowledge.{key}", **werte)
+        return "'" + s.replace("\\", "\\\\").replace("'", "\\'") + "'"
+
     js = (
         "javascript:(function(){"
         "var s=window.getSelection?String(window.getSelection()):'';"
-        "var n=prompt('Notiz zum Clip (optional):','');"
+        "var n=prompt(" + js_text("bmNote") + ",'');"
         "if(n===null)return;"
         f"fetch('https://home.{BASE_DOMAIN}/api/claraos/knowledge/clip',{{"
         "method:'POST',credentials:'include',"
         "headers:{'Content-Type':'application/json'},"
         "body:JSON.stringify({url:location.href,selection:s,note:n,title:document.title})"
         "}).then(function(r){return r.json()}).then(function(d){"
-        "alert(d.object?('Gespeichert: '+d.object.title):'Fehler beim Speichern')"
-        "}).catch(function(){alert('" + PRODUCT_NAME + " nicht erreichbar')});"
+        "alert(d.object?(" + js_text("bmSaved") + "+d.object.title):" + js_text("bmFailed") + ")"
+        "}).catch(function(){alert(" + js_text("bmUnreachable", product=PRODUCT_NAME) + ")});"
         "})();"
     )
     return {"bookmarklet": js,
-            "hinweis": "Als Lesezeichen speichern und auf einer Seite anklicken. "
-                       "Markierter Text wird mitgesichert."}
+            "hinweis": _t(lang, "knowledge.bmHint")}
 
 
 class ClaraClip(BaseModel):
@@ -3322,7 +3338,7 @@ async def delete_template(template_id: str, request: Request):
             "DELETE FROM claraos_kb_templates WHERE id = $1::uuid AND owner = $2",
             template_id, user)
     if r.endswith("0"):
-        raise HTTPException(status_code=404, detail="Vorlage nicht gefunden")
+        raise HTTPException(status_code=404, detail=Text("knowledge.templateNotFound"))
     return {"ok": True}
 
 
@@ -3353,7 +3369,7 @@ async def create_from_template(body: FromTemplate, request: Request,
                 "AND (owner = $2 OR visibility = 'family') AND is_default "
                 "ORDER BY owner = $2 DESC LIMIT 1", body.type, user)
         if not t and body.template_id:
-            raise HTTPException(status_code=404, detail="Vorlage nicht gefunden")
+            raise HTTPException(status_code=404, detail=Text("knowledge.templateNotFound"))
         # The target collection is checked BEFORE the object exists: write
         # access (owner or 'write' share), the same rule as adding an item.
         # Otherwise any caller could hang objects into a collection they may
@@ -3513,7 +3529,7 @@ async def diff_history_version(object_id: str, version: int, request: Request,
             "SELECT version, title, body FROM claraos_kb_history "
             "WHERE object_id = $1::uuid AND version = $2", object_id, version)
         if not base:
-            raise HTTPException(status_code=404, detail="Version nicht gefunden")
+            raise HTTPException(status_code=404, detail=Text("knowledge.versionNotFound"))
         if against is None:
             other_title, other_body, other_label = obj["title"], obj["body"], "aktuell"
         else:
@@ -3521,7 +3537,7 @@ async def diff_history_version(object_id: str, version: int, request: Request,
                 "SELECT version, title, body FROM claraos_kb_history "
                 "WHERE object_id = $1::uuid AND version = $2", object_id, against)
             if not o:
-                raise HTTPException(status_code=404, detail="Vergleichsversion nicht gefunden")
+                raise HTTPException(status_code=404, detail=Text("knowledge.compareNotFound"))
             other_title, other_body, other_label = o["title"], o["body"], f"v{o['version']}"
     ops = kb_diff.diff_markdown(base["body"], other_body)
     return {"from": {"version": base["version"], "title": base["title"]},
@@ -3546,7 +3562,7 @@ async def rename_history_version(object_id: str, version: int, body: VersionRena
             "UPDATE claraos_kb_history SET name = $3 WHERE object_id = $1::uuid AND version = $2",
             object_id, version, body.name.strip()[:120] or None)
     if r.endswith("0"):
-        raise HTTPException(status_code=404, detail="Version nicht gefunden")
+        raise HTTPException(status_code=404, detail=Text("knowledge.versionNotFound"))
     return {"ok": True}
 
 
@@ -3561,11 +3577,11 @@ async def import_archive(request: Request, background: BackgroundTasks, file: Up
     user = _caller(request)
     data = await file.read()
     if len(data) > 80 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail="Archiv zu groß (max. 80 MB)")
+        raise HTTPException(status_code=413, detail=Text("knowledge.archiveTooLarge"))
     try:
         parsed = kb_import.parse_zip(data)
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=400, detail=f"ZIP konnte nicht gelesen werden: {exc}")
+        raise HTTPException(status_code=400, detail=Text("knowledge.zipUnreadable", error=exc))
 
     id_map: dict[str, str] = {}   # Notion id → our UUID
     created_pages, created_rows, created_colls = [], 0, 0
@@ -3763,7 +3779,7 @@ async def create_comment(object_id: str, body: CommentCreate, request: Request,
     actor = _actor(request, user)
     object_id = _uuid(object_id, "object_id")
     if not body.body.strip():
-        raise HTTPException(status_code=400, detail="Kommentar darf nicht leer sein")
+        raise HTTPException(status_code=400, detail=Text("knowledge.commentEmpty"))
     parent_id = _uuid(body.parent_id, "parent_id") if body.parent_id else None
     async with user_tx(user) as conn:
         obj = await _fetch_visible(conn, object_id, user)
@@ -3793,7 +3809,7 @@ async def create_comment(object_id: str, body: CommentCreate, request: Request,
     push_to = [r for r in recipients if r != actor]
     if push_to:
         background.add_task(_push_ntfy, push_to,
-                            f"💬 Kommentar zu „{obj['title'][:40]}“",
+                            Text("knowledgePush.commentTitle", title=obj["title"][:40]),
                             f"{actor}: {body.body.strip()[:200]}", object_id)
     return {"comment": {"id": cid, "author": actor,
                         "created_at": row["created_at"].isoformat()}}
@@ -3809,18 +3825,18 @@ async def patch_comment(comment_id: str, body: CommentPatch, request: Request):
         c = await conn.fetchrow(
             "SELECT * FROM claraos_kb_comments WHERE id = $1::uuid AND deleted_at IS NULL", comment_id)
         if not c:
-            raise HTTPException(status_code=404, detail="Kommentar nicht gefunden")
+            raise HTTPException(status_code=404, detail=Text("knowledge.commentNotFound"))
         obj = await _fetch_visible(conn, str(c["object_id"]), user)
         if body.body is not None:
             if c["author"] != user:
-                raise HTTPException(status_code=403, detail="Nur der Autor darf den Text ändern")
+                raise HTTPException(status_code=403, detail=Text("knowledge.authorOnly"))
             await conn.execute(
                 "UPDATE claraos_kb_comments SET body = $2, updated_at = NOW() WHERE id = $1::uuid",
                 comment_id, body.body.strip())
         if body.resolved is not None:
             if c["author"] != user and obj["owner"] != user:
                 raise HTTPException(status_code=403,
-                                    detail="Nur Autor oder Objekt-Besitzer dürfen das erledigen")
+                                    detail=Text("knowledge.authorOrOwnerResolve"))
             await conn.execute(
                 "UPDATE claraos_kb_comments SET resolved_at = $2, resolved_by = $3, updated_at = NOW() "
                 "WHERE id = $1::uuid OR parent_id = $1::uuid",  # resolve the thread too (Outline pattern)
@@ -3839,10 +3855,10 @@ async def delete_comment(comment_id: str, request: Request):
         c = await conn.fetchrow(
             "SELECT author, object_id FROM claraos_kb_comments WHERE id = $1::uuid", comment_id)
         if not c:
-            raise HTTPException(status_code=404, detail="Kommentar nicht gefunden")
+            raise HTTPException(status_code=404, detail=Text("knowledge.commentNotFound"))
         obj = await _fetch_visible(conn, str(c["object_id"]), user)
         if c["author"] != user and obj["owner"] != user:
-            raise HTTPException(status_code=403, detail="Nur Autor oder Objekt-Besitzer dürfen löschen")
+            raise HTTPException(status_code=403, detail=Text("knowledge.authorOrOwnerDelete"))
         await conn.execute(
             "UPDATE claraos_kb_comments SET deleted_at = NOW() WHERE id = $1::uuid OR parent_id = $1::uuid",
             comment_id)
@@ -3941,7 +3957,7 @@ def _validate_formula_option(field_type: int, type_option: dict | None) -> None:
     try:
         kb_formula.validate(expr)
     except kb_formula.FormulaError as exc:
-        raise HTTPException(status_code=400, detail=f"Formel ungültig: {exc}")
+        raise HTTPException(status_code=400, detail=Text("knowledge.formulaInvalid", error=exc.args[0] if exc.args else str(exc)))
 
 
 class FieldCreate(BaseModel):
@@ -4109,7 +4125,7 @@ async def patch_field(collection_id: str, field_id: str, body: FieldPatch, reque
             f"UPDATE claraos_kb_fields SET {', '.join(sets)} "
             f"WHERE id = $1::uuid AND collection_id = $2::uuid RETURNING *", *params)
     if not row:
-        raise HTTPException(status_code=404, detail="Feld nicht gefunden")
+        raise HTTPException(status_code=404, detail=Text("knowledge.fieldNotFound"))
     return {"field": _row_field(row)}
 
 
@@ -4143,8 +4159,9 @@ async def list_views(collection_id: str, request: Request):
             # Every collection has at least one default table view
             await conn.execute(
                 "INSERT INTO claraos_kb_views (collection_id, name, layout, position, created_by) "
-                "VALUES ($1::uuid, 'Alle Einträge', 'table', $2, $3)",
-                collection_id, _frac_between(None, None), coll["owner"])
+                "VALUES ($1::uuid, $4, 'table', $2, $3)",
+                collection_id, _frac_between(None, None), coll["owner"],
+                await tx("knowledge.allEntries"))
             rows = await conn.fetch(
                 "SELECT * FROM claraos_kb_views WHERE collection_id = $1::uuid "
                 "ORDER BY position NULLS LAST, created_at", collection_id)
@@ -4205,7 +4222,7 @@ async def patch_view(collection_id: str, view_id: str, body: ViewPatch, request:
             f"UPDATE claraos_kb_views SET {', '.join(sets)} "
             f"WHERE id = $1::uuid AND collection_id = $2::uuid RETURNING *", *params)
     if not row:
-        raise HTTPException(status_code=404, detail="Ansicht nicht gefunden")
+        raise HTTPException(status_code=404, detail=Text("knowledge.viewNotFound"))
     return {"view": _row_view(row)}
 
 
@@ -4220,7 +4237,7 @@ async def delete_view(collection_id: str, view_id: str, request: Request):
         n = await conn.fetchval(
             "SELECT count(*) FROM claraos_kb_views WHERE collection_id = $1::uuid", collection_id)
         if n <= 1:
-            raise HTTPException(status_code=400, detail="Die letzte Ansicht kann nicht gelöscht werden")
+            raise HTTPException(status_code=400, detail=Text("knowledge.lastView"))
         await conn.execute(
             "DELETE FROM claraos_kb_views WHERE id = $1::uuid AND collection_id = $2::uuid",
             view_id, collection_id)
@@ -4288,7 +4305,7 @@ async def query_collection_rows(collection_id: str, request: Request,
                 "SELECT * FROM claraos_kb_views WHERE id = $1::uuid AND collection_id = $2::uuid",
                 _uuid(view_id, "view_id"), collection_id)
             if not view:
-                raise HTTPException(status_code=404, detail="Ansicht nicht gefunden")
+                raise HTTPException(status_code=404, detail=Text("knowledge.viewNotFound"))
         filters = (view["filters"] if view else None) or {}
         sorts = (view["sorts"] if view else None) or []
         if isinstance(filters, str):
@@ -4322,6 +4339,7 @@ async def query_collection_rows(collection_id: str, request: Request,
 
     # Formulas ON READ, after the rollups so rollup("…") can be used
     formula_fields = [f for f in field_rows if f["field_type"] == kb_query.FT_FORMULA]
+    lang = await sprache_jetzt() if formula_fields else "de"
     out = []
     for r in rows:
         d = _row_obj(r, slim=True)
@@ -4336,7 +4354,7 @@ async def query_collection_rows(collection_id: str, request: Request,
                 if isinstance(opt, str):
                     opt = json.loads(opt)
                 values[ff["key"]] = kb_formula.evaluate(
-                    (opt or {}).get("expression", ""), props, rollups.get(rid, {}))
+                    (opt or {}).get("expression", ""), props, rollups.get(rid, {}), lang)
             d["formulas"] = values
         out.append(d)
     return {"rows": out, "fields": [_row_field(f) for f in field_rows],
@@ -4366,7 +4384,7 @@ async def preview_formula(collection_id: str, body: FormulaPreview, request: Req
     try:
         kb_formula.validate(body.expression)
     except kb_formula.FormulaError as exc:
-        return {"ok": False, "fehler": str(exc), "proben": []}
+        return {"ok": False, "fehler": fuer(await sprache_jetzt(), exc.args[0] if exc.args else str(exc)), "proben": []}
 
     grenze = max(1, min(body.limit, 5))
     async with user_tx(user) as conn:
@@ -4382,12 +4400,13 @@ async def preview_formula(collection_id: str, body: FormulaPreview, request: Req
         rollups = await _rollup_values(conn, rows, field_rows, user)
 
     proben = []
+    lang = await sprache_jetzt()
     for r in rows:
         d = _row_obj(r, slim=True)
         proben.append({
             "titel": d.get("title"),
             "wert": kb_formula.evaluate(body.expression, d.get("properties") or {},
-                                        rollups.get(str(r["id"]), {})),
+                                        rollups.get(str(r["id"]), {}), lang),
         })
     return {"ok": True, "fehler": None, "proben": proben}
 
@@ -4544,9 +4563,9 @@ async def patch_type(type_id: str, body: TypePatch, request: Request):
     async with user_tx(user) as conn:
         row = await conn.fetchrow("SELECT owner, is_system FROM claraos_kb_types WHERE id = $1", type_id)
         if not row:
-            raise HTTPException(status_code=404, detail="Typ nicht gefunden")
+            raise HTTPException(status_code=404, detail=Text("knowledge.typeNotFound"))
         if row["is_system"] or row["owner"] != user:
-            raise HTTPException(status_code=403, detail="Nur eigene Typen sind änderbar")
+            raise HTTPException(status_code=403, detail=Text("knowledge.ownTypesOnly"))
         sets, params = ["updated_at = NOW()"], [type_id]
         for col in ("name", "icon", "description"):
             val = getattr(body, col)
@@ -5094,7 +5113,7 @@ async def clara_promote_idea_to_plan(body: ClaraPromoteIdea, request: Request,
         )
     if resp.status_code != 200:
         raise HTTPException(status_code=502,
-                            detail=f"Planner-Übergabe fehlgeschlagen ({resp.status_code}): {resp.text[:300]}")
+                            detail=Text("knowledge.handoffFailed", status=resp.status_code, text=resp.text[:300]))
     plan = resp.json()
     project_id = plan.get("project_id")
 

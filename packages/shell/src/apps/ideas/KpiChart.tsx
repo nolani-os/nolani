@@ -17,7 +17,7 @@
 import { useMemo, useState } from "react";
 import styles from "./IdeasApp.module.css";
 import { fmtNum } from "./kpiStatus";
-import { regionLocale } from "@claraos/core";
+import { regionLocale, useTranslation } from "@claraos/core";
 
 export interface ChartPoint { t: number; v: number }
 
@@ -82,6 +82,7 @@ export function Sparkline({ punkte, hoehe = 28 }: {
 }
 
 export function KpiChart({ ist, plan, unit, target, label }: Props) {
+  const { t } = useTranslation("wissen");
   const [hover, setHover] = useState<number | null>(null);
   const [tabelle, setTabelle] = useState(false);
 
@@ -140,20 +141,20 @@ export function KpiChart({ ist, plan, unit, target, label }: Props) {
         {/* Two series ⇒ a legend is mandatory; color must never be the only
             difference. */}
         <span className={styles.legend}>
-          <i className={styles.legendIst} /> Gemessen
+          <i className={styles.legendIst} /> {t("chart.measured")}
         </span>
         <span className={styles.legend}>
-          <i className={styles.legendPlan} /> Geplant
+          <i className={styles.legendPlan} /> {t("chart.planned")}
         </span>
-        <button className={styles.linkBtn} onClick={() => setTabelle((t) => !t)}>
-          {tabelle ? "Grafik" : "Tabelle"}
+        <button className={styles.linkBtn} onClick={() => setTabelle((v) => !v)}>
+          {tabelle ? t("chart.chart") : t("chart.table")}
         </button>
       </div>
 
       {tabelle ? (
         <table className={styles.chartTable}>
-          <caption className={styles.srOnly}>{label}: Messwerte</caption>
-          <thead><tr><th scope="col">Datum</th><th scope="col">Wert</th></tr></thead>
+          <caption className={styles.srOnly}>{t("chart.values", { label })}</caption>
+          <thead><tr><th scope="col">{t("chart.date")}</th><th scope="col">{t("chart.value")}</th></tr></thead>
           <tbody>
             {[...daten.i].reverse().map((p) => (
               <tr key={p.t}>
@@ -165,7 +166,7 @@ export function KpiChart({ ist, plan, unit, target, label }: Props) {
         </table>
       ) : (
         <svg className={styles.chart} viewBox={`0 0 ${W} ${H}`} role="img"
-             aria-label={`${label}: Verlauf von ${daten.i.length} Messwerten`}
+             aria-label={t("chart.aria", { label, count: daten.i.length })}
              onMouseMove={beiBewegung} onMouseLeave={() => setHover(null)}>
           {yTicks.map((v) => (
             <g key={v}>
@@ -207,7 +208,7 @@ export function KpiChart({ ist, plan, unit, target, label }: Props) {
         <p className={styles.chartHint} aria-live="polite">
           {hp
             ? `${new Date(hp.t).toLocaleDateString(regionLocale())}: ${fmtNum(hp.v, unit)}`
-            : `Zuletzt ${fmtNum(letzter.v, unit)} am ${new Date(letzter.t).toLocaleDateString(regionLocale())}`}
+            : t("chart.last", { value: fmtNum(letzter.v, unit), date: new Date(letzter.t).toLocaleDateString(regionLocale()) })}
         </p>
       )}
     </div>

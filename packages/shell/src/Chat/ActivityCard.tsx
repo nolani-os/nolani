@@ -7,19 +7,19 @@
  *
  * Also tracks parallel agents and tools.
  */
-import { getBrand } from "@claraos/core";
+import { i18n, useTranslation } from "@claraos/core";
 import { useEffect, useState } from "react";
 import type { ClaraActivity } from "./api";
 import styles from "./ActivityCard.module.css";
 import { statusFertig, statusLaeuft } from "./toolStatus";
 
-// Getters: the assistant can be renamed at runtime.
+// Getters: the assistant can be renamed and the language switched at runtime.
 const PHASE_LABELS: Record<ClaraActivity["phase"], string> = {
-  get thinking() { return `${getBrand().assistant} denkt nach …`; },
-  get planning() { return `${getBrand().assistant} plant Schritte …`; },
-  get executing() { return `${getBrand().assistant} arbeitet …`; },
-  get finalizing() { return `${getBrand().assistant} formuliert die Antwort …`; },
-  done: "Fertig",
+  get thinking() { return i18n.t("chat:activity.thinking"); },
+  get planning() { return i18n.t("chat:activity.planning"); },
+  get executing() { return i18n.t("chat:activity.executing"); },
+  get finalizing() { return i18n.t("chat:activity.finalizing"); },
+  get done() { return i18n.t("chat:activity.done"); },
 };
 
 function formatTimer(ms: number): string {
@@ -32,18 +32,19 @@ function formatTimer(ms: number): string {
 export function ActivityCard({ activity }: { activity: ClaraActivity }) {
   // Tick every 500 ms so the elapsed-seconds counter updates without re-
   // rendering on every message-chunk.
+  const { t } = useTranslation("chat");
   const [, setTick] = useState(0);
   useEffect(() => {
     if (activity.phase === "done") return;
-    const t = setInterval(() => setTick((n) => n + 1), 500);
-    return () => clearInterval(t);
+    const timer = setInterval(() => setTick((n) => n + 1), 500);
+    return () => clearInterval(timer);
   }, [activity.phase]);
 
   const elapsedMs =
     (activity.finishedAt ?? Date.now()) - (activity.startedAt ?? Date.now());
 
   const phase = activity.phase;
-  const label = PHASE_LABELS[phase] ?? `${getBrand().assistant} arbeitet …`;
+  const label = PHASE_LABELS[phase] ?? t("activity.executing");
 
   // Track parallel agents + tools (multi-intent splits).
   const agents = Object.values(activity.activeAgents ?? {});
@@ -55,13 +56,13 @@ export function ActivityCard({ activity }: { activity: ClaraActivity }) {
   if (agents.length === 1) {
     const a = agents[0];
     const m = a.model?.split("/").pop();
-    subAgentLine = `Sub-Agent: ${a.intent ?? a.agent}${m ? ` · ${m}` : ""}`;
+    subAgentLine = `${t("activity.subAgent", { name: a.intent ?? a.agent })}${m ? ` · ${m}` : ""}`;
   } else if (agents.length > 1) {
-    subAgentLine = `${agents.length} Sub-Agents parallel${
-      completedCount ? ` · ${completedCount} fertig` : ""
+    subAgentLine = `${t("activity.subAgentsParallel", { count: agents.length })}${
+      completedCount ? ` · ${t("activity.doneCount", { count: completedCount })}` : ""
     }`;
   } else if (completedCount > 0 && phase !== "done") {
-    subAgentLine = `${completedCount} Sub-Agent${completedCount === 1 ? "" : "s"} fertig`;
+    subAgentLine = t("activity.subAgentsDone", { count: completedCount });
   }
 
   // Active-tools line — render up to 3 currently-running tools, plus a
@@ -78,11 +79,11 @@ export function ActivityCard({ activity }: { activity: ClaraActivity }) {
       sinceMs: Date.now() - activity.activeMeta.startedAt,
     });
   }
-  for (const t of tools.slice(0, 3)) {
+  for (const tool of tools.slice(0, 3)) {
     activeLines.push({
-      icon: t.icon ?? "🔧",
-      label: statusLaeuft(t.name, t.argsSummary),
-      sinceMs: Date.now() - t.startedAt,
+      icon: tool.icon ?? "🔧",
+      label: statusLaeuft(tool.name, tool.argsSummary),
+      sinceMs: Date.now() - tool.startedAt,
     });
   }
   const moreTools = Math.max(0, tools.length - 3);
@@ -91,11 +92,11 @@ export function ActivityCard({ activity }: { activity: ClaraActivity }) {
   // angelegt ✓"), so progress reads like a short log instead of blinking past.
   if (phase !== "done") {
     const recent = activity.toolCalls.filter((tc) => tc.endedAt).slice(-2);
-    for (const t of recent) {
+    for (const tc of recent) {
       activeLines.push({
-        icon: t.ok ? "✓" : "⚠",
-        label: statusFertig(t.name, t.ok),
-        sinceMs: t.durationMs ?? 0,
+        icon: tc.ok ? "✓" : "⚠",
+        label: statusFertig(tc.name, tc.ok),
+        sinceMs: tc.durationMs ?? 0,
         done: true,
       });
     }
@@ -127,24 +128,24 @@ export function ActivityCard({ activity }: { activity: ClaraActivity }) {
       {moreTools > 0 && (
         <div className={styles.subRow}>
           <span className={styles.icon}>…</span>
-          <span className={styles.label}>+{moreTools} weitere Tools laufen</span>
+          <span className={styles.label}>{t("activity.moreTools", { count: moreTools })}</span>
         </div>
       )}
       {langLaeufer && (
-        <div className={styles.slowNotice}>{getBrand().assistant} arbeitet noch. Du kannst den Chat schließen, die Antwort wird gespeichert.</div>
+        <div className={styles.slowNotice}>{t("activity.slow")}</div>
       )}
       {activity.slowNotice && (
         <div className={styles.slowNotice}>{activity.slowNotice}</div>
       )}
       {activity.todoList && activity.todoList.length > 0 && (
         <div className={styles.todoBox}>
-          <div className={styles.todoTitle}>📋 Plan</div>
-          {activity.todoList.map((t) => (
-            <div key={t.id} className={`${styles.todoItem} ${styles[`todo_${t.status}`] ?? ""}`}>
+          <div className={styles.todoTitle}>📋 {t("activity.plan")}</div>
+          {activity.todoList.map((todo) => (
+            <div key={todo.id} className={`${styles.todoItem} ${styles[`todo_${todo.status}`] ?? ""}`}>
               <span className={styles.todoIcon}>
-                {t.status === "completed" ? "✅" : t.status === "in_progress" ? "🔄" : "⏳"}
+                {todo.status === "completed" ? "✅" : todo.status === "in_progress" ? "🔄" : "⏳"}
               </span>
-              <span className={styles.todoText}>{t.content}</span>
+              <span className={styles.todoText}>{todo.content}</span>
             </div>
           ))}
         </div>

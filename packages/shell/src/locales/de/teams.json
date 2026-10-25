@@ -1,0 +1,288 @@
+{
+  "common": {
+    "close": "Schließen",
+    "unknown": "Unbekannt",
+    "loading": "Lädt…",
+    "remove": "Entfernen",
+    "encrypted": "Ende-zu-Ende-verschlüsselt"
+  },
+  "app": {
+    "loginFailed": "Anmeldung bei Matrix fehlgeschlagen. Einzelheiten stehen in der Browser-Konsole.",
+    "connError": "Verbindungsfehler",
+    "connecting": "Verbindung zu Matrix wird aufgebaut…",
+    "chatTitle": "Chat",
+    "chatPick": "Wähle links ein Gespräch — oder starte ein neues.",
+    "chatHint": "Hier stehen Gespräche mit Personen und Gruppen. Team-Kanäle findest du unter „Teams“.",
+    "welcome": "Willkommen bei Teams",
+    "teamsPick": "Wähle links ein Team oder einen Kanal.",
+    "teamsHint": "Neues Team über den +-Knopf in der Seitenleiste."
+  },
+  "typing": {
+    "one": "{{name}} schreibt …",
+    "two": "{{a}} und {{b}} schreiben …",
+    "many_one": "{{name}} und {{count}} weitere Person schreiben …",
+    "many_other": "{{name}} und {{count}} weitere schreiben …"
+  },
+  "notif": {
+    "title": "Benachrichtigungen"
+  },
+  "roles": {
+    "admin": "Admin",
+    "moderator": "Moderator",
+    "member": "Mitglied",
+    "level": "Stufe {{level}}",
+    "membersTitle": "Mitglieder ({{count}})"
+  },
+  "reply": {
+    "editing": "Nachricht wird bearbeitet"
+  },
+  "forward": {
+    "title": "Nachricht weiterleiten",
+    "search": "Kanäle suchen…"
+  },
+  "inviteMember": {
+    "title": "Mitglied einladen",
+    "search": "Nutzer suchen…",
+    "invite": "Einladen"
+  },
+  "channelSettings": {
+    "confirmDelete": "Kanal „{{name}}“ löschen? Das lässt sich nicht rückgängig machen.",
+    "topic": "Thema",
+    "topicPlaceholder": "Worum geht es in diesem Kanal?",
+    "saving": "Speichert…",
+    "saveTopic": "Thema speichern",
+    "encrypted": "Verschlüsselt:",
+    "yes": "Ja 🔒",
+    "no": "Nein",
+    "roomId": "Raum-Kennung:",
+    "delete": "Kanal löschen"
+  },
+  "rail": {
+    "activity": "Aktivität",
+    "chat": "Chat",
+    "teams": "Teams",
+    "calendar": "Kalender",
+    "calls": "Anrufe",
+    "files": "Dateien",
+    "searchTitle": "Suchen (Strg+K)",
+    "search": "Suche"
+  },
+  "actions": {
+    "react": "Mit {{emoji}} reagieren",
+    "moreReactions": "Weitere Reaktionen",
+    "thread": "Im Thread antworten",
+    "reply": "Antworten",
+    "edit": "Bearbeiten",
+    "confirmDelete": "Diese Nachricht wirklich löschen?",
+    "delete": "Löschen",
+    "forward": "Weiterleiten",
+    "save": "Merken",
+    "pin": "Anheften"
+  },
+  "onboarding": {
+    "welcome": "Willkommen bei Teams",
+    "intro": "Dein eigener Ort für Zusammenarbeit — Chat, Anrufe, Dateien und Planung an einer Stelle.",
+    "basis": "Auf Basis von Matrix (Ende-zu-Ende-verschlüsselt), LiveKit (Videoanrufe) und Nextcloud (Dateien).",
+    "start": "Los geht's",
+    "firstTeam": "Erstes Team anlegen",
+    "teamIntro": "Ein Team ist eine Gruppe von Menschen, die zusammenarbeiten oder sich austauschen.",
+    "teamPlaceholder": "z. B. Familie, Haushalt, Arbeit…",
+    "next": "Weiter",
+    "addChannel": "Kanal hinzufügen",
+    "channelIntro": "Kanäle ordnen Gespräche nach Thema.",
+    "channelPlaceholder": "z. B. allgemein, sonstiges, projekte…",
+    "creating": "Wird angelegt…",
+    "create": "„{{team}}“ mit #{{channel}} anlegen",
+    "later": "Später einrichten"
+  },
+  "presence": {
+    "verfuegbar": "Verfügbar",
+    "beschaeftigt": "Beschäftigt",
+    "nicht_stoeren": "Nicht stören",
+    "abwesend": "Abwesend",
+    "offline": "Offline",
+    "unbekannt": "Status unbekannt",
+    "selfSet": "{{state}} (selbst gesetzt)"
+  },
+  "chat": {
+    "call": "Anrufen",
+    "members": "Teilnehmer"
+  },
+  "invite": {
+    "failed": "Einladung fehlgeschlagen",
+    "title": "Gast in #{{room}} einladen",
+    "guestName": "Name des Gastes",
+    "namePlaceholder": "z. B. Oma, Nachbarin…",
+    "creating": "Gastzugang wird angelegt…",
+    "send": "Einladung senden",
+    "created": "Gastzugang angelegt!",
+    "username": "Benutzername:",
+    "matrixId": "Matrix-ID:",
+    "instructions": "Diese Anleitung an den Gast weitergeben:",
+    "copy": "Anleitung kopieren"
+  },
+  "thread": {
+    "deleted": "[gelöscht]",
+    "title": "Thread",
+    "replies_one": "{{count}} Antwort",
+    "replies_other": "{{count}} Antworten",
+    "loading": "Lade Thread…",
+    "empty": "Noch keine Antworten — starte den Thread.",
+    "placeholder": "Im Thread antworten…",
+    "send": "Senden"
+  },
+  "channel": {
+    "startCall": "Anruf starten",
+    "inviteMember": "Mitglied einladen",
+    "inviteGuest": "Gast einladen",
+    "members": "Mitglieder"
+  },
+  "search": {
+    "placeholder": "Personen und Nachrichten suchen…",
+    "search": "Suchen",
+    "people": "Personen",
+    "messages": "Nachrichten"
+  },
+  "files": {
+    "readFailed": "Der Ordner ließ sich nicht lesen (HTTP {{status}}).",
+    "toStart": "Zum Anfang",
+    "files": "Dateien",
+    "reload": "Neu laden",
+    "loading": "Wird geladen …",
+    "empty": "Dieser Ordner ist leer."
+  },
+  "activity": {
+    "justNow": "gerade eben",
+    "minutes": "vor {{count}} min",
+    "hours": "vor {{count}} h",
+    "days": "vor {{count}} d",
+    "all": "Alle",
+    "unread": "Ungelesen",
+    "mentions": "@Erwähnungen",
+    "saved": "Gespeichert",
+    "title": "Aktivität",
+    "noMentions": "Keine Erwähnungen",
+    "noSaved": "Nichts gespeichert — Lesezeichen-Symbol an einer Nachricht nutzen.",
+    "allRead": "Alles gelesen ✓",
+    "none": "Keine Aktivität"
+  },
+  "profile": {
+    "bridgeOff": "Brücke aus",
+    "referenceOnly": "nur Verweis",
+    "chatVia": "Chat über {{via}} mit {{person}}",
+    "chat": "Chat",
+    "callVia": "Anruf über {{via}} mit {{person}}",
+    "call": "Anruf",
+    "loadFailed": "Profil konnte nicht geladen werden.",
+    "matrixFailed": "Matrix-Unterhaltung konnte nicht geöffnet werden.",
+    "attemptFailed": "Der Versuch ist fehlgeschlagen.",
+    "of": "Profil von {{user}}",
+    "close": "Profil schließen",
+    "sharedTeams": "Gemeinsame Teams",
+    "reachableVia": "Erreichbar über",
+    "noWay": "Kein bekannter Weg."
+  },
+  "tree": {
+    "dmSearch": "Person suchen oder @name:example.org…",
+    "noHits": "Keine Treffer. Eine vollständige Kennung (<code>@name:example.org</code>) geht immer.",
+    "chat": "Chat",
+    "newMessage": "Neue Nachricht",
+    "noChats": "Noch keine Chats.",
+    "startMessage": "Neue Nachricht starten →",
+    "teams": "Teams",
+    "createTeam": "Team anlegen",
+    "teamName": "Teamname…",
+    "collapse": "Kanäle einklappen",
+    "expand": "Kanäle ausklappen",
+    "addChannel": "Kanal hinzufügen",
+    "channelName": "Kanalname…",
+    "noTeam": "Noch kein Team.",
+    "createTeamCta": "Team anlegen →"
+  },
+  "teamView": {
+    "files": "Dateien",
+    "calendar": "Kalender",
+    "plan": "Plan",
+    "channels_one": "{{count}} Kanal",
+    "channels_other": "{{count}} Kanäle",
+    "removeTab": "Reiter entfernen",
+    "addTab": "Reiter hinzufügen",
+    "nothingYet": "Für dieses Team ist noch nichts eingerichtet.",
+    "notAvailable": "Diese App steht hier nicht zur Verfügung.",
+    "loading": "Wird geladen …",
+    "productApp": "{{product}}-App",
+    "webAddress": "Web-Adresse",
+    "allTabs": "Alle geeigneten Apps sind schon Reiter",
+    "tabName": "Name im Reiter (leer = App-Name)",
+    "namePlaceholder": "Name (z. B. Doku)",
+    "add": "Hinzufügen",
+    "cancel": "Abbrechen"
+  },
+  "timeline": {
+    "today": "Heute",
+    "yesterday": "Gestern",
+    "loading": "Lade Nachrichten…",
+    "deleted": "[Nachricht gelöscht]",
+    "new": "Neu",
+    "toOriginal": "Zum Original springen",
+    "deletedShort": "[gelöscht]",
+    "earlierReply": "↩ Antwort auf frühere Nachricht",
+    "edited": "(bearbeitet)",
+    "replies_one": "{{count}} Antwort",
+    "replies_other": "{{count}} Antworten",
+    "toBottom": "Nach unten",
+    "attach": "Datei anhängen",
+    "emoji": "Emoji",
+    "editPlaceholder": "Nachricht bearbeiten…",
+    "placeholder": "Nachricht an {{room}}…"
+  },
+  "calls": {
+    "loadFailed": "Der Anruf ließ sich nicht laden. Mit „Erneut versuchen“ geht es noch einmal.",
+    "roomFailed": "Besprechungsraum konnte nicht angelegt werden",
+    "leave": "Anruf verlassen",
+    "retry": "Erneut versuchen",
+    "title": "Anrufe",
+    "running": "Laufende Anrufe",
+    "none": "Gerade läuft kein Anruf",
+    "live_one": "Live · {{count}} Teilnehmer",
+    "live_other": "Live · {{count}} Teilnehmer",
+    "join": "Beitreten",
+    "newCall": "Neuer Anruf",
+    "instant": "Sofortbesprechung starten",
+    "instantHint": "Legt einen neuen privaten Raum an und startet dort einen Anruf.",
+    "inRoom": "Oder einen Anruf in einem vorhandenen Raum starten:",
+    "noRoom": "Kein Raum verfügbar",
+    "start": "Starten"
+  },
+  "mobile": {
+    "now": "jetzt",
+    "noMessages": "Noch keine Nachrichten",
+    "back": "Zurück",
+    "thread": "Thread",
+    "startCall": "Anruf starten",
+    "replies_one": "{{count}} Antwort →",
+    "replies_other": "{{count}} Antworten →",
+    "placeholder": "Nachricht an {{room}}…",
+    "saveEdit": "Änderung speichern",
+    "send": "Senden",
+    "team": "Team",
+    "activity": "Aktivität",
+    "noActivity": "Keine neue Aktivität",
+    "chat": "Chat",
+    "noDms": "Keine Direktnachrichten",
+    "teams": "Teams",
+    "collapse": "Kanäle einklappen",
+    "expand": "Kanäle ausklappen",
+    "searchPeople": "Personen suchen…",
+    "clearSearch": "Suche leeren",
+    "people": "Personen",
+    "nobody": "Niemand gefunden für „{{term}}“",
+    "tabs": {
+      "activity": "Aktivität",
+      "chat": "Chat",
+      "teams": "Teams",
+      "calendar": "Kalender",
+      "calls": "Anrufe"
+    }
+  }
+}
