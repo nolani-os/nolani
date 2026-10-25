@@ -3,14 +3,14 @@
 All notable changes to this project are documented here. The project is in early preview and
 does not follow semantic versioning yet.
 
-## 0.1.0 — 2026-10-25 — first public preview
+## 0.1.0 (2026-10-25): first public preview
 
 - **Interface in English and German**, switchable without reloading; dates and numbers follow
   the region setting. Shell frame, chat, files, planner, mail, contacts, Teams, knowledge,
   viewers, camera and settings are translated.
-- **Nolani replies in the interface language** — including follow-up suggestions, the "done"
-  summary under an answer and the dates it names — and opens apps when asked, from every chat
-  surface. Sub-tasks get the full context of the turn.
+- **Nolani replies in the interface language**, including its follow-up suggestions, the
+  "done" summary under an answer and the dates it names. It opens apps when asked, from every
+  chat surface. Sub-tasks get the full context of the turn.
 - Calendar deep links to a date ("open next week"); files open in the viewer for their type;
   inserting into an open document works at the cursor or at the end, Markdown arrives
   formatted, and the office viewer confirms the insert.
