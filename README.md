@@ -1,8 +1,7 @@
 <h1 align="center">NolaniOS</h1>
 
 <p align="center">
-  <b>The open-source, self-hosted alternative to Google Workspace + Copilot —<br>
-  with an AI agent that actually operates your apps.</b>
+  <b>A self-hosted workspace in the browser, with an assistant that can operate its apps.</b>
 </p>
 
 <p align="center">
@@ -22,78 +21,83 @@
   <img src="docs/assets/hero.gif" alt="Nolani opens next week in the calendar, adds a task and writes a Next steps section into an open document" width="900">
 </p>
 
-**NolaniOS** is a desktop in your browser — files, office, mail, calendar and tasks, chat and
-video calls, photos, documents, passwords, a knowledge base — running on **your own server**.
-Built in is **Nolani**, an assistant that doesn't just answer: ask it to *open the calendar*,
-*add a task for Friday and show it to me* or *write a summary into the open document*, and
-you watch it happen on screen.
+NolaniOS gives you files, office documents, mail, calendar, tasks, team chat and video calls,
+photos, scanned documents, passwords and a knowledge base on one server of your own. You use
+them in a single desktop in the browser, on the laptop and on the phone, with one login.
 
-## Why NolaniOS
+The assistant, Nolani, can do things in these apps for you. Ask it to open next week in the
+calendar, to add a task and show it, or to add a section to the document you have open, and
+you see it happen on screen.
 
-- **An agent that works the apps, not a chatbot next to them.** Nolani uses the same tools as
-  you do — it opens windows, jumps to records, opens files in the right viewer, writes into
-  the document you have open, and reads what is on screen to check its own work.
-- **Your data stays on your server.** One installation — a *cell* — is one server and one
-  trust boundary. Nothing is shared between cells.
-- **Guard rails built in.** Anything public or irreversible (posting, sending) needs your
-  approval by button — a "yes" in the chat is not enough, because a chat can be manipulated.
-- **One coherent workspace.** Single sign-on across all apps, one desktop on laptop and phone.
-- **Free software.** AGPL-3.0. NolaniOS itself sends no telemetry, and the cell switches it off
-  in the bundled services that offer a switch.
+## What it does for you
+
+- **Nolani works in the apps.** It opens windows, jumps to a task or a file, writes into the
+  open document and checks the screen afterwards. It acts with your permissions, never as an
+  administrator.
+- **Nothing goes out without your click.** Posting, sending and other irreversible actions
+  need a confirmation button. A "yes" in the chat is not enough, because chat text can be
+  manipulated.
+- **Your files, mail and calendars stay on your server.** What you write to Nolani is sent to
+  the language model you configure and, when it operates the apps, to the hosted agent
+  runtime (see [The assistant](#the-assistant)).
+- **One workspace instead of many logins.** All apps share one sign-in and one desktop.
+- **Free software.** AGPL-3.0. NolaniOS sends no telemetry, and setup switches it off in the
+  bundled services where they offer a switch.
 
 <table>
   <tr>
-    <td><img src="docs/assets/planner.png" alt="Planner with tasks, calendar and Gantt"><br><b>Planner</b> — tasks, calendar, Gantt</td>
-    <td><img src="docs/assets/files.png" alt="Files"><br><b>Files & office</b> — Nextcloud + Collabora</td>
+    <td><img src="docs/assets/planner.png" alt="Planner with tasks, calendar and Gantt"><br><b>Planner</b>: tasks, calendar, Gantt</td>
+    <td><img src="docs/assets/files.png" alt="Files"><br><b>Files and office</b>: Nextcloud and Collabora</td>
   </tr>
   <tr>
-    <td><img src="docs/assets/agent.png" alt="Nolani at work"><br><b>Nolani</b> — operates the apps for you</td>
-    <td><img src="docs/assets/mobile.png" alt="Mobile shell" width="260"><br><b>Mobile</b> — the same workspace on the phone</td>
+    <td><img src="docs/assets/agent.png" alt="Nolani at work"><br><b>Nolani</b> operates the apps for you</td>
+    <td><img src="docs/assets/mobile.png" alt="Mobile shell" width="260"><br><b>Mobile</b>: the same workspace on the phone</td>
   </tr>
   <tr>
-    <td><img src="docs/assets/knowledge.png" alt="A recipe collection as a table with number, select, rating and checkbox columns"><br><b>Knowledge</b> — collections as tables, boards and calendars</td>
-    <td><img src="docs/assets/teams.png" alt="A team with channels and a conversation in the General channel"><br><b>Teams</b> — chat, channels and calls (Matrix + LiveKit)</td>
+    <td><img src="docs/assets/knowledge.png" alt="A recipe collection as a table with number, select, rating and checkbox columns"><br><b>Knowledge</b>: collections as tables, boards and calendars</td>
+    <td><img src="docs/assets/teams.png" alt="A team with channels and a conversation in the General channel"><br><b>Teams</b>: chat, channels and calls</td>
   </tr>
 </table>
 
-## What you get
+## What is included
 
-| App | What it does | Built on |
+| App | What you can do | Built on |
 |---|---|---|
-| Desktop & mobile shell | Windows, taskbar, start menu, widgets, notifications | **NolaniOS** (React, TypeScript) |
-| Nolani (assistant) | Operates the apps, answers with your data, routines | **NolaniOS** + an LLM of your choice via LiteLLM |
-| Files & office | Browse, share, edit Word/Excel/PowerPoint in the browser | Nextcloud, Collabora Online |
-| Mail | Inbox with rules, mail → task / event / note | Stalwart (JMAP) |
-| Planner | Tasks, projects, calendar, Gantt, time and cost tracking | Vikunja + Nextcloud calendar |
-| Teams | Chat, rooms, video calls | Matrix / Synapse, LiveKit, Element Call |
-| Knowledge & ideas | Pages, collections, idea board | **NolaniOS** |
+| Desktop and mobile shell | Windows, taskbar, start menu, widgets, notifications | NolaniOS |
+| Nolani (assistant) | Let it operate the apps, ask about your data, run routines | NolaniOS, with a language model of your choice |
+| Files and office | Browse and share files, edit Word, Excel and PowerPoint files in the browser | Nextcloud, Collabora Online |
+| Mail | Inbox with rules, turn a mail into a task, event or note | Stalwart |
+| Planner | Tasks, projects, calendar, Gantt, time and costs | Vikunja, Nextcloud calendar |
+| Teams | Chat, channels, video calls | Matrix (Synapse), LiveKit, Element Call |
+| Knowledge and ideas | Pages, collections as tables or boards, idea board | NolaniOS |
 | Photos | Timeline, albums, face recognition | Immich |
-| Documents | Scans with OCR, tags, full-text search | Paperless-ngx |
+| Documents | Scans with text recognition, tags, full-text search | Paperless-ngx |
 | Passwords | Personal and shared vaults | Vaultwarden |
-| Personal browser | A browser streamed into the shell, downloads land in Files | Selkies / Chromium |
+| Personal browser | A browser in a window; downloads land in your files | Selkies, Chromium |
 | Social (optional) | Your own Mastodon and PeerTube | Mastodon, PeerTube |
 
-### What is our own code — and what is integration
+Apps marked NolaniOS are written in this repository. The others run unchanged in their own
+containers; NolaniOS signs you in to them, creates your accounts there and gives Nolani tools
+to use them.
 
-NolaniOS is about 130,000 lines of its own code: the **shell** (desktop, mobile, built-in apps
-such as planner views, knowledge base and file manager — `packages/shell`, `packages/core`),
-the **API** that ties everything together (identity, per-user app access, the tool gateway
-the assistant uses, routines — `packages/api`), and the **cell operations** (setup, backups,
-restore, end-to-end tests, OpenTofu — `deploy/`). The apps in the table above that name another
-project run unchanged as containers; NolaniOS signs users in to them, provisions their
-accounts and gives the assistant tools for them.
+## One installation, one server
+
+An installation is called a *cell*: one server with its own accounts and data. Cells are
+independent of each other. Team chat stays inside the cell; Mastodon and PeerTube connect only
+to servers the administrator approves one by one. Cells cannot be connected with each other
+yet.
 
 ## The assistant
 
-Nolani talks to any model through LiteLLM (Anthropic, OpenAI-compatible, local models). The
-tools it can use are declared per app in [`clara-tools.d/`](clara-tools.d) — one YAML file
-per app — and every call runs as the signed-in user, never as an admin.
+Nolani uses any language model through LiteLLM: Anthropic, OpenAI-compatible providers or a
+local model. The tools it may use are declared per app in [`clara-tools.d/`](clara-tools.d),
+one YAML file per app, and every call runs as the signed-in user.
 
-- **Agent runtime.** Operating the apps needs an *agent runtime* (the "brain") that plans and
-  calls the tools. It is **not part of this repository**; we run it as a **hosted preview**
-  for cells. Without it, Nolani is a plain chat assistant and says so honestly.
-- **Bring your own agent.** Any MCP-capable agent (Claude Desktop, IDEs, your own) can use a
-  cell's app tools through its MCP endpoint, with per-user keys and read/write scopes
+- **Agent runtime.** To operate the apps, Nolani needs an agent runtime that plans and calls
+  the tools. It is not part of this repository; we run it as a hosted preview for cells.
+  Without it, Nolani is a plain chat assistant and tells you so.
+- **Bring your own agent.** Any MCP-capable agent (Claude Desktop, an IDE, your own) can use a
+  cell's app tools through its MCP endpoint, with per-user keys and read or write scopes
   (`./setup.sh <domain> --mcp`).
 
 ## Run your own cell
@@ -137,28 +141,22 @@ docker/        Dockerfiles for the API and the frontend
 
 ## Status and known rough edges
 
-**Early preview.** Run it for yourself, your family or your team — not yet for customers.
+**Early preview.** Good for yourself, your family or a small team. Not yet for customers.
 
-- **Languages:** the shell frame is German and English; the apps are being translated from
-  German (see the [roadmap](ROADMAP.md)). Code and documentation are English.
-- **Old name:** NolaniOS was called ClaraOS. Internal identifiers still carry it — package
-  scope `@claraos/*`, API prefix `/api/claraos`, `CLARAOS_*` variables, `claraos_*` tables and
-  some module names. They are not user-visible and are renamed step by step.
-- **Footprint:** a cell runs about 40 containers; a slimmer single-person setup is on the
-  roadmap.
-
-## How this was built
-
-NolaniOS was built by one person with AI coding agents — the maintainer designs, directs,
-reviews and tests; the agents write most of the code. It is the same idea the product is
-about: people stay in charge, agents do the work. Every change goes through tests, a secret
-scan and an end-to-end suite on a real cell.
+- **Languages:** English and German. A few texts may still appear in German; please report
+  them.
+- **Old name:** NolaniOS used to be called ClaraOS. Internal names still carry it (package
+  scope `@claraos/*`, API prefix `/api/claraos`, `CLARAOS_*` variables, `claraos_*` tables).
+  You do not see them in the interface, and they are renamed step by step.
+- **Size:** a cell runs about 40 containers. A smaller setup for one person is on the roadmap.
+- **How it is made:** one maintainer with AI coding agents. Every change goes through tests,
+  a secret scan and an end-to-end run on a real cell.
 
 ## Contributing
 
-Issues and pull requests are welcome — start with a
-[good first issue](https://github.com/nolani-os/nolani/labels/good%20first%20issue) or the
-[roadmap](ROADMAP.md), and read [CONTRIBUTING.md](CONTRIBUTING.md). Translations are
+Issues and pull requests are welcome. Good starting points are the
+[good first issues](https://github.com/nolani-os/nolani/labels/good%20first%20issue) and the
+[roadmap](ROADMAP.md); please read [CONTRIBUTING.md](CONTRIBUTING.md) first. Translations are
 especially welcome.
 
 ## Services with their own terms
@@ -177,7 +175,7 @@ The cell pulls these images unchanged; their licences apply to them, not to this
 
 ## Security
 
-Please do not open public issues for security problems — see [SECURITY.md](SECURITY.md).
+Please do not open public issues for security problems. See [SECURITY.md](SECURITY.md).
 
 ## Trademarks
 
@@ -191,8 +189,8 @@ identify those products; no endorsement is implied. See
 
 Copyright © 2025–2026 the NolaniOS authors (see the Git history).
 
-NolaniOS is licensed under the **GNU Affero General Public License v3.0 or later** — see
+NolaniOS is licensed under the **GNU Affero General Public License v3.0 or later**, see
 [LICENSE](LICENSE). If you run a modified version as a network service, the AGPL requires you
 to offer its source code to the users of that service; set `CLARAOS_SOURCE_URL` so the
 shell's "About" page links to your source. Bundled third-party components keep their own
-licences — see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+licences, see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
