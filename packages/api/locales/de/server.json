@@ -1,0 +1,286 @@
+{
+  "knowledge": {
+    "allEntries": "Alle Einträge",
+    "objectNotFound": "Objekt nicht gefunden",
+    "ownerOnly": "Nur der Besitzer darf dieses Objekt ändern",
+    "ownerOrWriter": "Nur der Besitzer oder ein Mitglied mit Schreibrecht darf dieses Objekt ändern",
+    "visibilityOwner": "Die Sichtbarkeit ändert nur der Besitzer",
+    "ownParent": "Objekt kann nicht sein eigenes Elternteil sein",
+    "cycle": "Zyklus: Ziel ist ein Nachfahre des Objekts",
+    "versionNotFound": "Version nicht gefunden",
+    "compareNotFound": "Vergleichsversion nicht gefunden",
+    "fileTooLarge": "Datei zu groß (max. 20 MB)",
+    "attachmentNotFound": "Anhang nicht gefunden",
+    "commentsOnly": "Auf geteilten Objekten sind nur Kommentare erlaubt",
+    "linkSelf": "Ein Objekt kann nicht mit sich selbst verknüpft werden",
+    "linkNotFound": "Verknüpfung nicht gefunden",
+    "notGoal": "Objekt ist kein Ziel und keine Vision",
+    "notKpi": "Objekt ist keine Kennzahl",
+    "plannerRejected": "Planner lehnte die Projekt-Anlage ab ({status})",
+    "plannerNoId": "Planner lieferte keine Projekt-Nummer",
+    "plannerLinkFailed": "Verknüpfung im Planner fehlgeschlagen ({status})",
+    "plannerUnlinkFailed": "Lösen der Verknüpfung fehlgeschlagen ({status})",
+    "taskFailed": "Aufgabe konnte nicht angelegt werden ({status})",
+    "projectUnreadable": "Projekt {project} nicht lesbar (HTTP {status})",
+    "tasksUnreadable": "Verknüpfte Aufgaben nicht lesbar (HTTP {status})",
+    "valueNotFound": "Messwert nicht gefunden",
+    "shareSelf": "Mit dir selbst musst du nicht teilen",
+    "notAccepting": "{target} nimmt derzeit nichts von dir an ({reason}).",
+    "collectionNotFound": "Sammlung nicht gefunden",
+    "collectionOwner": "Nur der Besitzer darf diese Sammlung ändern",
+    "collectionWrite": "Dafür braucht es Schreibrecht an dieser Sammlung",
+    "shareNotFound": "Freigabe nicht gefunden",
+    "shareOwner": "Nur der Besitzer darf Freigaben entfernen",
+    "urlMissing": "URL fehlt",
+    "pageNotLoaded": "Seite konnte nicht geladen werden ({error})",
+    "bmNote": "Notiz zum Clip (optional):",
+    "bmSaved": "Gespeichert: ",
+    "bmFailed": "Fehler beim Speichern",
+    "bmUnreachable": "{product} nicht erreichbar",
+    "bmHint": "Als Lesezeichen speichern und auf einer Seite anklicken. Markierter Text wird mitgesichert.",
+    "templateNotFound": "Vorlage nicht gefunden",
+    "archiveTooLarge": "Archiv zu groß (max. 80 MB)",
+    "zipUnreadable": "ZIP konnte nicht gelesen werden: {error}",
+    "commentEmpty": "Kommentar darf nicht leer sein",
+    "commentNotFound": "Kommentar nicht gefunden",
+    "authorOnly": "Nur der Autor darf den Text ändern",
+    "authorOrOwnerResolve": "Nur Autor oder Objekt-Besitzer dürfen das erledigen",
+    "authorOrOwnerDelete": "Nur Autor oder Objekt-Besitzer dürfen löschen",
+    "formulaInvalid": "Formel ungültig: {error}",
+    "fieldNotFound": "Feld nicht gefunden",
+    "viewNotFound": "Ansicht nicht gefunden",
+    "lastView": "Die letzte Ansicht kann nicht gelöscht werden",
+    "typeNotFound": "Typ nicht gefunden",
+    "ownTypesOnly": "Nur eigene Typen sind änderbar",
+    "handoffFailed": "Planner-Übergabe fehlgeschlagen ({status}): {text}"
+  },
+  "post": {
+    "bridgeTokenMissing": "Brücken-Token fehlt oder ungültig",
+    "bridgeTokenUnknown": "Brücken-Token unbekannt — in {product} neu erzeugen",
+    "noAccount": "Kein Mail-Konto verbunden",
+    "noAccountFor": "Kein Mail-Konto für {user} in {product} verbunden",
+    "accessIncomplete": "Mail-Zugang unvollständig",
+    "mailNotFound": "E-Mail nicht gefunden",
+    "timeNotUnderstood": "Zeitangabe nicht verstanden — z. B. „morgen 09:00“ oder „2026-09-12 14:30“",
+    "timeInvalid": "Uhrzeit ungültig",
+    "senderNoAddress": "Absender ohne E-Mail-Adresse",
+    "alreadyContact": "{name} ist schon in den Kontakten",
+    "contactCreated": "Kontakt „{name}“ angelegt",
+    "noteCreated": "Notiz „{subject}“ in der Wissens-App angelegt",
+    "noMailboxAccess": "Auf dieses Postfach hast du keinen Zugriff",
+    "attachmentTooLarge": "Anhang größer als 50 MB",
+    "noRecipient": "Kein Empfänger",
+    "sendTimePast": "Sendezeit liegt in der Vergangenheit",
+    "tooLate": "Zu spät — die Mail ist schon unterwegs",
+    "sendUndone": "Senden rückgängig — liegt wieder bei den Entwürfen",
+    "replyIntro": "Am {when} schrieb {who}:",
+    "forwardHead": "---------- Weitergeleitete Nachricht ----------",
+    "from": "Von",
+    "date": "Datum",
+    "subject": "Betreff",
+    "to": "An",
+    "attachment": "Anhang",
+    "swept": "{n} Mail(s) von {sender} {what}",
+    "archived": "archiviert",
+    "deleted": "gelöscht",
+    "sweptRule": " — künftige landen automatisch dort",
+    "addressMissing": "Adresse fehlt",
+    "senderMissing": "Absender fehlt",
+    "blocked": "{sender} blockiert — {n} vorhandene Mail(s) in den Papierkorb",
+    "wakeTimePast": "Weckzeit liegt in der Vergangenheit",
+    "woken": "{n} Mail(s) zurück im Posteingang"
+  },
+  "contacts": {
+    "notFound": "Kontakt nicht gefunden.",
+    "unlinked": "Zugang gelöst. Deine Kontakte bleiben in {product}.",
+    "fileTooLarge": "Datei zu groß (max {mb} MB).",
+    "noVcard": "Keine vCard gefunden. Ist das wirklich eine .vcf-Datei?",
+    "noGoogleAccess": "Kein Google-Zugang hinterlegt.",
+    "googleNotSetUp": "Google ist auf diesem Server nicht eingerichtet.",
+    "googleNotSetUpVars": "Google ist auf diesem Server nicht eingerichtet (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET fehlen).",
+    "notConnected": "Noch nicht verbunden.",
+    "readOnlyAccess": "{product} fragt nur Lesezugriff auf deine Kontakte an.",
+    "googleSays": "Google meldet: {error}",
+    "noCode": "Google hat keinen Freigabe-Code geschickt.",
+    "otherAccount": "Die Freigabe gehört zu einem anderen Konto.",
+    "codeFailed": "Der Freigabe-Code konnte nicht eingelöst werden.",
+    "noRefreshToken": "Google hat kein dauerhaftes Token geliefert. Bitte den Zugang unter myaccount.google.com/permissions entfernen und neu verbinden.",
+    "googleSyncFailed": "Google-Abgleich fehlgeschlagen: {error}",
+    "ownNextcloud": "Dafür brauchst du einen eigenen Nextcloud-Zugang in den Einstellungen. Ein geteiltes Dienstkonto wird hier bewusst nicht verwendet.",
+    "ownNextcloudShort": "Dafür brauchst du einen eigenen Nextcloud-Zugang in den Einstellungen.",
+    "syncFailed": "Abgleich fehlgeschlagen: {error}",
+    "syncImpossible": "Abgleich nicht möglich: {error}",
+    "teamAdmin": "Jemanden in ein Team aufzunehmen ist eine Verwaltungshandlung. Bitte einen Admin fragen.",
+    "appliesIn": {
+      "shareContacts": "Kontakte teilen",
+      "shareKnowledge": "Wissen teilen"
+    },
+    "notIn": {
+      "phone": "Telefon",
+      "email": "E-Mail",
+      "outside": "alles außerhalb von {product}"
+    },
+    "match": {
+      "email": "gleiche E-Mail-Adresse",
+      "phone": "gleiche Telefonnummer (über Nextcloud abgeglichen)",
+      "name": "gleicher Name — nur ein Hinweis, bitte genau prüfen"
+    },
+    "services": {
+      "matrix": {
+        "hint": "Nachrichten direkt aus {product} möglich."
+      },
+      "nextcloud": {
+        "hint": "Ordner und Dateien teilen (föderiertes Teilen)."
+      },
+      "nctalk": {
+        "hint": "Chat und Anruf direkt aus {product}."
+      },
+      "mastodon": {
+        "hint": "Folgen und erwähnen über ActivityPub."
+      },
+      "peertube": {
+        "hint": "Kanal folgen über ActivityPub."
+      },
+      "bridge": {
+        "hint": "Nur über eine Matrix-Brücke, falls eingerichtet."
+      },
+      "linkedin": {
+        "placeholder": "vorname-nachname",
+        "hint": "Nur Profil öffnen — LinkedIn hat keine Nachrichten-Schnittstelle."
+      },
+      "x": {
+        "hint": "Nur Profil öffnen — die Schnittstelle ist praktisch nur noch kostenpflichtig nutzbar."
+      },
+      "facebook": {
+        "placeholder": "name oder Profil-URL"
+      },
+      "xing": {
+        "placeholder": "Vorname_Nachname"
+      },
+      "profileOnly": {
+        "hint": "Nur Profil öffnen."
+      },
+      "idOnly": {
+        "hint": "Nur die Kennung merken."
+      },
+      "website": {
+        "label": "Webseite"
+      },
+      "sonstiges": {
+        "label": "Sonstiges",
+        "placeholder": "Kennung oder Adresse"
+      }
+    }
+  },
+  "jobs": {
+    "task": "Auftrag",
+    "doneTitle": "{assistant} ist fertig",
+    "doneText": "„{title}“ ist erledigt.",
+    "failedTitle": "{assistant} kam nicht weiter",
+    "failedText": "„{title}“ ist fehlgeschlagen."
+  },
+  "digest": {
+    "dueToday_one": "{n} Aufgabe heute fällig",
+    "dueToday_other": "{n} Aufgaben heute fällig",
+    "overdue_one": "{n} überfällig",
+    "overdue_other": "{n} überfällig",
+    "title": "Planner: {parts}",
+    "since_one": "(seit {n} Tag)",
+    "since_other": "(seit {n} Tagen)",
+    "more": "… und {n} weitere"
+  },
+  "calendar": {
+    "accepted": "{me} hat „{summary}“ zugesagt.",
+    "tentative": "{me} hat „{summary}“ mit Vorbehalt zugesagt.",
+    "declined": "{me} hat „{summary}“ abgesagt.",
+    "proposal": " Vorschlag: {when}.",
+    "rsvpTitle": "Antwort auf Einladung",
+    "allDay": "(ganztägig)",
+    "today": "heute {time}",
+    "event": "Termin"
+  },
+  "knowledgePush": {
+    "shareTitle": "{actor} hat die Sammlung „{name}“ mit dir geteilt",
+    "shareWrite": "Du kannst darin bearbeiten. In der Wissens-App unter Sammlungen.",
+    "shareRead": "Du kannst darin lesen und kommentieren. In der Wissens-App unter Sammlungen.",
+    "commentTitle": "💬 Kommentar zu „{title}“"
+  },
+  "confirm": {
+    "title": "{assistant} fragt: {tool}",
+    "tip": "Ein Tipp auf 'Ja - freigeben' genehmigt die Aktion ({s}s Zeit).",
+    "yes": "Ja - freigeben",
+    "no": "Nein"
+  },
+  "reach": {
+    "blocked": "ausdrücklich geblockt",
+    "teamUnknown": "Teamzugehörigkeit nicht prüfbar",
+    "notSameTeam": "nicht im selben Team",
+    "neither": "weder im Team noch in der Kontaktliste",
+    "uncheckable": "nicht prüfbar"
+  },
+  "formula": {
+    "tooComplex": "Formel zu komplex",
+    "tooDeep": "Formel zu tief verschachtelt",
+    "notAllowed": "In Formeln nicht erlaubt: {what}",
+    "simpleCalls": "Nur einfache Funktionsaufrufe sind erlaubt",
+    "unknownFn": "Unbekannte Funktion: {name}()",
+    "noKeywords": "Benannte Argumente sind nicht erlaubt",
+    "textTooLong": "Text in der Formel zu lang",
+    "resultTooLong": "Ergebnis zu lang",
+    "textMultiply": "Text kann nicht multipliziert werden (nutze concat)",
+    "powerTooBig": "Potenz zu groß",
+    "resultTooBig": "Ergebnis zu groß",
+    "notEvaluable": "Ausdruck nicht auswertbar",
+    "empty": "Formel ist leer",
+    "tooLong": "Formel zu lang (max. {max} Zeichen)",
+    "syntax": "Syntaxfehler: {msg}",
+    "broken": "Formel fehlerhaft"
+  },
+  "files": {
+    "devicePrivate": "Dieses Gerät ist privat und nur für seinen Besitzer zugänglich.",
+    "deviceAdmin": "Auf Geräte des Hausnetzes hat nur die Verwaltung Zugriff.",
+    "readFailed": "Lesen fehlgeschlagen ({status}): {name}",
+    "writeFailed": "Schreiben fehlgeschlagen ({status}): {name}",
+    "mkdirFailed": "Ordner anlegen fehlgeschlagen ({status})",
+    "deleteFailed": "Löschen fehlgeschlagen ({status})",
+    "intoItself": "Ein Ordner kann nicht in sich selbst kopiert/verschoben werden.",
+    "sourceNotFound": "Quelle nicht gefunden",
+    "notFound": "Nicht gefunden",
+    "ncDownloadFailed": "Nextcloud-Download fehlgeschlagen ({status})",
+    "zipTooLarge": "Auswahl zu groß für ein ZIP (>500 MB oder >2000 Dateien)",
+    "imageTooLarge": "Bild zu groß für die Umwandlung (>200 MB)",
+    "imageConvert": "Bild lässt sich nicht umwandeln: {error}",
+    "badName": "Ungültiger Dateiname",
+    "ncUploadFailed": "Nextcloud-Upload fehlgeschlagen ({status})",
+    "shareNcOnly": "Teilen geht nur für Nextcloud-Dateien.",
+    "pathNotFound": "Pfad nicht gefunden",
+    "folderTooLarge": "Ordner zu groß (>500 MB)",
+    "archiveNcOnly": "Archivieren nur für Nextcloud-Quellen",
+    "encryptNcOnly": "Verschlüsseln nur für Nextcloud-Quellen",
+    "passwordShort": "Passwort zu kurz (min. 4 Zeichen)",
+    "extractNcOnly": "Entpacken nur für Nextcloud-Quellen",
+    "archiveNotFound": "Archiv nicht gefunden",
+    "archiveTooLarge": "Archiv zu groß (>500 MB)",
+    "notZip": "Keine gültige ZIP-Datei",
+    "archiveEmpty": "Archiv enthält keine Dateien",
+    "extractedTooLarge": "Entpackter Inhalt zu groß (>500 MB)",
+    "archiveEncrypted": "Archiv ist verschlüsselt — Passwort erforderlich",
+    "archiveBroken": "Archiv nicht lesbar (beschädigt?)",
+    "fileNotFound": "Datei nicht gefunden",
+    "versionsNcOnly": "Versionen nur für Nextcloud-Quellen",
+    "restoreFailed": "Wiederherstellen fehlgeschlagen: {status}",
+    "versionUnloadable": "Version nicht ladbar: {status}",
+    "deleteFailed2": "Löschen fehlgeschlagen: {status}",
+    "emptyFailed": "Leeren fehlgeschlagen: {status}",
+    "searchMissing": "Suchbegriff fehlt",
+    "noSdcard": "Kein Speicherzugriff auf /sdcard — zeige das Home-Verzeichnis."
+  },
+  "planner": {
+    "noToken": "Kein Vikunja-API-Token hinterlegt. Einstellungen → App-Verbindungen → Planner (Vikunja): Token aus der Vikunja-UI (Einstellungen → API-Tokens) eintragen.",
+    "noCalendar": "Kein NC-Kalender (VEVENT) gefunden",
+    "eventNotFound": "Termin nicht gefunden",
+    "calendarReadOnly": "Kalender „{name}“ ist schreibgeschützt",
+    "attendeesNotSaved": "Teilnehmer nicht gespeichert: keine Kalender-E-Mail-Adresse am Nextcloud-Konto gefunden (iMIP braucht ORGANIZER).",
+    "attendeesUnchanged": "Teilnehmer unverändert gelassen: keine Kalender-E-Mail-Adresse gefunden."
+  }
+}

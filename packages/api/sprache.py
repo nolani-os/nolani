@@ -39,6 +39,18 @@ def _katalog(lang: str) -> dict:
         return {}
 
 
+def fehlende_kataloge() -> list[str]:
+    """Languages whose catalog file is missing or empty. Without the German
+    one every server text shows as its raw key — a packaging mistake that must
+    not stay silent (it shipped once: the export copied only imported .py)."""
+    return [lang for lang in SPRACHEN if not _katalog(lang)]
+
+
+if fehlende_kataloge():
+    log.error("server text catalogs missing for %s in %s — texts will show as raw keys",
+              ", ".join(fehlende_kataloge()), _LOCALES)
+
+
 def _suche(katalog: dict, key: str) -> str | None:
     node: object = katalog
     for teil in key.split("."):

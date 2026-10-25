@@ -1,0 +1,286 @@
+{
+  "knowledge": {
+    "allEntries": "All entries",
+    "objectNotFound": "Object not found",
+    "ownerOnly": "Only the owner may change this object",
+    "ownerOrWriter": "Only the owner or a member with write access may change this object",
+    "visibilityOwner": "Only the owner changes the visibility",
+    "ownParent": "An object cannot be its own parent",
+    "cycle": "Cycle: the target is a descendant of the object",
+    "versionNotFound": "Version not found",
+    "compareNotFound": "Comparison version not found",
+    "fileTooLarge": "File too large (max. 20 MB)",
+    "attachmentNotFound": "Attachment not found",
+    "commentsOnly": "Only comments are allowed on shared objects",
+    "linkSelf": "An object cannot be linked to itself",
+    "linkNotFound": "Link not found",
+    "notGoal": "The object is neither a goal nor a vision",
+    "notKpi": "The object is not a KPI",
+    "plannerRejected": "The Planner refused to create the project ({status})",
+    "plannerNoId": "The Planner returned no project number",
+    "plannerLinkFailed": "Linking in the Planner failed ({status})",
+    "plannerUnlinkFailed": "Removing the link failed ({status})",
+    "taskFailed": "The task could not be created ({status})",
+    "projectUnreadable": "Project {project} not readable (HTTP {status})",
+    "tasksUnreadable": "Linked tasks not readable (HTTP {status})",
+    "valueNotFound": "Measurement not found",
+    "shareSelf": "You don't need to share with yourself",
+    "notAccepting": "{target} currently accepts nothing from you ({reason}).",
+    "collectionNotFound": "Collection not found",
+    "collectionOwner": "Only the owner may change this collection",
+    "collectionWrite": "This needs write access to the collection",
+    "shareNotFound": "Share not found",
+    "shareOwner": "Only the owner may remove shares",
+    "urlMissing": "URL missing",
+    "pageNotLoaded": "The page could not be loaded ({error})",
+    "bmNote": "Note for the clip (optional):",
+    "bmSaved": "Saved: ",
+    "bmFailed": "Saving failed",
+    "bmUnreachable": "{product} not reachable",
+    "bmHint": "Save as a bookmark and click it on a page. Selected text is saved too.",
+    "templateNotFound": "Template not found",
+    "archiveTooLarge": "Archive too large (max. 80 MB)",
+    "zipUnreadable": "The ZIP could not be read: {error}",
+    "commentEmpty": "The comment must not be empty",
+    "commentNotFound": "Comment not found",
+    "authorOnly": "Only the author may change the text",
+    "authorOrOwnerResolve": "Only the author or the object owner may resolve this",
+    "authorOrOwnerDelete": "Only the author or the object owner may delete",
+    "formulaInvalid": "Invalid formula: {error}",
+    "fieldNotFound": "Field not found",
+    "viewNotFound": "View not found",
+    "lastView": "The last view cannot be deleted",
+    "typeNotFound": "Type not found",
+    "ownTypesOnly": "Only your own types can be changed",
+    "handoffFailed": "Handing over to the Planner failed ({status}): {text}"
+  },
+  "post": {
+    "bridgeTokenMissing": "Bridge token missing or invalid",
+    "bridgeTokenUnknown": "Bridge token unknown — create a new one in {product}",
+    "noAccount": "No mail account connected",
+    "noAccountFor": "No mail account connected for {user} in {product}",
+    "accessIncomplete": "Mail access incomplete",
+    "mailNotFound": "Email not found",
+    "timeNotUnderstood": "Time not understood — e.g. “2026-09-12 14:30”",
+    "timeInvalid": "Invalid time",
+    "senderNoAddress": "Sender without an email address",
+    "alreadyContact": "{name} is already in your contacts",
+    "contactCreated": "Contact “{name}” created",
+    "noteCreated": "Note “{subject}” created in the knowledge app",
+    "noMailboxAccess": "You have no access to this mailbox",
+    "attachmentTooLarge": "Attachment larger than 50 MB",
+    "noRecipient": "No recipient",
+    "sendTimePast": "The send time is in the past",
+    "tooLate": "Too late — the mail is already on its way",
+    "sendUndone": "Sending undone — it is back in drafts",
+    "replyIntro": "On {when}, {who} wrote:",
+    "forwardHead": "---------- Forwarded message ----------",
+    "from": "From",
+    "date": "Date",
+    "subject": "Subject",
+    "to": "To",
+    "attachment": "Attachment",
+    "swept": "{n} mail(s) from {sender} {what}",
+    "archived": "archived",
+    "deleted": "deleted",
+    "sweptRule": " — future ones go there automatically",
+    "addressMissing": "Address missing",
+    "senderMissing": "Sender missing",
+    "blocked": "{sender} blocked — {n} existing mail(s) moved to the trash",
+    "wakeTimePast": "The wake-up time is in the past",
+    "woken": "{n} mail(s) back in the inbox"
+  },
+  "contacts": {
+    "notFound": "Contact not found.",
+    "unlinked": "Access removed. Your contacts stay in {product}.",
+    "fileTooLarge": "File too large (max {mb} MB).",
+    "noVcard": "No vCard found. Is this really a .vcf file?",
+    "noGoogleAccess": "No Google access stored.",
+    "googleNotSetUp": "Google is not set up on this server.",
+    "googleNotSetUpVars": "Google is not set up on this server (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET missing).",
+    "notConnected": "Not connected yet.",
+    "readOnlyAccess": "{product} only asks for read access to your contacts.",
+    "googleSays": "Google reports: {error}",
+    "noCode": "Google did not send an authorisation code.",
+    "otherAccount": "The authorisation belongs to a different account.",
+    "codeFailed": "The authorisation code could not be redeemed.",
+    "noRefreshToken": "Google did not provide a lasting token. Please remove the access at myaccount.google.com/permissions and connect again.",
+    "googleSyncFailed": "Google sync failed: {error}",
+    "ownNextcloud": "For this you need your own Nextcloud access in the settings. A shared service account is deliberately not used here.",
+    "ownNextcloudShort": "For this you need your own Nextcloud access in the settings.",
+    "syncFailed": "Sync failed: {error}",
+    "syncImpossible": "Sync not possible: {error}",
+    "teamAdmin": "Adding someone to a team is an administrative action. Please ask an admin.",
+    "appliesIn": {
+      "shareContacts": "Sharing contacts",
+      "shareKnowledge": "Sharing knowledge"
+    },
+    "notIn": {
+      "phone": "Phone",
+      "email": "Email",
+      "outside": "everything outside {product}"
+    },
+    "match": {
+      "email": "same email address",
+      "phone": "same phone number (matched via Nextcloud)",
+      "name": "same name — only a hint, please check carefully"
+    },
+    "services": {
+      "matrix": {
+        "hint": "Messages directly from {product}."
+      },
+      "nextcloud": {
+        "hint": "Share folders and files (federated sharing)."
+      },
+      "nctalk": {
+        "hint": "Chat and call directly from {product}."
+      },
+      "mastodon": {
+        "hint": "Follow and mention via ActivityPub."
+      },
+      "peertube": {
+        "hint": "Follow a channel via ActivityPub."
+      },
+      "bridge": {
+        "hint": "Only via a Matrix bridge, if set up."
+      },
+      "linkedin": {
+        "placeholder": "firstname-lastname",
+        "hint": "Open profile only — LinkedIn has no messaging interface."
+      },
+      "x": {
+        "hint": "Open profile only — the interface is practically paid-only now."
+      },
+      "facebook": {
+        "placeholder": "name or profile URL"
+      },
+      "xing": {
+        "placeholder": "Firstname_Lastname"
+      },
+      "profileOnly": {
+        "hint": "Open profile only."
+      },
+      "idOnly": {
+        "hint": "Just remember the ID."
+      },
+      "website": {
+        "label": "Website"
+      },
+      "sonstiges": {
+        "label": "Other",
+        "placeholder": "ID or address"
+      }
+    }
+  },
+  "jobs": {
+    "task": "Task",
+    "doneTitle": "{assistant} is done",
+    "doneText": "“{title}” is finished.",
+    "failedTitle": "{assistant} got stuck",
+    "failedText": "“{title}” failed."
+  },
+  "digest": {
+    "dueToday_one": "{n} task due today",
+    "dueToday_other": "{n} tasks due today",
+    "overdue_one": "{n} overdue",
+    "overdue_other": "{n} overdue",
+    "title": "Planner: {parts}",
+    "since_one": "(for {n} day)",
+    "since_other": "(for {n} days)",
+    "more": "… and {n} more"
+  },
+  "calendar": {
+    "accepted": "{me} accepted “{summary}”.",
+    "tentative": "{me} tentatively accepted “{summary}”.",
+    "declined": "{me} declined “{summary}”.",
+    "proposal": " Proposal: {when}.",
+    "rsvpTitle": "Reply to invitation",
+    "allDay": "(all day)",
+    "today": "today {time}",
+    "event": "Event"
+  },
+  "knowledgePush": {
+    "shareTitle": "{actor} shared the collection “{name}” with you",
+    "shareWrite": "You can edit it. In the knowledge app under Collections.",
+    "shareRead": "You can read and comment on it. In the knowledge app under Collections.",
+    "commentTitle": "💬 Comment on “{title}”"
+  },
+  "confirm": {
+    "title": "{assistant} asks: {tool}",
+    "tip": "A tap on 'Yes - approve' approves the action ({s}s to decide).",
+    "yes": "Yes - approve",
+    "no": "No"
+  },
+  "reach": {
+    "blocked": "explicitly blocked",
+    "teamUnknown": "team membership not checkable",
+    "notSameTeam": "not in the same team",
+    "neither": "neither in a team nor in the contact list",
+    "uncheckable": "not checkable"
+  },
+  "formula": {
+    "tooComplex": "Formula too complex",
+    "tooDeep": "Formula nested too deeply",
+    "notAllowed": "Not allowed in formulas: {what}",
+    "simpleCalls": "Only simple function calls are allowed",
+    "unknownFn": "Unknown function: {name}()",
+    "noKeywords": "Named arguments are not allowed",
+    "textTooLong": "Text in the formula too long",
+    "resultTooLong": "Result too long",
+    "textMultiply": "Text cannot be multiplied (use concat)",
+    "powerTooBig": "Power too large",
+    "resultTooBig": "Result too large",
+    "notEvaluable": "Expression cannot be evaluated",
+    "empty": "The formula is empty",
+    "tooLong": "Formula too long (max. {max} characters)",
+    "syntax": "Syntax error: {msg}",
+    "broken": "Formula broken"
+  },
+  "files": {
+    "devicePrivate": "This device is private and only accessible to its owner.",
+    "deviceAdmin": "Only the administration has access to devices on the home network.",
+    "readFailed": "Reading failed ({status}): {name}",
+    "writeFailed": "Writing failed ({status}): {name}",
+    "mkdirFailed": "Creating the folder failed ({status})",
+    "deleteFailed": "Deleting failed ({status})",
+    "intoItself": "A folder cannot be copied or moved into itself.",
+    "sourceNotFound": "Source not found",
+    "notFound": "Not found",
+    "ncDownloadFailed": "Nextcloud download failed ({status})",
+    "zipTooLarge": "Selection too large for a ZIP (>500 MB or >2000 files)",
+    "imageTooLarge": "Image too large to convert (>200 MB)",
+    "imageConvert": "The image cannot be converted: {error}",
+    "badName": "Invalid file name",
+    "ncUploadFailed": "Nextcloud upload failed ({status})",
+    "shareNcOnly": "Sharing only works for Nextcloud files.",
+    "pathNotFound": "Path not found",
+    "folderTooLarge": "Folder too large (>500 MB)",
+    "archiveNcOnly": "Archiving only for Nextcloud sources",
+    "encryptNcOnly": "Encrypting only for Nextcloud sources",
+    "passwordShort": "Password too short (min. 4 characters)",
+    "extractNcOnly": "Extracting only for Nextcloud sources",
+    "archiveNotFound": "Archive not found",
+    "archiveTooLarge": "Archive too large (>500 MB)",
+    "notZip": "Not a valid ZIP file",
+    "archiveEmpty": "The archive contains no files",
+    "extractedTooLarge": "Extracted content too large (>500 MB)",
+    "archiveEncrypted": "The archive is encrypted — password required",
+    "archiveBroken": "Archive not readable (damaged?)",
+    "fileNotFound": "File not found",
+    "versionsNcOnly": "Versions only for Nextcloud sources",
+    "restoreFailed": "Restoring failed: {status}",
+    "versionUnloadable": "Version could not be loaded: {status}",
+    "deleteFailed2": "Deleting failed: {status}",
+    "emptyFailed": "Emptying failed: {status}",
+    "searchMissing": "Search term missing",
+    "noSdcard": "No storage access to /sdcard — showing the home directory."
+  },
+  "planner": {
+    "noToken": "No Vikunja API token stored. Settings → App connections → Planner (Vikunja): enter a token from the Vikunja UI (Settings → API tokens).",
+    "noCalendar": "No Nextcloud calendar (VEVENT) found",
+    "eventNotFound": "Event not found",
+    "calendarReadOnly": "Calendar “{name}” is read-only",
+    "attendeesNotSaved": "Attendees not saved: no calendar email address found on the Nextcloud account (iMIP needs ORGANIZER).",
+    "attendeesUnchanged": "Attendees left unchanged: no calendar email address found."
+  }
+}
