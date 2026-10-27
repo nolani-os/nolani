@@ -981,8 +981,16 @@ def _disposition(name: str) -> str:
     return f"attachment; filename=\"{fallback}\"; filename*=UTF-8''{_urlq(name, safe='')}"
 
 
+def _head_response(response: Response) -> Response:
+    """Keep GET metadata, including an absent length, without a response body."""
+    result = Response(status_code=response.status_code, headers=dict(response.headers))
+    if "content-length" not in response.headers:
+        del result.headers["content-length"]
+    return result
+
+
 async def _stream_nc(url: str, headers: dict, name: str, want_zip: bool,
-                     inline: bool = False) -> Response | None:
+                     inline: bool = False, head: bool = False) -> Response | None:
     """Proxy a GET to Nextcloud. None = no ZIP received (use the fallback).
 
     Range requests (video seeking) pass through 1:1 — 206 + Content-Range back."""
@@ -1019,7 +1027,14 @@ async def _stream_nc(url: str, headers: dict, name: str, want_zip: bool,
     for h in ("content-range", "accept-ranges", "etag", "last-modified"):
         if resp.headers.get(h):
             out_headers[h.title()] = resp.headers[h]
-    return StreamingResponse(body(), status_code=resp.status_code, media_type=media_type, headers=out_headers)
+    response = StreamingResponse(body(), status_code=resp.status_code, media_type=media_type, headers=out_headers)
+    if head:
+        # Read GET headers only: Nextcloud's ZIP fallback and download policy
+        # stay identical, but no upstream body is consumed or left open.
+        await resp.aclose()
+        await client.aclose()
+        return _head_response(response)
+    return response
 
 
 async def _zip_in_api(backend: "_Backend", paths: list[str], name: str) -> Response:
@@ -1051,7 +1066,7 @@ async def _zip_in_api(backend: "_Backend", paths: list[str], name: str) -> Respo
                     headers={"Content-Disposition": _disposition(name), "Cache-Control": "no-store"})
 
 
-@router.get("/download")
+@router.api_route("/download", methods=["GET", "HEAD"])
 async def download(request: Request, source: str = "nextcloud",
                    path: list[str] = Query(...), name: str | None = None, inline: bool = False):
     """Stream a file download; folders or multiple paths as ZIP.
@@ -1060,6 +1075,7 @@ async def download(request: Request, source: str = "nextcloud",
     ZIP, otherwise the API zips).
     """
     user = get_current_user(request)
+    head = request.method == "HEAD"
     paths = [_norm(p) for p in path if p and _norm(p) != "/"] or ["/"]
     backend = await _Backend.open(source, user)
     single = len(paths) == 1
@@ -1074,13 +1090,15 @@ async def download(request: Request, source: str = "nextcloud",
             if request.headers.get("range"):
                 hdr = {**hdr, "Range": request.headers["range"]}
             return await _stream_nc(_webdav_url(backend.nc_user, paths[0]), hdr, fname,
-                                    want_zip=False, inline=inline)
+                                    want_zip=False, inline=inline, head=head)
         src = backend.src
-        return StreamingResponse(
+        response = StreamingResponse(
             sftp_client.stream_file(src["host"], src["port"], src["user"], paths[0], key_path=src.get("key_path")),
             media_type="application/octet-stream",
             headers={"Content-Disposition": _disposition(fname), "Cache-Control": "no-store"},
         )
+
+        return _head_response(response) if head else response
 
     zip_name = name or (f"{_leaf(paths[0])}.zip" if single else f"{_leaf(_parent(paths[0])) or 'Auswahl'}.zip")
     if backend.is_nc:
@@ -1094,10 +1112,12 @@ async def download(request: Request, source: str = "nextcloud",
         else:
             url = None
         if url:
-            streamed = await _stream_nc(url, hdr, zip_name, want_zip=True)
+            streamed = await _stream_nc(url, hdr, zip_name, want_zip=True, head=head)
             if streamed is not None:
                 return streamed
-    return await _zip_in_api(backend, paths, zip_name)
+    # The fallback builds the archive for GET too; retain its actual length.
+    response = await _zip_in_api(backend, paths, zip_name)
+    return _head_response(response) if head else response
 
 
 _PREVIEW_MAX_BYTES = 200 * 1024 * 1024

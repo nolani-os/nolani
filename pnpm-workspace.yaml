@@ -1,3 +1,5 @@
 packages:
   - "packages/*"
   - "packages/apps/*"
+  # Standalone apps install on their own while they are spikes (own lockfile).
+  - "!packages/app-knowledge"

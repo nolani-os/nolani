@@ -35,12 +35,20 @@ async def vorhanden(user: str) -> bool:
             user))
 
 
+def vk_name(user: str) -> str:
+    """Vikunja rejects usernames that look like a URL ("alice.smith" reads as a host).
+    The Vikunja name is internal — the Planner works with the stored token — so dots
+    become underscores."""
+    return user.replace(".", "_")
+
+
 async def einrichten(c: httpx.AsyncClient, user: str) -> None:
     pw = secrets.token_urlsafe(24)
-    r = await c.post(f"{VK}/register", json={"username": user, "email": f"{user}@{DOM}", "password": pw})
+    name = vk_name(user)
+    r = await c.post(f"{VK}/register", json={"username": name, "email": f"{user}@{DOM}", "password": pw})
     if r.status_code not in (200, 201):
         raise RuntimeError(f"{user}: Registrierung fehlgeschlagen (HTTP {r.status_code}: {r.text[:120]})")
-    r = await c.post(f"{VK}/login", json={"username": user, "password": pw})
+    r = await c.post(f"{VK}/login", json={"username": name, "password": pw})
     r.raise_for_status()
     h = {"Authorization": f"Bearer {r.json()['token']}"}
     routes = (await c.get(f"{VK}/routes", headers=h)).json()

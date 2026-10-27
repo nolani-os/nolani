@@ -3,6 +3,11 @@
 All notable changes to this project are documented here. The project is in early preview and
 does not follow semantic versioning yet.
 
+## Unreleased
+
+- File downloads answer `HEAD` with the same headers as `GET`, without streaming
+  the file body (#14, thanks @snehaapratap).
+
 ## 0.1.0 (2026-10-25): first public preview
 
 - **Interface in English and German**, switchable without reloading; dates and numbers follow
@@ -32,5 +37,5 @@ does not follow semantic versioning yet.
   messages are bound to the embedding origins; mail archive attachments unpack at most 2 MB;
   Caddy sets HSTS, `nosniff`, a referrer policy, `frame-ancestors` and a body limit on the
   shell host, the full Content-Security-Policy runs report-only for now; no production
-  sourcemaps.
+  sourcemaps (#11).
 - Third-party notices, licence texts, code of conduct and issue templates added.

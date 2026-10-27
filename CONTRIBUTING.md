@@ -61,6 +61,16 @@ test account).
    The sign-off certifies that you wrote the change or have the right to submit it under the
    project's license (AGPL-3.0-or-later).
 
+### How an accepted pull request lands
+
+This repository is published from the maintainers' development tree, so a pull request is not
+merged with the button on GitHub. Instead, the change is applied to that tree, tested there,
+and the next publish creates a merge commit that has your pull request as a parent. GitHub then
+shows the pull request as merged, and your commits stay in the history of `main` under your
+name. If we adjust your change on the way (for example after review), the pull request
+conversation says what changed. Publishing happens in the evening (Central European Time), so
+there can be a delay of a day between approval and merge.
+
 ## Security issues
 
 Please do not open public issues for vulnerabilities — see [SECURITY.md](SECURITY.md).
