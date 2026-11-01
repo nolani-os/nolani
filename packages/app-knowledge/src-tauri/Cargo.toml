@@ -1,6 +1,6 @@
 [package]
 name = "nolani-knowledge"
-version = "0.1.0"
+version = "0.1.1"
 description = "Nolani Knowledge, local-first notes and collections"
 edition = "2021"
 license = "AGPL-3.0-or-later"

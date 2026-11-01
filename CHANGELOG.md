@@ -6,7 +6,8 @@ does not follow semantic versioning yet.
 ## Unreleased
 
 - **Nolani Knowledge as a standalone app** (`packages/app-knowledge`, release tag
-  `knowledge-v0.1.0`): the knowledge views on a device-local SQLite database for Linux,
+  `knowledge-v0.1.1`; the `knowledge-v0.1.0` tag never produced a release because its Android
+  build failed in CI): the knowledge views on a device-local SQLite database for Linux,
   Windows and Android, with collections, views, filters, formulas, relations, history,
   attachments and ZIP import/export, plus an optional loopback API on the desktop.
   Differential tests check the local layer against the server's own code.
