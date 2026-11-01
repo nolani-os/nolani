@@ -1,8 +1,9 @@
 name: Knowledge app
 
 # Builds the standalone Knowledge app (packages/app-knowledge) for Linux,
-# Windows and Android. A tag `knowledge-vX.Y.Z` additionally creates a DRAFT
-# release with the packages attached; publishing it stays a manual step.
+# Windows and Android on every change to it on main. A tag `knowledge-vX.Y.Z`
+# additionally creates a DRAFT release with the packages attached; publishing
+# it stays a manual step.
 #
 # Android release signing uses two repository secrets:
 #   ANDROID_KEYSTORE_B64       base64 of the PKCS12 key store
@@ -12,6 +13,14 @@ name: Knowledge app
 on:
   push:
     tags: ["knowledge-v*"]
+    # Also on every change to the app on main (no release): a broken build shows up
+    # before anyone tags a version.
+    branches: [main]
+    paths:
+      - "packages/app-knowledge/**"
+      - "packages/shell/src/apps/wissen/**"
+      - "packages/shell/src/apps/ideas/**"
+      - ".github/workflows/knowledge-app.yml"
   workflow_dispatch:
 
 permissions:
