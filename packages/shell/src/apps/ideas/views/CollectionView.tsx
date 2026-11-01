@@ -28,6 +28,7 @@ import { Leerzustand } from "../../../components/Leerzustand";
 import { SammlungTeilen } from "../../wissen/SammlungTeilen";
 import { regionLocale, useTranslation, i18n } from "@claraos/core";
 import { typName, typNameVonId } from "../typName";
+import { useWissenFunktionen } from "../../wissen/erweiterung";
 
 /** Weekday initials Monday..Sunday in the UI language. */
 const WOCHENTAGE = () => Array.from({ length: 7 }, (_, i) =>
@@ -115,6 +116,7 @@ export function CollectionView({ collection, types, currentUser, mobile, onOpen,
   const gesperrt = collection.settings?.gesperrt === true;
   const darfUmbauen = darfSchreiben && !gesperrt;
   const [teilenOffen, setTeilenOffen] = useState(false);
+  const funktionen = useWissenFunktionen();
   const zeilenVorlagen = collection.settings?.zeilen_vorlagen ?? [];
   const type = types.find((typ) => typ.id === (collection.default_type ?? "note"));
 
@@ -531,9 +533,11 @@ export function CollectionView({ collection, types, currentUser, mobile, onOpen,
             </span>
           )}
           <span className={styles.metaHint}>{type ? `${type.icon ?? ""} ${typName(type)}` : ""}</span>
-          <button className={tab.schloss}
-                  title={isOwner ? t("coll.shareOwner") : t("coll.whoAccess")}
-                  onClick={() => setTeilenOffen(true)}><Icon name="people" size={15} /></button>
+          {funktionen.teilen && (
+            <button className={tab.schloss}
+                    title={isOwner ? t("coll.shareOwner") : t("coll.whoAccess")}
+                    onClick={() => setTeilenOffen(true)}><Icon name="people" size={15} /></button>
+          )}
           {isOwner && (
             <button className={tab.schloss}
                     title={gesperrt

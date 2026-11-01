@@ -655,6 +655,10 @@
 
 /* Mobile layout adjustments */
 .mobile .content { padding: 12px 12px 96px; }
+/* Sticky children measure from the padding edge: with the 96 px room for the
+   floating toolbar (hidden in the detail view) the editor's formatting bar stuck
+   96 px above the bottom and covered the line being typed. */
+.mobile .content.contentDetail { padding-bottom: 12px; }
 .mobile .detailBody { flex-direction: column; overflow: visible; }
 .mobile .detailBar {
   position: sticky;
@@ -1589,3 +1593,11 @@
 }
 
 .mobile .btnPrimary, .mobile .btnSecondary { min-height: 48px; border-radius: var(--radius-pill, 999px); }
+
+/* Checkbox fields: the global 16 px checkbox is no target for a thumb.
+   `input[type=checkbox].feldHaken` outranks that global rule (element + attribute). */
+input[type="checkbox"].feldHaken { width: 20px; height: 20px; accent-color: var(--accent, #3b82f6); cursor: pointer; }
+.mobile input[type="checkbox"].feldHaken { width: 26px; height: 26px; }
+@media (pointer: coarse) {
+  input[type="checkbox"].feldHaken { width: 26px; height: 26px; }
+}

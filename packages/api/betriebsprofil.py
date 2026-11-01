@@ -55,7 +55,7 @@ CELL_ROUTERS: frozenset[str] = frozenset({
     # Teams
     "teams_personen", "teams_admin", "teams_admin_ui", "praesenz",
     # Knowledge
-    "knowledge",
+    "knowledge", "knowledge_strategy",
     # Vaultwarden
     "vault",
     # Clara (chat via Open WebUI + LiteLLM; tools through clara_tools when an
@@ -72,6 +72,75 @@ CELL_ROUTERS: frozenset[str] = frozenset({
     # The other login handlers go nowhere — their apps do not exist in a cell.
     "auth_proxy",
 })
+
+# Optional apps of a cell. Each one is a compose profile of the same name
+# (deploy/cell/compose.yml) and is switched on per installation with
+# `setup.sh … --apps photos,office`, so a small server only runs what its users need.
+# A switched-off app loses its tiles, its routers and its Clara tools — a tile
+# pointing at a container that does not run is a dead end, a tool for it makes the
+# assistant promise something it cannot do.
+#
+# `CLARAOS_OPTIONAL_APPS` unset or `all` = every app except the opt-in ones: cells set up
+# before the switch existed keep exactly what they had. setup.sh always writes it.
+OPTIONAL_APPS: dict[str, dict[str, frozenset[str]]] = {
+    "photos": {"apps": frozenset({"immich"}), "routers": frozenset({"immich_lesen"}),
+               "tools": frozenset({"immich"})},
+    "documents": {"apps": frozenset({"paperless"}), "routers": frozenset({"paperless_lesen"}),
+                  "tools": frozenset({"paperless"})},
+    "browser": {"apps": frozenset({"selkies-browser", "services-hub"}),
+                "routers": frozenset({"browser_ablage", "hub"}),
+                "tools": frozenset({"browser", "dienste"})},
+    # Office documents open in the office viewer through our WOPI host (Collabora).
+    # Without it they still show up in Files and can be downloaded.
+    "office": {"apps": frozenset({"office-viewer"}), "routers": frozenset({"office", "wopi"}),
+               "tools": frozenset({"office"})},
+    # Teams routers stay: they work without Matrix (people search in Knowledge,
+    # Nextcloud Talk, presence) and only lose the Matrix part.
+    "teams": {"apps": frozenset({"teams-workspace", "element"}), "routers": frozenset(),
+              "tools": frozenset()},
+    # Business apps: off unless chosen explicitly (`OPT_IN_APPS`).
+    "odoo": {"apps": frozenset({"odoo"}), "routers": frozenset(), "tools": frozenset()},
+}
+OPT_IN_APPS: frozenset[str] = frozenset({"odoo"})
+
+
+def _enabled_optional_apps(raw: str | None) -> frozenset[str]:
+    if raw is None or raw.strip().lower() == "all":
+        return frozenset(OPTIONAL_APPS) - OPT_IN_APPS
+    names = {n.strip().lower() for n in raw.split(",") if n.strip()}
+    unknown = names - set(OPTIONAL_APPS) - {"social"}
+    if unknown:
+        raise RuntimeError(f"CLARAOS_OPTIONAL_APPS: unbekannt {sorted(unknown)} "
+                           f"(erlaubt: {', '.join(sorted(OPTIONAL_APPS))})")
+    return frozenset(names & set(OPTIONAL_APPS))
+
+
+ENABLED_APPS: frozenset[str] = _enabled_optional_apps(os.environ.get("CLARAOS_OPTIONAL_APPS"))
+
+
+def _disabled(kind: str) -> frozenset[str]:
+    out: set[str] = set()
+    for name, parts in OPTIONAL_APPS.items():
+        if name not in ENABLED_APPS:
+            out |= parts[kind]
+    return frozenset(out)
+
+
+def optional_app_enabled(name: str) -> bool:
+    """At home always True (the home setup has its own module loader)."""
+    return not IS_CELL or name in ENABLED_APPS
+
+
+# Routers a cell actually registers: the allowlist minus switched-off apps.
+ACTIVE_CELL_ROUTERS: frozenset[str] = CELL_ROUTERS - _disabled("routers")
+
+# Clara tool files (clara-tools.d/<name>.yaml) a cell must not load. The social
+# tools belong to the shared social cell and only make sense where it is known.
+DISABLED_TOOL_FILES: frozenset[str] = (
+    _disabled("tools")
+    | (frozenset() if os.environ.get("SOCIAL_DOMAIN", "").strip() else frozenset({"mastodon"}))
+    | (frozenset() if os.environ.get("VIDEO_DOMAIN", "").strip() else frozenset({"peertube"}))
+) if IS_CELL else frozenset()
 
 # Tiles (app_seeds.BUILTIN_APPS) a cell offers — also an allowlist.
 # Office runs through the `office-viewer` (Collabora via our own WOPI host), NOT
@@ -228,6 +297,20 @@ CELL_EXTRA_APPS: tuple[dict, ...] = (
 )
 
 
+def odoo_tile(base_domain: str) -> dict:
+    """Odoo (ERP/CRM) as a tile: its own UI, login via OIDC against the cell's Authentik."""
+    return {
+        "id": "odoo", "name": "Odoo", "icon": "\U0001f4bc",
+        "description": "Kunden, Angebote, Rechnungen und mehr (ERP/CRM)",
+        "type": "iframe", "category": "business", "source": "builtin",
+        "activated": True, "showInStartMenu": True, "pinned": False,
+        "config": {"url": f"https://odoo.{base_domain}/web", "authMethod": "sso",
+                   "forceFreshAuth": False, "logoutPath": "/web/session/logout"},
+        "window": {"defaultWidth": 1200, "defaultHeight": 780, "minWidth": 600, "minHeight": 400},
+        "permissions": [],
+    }
+
+
 def zellen_apps(apps: list[dict], base_domain: str, home_domain: str = "example.com") -> list[dict]:
     """Tile set of a cell: only `CELL_APPS`, iframe URLs rewritten to the cell's domain.
 
@@ -237,8 +320,9 @@ def zellen_apps(apps: list[dict], base_domain: str, home_domain: str = "example.
     import copy
 
     out = []
+    weg = _disabled("apps")
     for app in apps:
-        if app.get("id") not in CELL_APPS:
+        if app.get("id") not in CELL_APPS or app.get("id") in weg:
             continue
         app = copy.deepcopy(app)
         if app.get("id") in CELL_APPS_VERSTECKT:
@@ -265,6 +349,8 @@ def zellen_apps(apps: list[dict], base_domain: str, home_domain: str = "example.
                 lambda m: m.group(1) + base_domain, url)
         out.append(app)
     out.extend(copy.deepcopy(list(CELL_EXTRA_APPS)))
+    if "odoo" in ENABLED_APPS:
+        out.append(odoo_tile(base_domain))
     # Shared social cell: its tiles appear only when this cell knows where it lives.
     for app in apps:
         ziel = _SOZIAL.get(app.get("id"))
@@ -371,7 +457,7 @@ def active_routers(registry):
     """
     if not IS_CELL:
         return list(registry)
-    return [(m, a) for m, a in registry if m in CELL_ROUTERS]
+    return [(m, a) for m, a in registry if m in ACTIVE_CELL_ROUTERS]
 
 
 def prune_routes(app) -> int:
@@ -385,7 +471,7 @@ def prune_routes(app) -> int:
         return 0
     behalten, weg = [], set()
     for route in app.router.routes:
-        fremd = {n for n in _router_names(route) if n is not None and n not in CELL_ROUTERS}
+        fremd = {n for n in _router_names(route) if n is not None and n not in ACTIVE_CELL_ROUTERS}
         if fremd:
             weg |= fremd
         else:

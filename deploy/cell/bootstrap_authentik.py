@@ -7,7 +7,7 @@ Creates or verifies:
 - Binding to the embedded outpost (otherwise /outpost.goauthentik.io/auth/caddy returns 404)
 - Group `clara-admins` containing the bootstrap admin `akadmin` (the API only opens admin
   paths to this group — without it even the admin would be locked out)
-- OAuth2 providers + applications for Vaultwarden, Immich and Paperless (each only if
+- OAuth2 providers + applications for Vaultwarden, Immich, Paperless and Odoo (each only if
   its client secret is set)
 - Users can no longer change their own username or email in the user settings, and
   Vaultwarden (only Vaultwarden) gets the email as verified — see `email_fest()`
@@ -142,6 +142,10 @@ def main():
     # Paperless (django-allauth, provider_id `authentik`)
     oidc_app("paperless", "Dokumente", os.environ.get("PAPERLESS_OIDC_SECRET"),
              [f"https://paperless.{DOM}/accounts/oidc/authentik/login/callback/"],
+             {"openid", "email", "profile"})
+    # Odoo (OCA auth_oidc, authorization code flow + PKCE) — only with `--apps odoo`
+    oidc_app("odoo", "Odoo", os.environ.get("ODOO_OIDC_SECRET"),
+             [f"https://odoo.{DOM}/auth_oauth/signin"],
              {"openid", "email", "profile"})
     # Shared social cell (compose layer 8) — own host names, not below the cell domain
     social, video = os.environ.get("SOCIAL_DOMAIN"), os.environ.get("VIDEO_DOMAIN")

@@ -1,0 +1,31 @@
+[package]
+name = "nolani-knowledge"
+version = "0.1.0"
+description = "Nolani Knowledge, local-first notes and collections"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+
+[lib]
+# staticlib/cdylib for the Android build, rlib for the desktop binary
+name = "nolani_knowledge_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-sql = { version = "2", features = ["sqlite"] }
+# Opens web links in the system browser (desktop and Android)
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+# Local HTTP API (src/api.rs): small, synchronous, no async runtime of its own
+tiny_http = "0.12"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

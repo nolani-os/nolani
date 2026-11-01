@@ -1,0 +1,29 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Nolani Knowledge",
+  "version": "../package.json",
+  "identifier": "de.nolanios.knowledge",
+  "build": {
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Nolani Knowledge",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 360,
+        "minHeight": 500
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' ipc: http://ipc.localhost; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' ipc: http://ipc.localhost; font-src 'self' data:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["appimage", "deb", "nsis"],
+    "icon": ["icons/icon.png", "icons/icon.ico"]
+  }
+}

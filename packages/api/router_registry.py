@@ -87,6 +87,7 @@ ROUTERS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("tool_health", ("router",)),
     ("planner", ("router",)),          # Vikunja backend-for-frontend
     ("knowledge", ("router",)),
+    ("knowledge_strategy", ("router",)),  # goals, KPIs, 5 Whys, Pareto (same prefix)
     ("assistants", ("router",)),
     ("hub", ("router",)),
     ("feedback", ("router",)),

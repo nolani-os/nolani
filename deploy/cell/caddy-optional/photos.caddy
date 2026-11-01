@@ -1,0 +1,14 @@
+# Optional app `photos` — setup.sh copies this into caddy/aktiv/ only when the app is on
+# (`--apps`, betriebsprofil.OPTIONAL_APPS). Imported by the main Caddyfile.
+
+# ── Immich (photos) and Paperless (documents) ───────────────────────────
+# Own login via OIDC against Authentik — no forward_auth (the mobile Immich app
+# talks to the API directly). Both are shown as tiles: embedding is allowed ONLY
+# in the cell's own shell; X-Frame-Options from the app (Paperless: SAMEORIGIN)
+# would block the tile, the CSP frame-ancestors replaces it.
+immich.{$ZELLE_DOMAIN} {
+	reverse_proxy immich-server:2283 {
+		header_down -X-Frame-Options
+		header_down +Content-Security-Policy "frame-ancestors 'self' https://home.{$ZELLE_DOMAIN}"
+	}
+}

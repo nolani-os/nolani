@@ -5,6 +5,15 @@ does not follow semantic versioning yet.
 
 ## Unreleased
 
+- **Nolani Knowledge as a standalone app** (`packages/app-knowledge`, release tag
+  `knowledge-v0.1.0`): the knowledge views on a device-local SQLite database for Linux,
+  Windows and Android, with collections, views, filters, formulas, relations, history,
+  attachments and ZIP import/export, plus an optional loopback API on the desktop.
+  Differential tests check the local layer against the server's own code.
+- Knowledge: the strategy tools live in their own router; filters on a fixed date no longer
+  fail; formula results that cannot be sent no longer fail the whole table, `if(` inside text
+  stays text and `1 == 1.0` is true. Phone fixes for the template sheet, the formatting bar
+  and checkbox fields.
 - File downloads answer `HEAD` with the same headers as `GET`, without streaming
   the file body (#14, thanks @snehaapratap).
 

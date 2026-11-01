@@ -50,12 +50,15 @@ interface Props {
   onOpenObject: (id: string) => void;
   /** In the sheet (phone) or side peek the sidebar fills the full width. */
   breit?: boolean;
+  /** Show the access group (visibility, invited people). Off where there are
+   *  no other users, e.g. in the device-local app. */
+  zugang?: boolean;
 }
 
 export function MetaSidebar({
   object, isOwner, canEdit, propSchema = [], onSaveProp, linkCandidates,
   onSetStage, onSetVisibility, onAddShare, onRemoveShare,
-  onLink, onUnlink, onOpenObject, breit,
+  onLink, onUnlink, onOpenObject, breit, zugang = true,
 }: Props) {
   const { t } = useTranslation("wissen");
   const [linkRel, setLinkRel] = useState("relates_to");
@@ -114,6 +117,7 @@ export function MetaSidebar({
         </div>
       )}
 
+      {zugang && (
       <div className={leiste.leisteGruppe}>
         <h4 className={leiste.leisteTitel}>{t("meta.access")}</h4>
         <button className={leiste.leisteZeile} disabled={!isOwner}
@@ -175,6 +179,7 @@ export function MetaSidebar({
           )
         )}
       </div>
+      )}
 
       <div className={leiste.leisteGruppe}>
         <h4 className={leiste.leisteTitel}>{t("meta.links")}</h4>

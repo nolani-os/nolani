@@ -1,0 +1,7 @@
+target/
+# Generated per build; the Android project in gen/android is kept (Tauri recommends committing it)
+gen/schemas/
+gen/android/app/build/
+gen/android/buildSrc/build/
+gen/android/buildSrc/.gradle/
+gen/android/build/

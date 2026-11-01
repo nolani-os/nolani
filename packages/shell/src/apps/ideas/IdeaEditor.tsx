@@ -23,6 +23,7 @@ import { kbSchema, CALLOUT_KINDS } from "./editorSchema";
 import { blocksForSerialize, blocksFromParse } from "./mdBridge";
 import { ideasApi } from "./api";
 import { useColorMode } from "./useColorMode";
+import { useWissenFunktionen } from "../wissen/erweiterung";
 import { useTranslation, i18n } from "@claraos/core";
 
 /** Formatting toolbar for touch devices: BlockNote only ships a selection
@@ -84,10 +85,19 @@ export default function IdeaEditor({
   initialMarkdown, onChangeMarkdown, readOnly, objectId, mobile, onNeueUnterseite,
 }: Props) {
   const { t } = useTranslation("wissen");
+  const { dateiAufloesen } = useWissenFunktionen();
   const editor = useCreateBlockNote({
     schema: kbSchema,
     dictionary: i18n.resolvedLanguage === "en" ? en : de,
     uploadFile: objectId ? (file: File) => uploadTo(objectId, file) : undefined,
+    resolveFileUrl: dateiAufloesen,
+    // On phones the formatting bar sits above the keyboard (bar, gap and scroll
+    // bar ≈ 90 px). BlockNote keeps the caret 72 px from the edge, so the line
+    // being typed ended up under the bar; keep it clear of it.
+    ...(mobile ? { _tiptapOptions: { editorProps: {
+      scrollMargin: { top: 72, bottom: 120, left: 0, right: 0 },
+      scrollThreshold: { top: 0, bottom: 120, left: 0, right: 0 },
+    } } } : {}),
   });
   const debounce = useRef<number | undefined>(undefined);
   const loaded = useRef(false);

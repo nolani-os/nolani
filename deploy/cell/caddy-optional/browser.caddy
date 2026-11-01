@@ -1,0 +1,50 @@
+# Optional app `browser` — setup.sh copies this into caddy/aktiv/ only when the app is on
+# (`--apps`, betriebsprofil.OPTIONAL_APPS). Imported by the main Caddyfile.
+
+# ── Personal browsers (browser/ctl.py) ──────────────────────────────────
+# ONE host name for everyone; the instance follows the Authentik identity. Host
+# names per user fail on certificates and on the outpost (404 for unknown hosts).
+# Important, in this order inside `route`:
+#   1. outpost callback, 2. drop identity headers a client sent itself,
+#   3. forward_auth sets the real ones, 4. route by that name.
+# The upstream name is built from the authenticated user name (ubd-/ubm- prefix),
+# so nobody can address another user's browser. Caddy reaches ubd-<user> because
+# the controller attaches it to every user's network.
+(user_browser) {
+	route {
+		reverse_proxy /outpost.goauthentik.io/* authentik:9000
+		request_header -X-Authentik-Username
+		request_header -X-Authentik-Email
+		request_header -X-Authentik-Groups
+		forward_auth authentik:9000 {
+			uri /outpost.goauthentik.io/auth/caddy
+			copy_headers X-Authentik-Username X-Authentik-Groups X-Authentik-Email
+		}
+		@relay path /claraos-cdp*
+		reverse_proxy @relay {args[0]}-{http.request.header.X-Authentik-Username}:9226 {
+			flush_interval -1
+		}
+		reverse_proxy {args[0]}-{http.request.header.X-Authentik-Username}:3000 {
+			flush_interval -1
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+			header_down -X-Frame-Options
+			header_down -Content-Security-Policy
+			header_down +Content-Security-Policy "frame-ancestors https://home.{$ZELLE_DOMAIN}"
+		}
+	}
+	handle_errors 502 503 {
+		header Content-Type "text/plain; charset=utf-8"
+		respond "Dein Browser schläft gerade. Öffne ihn über die Browser-Kachel — dann startet er." 503
+	}
+}
+
+browser.{$ZELLE_DOMAIN} {
+	import user_browser ubd
+}
+
+browser-m.{$ZELLE_DOMAIN} {
+	import user_browser ubm
+}

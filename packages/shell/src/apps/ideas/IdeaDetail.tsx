@@ -18,6 +18,7 @@ import { CommentsPanel } from "./CommentsPanel";
 import { HistoryPanel } from "./HistoryPanel";
 import { regionLocale } from "@claraos/core";
 import { STAGE_BY_KEY } from "./stages";
+import { useWissenFunktionen } from "../wissen/erweiterung";
 
 const IdeaEditor = lazy(() => import("./IdeaEditor"));
 
@@ -47,6 +48,7 @@ export function IdeaDetail({
   herkunft, kompakt,
 }: Props) {
   const { t } = useTranslation("wissen");
+  const funktionen = useWissenFunktionen();
   const [obj, setObj] = useState<KbObject | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -216,7 +218,7 @@ export function IdeaDetail({
         onChanged();
         onOpenObject(copy.id);
       } },
-    ...(isOwner ? [{ id: "tr1", label: "---" }, {
+    ...(isOwner && funktionen.einkauf ? [{ id: "tr1", label: "---" }, {
       id: "shopping", label: t("detail.shopping"), icon: "🛒",
       onSelect: async () => {
         // Create a basket with idea_ref → the shopping app shows a link back
@@ -311,12 +313,14 @@ export function IdeaDetail({
         >
           {isFav ? "★" : "☆"}
         </button>
-        <button
-          className={styles.btnPrimary}
-          title={t("detail.chatTitle")}
-          onClick={() => toggleClaraInline(windowId)}
-        ><Icon name="comment" size={14} className={styles.inlineIcon} />{t("detail.develop")}
-        </button>
+        {funktionen.assistent && (
+          <button
+            className={styles.btnPrimary}
+            title={t("detail.chatTitle")}
+            onClick={() => toggleClaraInline(windowId)}
+          ><Icon name="comment" size={14} className={styles.inlineIcon} />{t("detail.develop")}
+          </button>
+        )}
         {/* Versions, duplicate, shopping and especially trash live behind ⋯
             rather than as equal-ranked buttons, so delete is not one misclick
             away from the main action. */}
@@ -473,21 +477,25 @@ export function IdeaDetail({
             )}
           </section>
 
-          <CommentsPanel
-            objectId={obj.id}
-            currentUser={currentUser}
-            isOwner={!!isOwner}
-            selection={selection}
-            onClearSelection={() => setSelection(null)}
-          />
+          {funktionen.kommentare && (
+            <CommentsPanel
+              objectId={obj.id}
+              currentUser={currentUser}
+              isOwner={!!isOwner}
+              selection={selection}
+              onClearSelection={() => setSelection(null)}
+            />
+          )}
 
-          <ClaraSection
-            activity={obj.activity}
-            onAnswer={async (q, answer) => {
-              await ideasApi.addActivity(obj.id, `> ${q.content}\n\n${answer}`, "answer");
-              void load();
-            }}
-          />
+          {funktionen.assistent && (
+            <ClaraSection
+              activity={obj.activity}
+              onAnswer={async (q, answer) => {
+                await ideasApi.addActivity(obj.id, `> ${q.content}\n\n${answer}`, "answer");
+                void load();
+              }}
+            />
+          )}
 
           <section className={styles.activity}>
             <h4>{t("detail.activity")}</h4>
@@ -540,6 +548,7 @@ export function IdeaDetail({
             void patch({ properties: props });
           }}
           linkCandidates={linkCandidates}
+          zugang={funktionen.teilen}
           onSetStage={(s: Stage) => void patch({ stage: s })}
           onSetVisibility={(v: Visibility) => void patch({ visibility: v })}
           onAddShare={async (u) => {

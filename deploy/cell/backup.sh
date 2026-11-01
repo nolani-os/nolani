@@ -19,11 +19,15 @@ log() { echo "$(date +%H:%M:%S) $*" | tee -a "$LOG"; }
 fehler=0
 
 # 1. Databases
+# Optional apps (setup.sh --apps) only where they run: a switched-off app has no
+# container — its data stay in the volume and in the last backup that had it.
+laeuft() { [ -n "$(docker compose ps -q "$1" 2>/dev/null)" ]; }
 for eintrag in authentik-postgres:authentik:authentik clara-users-postgres:clara:clara_users \
                nextcloud-db:nextcloud:nextcloud litellm-db:litellm:litellm \
                vikunja-db:vikunja:vikunja synapse-db:synapse:synapse \
-               immich-db:immich:immich paperless-db:paperless:paperless; do
+               immich-db:immich:immich paperless-db:paperless:paperless odoo-db:odoo:odoo; do
   IFS=: read -r svc user db <<< "$eintrag"
+  case "$svc" in synapse-db|immich-db|paperless-db|odoo-db) laeuft "$svc" || continue ;; esac
   if docker compose exec -T "$svc" pg_dump -U "$user" -Fc "$db" > "$ZIEL/db-$db.dump" 2>>"$LOG"; then
     log "db $db: $(du -h "$ZIEL/db-$db.dump" | cut -f1)"
   else
@@ -43,8 +47,12 @@ volume_tar nextcloud-data nextcloud-data
 docker compose exec -T -u www-data nextcloud php occ maintenance:mode --off >/dev/null 2>&1 || true
 volume_tar vikunja-files vikunja-files
 # Paperless: originals + archive (media) and the search index/classifier (data).
-volume_tar paperless-media paperless-media
-volume_tar paperless-data paperless-data
+if laeuft paperless-db; then
+  volume_tar paperless-media paperless-media
+  volume_tar paperless-data paperless-data
+fi
+# Odoo: attachments and session files (filestore) next to the database dump.
+laeuft odoo && volume_tar odoo-data odoo-data
 # Social cell (only where it runs): databases + Mastodon media + PeerTube config.
 # PeerTube videos (peertube-data) — like Immich photos — only in the server image.
 if [ -n "$(docker compose ps -q mastodon-db 2>/dev/null)" ]; then
@@ -75,8 +83,10 @@ for eintrag in stalwart:stalwart-data stalwart:stalwart-etc vaultwarden:vaultwar
 done
 
 # 4. Synapse (signing key, media, configuration) + cell configuration
-tar -czf "$ZIEL/synapse-data.tgz" -C . synapse-data 2>>"$LOG" && log "synapse-data: $(du -h "$ZIEL/synapse-data.tgz" | cut -f1)" \
-  || { log "✗ synapse-data"; fehler=1; }
+if [ -d synapse-data ]; then
+  tar -czf "$ZIEL/synapse-data.tgz" -C . synapse-data 2>>"$LOG" && log "synapse-data: $(du -h "$ZIEL/synapse-data.tgz" | cut -f1)" \
+    || { log "✗ synapse-data"; fehler=1; }
+fi
 tar -czf "$ZIEL/zelle-konfig.tgz" -C . .env caddy compose.yml litellm.yaml 2>>"$LOG" && log "zelle-konfig ok" \
   || { log "✗ zelle-konfig"; fehler=1; }
 chmod 600 "$ZIEL"/*

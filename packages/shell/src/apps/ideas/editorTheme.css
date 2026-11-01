@@ -68,7 +68,8 @@
  * bold/lists/callouts are practically unreachable on phones. */
 .kb-mobile-toolbar {
   position: sticky;
-  bottom: 0;
+  /* flush with the bottom edge: compensates the content's 12 px bottom padding */
+  bottom: -12px;
   z-index: 5;
   display: flex;
   gap: 4px;

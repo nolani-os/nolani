@@ -80,6 +80,18 @@ Apps marked NolaniOS are written in this repository. The others run unchanged in
 containers; NolaniOS signs you in to them, creates your accounts there and gives Nolani tools
 to use them.
 
+## Nolani Knowledge, without a server
+
+The knowledge app also exists on its own: notes, pages and databases (tables, boards, filters,
+formulas, relations) that live on your device only, with no server and no account. It runs on
+Linux, Windows and Android and uses the same views as the knowledge app in NolaniOS, answered
+by a local SQLite database. On the desktop, a local HTTP API (off by default, loopback only,
+with a key) lets your own scripts and agents use it.
+
+Download it from the [releases](https://github.com/nolani-os/nolani/releases) (tags
+`knowledge-v*`); the Android package is signed, the Windows installer is not yet. Details,
+the API and the tests are in [`packages/app-knowledge`](packages/app-knowledge/README.md).
+
 ## One installation, one server
 
 An installation is called a *cell*: one server with its own accounts and data. Cells are
@@ -132,6 +144,7 @@ packages/
   core/        shared types, stores, domain helpers
   skins/       themes, icons
   api/         FastAPI backend: routers, services, migrations
+  app-knowledge/ standalone Knowledge app (Tauri: Linux, Windows, Android)
 clara-tools.d/ the assistant's tools, one YAML file per app
 deploy/
   cell/        Docker Compose stack + setup, backup, restore and test scripts

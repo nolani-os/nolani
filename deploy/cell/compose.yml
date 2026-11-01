@@ -127,6 +127,9 @@ services:
       CLARAOS_BRAIN_KEY: ${CLARAOS_BRAIN_KEY:-}
       # Deployment profile: only approved routers, no silent fallback to home-network defaults.
       CLARAOS_PROFILE: cell
+      # Optional apps that run here (setup.sh --apps; betriebsprofil.OPTIONAL_APPS).
+      # `all` = a cell set up before the switch existed: everything it had.
+      CLARAOS_OPTIONAL_APPS: ${CLARAOS_OPTIONAL_APPS-all}
       # MCP endpoint for users' own AI agents (setup.sh --mcp). Off unless "on".
       CLARAOS_MCP: ${CLARAOS_MCP:-off}
       CLARAOS_BASE_DOMAIN: ${ZELLE_DOMAIN}
@@ -254,6 +257,7 @@ services:
 
   collabora:
     <<: *restart
+    profiles: [office]           # optional app (setup.sh --apps)
     image: collabora/code@sha256:4e983196eb9878f339cc506c38c21f1cc3473bca3d6de883c5de08f9c0cc3a6c  # tested 10/2026
     environment:
       # Only this WOPI host (the ClaraOS API) may have documents opened.
@@ -436,6 +440,7 @@ services:
   # ── Layer 4: Teams ────────────────────────────────────────────────────────
   synapse-db:
     <<: *restart
+    profiles: [teams]           # optional app (setup.sh --apps)
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: synapse
@@ -453,6 +458,7 @@ services:
 
   synapse:
     <<: *restart
+    profiles: [teams]           # optional app (setup.sh --apps)
     image: matrixdotorg/synapse:v1.161.0
     # Host directory instead of a volume: setup.sh renders homeserver.yaml from the
     # template into it (0600, uid 991) — the signing key and media live there too.
@@ -469,6 +475,7 @@ services:
   #    track published) — the call UI proves nothing about the media path.
   livekit:
     <<: *restart
+    profiles: [teams]           # optional app (setup.sh --apps)
     image: livekit/livekit-server:v1.9
     command: ["--config", "/etc/livekit.yaml"]
     environment:
@@ -481,6 +488,7 @@ services:
 
   lk-jwt:
     <<: *restart
+    profiles: [teams]           # optional app (setup.sh --apps)
     image: ghcr.io/element-hq/lk-jwt-service@sha256:e0c7cecfa74e2342a3e79d47e1d4ab4bd228fe05b1a4dc4ba7f807686b0c214b  # tested 10/2026
     environment:
       LIVEKIT_URL: wss://matrix.${ZELLE_DOMAIN}/livekit/ws
@@ -492,6 +500,7 @@ services:
 
   element-call:
     <<: *restart
+    profiles: [teams]           # optional app (setup.sh --apps)
     image: ghcr.io/element-hq/element-call:v0.26.1
     volumes: [./element-call/config.json:/app/config.json:ro]
     networks: [zelle]
@@ -504,6 +513,7 @@ services:
   # CPU caps keep thumbnail/transcoding/ML bursts from starving the rest of the cell.
   immich-db:
     <<: *restart
+    profiles: [photos]           # optional app (setup.sh --apps)
     image: ghcr.io/immich-app/postgres:16-vectorchord0.4.3-pgvector0.8.1
     environment:
       POSTGRES_DB: immich
@@ -522,12 +532,14 @@ services:
 
   immich-redis:
     <<: *restart
+    profiles: [photos]           # optional app (setup.sh --apps)
     image: valkey/valkey:8.1-alpine   # Redis-compatible, BSD-3 (Redis >= 7.4 is not open source)
     networks: [zelle]
     mem_limit: 128m
 
   immich-ml:
     <<: *restart
+    profiles: [photos]           # optional app (setup.sh --apps)
     image: ghcr.io/immich-app/immich-machine-learning:v3.2.0
     environment:
       # Models are unloaded after 5 min idle — at rest this costs ~150 MB, not 2 GB.
@@ -540,6 +552,7 @@ services:
 
   immich-server:
     <<: *restart
+    profiles: [photos]           # optional app (setup.sh --apps)
     image: ghcr.io/immich-app/immich-server:v3.2.0
     environment:
       DB_HOSTNAME: immich-db
@@ -565,6 +578,7 @@ services:
   # No Tika/Gotenberg (office conversion) — saves ~1 GB; PDFs and images only.
   paperless-db:
     <<: *restart
+    profiles: [documents]           # optional app (setup.sh --apps)
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: paperless
@@ -580,12 +594,14 @@ services:
 
   paperless-redis:
     <<: *restart
+    profiles: [documents]           # optional app (setup.sh --apps)
     image: valkey/valkey:8.1-alpine
     networks: [zelle]
     mem_limit: 64m
 
   paperless:
     <<: *restart
+    profiles: [documents]           # optional app (setup.sh --apps)
     image: ghcr.io/paperless-ngx/paperless-ngx:2.20.15
     environment:
       PAPERLESS_URL: https://paperless.${ZELLE_DOMAIN}
@@ -637,6 +653,8 @@ services:
   # narrow upload key (downloads into that user's Files, nothing else).
   browser-ctl:
     <<: *restart
+    # Also creates Clara's per-user Immich and Mastodon access (ctl.py /zugang).
+    profiles: [browser, photos, social]
     build:
       context: ./browser
       dockerfile: Dockerfile.ctl
@@ -817,6 +835,46 @@ services:
     mem_limit: 1536m
     cpus: 2
 
+  # ── Optional: Odoo (ERP/CRM) ─────────────────────────────────────────────
+  # Off unless chosen (`setup.sh … --apps odoo`). Login via Authentik (OCA auth_oidc,
+  # deploy/cell/odoo/Dockerfile); accounts are created on first login
+  # (provision_odoo.py). Configuration incl. database password: odoo-conf/odoo.conf,
+  # rendered by setup.sh from odoo.conf.tmpl.
+  odoo-db:
+    <<: *restart
+    profiles: [odoo]
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: ${ODOO_DB_PASSWORD}
+    volumes: [odoo-db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odoo -d postgres"]
+      interval: 10s
+      retries: 10
+    networks: [zelle]
+    mem_limit: 384m
+
+  odoo:
+    <<: *restart
+    profiles: [odoo]
+    build: ./odoo
+    image: claraos-odoo:zelle
+    command: ["odoo", "-c", "/etc/odoo/odoo.conf"]
+    environment:
+      TZ: Europe/Berlin
+    volumes:
+      # Outside the build context ./odoo: the rendered file is 0600 for uid 101 and
+      # would make `docker compose build` fail to read its context.
+      - ./odoo-conf/odoo.conf:/etc/odoo/odoo.conf:ro
+      - odoo-data:/var/lib/odoo
+    depends_on:
+      odoo-db: {condition: service_healthy}
+    networks: [zelle]
+    mem_limit: 1g
+    cpus: 2
+
 networks:
   zelle: {}
 
@@ -847,3 +905,5 @@ volumes:
   peertube-db: {}
   peertube-data: {}
   peertube-config: {}
+  odoo-db: {}
+  odoo-data: {}

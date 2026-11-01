@@ -56,8 +56,13 @@ class ToolsRegistry:
         loaded: dict[str, dict[str, Any]] = {}
         mtimes: dict[str, float] = {}
         errors: list[str] = []
+        from betriebsprofil import DISABLED_TOOL_FILES  # noqa: PLC0415
+
         for f in sorted(d.glob("*.yaml")):
             module_name = f.stem
+            # A cell without the app must not offer its tools (betriebsprofil.OPTIONAL_APPS).
+            if module_name in DISABLED_TOOL_FILES:
+                continue
             try:
                 with f.open() as fh:
                     data = yaml.safe_load(fh) or {}

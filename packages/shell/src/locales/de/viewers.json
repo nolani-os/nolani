@@ -29,6 +29,7 @@
   "office": {
     "noFile": "Keine Datei übergeben — Office-Dokumente über die Dateien-App öffnen.",
     "nextcloudOnly": "Office-Dokumente können nur aus Nextcloud geöffnet werden.",
+    "notInstalled": "Office-Dokumente lassen sich in dieser Installation nicht bearbeiten — Office ist nicht eingerichtet. Du kannst die Datei in Dateien herunterladen.",
     "cannotOpen": "Dokument konnte nicht geöffnet werden: {{error}}",
     "loading": "Collabora wird geladen …",
     "frameTitle": "Office-Dokument (Collabora)",

@@ -13,6 +13,7 @@ import { CollectionModal } from "../ideas/CollectionModal";
 import type { KbType, Visibility } from "../ideas/types";
 import { vorlagen, vorlageAnwenden, type Vorlage } from "./vorlagen";
 import { useTranslation } from "@claraos/core";
+import { useWissenFunktionen } from "./erweiterung";
 
 interface Props {
   types: KbType[];
@@ -26,6 +27,7 @@ interface Props {
 export function VorlagenModal({ types, onDone, onOpenCollection, onClose }: Props) {
   const { t } = useTranslation("wissen");
   const [visibility, setVisibility] = useState<Visibility>("private");
+  const { teilen } = useWissenFunktionen();
   const [leer, setLeer] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -109,17 +111,19 @@ export function VorlagenModal({ types, onDone, onOpenCollection, onClose }: Prop
           </button>
         </div>
 
-        <div className={styles.modalFoot}>
-          <span className={styles.metaHint} style={{ marginRight: "auto" }}>
-            {t("templatesModal.who")}
-          </span>
-          <div className={styles.segmented}>
-            <button className={visibility === "private" ? styles.segActive : ""}
-                    onClick={() => setVisibility("private")}>{t("templatesModal.private")}</button>
-            <button className={visibility === "family" ? styles.segActive : ""}
-                    onClick={() => setVisibility("family")}>{t("templatesModal.family")}</button>
+        {teilen && (
+          <div className={styles.modalFoot}>
+            <span className={styles.metaHint} style={{ marginRight: "auto" }}>
+              {t("templatesModal.who")}
+            </span>
+            <div className={styles.segmented}>
+              <button className={visibility === "private" ? styles.segActive : ""}
+                      onClick={() => setVisibility("private")}>{t("templatesModal.private")}</button>
+              <button className={visibility === "family" ? styles.segActive : ""}
+                      onClick={() => setVisibility("family")}>{t("templatesModal.family")}</button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

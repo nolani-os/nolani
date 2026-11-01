@@ -9,6 +9,7 @@ import { Plaketten } from "../wissen/Plakette";
 import { LEER, formatDatum, formatZahl } from "./format";
 import type { KbPropDef } from "./types";
 import { oeffneImClaraBrowser } from "../../Browser/OpenExternalDialog";
+import { useWissenFunktionen } from "../wissen/erweiterung";
 
 /** A value as text: the single display formatter. */
 export function propDisplay(def: KbPropDef, value: unknown): string {
@@ -33,6 +34,7 @@ interface FieldProps {
 
 export function PropertyField({ def, value, readOnly, compact, umbruch, onSave }: FieldProps) {
   const { t } = useTranslation("wissen");
+  const { linkOeffnen } = useWissenFunktionen();
   // In the table the cell is text first; only a click opens the field.
   const [bearbeitet, setBearbeitet] = useState(false);
   const feldRef = useRef<HTMLInputElement>(null);
@@ -61,7 +63,7 @@ export function PropertyField({ def, value, readOnly, compact, umbruch, onSave }
 
   if (def.kind === "checkbox") {
     return (
-      <input type="checkbox" checked={!!value} disabled={readOnly}
+      <input type="checkbox" className={styles.feldHaken} checked={!!value} disabled={readOnly}
              onChange={(e) => onSave(e.target.checked)} />
     );
   }
@@ -77,7 +79,8 @@ export function PropertyField({ def, value, readOnly, compact, umbruch, onSave }
     const oeffnen = (e: MouseEvent<HTMLAnchorElement>) => {
       if (e.ctrlKey || e.metaKey || e.button === 1 || !/^https?:\/\//i.test(url)) return;
       e.preventDefault();
-      void oeffneImClaraBrowser(url, "session", "wissen");
+      if (linkOeffnen) linkOeffnen(url);
+      else void oeffneImClaraBrowser(url, "session", "wissen");
     };
     return (
       <span className={styles.propLinkZeile}>

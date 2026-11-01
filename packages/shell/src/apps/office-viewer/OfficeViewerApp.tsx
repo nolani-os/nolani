@@ -77,6 +77,12 @@ export default function OfficeViewerApp({ windowId }: { windowId: string }) {
         });
         if (!r.ok) {
           const detail = (await r.json().catch(() => ({})))?.detail;
+          // FastAPI's own 404 (no detail of ours): this installation runs without
+          // Office, the WOPI router is not registered. A missing file has its own text.
+          if (r.status === 404 && (!detail || detail === "Not Found")) {
+            if (!cancelled) setError(i18n.t("viewers:office.notInstalled"));
+            return;
+          }
           throw new Error(detail ?? `HTTP ${r.status}`);
         }
         const data = (await r.json()) as WopiToken;

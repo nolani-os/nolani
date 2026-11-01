@@ -1,7 +1,21 @@
 #!/usr/bin/env bash
 # Setup of a ClaraOS cell — runs ON the cell, as the admin user `clara`.
 #
-#   cd /opt/claraos && ./setup.sh demo.example.com [--social] [--mcp]
+#   cd /opt/claraos && ./setup.sh demo.example.com [--apps photos,office] [--social] [--mcp]
+#
+# --apps: optional apps this cell runs, comma-separated (`none` = only the core):
+#     photos     Immich                       ~1 GB, peaks to 3 GB while indexing
+#     documents  Paperless (OCR)              ~0.7 GB
+#     browser    a personal browser per user  ~0.45 GB each, 1–3 GB while in use
+#     office     Collabora (edit documents)   ~0.5 GB + ~0.1 GB per open document
+#     teams      chat and calls (Matrix)      ~0.3 GB
+#     odoo       Odoo ERP/CRM                 ~0.9 GB
+#   The core (shell, files, mail, planner, passwords, assistant) needs about 5 GB, so
+#   an 8 GB server fits the core plus one or two apps. Remembered in .env
+#   (CLARAOS_OPTIONAL_APPS); a later run without --apps keeps the choice, a run with
+#   --apps replaces it. Switching an app off stops its containers but keeps its data.
+#   A new cell without --apps gets only the core; a cell set up before --apps
+#   existed keeps everything it had (all apps except Odoo).
 #
 # --social: this cell also hosts the shared social cell (Mastodon + PeerTube under
 #   social.<base> / video.<base>). Remembered in .env (COMPOSE_PROFILES=social), so
@@ -25,6 +39,15 @@ cd "$(dirname "$0")"
 DOM="${1:-}"
 [ -n "$DOM" ] || { echo "Aufruf: $0 <domain>   (z.B. demo.example.org)"; exit 1; }
 say() { printf '\n== %s\n' "$*"; }
+# --apps a,b  or  --apps=a,b
+APPS_ARG=""; APPS_GESETZT=0; prev=""
+for a in "$@"; do
+  if [ "$prev" = --apps ]; then APPS_ARG="$a"; APPS_GESETZT=1; fi
+  case "$a" in --apps=*) APPS_ARG="${a#--apps=}"; APPS_GESETZT=1 ;; esac
+  prev="$a"
+done
+case "$APPS_ARG" in none|keine) APPS_ARG="" ;; esac
+ALLE_APPS="photos documents browser office teams odoo"   # = betriebsprofil.OPTIONAL_APPS
 
 # ── 1. .env ──────────────────────────────────────────────────────────────
 say "1/12  Secrets (.env)"
@@ -34,6 +57,21 @@ chmod 600 .env
 setv() {   # setv NAME VALUE — set only if not present yet
   grep -q "^$1=" .env || printf '%s=%s\n' "$1" "$2" >> .env
 }
+setz() {   # setz NAME VALUE — set or replace (only for plain values: letters, commas)
+  if grep -q "^$1=" .env; then sed -i "s|^$1=.*|$1=$2|" .env; else printf '%s=%s\n' "$1" "$2" >> .env; fi
+}
+# Which optional apps run here (see the header)
+if [ $APPS_GESETZT = 1 ]; then
+  setz CLARAOS_OPTIONAL_APPS "$(echo "$APPS_ARG" | tr -d ' ')"
+elif ! grep -q '^CLARAOS_OPTIONAL_APPS=' .env; then
+  if grep -q '^ZELLE_DOMAIN=' .env; then setz CLARAOS_OPTIONAL_APPS photos,documents,browser,office,teams
+  else setz CLARAOS_OPTIONAL_APPS ""; fi
+fi
+APPS=" $(sed -n 's/^CLARAOS_OPTIONAL_APPS=//p' .env | tr ',' ' ') "
+for a in $APPS; do
+  case " $ALLE_APPS " in *" $a "*) ;; *) echo "FEHLER: unbekannte App '$a' (erlaubt: $ALLE_APPS, none)"; exit 1 ;; esac
+done
+an() { case "$APPS" in *" $1 "*) return 0 ;; esac; return 1; }
 rnd()    { openssl rand -hex 32; }
 fernet() { openssl rand -base64 32 | tr '+/' '-_'; }
 setv ZELLE_DOMAIN "$DOM"
@@ -58,30 +96,49 @@ setv VIKUNJA_DB_PASSWORD "$(rnd)"
 setv VIKUNJA_JWT_SECRET "$(rnd)"
 setv VW_SSO_CLIENT_SECRET "$(rnd)"
 setv STALWART_ADMIN_PASSWORD "$(openssl rand -base64 24 | tr -d '/+=\n')"
-setv SYNAPSE_DB_PASSWORD "$(rnd)"
-setv SYNAPSE_REGISTRATION_SECRET "$(rnd)"
-setv SYNAPSE_MACAROON_SECRET "$(rnd)"
-setv SYNAPSE_FORM_SECRET "$(rnd)"
-setv LIVEKIT_API_KEY "API$(openssl rand -hex 6)"
-setv LIVEKIT_API_SECRET "$(rnd)"
-setv IMMICH_DB_PASSWORD "$(rnd)"
-setv IMMICH_ADMIN_PASSWORD "$(openssl rand -base64 24 | tr -d '/+=\n')"
-setv IMMICH_OIDC_SECRET "$(rnd)"
-setv IMMICH_DEFAULT_QUOTA_GB 5        # per user; 10 users × 5 GB must fit on the disk
-setv PAPERLESS_DB_PASSWORD "$(rnd)"
-setv PAPERLESS_SECRET_KEY "$(rnd)"
-setv PAPERLESS_ADMIN_PASSWORD "$(openssl rand -base64 24 | tr -d '/+=\n')"
-setv PAPERLESS_OIDC_SECRET "$(rnd)"
+# Secrets of ALL optional apps, also switched-off ones: random values cost nothing, and
+# without them Docker Compose warns about every unset variable on every call (the
+# whole compose file is interpolated, not only the active profiles).
+{ # teams
+  setv SYNAPSE_DB_PASSWORD "$(rnd)"
+  setv SYNAPSE_REGISTRATION_SECRET "$(rnd)"
+  setv SYNAPSE_MACAROON_SECRET "$(rnd)"
+  setv SYNAPSE_FORM_SECRET "$(rnd)"
+  setv LIVEKIT_API_KEY "API$(openssl rand -hex 6)"
+  setv LIVEKIT_API_SECRET "$(rnd)"
+}
+{ # photos
+  setv IMMICH_DB_PASSWORD "$(rnd)"
+  setv IMMICH_ADMIN_PASSWORD "$(openssl rand -base64 24 | tr -d '/+=\n')"
+  setv IMMICH_OIDC_SECRET "$(rnd)"
+  setv IMMICH_DEFAULT_QUOTA_GB 5      # per user; 10 users × 5 GB must fit on the disk
+}
+{ # documents
+  setv PAPERLESS_DB_PASSWORD "$(rnd)"
+  setv PAPERLESS_SECRET_KEY "$(rnd)"
+  setv PAPERLESS_ADMIN_PASSWORD "$(openssl rand -base64 24 | tr -d '/+=\n')"
+  setv PAPERLESS_OIDC_SECRET "$(rnd)"
+}
+{ # odoo
+  setv ODOO_DB_PASSWORD "$(rnd)"
+  setv ODOO_MASTER_PASSWORD "$(rnd)"
+  setv ODOO_ADMIN_PASSWORD "$(openssl rand -base64 24 | tr -d '/+=\n')"
+  setv ODOO_OIDC_SECRET "$(rnd)"
+}
 setv BROWSER_CTL_TOKEN "$(rnd)"
 # Pinned image digests (tested with the browser modules in modules/).
 setv BROWSER_IMAGE "lscr.io/linuxserver/chromium@sha256:92933242f71646b24d568cab82c8da1eb0838c067a281ad9dce74fe94e7d0fe1"
 setv BROWSER_SOCAT_IMAGE "alpine/socat@sha256:87d88ff79bf42ca723fb360e9585c40e2923a2f4df9b9d148b127568ef6b99e7"
 setv BROWSER_MAX_RUNNING 4           # browsers running at the same time (desktop + mobile count separately)
-# Shared social cell (compose profile `social`)
-case " $* " in *" --social "*) setv COMPOSE_PROFILES social ;; esac
 # MCP endpoint for outside agents (packages/api/services/agent_mcp.py)
 case " $* " in *" --mcp "*) setv CLARAOS_MCP on ;; esac
-SOCIAL=0; grep -q '^COMPOSE_PROFILES=.*social' .env && SOCIAL=1
+# Shared social cell (compose profile `social`): once on, it stays on
+SOCIAL=0
+case " $* " in *" --social "*) SOCIAL=1 ;; esac
+grep -q '^COMPOSE_PROFILES=.*social' .env && SOCIAL=1
+# Compose profiles = the optional apps (+ social). Docker Compose reads them from .env.
+setz COMPOSE_PROFILES "$(echo $APPS $([ $SOCIAL = 1 ] && echo social) | tr ' ' ',')"
+echo "  Apps: Kern$(for a in $APPS; do printf ' + %s' "$a"; done)"
 if [ $SOCIAL = 1 ]; then
   BASIS=${DOM#*.}
   setv SOCIAL_DOMAIN "social.$BASIS"
@@ -128,6 +185,7 @@ sudo sysctl -q -p /etc/sysctl.d/90-claraos-swap.conf
 # Personal browsers: files the browser containers mount (dashboard, relay, policies)
 # from the source, plus the egress fence. Warning: `umask 077` above would make them
 # unreadable for the containers — same trap as Element Call's config.json.
+if an browser; then
 for pair in desktop:dev-selkies-browser-next mobile:dev-selkies-browser-next-mobile; do
   ziel=browser/${pair%%:*}; quelle=src/modules/${pair#*:}
   rm -rf "$ziel" && mkdir -p "$ziel" && cp -r "$quelle/dashboard-claraos" "$quelle/relay" "$quelle/selkies" "$ziel/"
@@ -137,12 +195,18 @@ sudo install -m 644 browser/claraos-browser-firewall.service /etc/systemd/system
 sudo systemctl daemon-reload
 sudo systemctl enable claraos-browser-firewall.service >/dev/null 2>&1
 sudo browser/firewall.sh | sed 's/^/  /'
-# Optional Caddy sites (caddy/aktiv/ is imported by the Caddyfile)
-install -d -m 755 caddy/aktiv
-if [ $SOCIAL = 1 ]; then install -m 644 caddy-optional/social.caddy caddy/aktiv/social.caddy
-else rm -f caddy/aktiv/social.caddy; fi
 for img in $(grep -E '^BROWSER_(SOCAT_)?IMAGE=' .env | cut -d= -f2); do docker pull -q "$img" >/dev/null; done
 echo "  Browser: Dateien, Zaun und Images bereit"
+fi
+# Optional Caddy sites (caddy/aktiv/ is imported by the Caddyfile): one file per app
+# that runs here — a switched-off app has no host name and asks for no certificate.
+install -d -m 755 caddy/aktiv
+for n in $ALLE_APPS social; do
+  if an "$n" || { [ "$n" = social ] && [ $SOCIAL = 1 ]; }; then
+    install -m 644 "caddy-optional/$n.caddy" "caddy/aktiv/$n.caddy"
+  else rm -f "caddy/aktiv/$n.caddy"; fi
+done
+if an teams; then
 # Synapse: generate the signing key on first run, render homeserver.yaml from the
 # template (secrets from .env), owner 991 (Synapse user), mode 600.
 mkdir -p synapse-data
@@ -169,8 +233,35 @@ install -d -m 755 element-call
 sed "s/{{DOM}}/$DOM/g" element-call.json.tmpl > element-call/config.json
 chmod 644 element-call/config.json
 sudo chown -R 991:991 synapse-data
+fi
 docker compose build --pull
+# Odoo: render its configuration (database password, master password) from .env, mode
+# 600, outside the build context ./odoo. Owner = the odoo user OF THE BUILT IMAGE
+# (uid 100, gid 101 in odoo:18 — a guessed 101 left the file unreadable, and Odoo
+# silently fell back to its default database host "db"). Hence after the build.
+if an odoo; then
+  python3 - > /tmp/zelle-odoo.conf <<'PY'
+import re
+env = dict(l.rstrip("\n").split("=", 1) for l in open(".env") if "=" in l and not l.startswith("#"))
+print(re.sub(r"\{\{(\w+)\}\}", lambda m: env[m.group(1)], open("odoo.conf.tmpl").read()), end="")
+PY
+  ODOO_UID=$(docker run --rm --entrypoint id claraos-odoo:zelle -u)
+  ODOO_GID=$(docker run --rm --entrypoint id claraos-odoo:zelle -g)
+  install -d -m 755 odoo-conf
+  sudo install -o "$ODOO_UID" -g "$ODOO_GID" -m 600 /tmp/zelle-odoo.conf odoo-conf/odoo.conf
+  rm -f /tmp/zelle-odoo.conf
+fi
 docker compose up -d --remove-orphans
+# Switched-off apps: `up` leaves their containers running (they are not orphans, just
+# outside the active profiles) — stop and remove them. Volumes, i.e. data, stay.
+aus=$(comm -23 <(docker compose --profile '*' config --services 2>/dev/null | sort) \
+               <(docker compose config --services 2>/dev/null | sort))
+laeuft=$(docker compose --profile '*' ps -a --services 2>/dev/null | sort)
+weg=$(comm -12 <(echo "$aus") <(echo "$laeuft") | tr '\n' ' ')
+if [ -n "${weg// }" ]; then
+  docker compose --profile '*' rm -sf $weg >/dev/null 2>&1
+  echo "  Abgeschaltet (Daten bleiben): $weg"
+fi
 # Caddy does not pick up a changed Caddyfile by itself — and a reload of an invalid
 # file would keep the running configuration. So validate, then reload, then verify
 # that the container really sees the host's file.
@@ -202,9 +293,13 @@ t, _ = Token.objects.update_or_create(
               "key": os.environ["AUTHENTIK_API_TOKEN"]},
 )
 PY
+# Login providers only for the apps that run here (a provider without a secret is skipped)
+an photos || IMMICH_OIDC_SECRET=
+an documents || PAPERLESS_OIDC_SECRET=
+an odoo || ODOO_OIDC_SECRET=
 AUTHENTIK_API_URL=http://127.0.0.1:9000/api/v3 \
   docker compose exec -T -e AUTHENTIK_API_TOKEN -e ZELLE_DOMAIN -e AUTHENTIK_API_URL -e VW_SSO_CLIENT_SECRET \
-  -e IMMICH_OIDC_SECRET -e PAPERLESS_OIDC_SECRET -e CLARAOS_PRODUCT_NAME \
+  -e IMMICH_OIDC_SECRET -e PAPERLESS_OIDC_SECRET -e ODOO_OIDC_SECRET -e CLARAOS_PRODUCT_NAME \
   -e SOCIAL_DOMAIN -e VIDEO_DOMAIN -e MASTODON_OIDC_SECRET -e PEERTUBE_OIDC_SECRET \
   authentik python3 - < bootstrap_authentik.py
 
@@ -303,6 +398,7 @@ if [ -n "$NUTZER" ]; then ./provision_mail.sh $NUTZER; fi
 
 # ── 9. Teams (Matrix) ────────────────────────────────────────────────────
 say "9/12  Teams"
+if ! an teams; then echo "  aus (--apps teams)"; else
 mx_ok=0
 for _ in $(seq 1 60); do
   if docker compose exec -T claraos-api python3 -c "import httpx,sys;sys.exit(0 if httpx.get('http://synapse:8008/health',timeout=5).status_code==200 else 1)" 2>/dev/null; then mx_ok=1; break; fi
@@ -314,9 +410,11 @@ if [ $mx_ok = 1 ]; then
 else
   echo "  ✗ Synapse nicht bereit — docker compose logs synapse"
 fi
+fi
 
 # ── 10. Photos (Immich) ──────────────────────────────────────────────────
 say "10/12  Fotos"
+if ! an photos; then echo "  aus (--apps photos)"; else
 # Same pattern as Open WebUI: a new key goes straight into .env via $(…), never into output.
 KEY=$(docker compose exec -T -e IMMICH_ADMIN_PASSWORD -e IMMICH_API_KEY -e IMMICH_OIDC_SECRET \
       -e IMMICH_DEFAULT_QUOTA_GB -e ZELLE_DOMAIN -e CLARAOS_PRODUCT_NAME claraos-api python3 - < provision_immich.py \
@@ -330,9 +428,11 @@ if [ -n "${KEY:-}" ]; then
   echo "  Immich-Schlüssel in .env"
 fi
 unset KEY
+fi
 
 # ── 11. Documents (Paperless) ────────────────────────────────────────────
 say "11/12  Dokumente"
+if ! an documents; then echo "  aus (--apps documents)"; else
 pl_ok=0
 for _ in $(seq 1 60); do   # first start runs migrations — takes a minute or two
   if docker compose exec -T -u paperless paperless python3 manage.py check >/dev/null 2>&1; then pl_ok=1; break; fi
@@ -343,6 +443,32 @@ if [ $pl_ok = 1 ]; then
     | grep ^PAPERLESS_ || echo "  ✗ Paperless-Gruppe nicht angelegt"
 else
   echo "  ✗ Paperless nicht bereit — docker compose logs paperless"
+fi
+fi
+
+# ── Odoo (only with --apps odoo) ─────────────────────────────────────────
+if an odoo; then
+  say "Odoo"
+  # First run: create the database with the modules the login needs. The server is
+  # stopped meanwhile so it does not load a half-built database.
+  stand=$(docker compose exec -T odoo-db psql -U odoo -d odoo -tAc \
+          "SELECT state FROM ir_module_module WHERE name='auth_oidc'" 2>/dev/null || true)
+  if [ "$stand" != installed ]; then
+    echo "  Datenbank anlegen (einige Minuten) …"
+    docker compose stop odoo >/dev/null 2>&1
+    if docker compose run --rm -T odoo odoo -c /etc/odoo/odoo.conf -d odoo \
+         -i base,auth_oidc,contacts --load-language=de_DE --stop-after-init --no-http \
+         >/dev/null 2>/tmp/zelle-odoo.err; then
+      echo "  Odoo: Datenbank angelegt (Kontakte + Anmeldung über ${CLARAOS_PRODUCT_NAME:-NolaniOS})"
+    else
+      echo "  ✗ Odoo-Datenbank: $(tail -c 300 /tmp/zelle-odoo.err | tr '\n' ' ')"
+    fi
+    rm -f /tmp/zelle-odoo.err
+    docker compose up -d odoo >/dev/null 2>&1
+  fi
+  docker compose exec -T -e ZELLE_DOMAIN -e ODOO_OIDC_SECRET -e ODOO_ADMIN_PASSWORD -e CLARAOS_PRODUCT_NAME \
+    odoo odoo shell -c /etc/odoo/odoo.conf -d odoo --no-http < provision_odoo.py 2>/dev/null \
+    | sed -n 's/^ODOO /  /p' | grep . || echo "  ✗ Odoo nicht eingerichtet — docker compose logs odoo"
 fi
 
 # ── Social cell (only with --social) ─────────────────────────────────────
@@ -396,3 +522,8 @@ echo "  Timer: $(systemctl list-timers claraos-backup.timer --no-legend | awk '{
 say "Fertig"
 echo "  Shell:     https://home.$DOM"
 echo "  Anmeldung: https://auth.$DOM  (Admin akadmin — Passwort: AUTHENTIK_BOOTSTRAP_PASSWORD in .env)"
+an odoo && echo "  Odoo:      https://odoo.$DOM  (Verwaltung: admin — Passwort: ODOO_ADMIN_PASSWORD in .env)"
+echo "  Apps:      Kern$(for a in $APPS; do printf ' + %s' "$a"; done)"
+aus_apps=$(for a in $ALLE_APPS; do an "$a" || printf '%s ' "$a"; done)
+[ -n "$aus_apps" ] && echo "  Nicht an:  $aus_apps— zuschalten mit ./setup.sh $DOM --apps <liste>"
+true

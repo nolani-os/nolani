@@ -43,7 +43,8 @@ interface Props {
   sammlungen: KbCollection[];
   favoriten: KbObjectSlim[];
   onOpen: (id: string) => void;
-  onClara: () => void;
+  /** Opens the assistant; without it the invitation is not shown. */
+  onClara?: () => void;
 }
 
 export function StartSeite({ objekte, sammlungen, favoriten, onOpen, onClara }: Props) {
@@ -146,12 +147,14 @@ export function StartSeite({ objekte, sammlungen, favoriten, onOpen, onClara }: 
       {/* Clara can create collections, columns and views — this is the
           visible path to it. The sentence deliberately gives a complete
           example: people who don't know what they may say, say nothing. */}
-      <section className={styles.startClara}>
-        <span className={styles.startClaraText}>
-          <Trans t={t} i18nKey="start.sayIt" components={{ i: <em /> }} />
-        </span>
-        <Button stufe="tonal" icon="sparkle" onClick={onClara}>{t("start.createWith")}</Button>
-      </section>
+      {onClara && (
+        <section className={styles.startClara}>
+          <span className={styles.startClaraText}>
+            <Trans t={t} i18nKey="start.sayIt" components={{ i: <em /> }} />
+          </span>
+          <Button stufe="tonal" icon="sparkle" onClick={onClara}>{t("start.createWith")}</Button>
+        </section>
+      )}
     </div>
   );
 }

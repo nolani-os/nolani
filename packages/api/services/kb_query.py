@@ -141,12 +141,15 @@ def _compile_condition(cond: dict, fields: dict[str, int], p: _Params) -> str:
         if op == "between":
             if not isinstance(value, (list, tuple)) or len(value) != 2:
                 raise FilterError("between erwartet [start, ende]")
-            return f"({base} BETWEEN {p.add(str(value[0]))}::date AND {p.add(str(value[1]))}::date)"
+            # `::text::date`: asyncpg only binds a date object to a `$n::date`
+            # parameter and rejects the string with a DataError (HTTP 500).
+            return (f"({base} BETWEEN {p.add(str(value[0]))}::text::date "
+                    f"AND {p.add(str(value[1]))}::text::date)")
         rel = _relative_date(value)
         sym = {"on": "=", "before": "<", "after": ">", "on_or_before": "<=", "on_or_after": ">="}[op]
         if rel is not None:
             return f"({base} {sym} (CURRENT_DATE + {p.add(rel)}::int))"
-        return f"({base} {sym} {p.add(str(value))}::date)"
+        return f"({base} {sym} {p.add(str(value))}::text::date)"
 
     if ftype in (FT_MULTI_SELECT, FT_PERSON, FT_RELATION, FT_SELECT):
         j = _json_expr(p, key)

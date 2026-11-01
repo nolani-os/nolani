@@ -1,0 +1,24 @@
+# Optional app `odoo` — setup.sh copies this into caddy/aktiv/ only when the app is on
+# (`--apps`, betriebsprofil.OPTIONAL_APPS). Imported by the main Caddyfile.
+
+# ── Odoo (ERP/CRM) ──────────────────────────────────────────────────────
+# Own login via OIDC against Authentik (OCA auth_oidc) — no forward_auth. Embedding
+# only in the cell's own shell, like Immich.
+# Warning: Odoo's database manager and its password sign-up/reset never face the
+# internet. Sign-up has to be switched on in Odoo (b2c) so that a first OIDC login
+# can create the account — without this block anyone could also create an internal
+# user with a password at /web/signup.
+odoo.{$ZELLE_DOMAIN} {
+	request_body {
+		max_size 100MB
+	}
+	@gesperrt path /web/database /web/database/* /web/signup /web/signup/* /web/reset_password /web/reset_password/*
+	respond @gesperrt 404
+	# Odoo sends its own `frame-ancestors 'self'` (and X-Frame-Options SAMEORIGIN):
+	# REPLACE the policy — adding a second one would leave 'self' in force, browsers
+	# honour both, and the tile would stay blank. Odoo's policy holds nothing else.
+	reverse_proxy odoo:8069 {
+		header_down -X-Frame-Options
+		header_down Content-Security-Policy "frame-ancestors 'self' https://home.{$ZELLE_DOMAIN}"
+	}
+}

@@ -20,7 +20,11 @@ from __future__ import annotations
 
 import ast
 import datetime as dt
+import io
+import json
+import math
 import re
+import tokenize
 
 MAX_LEN = 500          # characters in the expression
 MAX_NODES = 200        # AST nodes
@@ -46,18 +50,40 @@ _ALLOWED_NODES = (
 
 
 def _num(v) -> float:
-    """Cell value -> number. Empty/unreadable values count as 0 (Notion behaviour)."""
+    """Cell value -> number. Empty/unreadable values count as 0 (Notion behaviour).
+
+    "nan"/"inf" are unreadable too: float() accepts them, but a non-finite number
+    cannot be sent as JSON and would break the whole table."""
     if v is None or v == "":
         return 0.0
     if isinstance(v, bool):
         return 1.0 if v else 0.0
     if isinstance(v, (int, float)):
-        return float(v)
+        f = float(v)
+        return f if math.isfinite(f) else 0.0
     s = str(v).strip().replace("€", "").replace(",", ".")
     try:
-        return float(s)
+        f = float(s)
     except ValueError:
         return 0.0
+    return f if math.isfinite(f) else 0.0
+
+
+def _as_number(v) -> float | None:
+    """The value as a number when it IS one (int/float or numeric text), else None.
+    Unlike _num, empty and unreadable values are not numbers here."""
+    if isinstance(v, bool) or v is None:
+        return None
+    if isinstance(v, (int, float)):
+        return float(v) if math.isfinite(float(v)) else None
+    s = str(v).strip().replace("€", "").replace(",", ".")
+    if not s:
+        return None
+    try:
+        f = float(s)
+    except ValueError:
+        return None
+    return f if math.isfinite(f) else None
 
 
 def _numeric(v) -> bool:
@@ -125,12 +151,28 @@ FUNCTION_NAMES = frozenset({
 
 # `if` is a keyword in Python and cannot be parsed as a function — but Notion
 # formulas write `if(a, b, c)`. So the call is rewritten to the internal name
-# `iif` before parsing.
-_IF_CALL_RE = re.compile(r"\bif\s*\(")
-
-
+# `iif` before parsing — only where `if` is a name token followed by "(",
+# never inside a string literal (a plain regex turned concat('if (x') into
+# "iif(x").
 def _preprocess(expression: str) -> str:
-    return _IF_CALL_RE.sub("iif(", expression or "")
+    src = expression or ""
+    try:
+        toks = [t for t in tokenize.generate_tokens(io.StringIO(src).readline)
+                if t.type not in (tokenize.NL, tokenize.NEWLINE, tokenize.COMMENT,
+                                  tokenize.INDENT, tokenize.DEDENT, tokenize.ENDMARKER)]
+    except (tokenize.TokenError, SyntaxError, ValueError):
+        return src  # unreadable anyway: the parser reports the real error
+    lines = src.splitlines(keepends=True)
+    starts = [0]
+    for line in lines:
+        starts.append(starts[-1] + len(line))
+    offsets = [starts[t.start[0] - 1] + t.start[1]
+               for t, nxt in zip(toks, toks[1:])
+               if t.type == tokenize.NAME and t.string == "if"
+               and nxt.type == tokenize.OP and nxt.string == "("]
+    for off in reversed(offsets):
+        src = src[:off] + "iif" + src[off + 2:]
+    return src
 
 
 def _check(tree: ast.AST) -> None:
@@ -144,6 +186,9 @@ def _check(tree: ast.AST) -> None:
             raise FormulaError(Text("formula.tooDeep"))
         if not isinstance(node, _ALLOWED_NODES):
             raise FormulaError(Text("formula.notAllowed", what=type(node).__name__))
+        if isinstance(node, ast.Constant) and not (
+                node.value is None or isinstance(node.value, (bool, int, float, str))):
+            raise FormulaError(Text("formula.notAllowed", what=type(node.value).__name__))
         if isinstance(node, ast.Call):
             if not isinstance(node.func, ast.Name):
                 raise FormulaError(Text("formula.simpleCalls"))
@@ -160,6 +205,9 @@ def _eval(node, funcs: dict):
     if isinstance(node, ast.Expression):
         return _eval(node.body, funcs)
     if isinstance(node, ast.Constant):
+        # Only values a cell can show: no bytes, complex numbers or `...`
+        if not (node.value is None or isinstance(node.value, (bool, int, float, str))):
+            raise FormulaError(Text("formula.notAllowed", what=type(node.value).__name__))
         if isinstance(node.value, str) and len(node.value) > MAX_STR:
             raise FormulaError(Text("formula.textTooLong"))
         return node.value
@@ -205,6 +253,8 @@ def _eval(node, funcs: dict):
             if abs(y) > 32 or abs(x) > 1000:
                 raise FormulaError(Text("formula.powerTooBig"))
             r = x ** y
+            if isinstance(r, complex):  # negative base, fractional exponent
+                raise FormulaError(Text("formula.notEvaluable"))
             if abs(r) > MAX_POW:
                 raise FormulaError(Text("formula.resultTooBig"))
             return r
@@ -213,7 +263,10 @@ def _eval(node, funcs: dict):
         for op, comp in zip(node.ops, node.comparators):
             right = _eval(comp, funcs)
             if isinstance(op, (ast.Eq, ast.NotEq)):
-                same = str(left) == str(right)
+                # Numbers compare as numbers (1 == 1.0, "1,5" == 1.5); everything
+                # else by its text, so cell text still matches a literal.
+                a, b = _as_number(left), _as_number(right)
+                same = a == b if a is not None and b is not None else str(left) == str(right)
                 ok = same if isinstance(op, ast.Eq) else not same
             else:
                 a, b = _num(left), _num(right)
@@ -241,6 +294,10 @@ def validate(expression: str) -> None:
         tree = ast.parse(_preprocess(expression), mode="eval")
     except SyntaxError as exc:
         raise FormulaError(Text("formula.syntax", msg=exc.msg))
+    except (ValueError, MemoryError, RecursionError) as exc:
+        # e.g. NUL bytes, `Ｔｒｕｅ` (NFKC makes it a keyword), parser depth: still a
+        # broken formula (400), not a server error (500)
+        raise FormulaError(Text("formula.syntax", msg=str(exc) or type(exc).__name__))
     _check(tree)
 
 
@@ -251,10 +308,15 @@ def evaluate(expression: str, properties: dict, rollups: dict | None = None, lan
         validate(expression)
         tree = ast.parse(_preprocess(expression), mode="eval")
         val = _eval(tree, _build_functions(properties or {}, rollups or {}))
+        if isinstance(val, float) and not math.isfinite(val):
+            raise FormulaError(Text("formula.notEvaluable"))
         if isinstance(val, float) and val.is_integer():
-            return int(val)
+            val = int(val)
         if isinstance(val, str) and len(val) > MAX_STR:
-            return val[:MAX_STR]
+            val = val[:MAX_STR]
+        # Last line of defence: the value must survive the JSON response,
+        # otherwise ONE cell would fail the whole table with HTTP 500.
+        json.dumps(val, allow_nan=False, ensure_ascii=False).encode("utf-8")
         return val
     except FormulaError as exc:
         return f"⚠ {fuer(lang, exc.args[0]) if exc.args else exc}"

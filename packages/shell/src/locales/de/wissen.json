@@ -56,7 +56,8 @@
     "saveWeb": "Webseite sichern",
     "importZip": "Import (ZIP)",
     "exportZip": "Export (ZIP)",
-    "importFailed": "Import fehlgeschlagen ({{status}})"
+    "importFailed": "Import fehlgeschlagen ({{status}})",
+    "savedTo": "Gespeichert unter {{path}}"
   },
   "start": {
     "title": "Wissen",
@@ -971,5 +972,24 @@
     "searchObject": "Objekt suchen…",
     "save": "Speichern",
     "noDates": "Keine Einträge mit gültigem Datum in dieser Ansicht."
+  },
+  "localApi": {
+    "title": "Lokale API",
+    "intro": "Andere Programme auf diesem Gerät – Skripte oder KI-Agenten – können die Wissen-App über HTTP bedienen. Erreichbar nur von diesem Rechner aus und nur mit dem Schlüssel.",
+    "unavailable": "Die lokale API gibt es nur in der Desktop-App (Linux, Windows).",
+    "enable": "Lokale API einschalten",
+    "port": "Port",
+    "running": "Läuft unter {{url}}",
+    "stopped": "Ausgeschaltet",
+    "failed": "Konnte nicht starten: {{error}}",
+    "key": "Schlüssel",
+    "show": "Zeigen",
+    "hide": "Verbergen",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "newKey": "Neuen Schlüssel erzeugen",
+    "newKeyConfirm": "Neuen Schlüssel erzeugen? Programme mit dem alten Schlüssel haben dann keinen Zugang mehr.",
+    "example": "Beispiel:",
+    "menu": "Einstellungen"
   }
 }

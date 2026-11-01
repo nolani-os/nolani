@@ -56,7 +56,8 @@
     "saveWeb": "Save web page",
     "importZip": "Import (ZIP)",
     "exportZip": "Export (ZIP)",
-    "importFailed": "Import failed ({{status}})"
+    "importFailed": "Import failed ({{status}})",
+    "savedTo": "Saved to {{path}}"
   },
   "start": {
     "title": "Knowledge",
@@ -971,5 +972,24 @@
     "searchObject": "Search object…",
     "save": "Save",
     "noDates": "No entries with a valid date in this view."
+  },
+  "localApi": {
+    "title": "Local API",
+    "intro": "Other programs on this device – scripts or AI agents – can use the Knowledge app over HTTP. Reachable only from this computer and only with the key.",
+    "unavailable": "The local API is only available in the desktop app (Linux, Windows).",
+    "enable": "Turn on local API",
+    "port": "Port",
+    "running": "Running at {{url}}",
+    "stopped": "Off",
+    "failed": "Could not start: {{error}}",
+    "key": "Key",
+    "show": "Show",
+    "hide": "Hide",
+    "copy": "Copy",
+    "copied": "Copied",
+    "newKey": "Create new key",
+    "newKeyConfirm": "Create a new key? Programs using the old key lose access.",
+    "example": "Example:",
+    "menu": "Settings"
   }
 }

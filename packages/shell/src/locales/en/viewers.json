@@ -29,6 +29,7 @@
   "office": {
     "noFile": "No file given — open Office documents from the Files app.",
     "nextcloudOnly": "Office documents can only be opened from Nextcloud.",
+    "notInstalled": "Office documents can't be edited in this installation — Office is not set up. You can download the file in Files.",
     "cannotOpen": "The document could not be opened: {{error}}",
     "loading": "Loading Collabora …",
     "frameTitle": "Office document (Collabora)",

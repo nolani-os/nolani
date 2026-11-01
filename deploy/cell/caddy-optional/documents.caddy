@@ -1,0 +1,13 @@
+# Optional app `documents` — setup.sh copies this into caddy/aktiv/ only when the app is on
+# (`--apps`, betriebsprofil.OPTIONAL_APPS). Imported by the main Caddyfile.
+
+# ── Paperless (documents) — same embedding rule as Immich (photos.caddy).
+paperless.{$ZELLE_DOMAIN} {
+	request_body {
+		max_size 200MB
+	}
+	reverse_proxy paperless:8000 {
+		header_down -X-Frame-Options
+		header_down +Content-Security-Policy "frame-ancestors 'self' https://home.{$ZELLE_DOMAIN}"
+	}
+}

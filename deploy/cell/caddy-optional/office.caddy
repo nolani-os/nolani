@@ -1,0 +1,8 @@
+# Optional app `office` — setup.sh copies this into caddy/aktiv/ only when the app is on
+# (`--apps`, betriebsprofil.OPTIONAL_APPS). Imported by the main Caddyfile.
+
+# ── Collabora (editor in the office viewer) ─────────────────────────────
+# Own authentication via WOPI tokens from the ClaraOS API — no forward_auth.
+collabora.{$ZELLE_DOMAIN} {
+	reverse_proxy collabora:9980
+}

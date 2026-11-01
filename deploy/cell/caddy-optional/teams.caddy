@@ -1,0 +1,30 @@
+# Optional app `teams` — setup.sh copies this into caddy/aktiv/ only when the app is on
+# (`--apps`, betriebsprofil.OPTIONAL_APPS). Imported by the main Caddyfile.
+
+# ── Matrix/Synapse (Teams) ──────────────────────────────────────────────
+# Warning: expose only the client API. /_synapse/admin stays inside the cell
+# network — the ClaraOS API talks to Synapse internally (SYNAPSE_INTERNAL_URL).
+matrix.{$ZELLE_DOMAIN} {
+	# Calls: token service and LiveKit signalling (wss — plain ws on an https
+	# page is mixed content and breaks every call).
+	handle_path /livekit/jwt/* {
+		reverse_proxy lk-jwt:8080
+	}
+	handle_path /livekit/ws/* {
+		reverse_proxy livekit:7880
+	}
+	@client path /_matrix/* /_synapse/client/*
+	handle @client {
+		reverse_proxy synapse:8008
+	}
+	respond 404
+}
+
+# ── Element Call (call UI, embedded as a widget in the Teams app) ───────
+call.{$ZELLE_DOMAIN} {
+	# The Teams app reads the LiveKit address from this file to answer Element
+	# Call's get_rtc_transports (MSC4515). Without CORS the read fails and EC
+	# retries for ~30 s before it connects.
+	header /config.json Access-Control-Allow-Origin "https://home.{$ZELLE_DOMAIN}"
+	reverse_proxy element-call:8080
+}

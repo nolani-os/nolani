@@ -146,6 +146,54 @@ def test_zellen_apps():
     _lade(None)
 
 
+def _lade_mit(apps):
+    if apps is None:
+        os.environ.pop("CLARAOS_OPTIONAL_APPS", None)
+    else:
+        os.environ["CLARAOS_OPTIONAL_APPS"] = apps
+    try:
+        return _lade("cell")
+    finally:
+        os.environ.pop("CLARAOS_OPTIONAL_APPS", None)
+
+
+def test_optional_apps():
+    kacheln = [{"id": i, "config": {}} for i in
+               ("files", "immich", "paperless", "selkies-browser", "services-hub",
+                "office-viewer", "teams-workspace", "element")]
+    # Unset: everything a cell had before the switch existed — but no opt-in app
+    bp = _lade_mit(None)
+    ids = [a["id"] for a in bp.zellen_apps(kacheln, "demo.example.com", home_domain="example.com")]
+    assert ids == ["files", "immich", "paperless", "selkies-browser", "services-hub",
+                   "office-viewer", "teams-workspace", "element", "clara-routinen"]
+    assert {"immich_lesen", "wopi", "hub"} <= bp.ACTIVE_CELL_ROUTERS
+    assert bp.DISABLED_TOOL_FILES == {"mastodon", "peertube"}
+    assert _lade_mit("all").ENABLED_APPS == bp.ENABLED_APPS
+    # Empty: the minimal cell
+    bp = _lade_mit("")
+    ids = [a["id"] for a in bp.zellen_apps(kacheln, "demo.example.com", home_domain="example.com")]
+    assert ids == ["files", "clara-routinen"]
+    assert not {"immich_lesen", "paperless_lesen", "wopi", "office", "hub", "browser_ablage"} & bp.ACTIVE_CELL_ROUTERS
+    assert {"teams_personen", "praesenz", "auth_proxy", "files_v2"} <= bp.ACTIVE_CELL_ROUTERS
+    assert {"immich", "paperless", "browser", "dienste", "office"} <= bp.DISABLED_TOOL_FILES
+    # Picked by hand, opt-in Odoo included
+    bp = _lade_mit("photos, odoo")
+    out = bp.zellen_apps(kacheln, "demo.example.com", home_domain="example.com")
+    assert [a["id"] for a in out] == ["files", "immich", "clara-routinen", "odoo"]
+    assert out[-1]["config"]["url"] == "https://odoo.demo.example.com/web"
+    assert bp.optional_app_enabled("odoo") and not bp.optional_app_enabled("office")
+    # Typos must not silently produce a cell without the app
+    try:
+        _lade_mit("fotos")
+    except RuntimeError as e:
+        assert "fotos" in str(e)
+    else:
+        raise AssertionError("unbekannter Name nicht abgelehnt")
+    # Home: no effect
+    bp = _lade(None)
+    assert bp.optional_app_enabled("office") and bp.DISABLED_TOOL_FILES == frozenset()
+
+
 def test_werkzeugfreier_kontext():
     bp = _lade("cell")
     parts = [

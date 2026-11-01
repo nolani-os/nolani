@@ -539,7 +539,7 @@ with sync_playwright() as p:
     @schritt(page, "teams_anruf")
     def _():
         win = app_oeffnen(page, "teams-workspace", 9000)
-        win.locator("button[title='Calls']").click(); page.wait_for_timeout(1500)
+        win.locator("button[title='Anrufe'], button[title='Calls']").first.click(); page.wait_for_timeout(1500)
         t0 = time.time()
         win.get_by_text("Sofortbesprechung starten").click()
         sek = None
@@ -549,7 +549,7 @@ with sync_playwright() as p:
             if fr and fr.evaluate("() => [...document.querySelectorAll('video')].some(v => v.videoWidth > 0)"):
                 sek = round(time.time() - t0, 1)
                 break
-        win.get_by_text("Leave Call").click(); page.wait_for_timeout(3000)
+        win.get_by_text(re.compile("^(Anruf verlassen|Leave call)$", re.I)).first.click(); page.wait_for_timeout(3000)
         assert sek is not None and sek < CALL_LIMIT_S, f"eigenes Bild nach {sek} s (Grenze {CALL_LIMIT_S} s)"
         return {"sekunden_bis_bild": sek}
 
