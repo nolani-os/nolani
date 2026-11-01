@@ -1,6 +1,6 @@
 # ClaraOS API – FastAPI backend
 # The container runs as the non-root user `claraos` (uid 1001).
-FROM python:3.14-slim
+FROM python:3.15-slim
 
 WORKDIR /app
 
