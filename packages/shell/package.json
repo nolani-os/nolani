@@ -47,7 +47,7 @@
     "recharts": "^2.15.0",
     "rehype-sanitize": "6.0.0",
     "remark-gfm": "4.0.1",
-    "three": "^0.184.0",
+    "three": "^0.186.1",
     "yet-another-react-lightbox": "3.32.2"
   },
   "devDependencies": {
