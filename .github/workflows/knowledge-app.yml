@@ -173,10 +173,12 @@ jobs:
         run: |
           version="${TAG#knowledge-v}"
           mkdir -p files
-          cp out/linux/*.deb "files/nolani-knowledge-${version}-linux-amd64.deb"
-          cp out/linux/*.AppImage "files/nolani-knowledge-${version}-linux-amd64.AppImage"
-          cp out/windows/*.exe "files/nolani-knowledge-${version}-windows-setup.exe"
-          cp out/android/*.apk "files/nolani-knowledge-${version}-android-arm64.apk"
+          # An artifact with several paths keeps their sub-folders (deb/, appimage/): search.
+          pick() { f=$(find "out/$1" -type f -name "$2" | head -n 1); [ -n "$f" ] || { echo "missing $1/$2"; exit 1; }; echo "$f"; }
+          cp "$(pick linux '*.deb')" "files/nolani-knowledge-${version}-linux-amd64.deb"
+          cp "$(pick linux '*.AppImage')" "files/nolani-knowledge-${version}-linux-amd64.AppImage"
+          cp "$(pick windows '*.exe')" "files/nolani-knowledge-${version}-windows-setup.exe"
+          cp "$(pick android '*.apk')" "files/nolani-knowledge-${version}-android-arm64.apk"
           (cd files && sha256sum * > SHA256SUMS)
           gh release create "$TAG" files/* --repo "$GITHUB_REPOSITORY" --draft \
             --title "Nolani Knowledge ${version}" \
