@@ -52,4 +52,4 @@ pillow-heif==1.8.1
 # Important: the real reason is not speed: the sky heuristic was measured
 # against a real image in its numpy form (768x768, 2.2 s). Re-implementing it
 # in PIL would mean shipping something other than what was tested.
-numpy==2.5.3
+numpy==2.5.4
