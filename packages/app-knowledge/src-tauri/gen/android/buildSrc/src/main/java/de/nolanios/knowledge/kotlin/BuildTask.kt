@@ -16,6 +16,16 @@ open class BuildTask : DefaultTask() {
 
     @TaskAction
     fun assemble() {
+        // The app's own CLI (npm package @tauri-apps/cli, present after `npm ci`, as in CI)
+        // wins; without it fall back to the cargo subcommand (`cargo install tauri-cli`).
+        // Generated for the cargo variant only, the CI build failed with
+        // "no such command: `tauri`".
+        val rootDirRel = rootDirRel ?: throw GradleException("rootDirRel cannot be null")
+        val npmCli = File(File(project.projectDir, rootDirRel), "../node_modules/.bin/tauri")
+        if (npmCli.exists() && !Os.isFamily(Os.FAMILY_WINDOWS)) {
+            runTauriCli(npmCli.canonicalPath, listOf("android", "android-studio-script"))
+            return
+        }
         val executable = """cargo""";
         try {
             runTauriCli(executable)
@@ -44,11 +54,10 @@ open class BuildTask : DefaultTask() {
         }
     }
 
-    fun runTauriCli(executable: String) {
+    fun runTauriCli(executable: String, args: List<String> = listOf("tauri", "android", "android-studio-script")) {
         val rootDirRel = rootDirRel ?: throw GradleException("rootDirRel cannot be null")
         val target = target ?: throw GradleException("target cannot be null")
         val release = release ?: throw GradleException("release cannot be null")
-        val args = listOf("tauri", "android", "android-studio-script");
 
         project.exec {
             workingDir(File(project.projectDir, rootDirRel))

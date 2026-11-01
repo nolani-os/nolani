@@ -14,6 +14,8 @@ import sys
 
 from playwright.sync_api import sync_playwright
 
+from optionale_apps import an
+
 DOM, USER, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
 PW = os.environ["ZELLE_TEST_PW"]
 SHELL = f"https://home.{DOM}"
@@ -84,6 +86,12 @@ SCHRITTE = [
     ("dateien_app", "Zeig mir den obersten Ordner meiner Dateien in der Dateien-App.",
      lambda f: "files" in f),
 ]
+# Steps of optional apps this cell does not run (setup.sh --apps) are left out
+_SCHRITT_APP = {"teams": "teams", "teams_zu": "teams", "fotos": "photos"}
+for _n, _a in _SCHRITT_APP.items():
+    if not an(_a):
+        print(f"– {_n}: übersprungen (App {_a} aus)")
+SCHRITTE = [s for s in SCHRITTE if an(_SCHRITT_APP.get(s[0], "")) or s[0] not in _SCHRITT_APP]
 
 bericht: dict = {"schritte": {}}
 with sync_playwright() as p:

@@ -22,6 +22,8 @@ import zipfile
 
 from playwright.sync_api import Page, expect, sync_playwright
 
+from optionale_apps import an
+
 DOM, USER, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
 NUR = set(sys.argv[4].split(",")) if len(sys.argv) > 4 else None
 PW = os.environ["ZELLE_TEST_PW"]
@@ -147,10 +149,21 @@ def monaco_text(win) -> str:
     return win.locator(".view-lines").first.inner_text().replace(" ", " ")
 
 
+# Steps that need an optional app (betriebsprofil.OPTIONAL_APPS); the rest is core.
+SCHRITT_APP = {"office": "office", "teams_nachricht": "teams", "teams_anruf": "teams",
+               "immich": "photos", "paperless": "documents", "browser": "browser"}
+
+
 def schritt(page: Page, name: str):
     """Run a step right away; record ok/failure, screenshot and browser errors."""
     def deko(fn):
         if NUR and name not in NUR:
+            return fn
+        # Optional apps this cell does not run (setup.sh --apps): recorded, not run
+        app = SCHRITT_APP.get(name)
+        if app and not an(app):
+            ergebnis[name] = {"ok": True, "uebersprungen": f"App {app} aus"}
+            print(f"– {name:20} übersprungen (App {app} aus)", flush=True)
             return fn
         probleme.clear()
         t0 = time.time()

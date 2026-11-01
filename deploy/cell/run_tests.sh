@@ -1,13 +1,36 @@
 #!/usr/bin/env bash
 # Tests for a cell using a throwaway account — run on the cell, in /opt/claraos.
-#   ./run_tests.sh              all tests
+#   ./run_tests.sh              all tests that fit this cell's apps
 #   ./run_tests.sh files        just one
 # Creates `zelle-test` (Authentik + Nextcloud access), runs the tests and ALWAYS
 # cleans up afterwards — even if a test fails (trap).
+# Optional apps (setup.sh --apps, CLARAOS_OPTIONAL_APPS in .env): a test of an app
+# that does not run here is reported as skipped, not failed; the tests themselves
+# skip their parts of switched-off apps (optionale_apps.py). A green run therefore
+# means: everything THIS cell is meant to run works.
 set -uo pipefail
 cd "$(dirname "$0")"
 set -a; . ./.env; set +a
 DOM="$ZELLE_DOMAIN"
+# Same rule as betriebsprofil.py: unset/all = everything except Odoo
+case "${CLARAOS_OPTIONAL_APPS-all}" in
+  all) APPS=" photos documents browser office teams " ;;
+  *)   APPS=" $(echo "${CLARAOS_OPTIONAL_APPS}" | tr ',' ' ') " ;;
+esac
+export CLARAOS_OPTIONAL_APPS="$(echo $APPS | tr ' ' ',')"
+an() { case "$APPS" in *" $1 "*) return 0 ;; esac; return 1; }
+# Test → the optional app(s) it needs (medien: photos OR documents, it checks each part)
+braucht() {
+  case "$1" in
+    teams|calls) an teams ;;
+    browser)     an browser ;;
+    medien)      an photos || an documents ;;
+    odoo)        an odoo ;;
+    *)           return 0 ;;
+  esac
+}
+# Which parts the media test runs
+MEDIEN_TEILE=$(for a in photos documents; do an $a && printf '%s,' $a; done); export MEDIEN_TEILE
 ZELLE_PW=$(openssl rand -hex 16); export ZELLE_PW
 ZELLE_MAIL="zelle-test+$(date +%s)@invalid.example"; export ZELLE_MAIL   # see testkonto.py
 
@@ -16,9 +39,12 @@ aufraeumen() {
   docker compose exec -T claraos-api python3 -c "import asyncio; from services import brain_turns; print('BRAIN_VERGESSEN', asyncio.run(brain_turns.forget_user('zelle-test')))" 2>/dev/null | grep ^BRAIN_
   docker compose exec -T -e ZELLE_LOESCHEN=1 authentik ak shell < testkonto.py 2>/dev/null | grep ^TEST_
   # Photos/documents: both create the account on first login — remove it with its data.
-  docker compose exec -T -e IMMICH_API_KEY claraos-api python3 - zelle-test < medien_konto_weg.py 2>/dev/null | grep ^IMMICH_
-  docker compose exec -T -u paperless -e KONTO=zelle-test paperless python3 manage.py shell \
+  an photos && docker compose exec -T -e IMMICH_API_KEY claraos-api python3 - zelle-test < medien_konto_weg.py 2>/dev/null | grep ^IMMICH_
+  an documents && docker compose exec -T -u paperless -e KONTO=zelle-test paperless python3 manage.py shell \
     < paperless_konto_weg.py 2>/dev/null | grep ^PAPERLESS_
+  # Odoo: likewise created on first login (odoo_test.py)
+  an odoo && docker compose exec -T odoo odoo shell -c /etc/odoo/odoo.conf -d odoo --no-http \
+    < odoo_konto_weg.py 2>/dev/null | grep ^ODOO_
   # Social cell (only where it runs): Mastodon + PeerTube accounts of the test user.
   if [ -n "$(docker compose ps -q mastodon-web 2>/dev/null)" ]; then
     docker compose exec -T mastodon-web bin/rails runner "$(cat mastodon_konto_weg.rb)" zelle-test 2>/dev/null \
@@ -34,7 +60,7 @@ aufraeumen() {
     -c "DELETE FROM claraos_routinen WHERE username='zelle-test'" \
     -c "DELETE FROM claraos_meldungen WHERE username='zelle-test'" >/dev/null 2>&1
   # Personal browser: containers, profile and network of the test account.
-  docker compose exec -T claraos-api python3 -c "import asyncio; from services import zellen_browser as z; print('BROWSER_GELOESCHT', asyncio.run(z.remove('zelle-test')))" 2>/dev/null | grep ^BROWSER_
+  an browser && docker compose exec -T claraos-api python3 -c "import asyncio; from services import zellen_browser as z; print('BROWSER_GELOESCHT', asyncio.run(z.remove('zelle-test')))" 2>/dev/null | grep ^BROWSER_
   docker compose exec -T -u www-data nextcloud php occ user:delete zelle-test >/dev/null 2>&1
   # A data folder left behind by an interrupted delete blocks re-creating the account
   # ("Login is invalid because files already exist for this user").
@@ -58,33 +84,42 @@ docker compose exec -T -e NEXTCLOUD_ADMIN_USER=ncadmin -e NEXTCLOUD_ADMIN_PASSWO
 docker compose exec -T -e ZELLE_DOMAIN claraos-api python3 - zelle-test < provision_vikunja.py
 ./provision_mail.sh zelle-test
 docker compose exec -T claraos-api python3 - zelle-test < provision_owui.py
-docker compose exec -T -e SYNAPSE_REGISTRATION_SECRET -e ZELLE_DOMAIN claraos-api python3 - zelle-test < provision_matrix.py
+an teams && docker compose exec -T -e SYNAPSE_REGISTRATION_SECRET -e ZELLE_DOMAIN claraos-api python3 - zelle-test < provision_matrix.py
+
+# Playwright container for the browser-driven tests (sicht, oberflaeche, bedien, odoo)
+im_browser() {   # im_browser <script> <output dir> [-e VAR …]
+  local skript=$1 aus=$2; shift 2
+  rm -rf "$aus" && mkdir -p "$aus"
+  docker run --rm -e ZELLE_TEST_PW="$ZELLE_PW" -e CLARAOS_OPTIONAL_APPS "$@" -v "$PWD:/w" -w /w \
+    mcr.microsoft.com/playwright/python:v1.52.0-noble \
+    sh -c "pip install -q playwright==1.52.0 >/dev/null 2>&1; playwright install --with-deps chrome >/dev/null 2>&1; python3 $skript $DOM zelle-test /w/$aus"
+}
 
 rc=0
-for t in ${1:-login files planner post teams chat medien browser routinen social clara_apps}; do
+echo "Apps dieser Zelle: Kern$(for a in $APPS; do printf ' + %s' "$a"; done)"
+for t in ${1:-login files planner post teams chat medien browser routinen social clara_apps odoo}; do
   echo; echo "── ${t}_test ──"
+  if ! braucht "$t"; then
+    echo "  übersprungen — die App läuft in dieser Zelle nicht (setup.sh --apps)"
+    continue
+  fi
   if [ "$t" = calls ]; then
     # Part 1 of the call test; part 2 (joining from OUTSIDE) uses sicht/lk.json
     mkdir -p sicht
     ZELLE_TEST_PW=$ZELLE_PW python3 anruf_test.py "$DOM" zelle-test sicht/lk.json || rc=1
   elif [ "$t" = sicht ]; then
-    # Visual check in a real browser (Playwright container) — screenshots to ./sicht/
-    rm -rf sicht && mkdir -p sicht
-    docker run --rm -e ZELLE_TEST_PW="$ZELLE_PW" -v "$PWD:/w" -w /w \
-      mcr.microsoft.com/playwright/python:v1.52.0-noble \
-      sh -c "pip install -q playwright==1.52.0 >/dev/null 2>&1; playwright install --with-deps chrome >/dev/null 2>&1; python3 sicht_test.py $DOM zelle-test /w/sicht" || rc=1
+    # Visual check in a real browser — screenshots to ./sicht/
+    im_browser sicht_test.py sicht || rc=1
   elif [ "$t" = oberflaeche ]; then
     # The assistant opens and drives apps on request (needs the brain) — screenshots to ./oberflaeche/
-    rm -rf oberflaeche && mkdir -p oberflaeche
-    docker run --rm -e ZELLE_TEST_PW="$ZELLE_PW" -v "$PWD:/w" -w /w \
-      mcr.microsoft.com/playwright/python:v1.52.0-noble \
-      sh -c "pip install -q playwright==1.52.0 >/dev/null 2>&1; playwright install --with-deps chrome >/dev/null 2>&1; python3 oberflaeche_test.py $DOM zelle-test /w/oberflaeche" || rc=1
+    im_browser oberflaeche_test.py oberflaeche || rc=1
   elif [ "$t" = bedien ]; then
     # Operation check: click through every app like a user — screenshots to ./bedien/
-    rm -rf bedien && mkdir -p bedien
-    docker run --rm -e ZELLE_TEST_PW="$ZELLE_PW" -e ZELLE_MAIL -v "$PWD:/w" -w /w \
-      mcr.microsoft.com/playwright/python:v1.52.0-noble \
-      sh -c "pip install -q playwright==1.52.0 >/dev/null 2>&1; playwright install --with-deps chrome >/dev/null 2>&1; python3 bedien_test.py $DOM zelle-test /w/bedien" || rc=1
+    im_browser bedien_test.py bedien -e ZELLE_MAIL || rc=1
+  elif [ "$t" = odoo ]; then
+    # Odoo tile → login via the cell → backend as internal user — screenshots to ./odoo-test/
+    # (NOT ./odoo: that is the image build context, im_browser empties its output dir)
+    im_browser odoo_test.py odoo-test || rc=1
   else
     ZELLE_TEST_PW=$ZELLE_PW python3 "${t}_test.py" "$DOM" zelle-test || rc=1
   fi

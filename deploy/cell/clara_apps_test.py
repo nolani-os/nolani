@@ -24,6 +24,9 @@ import urllib.request
 import uuid
 
 from zelle_client import Zelle
+import subprocess
+from medien_test_hilfen import jpeg, multipart
+from optionale_apps import an, uebersprungen
 
 DOM, USER = sys.argv[1], sys.argv[2]
 PAPERLESS = f"https://paperless.{DOM}"
@@ -87,52 +90,56 @@ def pdf(text: str) -> bytes:
 
 
 # ── Paperless ───────────────────────────────────────────────────────────
-# 1 open Paperless once (that creates the account), upload a document
-r = z.get(f"{PAPERLESS}/")
-seite = r.read().decode()
-form = re.search(r'<form[^>]*id="social-login"[^>]*>(.*?)</form>', seite, re.S)
-if form:
-    aktion = re.search(r'action="([^"]+)"', form.group(0)).group(1).replace("&amp;", "&")
-    csrf = re.search(r'name="csrfmiddlewaretoken" value="([^"]+)"', form.group(0)).group(1)
-    rueck = z.oidc_rueckweg(urllib.request.Request(
-        urllib.parse.urljoin(r.geturl(), aktion), method="POST",
-        data=urllib.parse.urlencode({"csrfmiddlewaretoken": csrf}).encode(),
-        headers={"Referer": r.geturl(), "Content-Type": "application/x-www-form-urlencoded"}))
-    if "/login/callback/" in rueck:
-        z.get(rueck)
-token = next(c.value for c in z.jar if c.name == "csrftoken" and "paperless" in c.domain)
-ph = {"X-CSRFToken": token, "Referer": f"{PAPERLESS}/"}
-code = str(random.randint(100000, 999999))
-titel = f"Clara-Test {uuid.uuid4().hex[:6]}"
-grenze = uuid.uuid4().hex
-body = (f'--{grenze}\r\nContent-Disposition: form-data; name="title"\r\n\r\n{titel}\r\n'
-        f'--{grenze}\r\nContent-Disposition: form-data; name="document"; filename="test.pdf"\r\n'
-        f'Content-Type: application/pdf\r\n\r\n').encode() + pdf(f"Kennzahl {code}") + f"\r\n--{grenze}--\r\n".encode()
-s, task = anfrage("POST", f"{PAPERLESS}/api/documents/post_document/", body,
-                  {**ph, "Content-Type": f"multipart/form-data; boundary={grenze}"})
-assert s == 200, f"Upload abgelehnt: {s}"
-doc = None
-for _ in range(60):
-    s, t = anfrage("GET", f"{PAPERLESS}/api/tasks/?task_id={task}", headers=ph)
-    t = (t or [{}])[0] if isinstance(t, list) else {}
-    if t.get("status") == "SUCCESS":
-        doc = t.get("related_document")
-        break
-    time.sleep(3)
-assert doc, "Dokument nicht verarbeitet"
-print(f"1 Paperless: Dokument „{titel}“ abgelegt".ljust(41) + "ok")
+if not an("documents"):
+    uebersprungen("–", "Paperless (Nolani liest Dokumente)", "documents")
+else:
+    # 1 open Paperless once (that creates the account), upload a document
+    r = z.get(f"{PAPERLESS}/")
+    seite = r.read().decode()
+    form = re.search(r'<form[^>]*id="social-login"[^>]*>(.*?)</form>', seite, re.S)
+    if form:
+        aktion = re.search(r'action="([^"]+)"', form.group(0)).group(1).replace("&amp;", "&")
+        csrf = re.search(r'name="csrfmiddlewaretoken" value="([^"]+)"', form.group(0)).group(1)
+        rueck = z.oidc_rueckweg(urllib.request.Request(
+            urllib.parse.urljoin(r.geturl(), aktion), method="POST",
+            data=urllib.parse.urlencode({"csrfmiddlewaretoken": csrf}).encode(),
+            headers={"Referer": r.geturl(), "Content-Type": "application/x-www-form-urlencoded"}))
+        if "/login/callback/" in rueck:
+            z.get(rueck)
+    token = next(c.value for c in z.jar if c.name == "csrftoken" and "paperless" in c.domain)
+    ph = {"X-CSRFToken": token, "Referer": f"{PAPERLESS}/"}
+    code = str(random.randint(100000, 999999))
+    titel = f"Clara-Test {uuid.uuid4().hex[:6]}"
+    grenze = uuid.uuid4().hex
+    body = (f'--{grenze}\r\nContent-Disposition: form-data; name="title"\r\n\r\n{titel}\r\n'
+            f'--{grenze}\r\nContent-Disposition: form-data; name="document"; filename="test.pdf"\r\n'
+            f'Content-Type: application/pdf\r\n\r\n').encode() + pdf(f"Kennzahl {code}") + f"\r\n--{grenze}--\r\n".encode()
+    s, task = anfrage("POST", f"{PAPERLESS}/api/documents/post_document/", body,
+                      {**ph, "Content-Type": f"multipart/form-data; boundary={grenze}"})
+    assert s == 200, f"Upload abgelehnt: {s}"
+    doc = None
+    for _ in range(60):
+        s, t = anfrage("GET", f"{PAPERLESS}/api/tasks/?task_id={task}", headers=ph)
+        t = (t or [{}])[0] if isinstance(t, list) else {}
+        if t.get("status") == "SUCCESS":
+            doc = t.get("related_document")
+            break
+        time.sleep(3)
+    assert doc, "Dokument nicht verarbeitet"
+    print(f"1 Paperless: Dokument „{titel}“ abgelegt".ljust(41) + "ok")
 
-try:
-    # 2 Clara finds and reads it
-    antwort = frage(f"Suche in meinem Paperless das Dokument mit dem Titel „{titel}“, lies es "
-                    f"und nenne mir nur die Kennzahl, die darin steht.")
-    assert code in antwort, f"Clara nannte die Kennzahl nicht: {antwort[:300]!r}"
-    print(f"2 Clara liest Paperless: Kennzahl {code} genannt".ljust(41) + "ok")
-finally:
-    # 3 clean up
-    anfrage("DELETE", f"{PAPERLESS}/api/documents/{doc}/", headers=ph)
-    anfrage("POST", f"{PAPERLESS}/api/trash/", {"action": "empty", "documents": [int(doc)]}, ph)
-    print("3 aufgeräumt")
+    try:
+        # 2 Clara finds and reads it
+        antwort = frage(f"Suche in meinem Paperless das Dokument mit dem Titel „{titel}“, lies es "
+                        f"und nenne mir nur die Kennzahl, die darin steht.")
+        assert code in antwort, f"Clara nannte die Kennzahl nicht: {antwort[:300]!r}"
+        print(f"2 Clara liest Paperless: Kennzahl {code} genannt".ljust(41) + "ok")
+    finally:
+        # 3 clean up
+        anfrage("DELETE", f"{PAPERLESS}/api/documents/{doc}/", headers=ph)
+        anfrage("POST", f"{PAPERLESS}/api/trash/", {"action": "empty", "documents": [int(doc)]}, ph)
+        print("3 aufgeräumt")
+
 
 # ── Routines by chat ────────────────────────────────────────────────────
 R = "/api/claraos/routinen"
@@ -155,30 +162,33 @@ finally:
             z.send_json("DELETE", f"{R}/{x['id']}", {})
 
 # ── Browser ─────────────────────────────────────────────────────────────
-import subprocess  # noqa: E402 — the browser is checked from inside its container
+if not an("browser"):
+    uebersprungen("–", "Browser", "browser")
+else:
 
 
-def browser_tabs() -> list[str]:
-    """Open pages in the user's desktop browser (CDP from inside its own container)."""
-    p = subprocess.run(["docker", "exec", f"ubd-{USER}", "curl", "-s", "-m", "5",
-                        "http://127.0.0.1:9222/json/list"], capture_output=True, text=True)
-    try:
-        return [t.get("url", "") for t in json.loads(p.stdout or "[]") if t.get("type") == "page"]
-    except ValueError:
-        return []
+    def browser_tabs() -> list[str]:
+        """Open pages in the user's desktop browser (CDP from inside its own container)."""
+        p = subprocess.run(["docker", "exec", f"ubd-{USER}", "curl", "-s", "-m", "5",
+                            "http://127.0.0.1:9222/json/list"], capture_output=True, text=True)
+        try:
+            return [t.get("url", "") for t in json.loads(p.stdout or "[]") if t.get("type") == "page"]
+        except ValueError:
+            return []
 
 
-ziel = f"https://example.com/?clara={uuid.uuid4().hex[:8]}"
-antwort = frage(f"Öffne bitte {ziel} in meinem Browser.")
-tabs = []
-for _ in range(20):
-    tabs = browser_tabs()
-    if any(t.startswith(ziel) for t in tabs):
-        break
-    time.sleep(3)
-assert any(t.startswith(ziel) for t in tabs), \
-    f"Seite nicht im eigenen Browser offen: {tabs[:5]} — Clara: {antwort[:300]!r}"
-print("6 Clara öffnet eine Seite im eigenen Browser ok")
+    ziel = f"https://example.com/?clara={uuid.uuid4().hex[:8]}"
+    antwort = frage(f"Öffne bitte {ziel} in meinem Browser.")
+    tabs = []
+    for _ in range(20):
+        tabs = browser_tabs()
+        if any(t.startswith(ziel) for t in tabs):
+            break
+        time.sleep(3)
+    assert any(t.startswith(ziel) for t in tabs), \
+        f"Seite nicht im eigenen Browser offen: {tabs[:5]} — Clara: {antwort[:300]!r}"
+    print("6 Clara öffnet eine Seite im eigenen Browser ok")
+
 
 # ── Mastodon (shared social cell) ───────────────────────────────────────
 import html  # noqa: E402
@@ -242,69 +252,76 @@ else:
             anfrage("DELETE", f"{SOCIAL}/api/v1/statuses/{sid}", headers=mh)
 
 # ── Immich ──────────────────────────────────────────────────────────────
-from medien_test_hilfen import jpeg, multipart  # noqa: E402
+if not an("photos"):
+    uebersprungen("–", "Immich (Nolani findet Fotos)", "photos")
+else:
 
-IMMICH = f"https://immich.{DOM}"
-s, d = anfrage("POST", f"{IMMICH}/api/oauth/authorize", {"redirectUri": f"{IMMICH}/auth/login"})
-assert s in (200, 201) and "url" in d, f"Immich-Anmeldung: {s}"
-s, d = anfrage("POST", f"{IMMICH}/api/oauth/callback", {"url": z.oidc_rueckweg(d["url"])})
-assert s in (200, 201) and d.get("accessToken"), f"Immich-Callback: {s}"
-ih = {"Authorization": f"Bearer {d['accessToken']}"}
-marker = f"clara-foto-{uuid.uuid4().hex[:8]}"
-jetzt = time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime())
-body, typ = multipart({"fileCreatedAt": jetzt, "fileModifiedAt": jetzt, "filename": f"{marker}.jpg"},
-                      ("assetData", f"{marker}.jpg", "image/jpeg", jpeg(marker)))
-s, d = anfrage("POST", f"{IMMICH}/api/assets", body, {**ih, "Content-Type": typ})
-assert s in (200, 201) and d.get("id"), f"Upload abgelehnt: {s}"
-aid = d["id"]
-try:
-    time.sleep(10)          # metadata extraction (the search lists processed assets)
-    antwort = frage("Wie heißt die Datei meines neuesten Fotos in Immich? Nenne nur den Dateinamen.")
-    assert marker in antwort, f"Clara nannte das Foto nicht: {antwort[:300]!r}"
-    print("10 Clara findet das neueste Foto in Immich ok")
-    # Clara's key must be read-only: reading the photo works, deleting/uploading does not
-    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "immich_rechte_probe.py"), "rb") as f:
-        p = subprocess.run(["docker", "exec", "-i", "claraos-claraos-api-1", "python3", "-", USER, aid],
-                           input=f.read(), capture_output=True)
-    probe = p.stdout.decode().strip().splitlines()[-1:] or [p.stderr.decode()[-200:]]
-    assert probe[0].startswith("LESEN 200 LOESCHEN 403 HOCHLADEN 403"), f"Schlüssel nicht nur lesend: {probe[0]}"
-    print("11 Claras Immich-Schlüssel: nur lesen   ok")
-finally:
-    anfrage("DELETE", f"{IMMICH}/api/assets", {"ids": [aid], "force": True}, ih)
+    IMMICH = f"https://immich.{DOM}"
+    s, d = anfrage("POST", f"{IMMICH}/api/oauth/authorize", {"redirectUri": f"{IMMICH}/auth/login"})
+    assert s in (200, 201) and "url" in d, f"Immich-Anmeldung: {s}"
+    s, d = anfrage("POST", f"{IMMICH}/api/oauth/callback", {"url": z.oidc_rueckweg(d["url"])})
+    assert s in (200, 201) and d.get("accessToken"), f"Immich-Callback: {s}"
+    ih = {"Authorization": f"Bearer {d['accessToken']}"}
+    marker = f"clara-foto-{uuid.uuid4().hex[:8]}"
+    jetzt = time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime())
+    body, typ = multipart({"fileCreatedAt": jetzt, "fileModifiedAt": jetzt, "filename": f"{marker}.jpg"},
+                          ("assetData", f"{marker}.jpg", "image/jpeg", jpeg(marker)))
+    s, d = anfrage("POST", f"{IMMICH}/api/assets", body, {**ih, "Content-Type": typ})
+    assert s in (200, 201) and d.get("id"), f"Upload abgelehnt: {s}"
+    aid = d["id"]
+    try:
+        time.sleep(10)          # metadata extraction (the search lists processed assets)
+        antwort = frage("Wie heißt die Datei meines neuesten Fotos in Immich? Nenne nur den Dateinamen.")
+        assert marker in antwort, f"Clara nannte das Foto nicht: {antwort[:300]!r}"
+        print("10 Clara findet das neueste Foto in Immich ok")
+        # Clara's key must be read-only: reading the photo works, deleting/uploading does not
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "immich_rechte_probe.py"), "rb") as f:
+            p = subprocess.run(["docker", "exec", "-i", "claraos-claraos-api-1", "python3", "-", USER, aid],
+                               input=f.read(), capture_output=True)
+        probe = p.stdout.decode().strip().splitlines()[-1:] or [p.stderr.decode()[-200:]]
+        assert probe[0].startswith("LESEN 200 LOESCHEN 403 HOCHLADEN 403"), f"Schlüssel nicht nur lesend: {probe[0]}"
+        print("11 Claras Immich-Schlüssel: nur lesen   ok")
+    finally:
+        anfrage("DELETE", f"{IMMICH}/api/assets", {"ids": [aid], "force": True}, ih)
+
 
 # ── Dienste (third-party services) ──────────────────────────────────────
-HIER = os.path.dirname(os.path.abspath(__file__))
+if not an("browser"):
+    uebersprungen("–", "Dienste (im eigenen Browser)", "browser")
+else:
+    HIER = os.path.dirname(os.path.abspath(__file__))
 
 
-def im_api(skript: str, *args: str) -> str:
-    with open(os.path.join(HIER, skript), "rb") as f:
-        p = subprocess.run(["docker", "exec", "-i", "claraos-claraos-api-1", "python3", "-", *args],
-                           input=f.read(), capture_output=True)
-    return p.stdout.decode().strip()
+    def im_api(skript: str, *args: str) -> str:
+        with open(os.path.join(HIER, skript), "rb") as f:
+            p = subprocess.run(["docker", "exec", "-i", "claraos-claraos-api-1", "python3", "-", *args],
+                               input=f.read(), capture_output=True)
+        return p.stdout.decode().strip()
 
 
-kennung = uuid.uuid4().hex[:6]
-dienst, versteckt = f"testdienst-{kennung}", f"testdienst-{kennung}-x"
-d_url = f"https://example.org/?dienst={kennung}"
-im_api("dienst_test_hilfe.py", "an", dienst, f"Testdienst {kennung}", d_url)
-im_api("dienst_test_hilfe.py", "an", versteckt, f"Geheimdienst {kennung}", "https://example.org/x",
-       "gruppe-die-es-nicht-gibt")
-try:
-    ids = [x["id"] for x in z.get_json("/api/claraos/apps/dienste")["dienste"]]
-    assert dienst in ids and versteckt not in ids, f"Sichtbarkeit falsch: {ids}"
-    print("12 Dienste: eigener sichtbar, fremder nicht ok")
-    antwort = frage(f"Öffne bitte meinen Dienst „Testdienst {kennung}“.")
-    tabs = []
-    for _ in range(20):
-        tabs = browser_tabs()
-        if any(t.startswith(d_url) for t in tabs):
-            break
-        time.sleep(3)
-    assert any(t.startswith(d_url) for t in tabs), f"Dienst nicht geöffnet: {tabs[:5]} — Clara: {antwort[:300]!r}"
-    print("13 Clara öffnet den Dienst im Browser     ok")
-finally:
-    im_api("dienst_test_hilfe.py", "weg", dienst)
-    im_api("dienst_test_hilfe.py", "weg", versteckt)
+    kennung = uuid.uuid4().hex[:6]
+    dienst, versteckt = f"testdienst-{kennung}", f"testdienst-{kennung}-x"
+    d_url = f"https://example.org/?dienst={kennung}"
+    im_api("dienst_test_hilfe.py", "an", dienst, f"Testdienst {kennung}", d_url)
+    im_api("dienst_test_hilfe.py", "an", versteckt, f"Geheimdienst {kennung}", "https://example.org/x",
+           "gruppe-die-es-nicht-gibt")
+    try:
+        ids = [x["id"] for x in z.get_json("/api/claraos/apps/dienste")["dienste"]]
+        assert dienst in ids and versteckt not in ids, f"Sichtbarkeit falsch: {ids}"
+        print("12 Dienste: eigener sichtbar, fremder nicht ok")
+        antwort = frage(f"Öffne bitte meinen Dienst „Testdienst {kennung}“.")
+        tabs = []
+        for _ in range(20):
+            tabs = browser_tabs()
+            if any(t.startswith(d_url) for t in tabs):
+                break
+            time.sleep(3)
+        assert any(t.startswith(d_url) for t in tabs), f"Dienst nicht geöffnet: {tabs[:5]} — Clara: {antwort[:300]!r}"
+        print("13 Clara öffnet den Dienst im Browser     ok")
+    finally:
+        im_api("dienst_test_hilfe.py", "weg", dienst)
+        im_api("dienst_test_hilfe.py", "weg", versteckt)
+
 
 # ── PeerTube (public videos) ────────────────────────────────────────────
 VIDEO = f"https://video.{DOM.split('.', 1)[1]}"

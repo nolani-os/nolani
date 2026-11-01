@@ -1,10 +1,11 @@
 """Odoo in a cell, through the real browser path: shell login → Odoo tile → "Sign in
 with <product>" → back in Odoo as an INTERNAL user.
 
-    ZELLE_DOMAIN=demo.example.com ZELLE_TEST_USER=zelle-test ZELLE_TEST_PW=… \
-      python3 odoo_test.py [output dir]
+    ZELLE_TEST_PW=… python3 odoo_test.py <domain> <user> <output dir>
 
-The account must exist in the cell's Authentik (testkonto.py). Prints no passwords.
+The account must exist in the cell's Authentik (testkonto.py); run_tests.sh starts
+this in the Playwright container when the cell runs Odoo and removes the Odoo account
+afterwards (odoo_konto_weg.py). Prints no passwords.
 Exit code 0 only if every step held; screenshots + bericht.json in the output dir.
 """
 import json
@@ -14,12 +15,11 @@ import time
 
 from playwright.sync_api import sync_playwright
 
-DOM = os.environ["ZELLE_DOMAIN"]
-USER = os.environ.get("ZELLE_TEST_USER", "zelle-test")
+DOM, USER = sys.argv[1], sys.argv[2]
+OUT = sys.argv[3] if len(sys.argv) > 3 else "odoo-test"
 PW = os.environ["ZELLE_TEST_PW"]
 SHELL = f"https://home.{DOM}"
 ODOO = f"https://odoo.{DOM}"
-OUT = sys.argv[1] if len(sys.argv) > 1 else "odoo-test"
 os.makedirs(OUT, exist_ok=True)
 bericht: dict = {"schritte": {}}
 

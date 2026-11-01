@@ -19,12 +19,19 @@ import time
 
 from playwright.sync_api import sync_playwright
 
+from optionale_apps import AN
+
 DOM, USER, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
 PW = os.environ["ZELLE_TEST_PW"]
 SHELL = f"https://home.{DOM}"
 os.makedirs(OUT, exist_ok=True)
 bericht: dict = {"apps": {}}
 probleme: list = []
+
+# Optional apps of this cell (setup.sh --apps; run_tests.sh passes them in).
+# Tile → the optional app it belongs to (tiles not listed are core)
+KACHEL_APP = {"teams-workspace": "teams", "immich": "photos", "paperless": "documents",
+              "services-hub": "browser", "selkies-browser": "browser"}
 
 
 # Positive checks on what the BROWSER actually talks to. Server-side tests cannot see
@@ -109,6 +116,9 @@ with sync_playwright() as p:
     for app in ["files", "planner", "post", "teams-workspace", "knowledge", "kontakte",
                 "vaultwarden", "settings", "immich", "paperless", "services-hub",
                 "selkies-browser", "clara-routinen", "mastodon", "peertube"]:
+        if KACHEL_APP.get(app, "kern") not in AN | {"kern"}:
+            bericht["apps"][app] = {"uebersprungen": "App aus"}
+            continue
         probleme.clear()
         page.goto(f"{SHELL}/?app={app}", wait_until="domcontentloaded")
         page.wait_for_timeout(6000)
@@ -226,7 +236,8 @@ bericht["browser"] = {"matrix_client_anfragen": anfragen["matrix_client"],
                       "falsche_hosts": sorted(anfragen["falsche_hosts"])}
 json.dump(bericht, open(f"{OUT}/bericht.json", "w"), ensure_ascii=False, indent=1)
 print(json.dumps(bericht, ensure_ascii=False, indent=1)[:6000])
-ok = (anfragen["matrix_client"] > 0 and not anfragen["falsche_hosts"]
+# The Matrix check only where Teams runs — without it no client talks to Matrix.
+ok = ((anfragen["matrix_client"] > 0 or "teams" not in AN) and not anfragen["falsche_hosts"]
       and bericht.get("editor", {}).get("getippt", False))
 print(f"\nBROWSER: {anfragen['matrix_client']} Matrix-Client-Anfragen, "
       f"falsche Hosts: {sorted(anfragen['falsche_hosts']) or 'keine'}")

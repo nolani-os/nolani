@@ -9,6 +9,7 @@
 4 Get a WOPI token; the editor URL points to collabora.<domain>
 5 Fetch CheckFileInfo the way Collabora does (access_token only, no session)
 6 Editor page (cool.html) loads
+  (3–6 only with the office app; without it: the WOPI routes answer 404)
 7 Clean up
 """
 import json
@@ -16,8 +17,10 @@ import os
 import sys
 import time
 import urllib.parse
+import urllib.error
 import urllib.request
 
+from optionale_apps import an
 from zelle_client import Zelle
 
 DOM, USER = sys.argv[1], sys.argv[2]
@@ -41,30 +44,41 @@ inhalt = z.get_json("/api/claraos/files/v2/read", source="nextcloud", path=pfad)
 assert marker in json.dumps(inhalt, ensure_ascii=False), "Inhalt stimmt nicht"
 print("2 Schreiben → Verzeichnis → Lesen         ok")
 
-doc = z.send_json("POST", "/api/claraos/office/create-document", {
-    "filename": "Zelle-Test.docx", "folder": "Dokumente",
-    "content_markdown": "# Zelle\n\nDieses Dokument hat Collabora aus Markdown gebaut."})
-doc_pfad = doc.get("path") or doc.get("file", {}).get("path")
-assert doc_pfad, f"kein Pfad in der Antwort: {list(doc)}"
-print(f"3 Dokument erzeugt: {doc_pfad}".ljust(41) + "ok")
+doc_pfad = None
+if an("office"):
+    doc = z.send_json("POST", "/api/claraos/office/create-document", {
+        "filename": "Zelle-Test.docx", "folder": "Dokumente",
+        "content_markdown": "# Zelle\n\nDieses Dokument hat Collabora aus Markdown gebaut."})
+    doc_pfad = doc.get("path") or doc.get("file", {}).get("path")
+    assert doc_pfad, f"kein Pfad in der Antwort: {list(doc)}"
+    print(f"3 Dokument erzeugt: {doc_pfad}".ljust(41) + "ok")
 
-tok = z.send_json("POST", "/api/claraos/wopi/token", {"source": "nextcloud", "path": doc_pfad})
-editor = tok.get("editor_url") or ""
-assert urllib.parse.urlparse(editor).hostname == f"collabora.{DOM}", f"Editor-Host: {editor[:80]}"
-print("4 WOPI-Token, Editor auf collabora." + DOM.split(".")[0] + "…".ljust(3) + "ok")
+    tok = z.send_json("POST", "/api/claraos/wopi/token", {"source": "nextcloud", "path": doc_pfad})
+    editor = tok.get("editor_url") or ""
+    assert urllib.parse.urlparse(editor).hostname == f"collabora.{DOM}", f"Editor-Host: {editor[:80]}"
+    print("4 WOPI-Token, Editor auf collabora." + DOM.split(".")[0] + "…".ljust(3) + "ok")
 
-# Collabora has NO session — only the access_token. Hence a fresh client.
-info_url = tok["wopi_src"] + "?access_token=" + urllib.parse.quote(tok["access_token"])
-with urllib.request.urlopen(info_url, timeout=30) as r:
-    info = json.loads(r.read().decode())
-assert info.get("BaseFileName", "").endswith(".docx") and int(info.get("Size", 0)) > 0, info
-print(f"5 CheckFileInfo ohne Sitzung: {info['BaseFileName']}, {info['Size']} B".ljust(41) + "ok")
+    # Collabora has NO session — only the access_token. Hence a fresh client.
+    info_url = tok["wopi_src"] + "?access_token=" + urllib.parse.quote(tok["access_token"])
+    with urllib.request.urlopen(info_url, timeout=30) as r:
+        info = json.loads(r.read().decode())
+    assert info.get("BaseFileName", "").endswith(".docx") and int(info.get("Size", 0)) > 0, info
+    print(f"5 CheckFileInfo ohne Sitzung: {info['BaseFileName']}, {info['Size']} B".ljust(41) + "ok")
 
-code = urllib.request.urlopen(editor, timeout=30).status
-assert code == 200, f"Editor HTTP {code}"
-print("6 Editor-Seite (cool.html) lädt           ok")
+    code = urllib.request.urlopen(editor, timeout=30).status
+    assert code == 200, f"Editor HTTP {code}"
+    print("6 Editor-Seite (cool.html) lädt           ok")
+else:
+    # Office switched off: its routers must be GONE, not merely hidden (a tile is not a
+    # permission). FastAPI's own 404 carries detail "Not Found".
+    try:
+        z.send_json("POST", "/api/claraos/wopi/token", {"source": "nextcloud", "path": pfad})
+        raise AssertionError("Office ist aus, aber /wopi/token antwortet")
+    except urllib.error.HTTPError as e:
+        assert e.code == 404, f"/wopi/token: HTTP {e.code} statt 404"
+    print("3–6 Office aus: WOPI-Schnittstelle fehlt (404)  ok")
 
-for p in (pfad, doc_pfad):
+for p in (x for x in (pfad, doc_pfad) if x):
     try:
         z.send_json("DELETE", "/api/claraos/files/v2/delete", {}, source="nextcloud", path=p)
     except Exception as e:  # cleanup must not mask the test result
