@@ -39,7 +39,7 @@ boto3==1.40.9
 PyJWT==2.10.1
 
 # Image editing without a GPU (crop, rotate, resize, ...).
-Pillow==12.3.0
+Pillow==13.0.0
 
 # iPhone photos (HEIC/HEIF) in the image viewer — browsers do not render HEIC
 # and Nextcloud generates no preview for it. /files/v2/as-jpeg converts;
