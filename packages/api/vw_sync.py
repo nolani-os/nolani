@@ -7,6 +7,7 @@ import os
 import httpx
 
 from domains_generated import BASE_DOMAIN  # cell: CLARAOS_BASE_DOMAIN
+from tlsverify import TLS_VERIFY  # central switch: CLARAOS_TLS_VERIFY / CLARAOS_TLS_CA
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ async def sync_to_vaultwarden(
         return False
 
     try:
-        async with httpx.AsyncClient(timeout=10, verify=False) as client:
+        async with httpx.AsyncClient(timeout=10, verify=TLS_VERIFY) as client:
             # Use Vaultwarden admin API to check connectivity
             resp = await client.get(
                 f"{VW_URL}/admin/users",

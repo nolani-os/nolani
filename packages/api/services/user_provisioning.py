@@ -34,6 +34,7 @@ import httpx
 
 from database import user_tx
 from encryption import encrypt_credentials, decrypt_credentials
+from tlsverify import TLS_VERIFY  # central switch: CLARAOS_TLS_VERIFY / CLARAOS_TLS_CA
 
 logger = logging.getLogger(__name__)
 
@@ -329,7 +330,7 @@ def ist_rollout_nutzer(username: str, groups: list[str], is_bot: bool,
 async def provision_all() -> dict:
     """Catch up all real users. Idempotent, safe to repeat."""
     from routers.teams_admin import AUTHENTIK_URL, _ak_headers
-    async with httpx.AsyncClient(verify=False, timeout=25) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=25) as c:
         r = await c.get(f"{AUTHENTIK_URL}/api/v3/core/users/?page_size=200",
                         headers=_ak_headers())
     if r.status_code != 200:

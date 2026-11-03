@@ -33,6 +33,7 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel
 
 from database import get_pool, system_db, user_tx
+from tlsverify import TLS_VERIFY  # central switch: CLARAOS_TLS_VERIFY / CLARAOS_TLS_CA
 # CalDAV helpers imported directly from nc_pim (same pattern as nc_pim importing
 # from files.py). Deliberately NOT extracted into services/ so nc_pim stays
 # untouched.
@@ -2435,7 +2436,7 @@ async def project_costs(project_id: int, request: Request):
     cost_total = None
     cost_available = True
     try:
-        async with httpx.AsyncClient(verify=False, timeout=10) as c:
+        async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=10) as c:
             r = await c.get(f"{CLARA_AGENT_ADMIN_URL}/v1/admin/costs/by-ref",
                             params={"project_id": project_id, "group_by": "task"},
                             headers=clara_agent_headers({"X-User-Role": "admin", "X-User-Id": user}))
@@ -2531,7 +2532,7 @@ async def costs_overview(request: Request, days: int = 30):
                "task_groups": []}
         async with sem:
             try:
-                async with httpx.AsyncClient(verify=False, timeout=10) as c:
+                async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=10) as c:
                     rt, rd = await asyncio.gather(
                         c.get(f"{CLARA_AGENT_ADMIN_URL}/v1/admin/costs/by-ref",
                               params={"project_id": pid, "group_by": "task"},

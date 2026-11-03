@@ -154,6 +154,10 @@ Put your model key into `.env` as `ANTHROPIC_API_KEY` (other providers via
 - Backups run nightly (systemd timer); restore: [`deploy/cell/RESTORE.md`](deploy/cell/RESTORE.md)
 - Rename the product and the assistant for your installation: `CLARAOS_PRODUCT_NAME`,
   `CLARAOS_ASSISTANT_NAME` in `.env` (defaults: NolaniOS, Nolani)
+- The API verifies every outgoing TLS connection. Services with an internal CA: point
+  `CLARAOS_TLS_CA` at a PEM bundle; `CLARAOS_TLS_VERIFY=0` switches verification off
+  altogether (not recommended). The mail server's internal certificate is the one exception
+  `setup.sh` writes itself (`MAIL_TLS_VERIFY=false`).
 
 ## Repository layout
 

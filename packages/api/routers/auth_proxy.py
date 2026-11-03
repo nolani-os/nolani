@@ -15,6 +15,7 @@ from auth import get_current_user
 import domains_generated as domains
 from database import get_pool, user_tx
 from encryption import decrypt_credentials
+from tlsverify import TLS_VERIFY  # central switch: CLARAOS_TLS_VERIFY / CLARAOS_TLS_CA
 
 # Optional login handlers and internal addresses of installation-specific apps
 # (not part of the product).
@@ -60,7 +61,7 @@ async def _get_app_config(app_id: str) -> dict | None:
 
 async def login_paperless(url: str, creds: dict) -> dict:
     """Paperless-ngx: POST /api/token/ → Token as cookie."""
-    async with httpx.AsyncClient(timeout=10, verify=False) as c:
+    async with httpx.AsyncClient(timeout=10, verify=TLS_VERIFY) as c:
         r = await c.post(f"{url}/api/token/",
             json={"username": creds.get("username", ""), "password": creds.get("password", "")})
         if r.status_code != 200:
@@ -71,7 +72,7 @@ async def login_paperless(url: str, creds: dict) -> dict:
 
 async def login_immich(url: str, creds: dict) -> dict:
     """Immich: POST /api/auth/login → accessToken as cookie."""
-    async with httpx.AsyncClient(timeout=10, verify=False) as c:
+    async with httpx.AsyncClient(timeout=10, verify=TLS_VERIFY) as c:
         r = await c.post(f"{url}/api/auth/login",
             json={"email": creds.get("email", ""), "password": creds.get("password", "")})
         if r.status_code not in (200, 201):
@@ -82,7 +83,7 @@ async def login_immich(url: str, creds: dict) -> dict:
 
 async def login_openwebui(url: str, creds: dict) -> dict:
     """Open WebUI: POST /api/v1/auths/signin → JWT as cookie."""
-    async with httpx.AsyncClient(timeout=10, verify=False) as c:
+    async with httpx.AsyncClient(timeout=10, verify=TLS_VERIFY) as c:
         r = await c.post(f"{url}/api/v1/auths/signin",
             json={"email": creds.get("email", ""), "password": creds.get("password", "")})
         if r.status_code != 200:
@@ -114,7 +115,7 @@ async def login_ntfy(url: str, creds: dict) -> dict:
         password = creds.get("password", "")
         if not username:
             return {"error": "ntfy: no api_key, token, or username/password stored"}
-        async with httpx.AsyncClient(timeout=10, verify=False) as c:
+        async with httpx.AsyncClient(timeout=10, verify=TLS_VERIFY) as c:
             r = await c.post(
                 f"{url}/v1/account/token",
                 auth=(username, password),
@@ -135,7 +136,7 @@ async def login_ntfy(url: str, creds: dict) -> dict:
 
 async def login_mastodon(url: str, creds: dict) -> dict:
     """Mastodon: 2-step OAuth → Bearer token."""
-    async with httpx.AsyncClient(timeout=10, verify=False) as c:
+    async with httpx.AsyncClient(timeout=10, verify=TLS_VERIFY) as c:
         # Step 1: Create app
         r1 = await c.post(f"{url}/api/v1/apps", json={
             "client_name": PRODUCT_NAME, "redirect_uris": "urn:ietf:wg:oauth:2.0:oob", "scopes": "read write"})
@@ -153,7 +154,7 @@ async def login_mastodon(url: str, creds: dict) -> dict:
 
 async def login_peertube(url: str, creds: dict) -> dict:
     """PeerTube: 2-step OAuth → Bearer token."""
-    async with httpx.AsyncClient(timeout=10, verify=False) as c:
+    async with httpx.AsyncClient(timeout=10, verify=TLS_VERIFY) as c:
         r1 = await c.get(f"{url}/api/v1/oauth-clients/local")
         if r1.status_code != 200:
             return {"error": f"PeerTube client fetch failed: {r1.status_code}"}
@@ -185,7 +186,7 @@ async def login_matrix(url: str, creds: dict) -> dict:
         # Fallback: legacy password-login for migration period
         logger.warning("admin-mint failed for %s: %s — falling back to password", username, exc)
         hs_url = url.replace("element.", "matrix.")
-        async with httpx.AsyncClient(timeout=10, verify=False) as c:
+        async with httpx.AsyncClient(timeout=10, verify=TLS_VERIFY) as c:
             r = await c.post(f"{hs_url}/_matrix/client/v3/login", json={
                 "type": "m.login.password",
                 "identifier": {"type": "m.id.user", "user": username},
@@ -260,7 +261,7 @@ async def _nc_get_or_create_scratch(nc_url: str, username: str, password: str, d
     auth = (username, password)
     dav_base = f"{nc_url}/remote.php/dav/files/{username}"
 
-    async with httpx.AsyncClient(timeout=15, verify=False, follow_redirects=False, headers={"X-Forwarded-Proto":"https","Host":domains.host("nextcloud")}) as c:
+    async with httpx.AsyncClient(timeout=15, verify=TLS_VERIFY, follow_redirects=False, headers={"X-Forwarded-Proto":"https","Host":domains.host("nextcloud")}) as c:
         # Ensure the product folder exists (MKCOL)
         folder_resp = await c.request("MKCOL", f"{dav_base}/{NC_FOLDER}", auth=auth)
         # 201=created, 405=already exists

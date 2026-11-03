@@ -24,6 +24,7 @@ import secrets
 import httpx
 
 from betriebsprofil import ASSISTANT_NAME, IS_CELL
+from tlsverify import TLS_VERIFY  # central switch: CLARAOS_TLS_VERIFY / CLARAOS_TLS_CA
 
 logger = logging.getLogger(__name__)
 
@@ -141,7 +142,7 @@ async def _email(username: str) -> str:
     """The cell account's email address — Odoo accounts created through the cell's
     login use it as their login."""
     from routers.teams_admin import AUTHENTIK_URL, _ak_headers
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.get(f"{AUTHENTIK_URL}/api/v3/core/users/", headers=_ak_headers(),
                         params={"username": username})
     r.raise_for_status()

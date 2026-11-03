@@ -5,6 +5,10 @@ does not follow semantic versioning yet.
 
 ## Unreleased
 
+- **TLS verification on by default** for the API's outgoing calls: the 69 `verify=False`
+  call sites now take one switch (`CLARAOS_TLS_VERIFY`, default on; `CLARAOS_TLS_CA` for an
+  internal CA bundle). The mail connection follows it unless `MAIL_TLS_VERIFY` says otherwise
+  — a cell sets it to `false` explicitly, because its Stalwart serves an internal certificate.
 - **Optional business apps per cell** (`setup.sh --apps …`): **Odoo** (ERP/CRM, with Nolani's
   tools for contacts and business records as the signed-in user), **InvenTree** (parts, stock,
   orders), **Apache Superset** (dashboards), **Mautic** (marketing automation, SAML login,

@@ -72,6 +72,11 @@ elif ! grep -q '^CLARAOS_OPTIONAL_APPS=' .env; then
   else setz CLARAOS_OPTIONAL_APPS ""; fi
 fi
 APPS=" $(sed -n 's/^CLARAOS_OPTIONAL_APPS=//p' .env | tr ',' ' ') "
+# The API verifies every outgoing TLS connection (CLARAOS_TLS_VERIFY, default on).
+# Stalwart serves an internal self-signed certificate on IMAP/SMTP
+# (requestTlsCertificate:false), so the mail connection is the one deliberate
+# exception — written here so it is visible, never a hidden default.
+grep -q '^MAIL_TLS_VERIFY=' .env || setz MAIL_TLS_VERIFY false
 for a in $APPS; do
   case " $ALLE_APPS " in *" $a "*) ;; *) echo "FEHLER: unbekannte App '$a' (erlaubt: $ALLE_APPS, none)"; exit 1 ;; esac
 done

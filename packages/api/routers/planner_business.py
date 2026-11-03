@@ -39,6 +39,7 @@ from pydantic import BaseModel
 
 from auth import get_current_user, require_caller
 from database import get_pool
+from tlsverify import TLS_VERIFY  # central switch: CLARAOS_TLS_VERIFY / CLARAOS_TLS_CA
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/claraos/planner", tags=["planner"])
@@ -209,7 +210,7 @@ async def _belegung(uri: str, von: datetime, bis: datetime) -> list[dict[str, An
     <C:time-range start="{_ical_stamp(von)}" end="{_ical_stamp(bis)}"/>
   </C:comp-filter></C:comp-filter></C:filter>
 </C:calendar-query>'''
-    async with httpx.AsyncClient(verify=False, timeout=20) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=20) as c:
         r = await c.request("REPORT", NEXTCLOUD_URL + uri, auth=auth,
                             headers={"Depth": "1", "Content-Type": "application/xml; charset=utf-8"},
                             content=xml)
@@ -298,7 +299,7 @@ async def ressource_buchen(rid: str, body: BuchungIn, request: Request):
         "END:VEVENT", "END:VCALENDAR", ""])
     auth = await _nc_admin_auth()
     url = f"{NEXTCLOUD_URL}{res['kalender_uri']}{uid}.ics"
-    async with httpx.AsyncClient(verify=False, timeout=20) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=20) as c:
         r = await c.put(url, auth=auth, content=ical.encode(),
                         headers={"Content-Type": "text/calendar; charset=utf-8", "If-None-Match": "*"})
     if r.status_code not in (201, 204):
@@ -306,7 +307,7 @@ async def ressource_buchen(rid: str, body: BuchungIn, request: Request):
 
     nachher = [b for b in await _belegung(res["kalender_uri"], von, bis) if b["uid"] != uid]
     if nachher:
-        async with httpx.AsyncClient(verify=False, timeout=20) as c:
+        async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=20) as c:
             await c.delete(url, auth=auth)
         raise HTTPException(status_code=409, detail={
             "meldung": f"{res['name']} wurde in derselben Sekunde von jemand anderem gebucht",
@@ -328,7 +329,7 @@ async def ressource_stornieren(rid: str, uid: str, request: Request):
     from routers.teams_admin import NEXTCLOUD_URL, _nc_admin_auth
     auth = await _nc_admin_auth()
     url = f"{NEXTCLOUD_URL}{res['kalender_uri']}{uid}.ics"
-    async with httpx.AsyncClient(verify=False, timeout=20) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=20) as c:
         # Only the person who booked (ORGANIZER) or an administrator may cancel —
         # booking ids are visible to everyone in the occupancy view.
         cur = await c.get(url, auth=auth)
@@ -386,7 +387,7 @@ async def _kalender_existiert(uri: str) -> bool:
     heim = uri.rsplit("/", 2)[0] + "/"
     auth = await _nc_admin_auth()
     try:
-        async with httpx.AsyncClient(verify=False, timeout=20) as c:
+        async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=20) as c:
             r = await c.request("PROPFIND", NEXTCLOUD_URL + heim, auth=auth, headers={"Depth": "1"})
         return uri in r.text
     except Exception as e:            # when in doubt, claim nothing

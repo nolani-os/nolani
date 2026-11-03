@@ -18,6 +18,7 @@ synchronous, so all calls run in asyncio.to_thread.
 from __future__ import annotations
 
 from betriebsprofil import PRODUCT_NAME, heim_default  # external deployment: no silent home-server fallback
+from tlsverify import tls_verify_enabled, tls_ca_path  # API-wide TLS switch
 import asyncio
 import email
 import email.header
@@ -48,14 +49,19 @@ MAIL_IMAP_HOST = heim_default("MAIL_IMAP_HOST")
 MAIL_IMAP_PORT = int(os.environ.get("MAIL_IMAP_PORT", "993"))
 MAIL_SMTP_HOST = heim_default("MAIL_SMTP_HOST")
 MAIL_SMTP_PORT = int(os.environ.get("MAIL_SMTP_PORT", "465"))
-# internal self-signed certificate (requestTlsCertificate:false)
-MAIL_TLS_VERIFY = os.environ.get("MAIL_TLS_VERIFY", "false").lower() == "true"
+# Verification of the mail server's certificate (IMAP/SMTP): follows the API-wide
+# switch (tlsverify.py) unless MAIL_TLS_VERIFY says otherwise. A cell's Stalwart
+# serves an internal self-signed certificate (requestTlsCertificate:false), so
+# setup.sh sets MAIL_TLS_VERIFY=false there explicitly — visible in .env, not
+# a hidden default.
+_mail_raw = os.environ.get("MAIL_TLS_VERIFY", "").strip().lower()
+MAIL_TLS_VERIFY = (_mail_raw == "true") if _mail_raw else tls_verify_enabled()
 
 _BODY_CHAR_LIMIT = 8000
 
 
 def _ssl_ctx() -> ssl.SSLContext:
-    ctx = ssl.create_default_context()
+    ctx = ssl.create_default_context(cafile=tls_ca_path())
     if not MAIL_TLS_VERIFY:
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE

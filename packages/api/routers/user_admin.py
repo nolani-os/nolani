@@ -29,6 +29,7 @@ from auth import clara_agent_headers, get_current_user
 from services import agent_keys, brain_turns, zellen_browser
 from database import get_pool
 from services.einladungen import ensure_invites_table
+from tlsverify import TLS_VERIFY  # central switch: CLARAOS_TLS_VERIFY / CLARAOS_TLS_CA
 
 # Installation-specific steps of an invite (optional, deployment-specific module).
 try:
@@ -106,7 +107,7 @@ class AppOverride(BaseModel):
 # ── Raw Authentik access (not in teams_admin) ────────────────
 
 async def _ak_create_user(username: str, name: str, email: str) -> int:
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.post(
             f"{AUTHENTIK_URL}/api/v3/core/users/",
             headers=_ak_headers(),
@@ -121,7 +122,7 @@ async def _ak_create_user(username: str, name: str, email: str) -> int:
 
 
 async def _ak_set_password(user_pk: int, password: str) -> None:
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.post(
             f"{AUTHENTIK_URL}/api/v3/core/users/{user_pk}/set_password/",
             headers=_ak_headers(), json={"password": password},
@@ -133,7 +134,7 @@ async def _ak_set_password(user_pk: int, password: str) -> None:
 async def _ak_set_groups(user_pk: int, group_names: list[str]) -> list[str]:
     """Assign the given groups (does NOT create them). Returns the ones actually applied."""
     applied = []
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         for gname in group_names:
             g = await ak_get_group_by_name(gname)
             if not g:
@@ -157,7 +158,7 @@ async def _ak_purge_sessions(username: str) -> dict:
         "access_tokens": f"oauth2/access_tokens/?user__username={username}",
         "authorization_codes": f"oauth2/authorization_codes/?user__username={username}",
     }
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         for kind, q in endpoints.items():
             n = 0
             try:
@@ -180,7 +181,7 @@ async def _nc_create_user(userid: str, password: str, quota: str, display_name: 
     """Create a Nextcloud user via OCS. Idempotent: 'user already exists' -> ok. Returns a status."""
     auth = await _nc_admin_auth()
     headers = {"OCS-APIRequest": "true", "Accept": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=20) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=20) as c:
         r = await c.post(f"{NEXTCLOUD_URL}/ocs/v1.php/cloud/users", auth=auth, headers=headers,
                          data={"userid": userid, "password": password,
                                "quota": quota, "displayName": display_name})
@@ -205,7 +206,7 @@ async def _nc_disable_user(userid: str) -> str:
     auth = await _nc_admin_auth()
     headers = {"OCS-APIRequest": "true", "Accept": "application/json"}
     try:
-        async with httpx.AsyncClient(verify=False, timeout=15) as c:
+        async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
             r = await c.put(f"{NEXTCLOUD_URL}/ocs/v1.php/cloud/users/{userid}/disable",
                             auth=auth, headers=headers)
         if '"statuscode":100' in r.text or r.status_code in (200, 201):
@@ -223,7 +224,7 @@ async def _nc_delete_user(userid: str) -> str:
     auth = await _nc_admin_auth()
     headers = {"OCS-APIRequest": "true", "Accept": "application/json"}
     try:
-        async with httpx.AsyncClient(verify=False, timeout=15) as c:
+        async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
             r = await c.delete(f"{NEXTCLOUD_URL}/ocs/v1.php/cloud/users/{userid}",
                                auth=auth, headers=headers)
         if '"statuscode":100' in r.text or r.status_code in (200, 201):
@@ -351,7 +352,7 @@ async def _stalwart_delete_account(localpart: str) -> str:
 async def list_users(request: Request, filter: str = "humans") -> dict:
     """Users from Authentik, classified. filter=humans|service|all."""
     _require_admin(get_current_user(request))
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.get(f"{AUTHENTIK_URL}/api/v3/core/users/?page_size=200",
                         headers=_ak_headers())
     if r.status_code != 200:
@@ -385,7 +386,7 @@ async def list_users(request: Request, filter: str = "humans") -> dict:
 async def list_groups(request: Request) -> dict:
     """Available Authentik groups (for chips/presets)."""
     _require_admin(get_current_user(request))
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.get(f"{AUTHENTIK_URL}/api/v3/core/groups/?page_size=100", headers=_ak_headers())
     groups = [g["name"] for g in r.json().get("results", [])] if r.status_code == 200 else []
     return {"groups": sorted(groups), "family_preset": FAMILY_GROUPS}
@@ -489,7 +490,7 @@ async def remove_group(username: str, group: str, request: Request) -> dict:
     g = await ak_get_group_by_name(group)
     if not g:
         raise HTTPException(404, "Gruppe nicht gefunden.")
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.post(f"{AUTHENTIK_URL}/api/v3/core/groups/{g['pk']}/remove_user/",
                          headers=_ak_headers(), json={"pk": u["pk"]})
     if r.status_code not in (200, 204):
@@ -506,7 +507,7 @@ async def deactivate_user(username: str, request: Request) -> dict:
     u = await ak_get_user_by_username(username)
     if not u:
         raise HTTPException(404, "Benutzer nicht gefunden.")
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.patch(f"{AUTHENTIK_URL}/api/v3/core/users/{u['pk']}/",
                           headers=_ak_headers(), json={"is_active": False})
     if r.status_code not in (200, 204):
@@ -537,7 +538,7 @@ async def delete_user(username: str, request: Request, purge_nextcloud: bool = F
     u = await ak_get_user_by_username(username)
     if not u:
         raise HTTPException(404, "Benutzer nicht gefunden.")
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.delete(f"{AUTHENTIK_URL}/api/v3/core/users/{u['pk']}/", headers=_ak_headers())
     if r.status_code not in (200, 204):
         raise HTTPException(502, f"Löschen fehlgeschlagen: {r.status_code}")

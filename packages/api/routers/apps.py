@@ -16,6 +16,7 @@ from auth import get_current_user, is_service_call, require_caller
 from database import get_pool, user_tx
 from app_seeds import BUILTIN_APPS
 from services import zellen_browser
+from tlsverify import TLS_VERIFY  # central switch: CLARAOS_TLS_VERIFY / CLARAOS_TLS_CA
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/claraos/apps", tags=["apps"])
@@ -397,7 +398,7 @@ async def selkies_status(request: Request) -> dict:
 
     async def probe(url: str) -> bool:
         try:
-            async with httpx.AsyncClient(timeout=3, verify=False) as client:
+            async with httpx.AsyncClient(timeout=3, verify=TLS_VERIFY) as client:
                 resp = await client.get(f"{url}/")
                 return resp.status_code < 500
         except Exception:
@@ -836,7 +837,7 @@ async def check_health(url: str, request: Request) -> dict:
     """Is an app URL reachable? **Admins only.**
 
     Security: this route accepts an **arbitrary** URL, fetches it server-side
-    (`follow_redirects`, `verify=False`) and reports the status code back.
+    (`follow_redirects`, `verify=TLS_VERIFY`) and reports the status code back.
     Without authentication, anyone on the local network could use the API as a
     **scanner from its own network position** — including `127.0.0.1` and
     Docker-internal addresses that are unreachable from outside, e.g.:
@@ -859,7 +860,7 @@ async def check_health(url: str, request: Request) -> dict:
     if not str(url).lower().startswith(("http://", "https://")):
         raise HTTPException(status_code=400, detail="Nur http:// oder https://")
     try:
-        async with httpx.AsyncClient(timeout=5, verify=False) as client:
+        async with httpx.AsyncClient(timeout=5, verify=TLS_VERIFY) as client:
             resp = await client.head(url, follow_redirects=True)
             return {"reachable": resp.status_code < 500, "status": resp.status_code}
     except Exception:

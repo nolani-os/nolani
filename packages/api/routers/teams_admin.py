@@ -27,6 +27,7 @@ from auth import get_current_user
 from database import get_pool
 from encryption import decrypt_credentials
 from services.synapse_admin import _get_synapse_admin_token as _raw_synapse_login
+from tlsverify import TLS_VERIFY  # central switch: CLARAOS_TLS_VERIFY / CLARAOS_TLS_CA
 
 
 # Cache Synapse admin token for 30 minutes to avoid /login rate-limit (429)
@@ -210,7 +211,7 @@ def _ak_headers() -> dict:
 
 
 async def ak_get_group_by_name(name: str) -> dict | None:
-    async with httpx.AsyncClient(verify=False, timeout=10) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=10) as c:
         r = await c.get(f"{AUTHENTIK_URL}/api/v3/core/groups/?name={name}", headers=_ak_headers())
     if r.status_code != 200:
         return None
@@ -221,7 +222,7 @@ async def ak_get_group_by_name(name: str) -> dict | None:
 
 
 async def ak_create_group(name: str, is_superuser: bool = False) -> dict:
-    async with httpx.AsyncClient(verify=False, timeout=10) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=10) as c:
         r = await c.post(
             f"{AUTHENTIK_URL}/api/v3/core/groups/",
             headers=_ak_headers(),
@@ -233,14 +234,14 @@ async def ak_create_group(name: str, is_superuser: bool = False) -> dict:
 
 
 async def ak_delete_group(pk: str) -> None:
-    async with httpx.AsyncClient(verify=False, timeout=10) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=10) as c:
         r = await c.delete(f"{AUTHENTIK_URL}/api/v3/core/groups/{pk}/", headers=_ak_headers())
     if r.status_code not in (200, 204):
         raise HTTPException(500, f"Authentik delete group failed: {r.status_code}")
 
 
 async def ak_get_user_by_username(username: str) -> dict | None:
-    async with httpx.AsyncClient(verify=False, timeout=10) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=10) as c:
         r = await c.get(f"{AUTHENTIK_URL}/api/v3/core/users/?username={username}", headers=_ak_headers())
     if r.status_code != 200:
         return None
@@ -251,7 +252,7 @@ async def ak_get_user_by_username(username: str) -> dict | None:
 
 
 async def ak_add_user_to_group(group_pk: str, user_pk: int) -> None:
-    async with httpx.AsyncClient(verify=False, timeout=10) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=10) as c:
         r = await c.post(
             f"{AUTHENTIK_URL}/api/v3/core/groups/{group_pk}/add_user/",
             headers=_ak_headers(),
@@ -262,7 +263,7 @@ async def ak_add_user_to_group(group_pk: str, user_pk: int) -> None:
 
 
 async def ak_remove_user_from_group(group_pk: str, user_pk: int) -> None:
-    async with httpx.AsyncClient(verify=False, timeout=10) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=10) as c:
         r = await c.post(
             f"{AUTHENTIK_URL}/api/v3/core/groups/{group_pk}/remove_user/",
             headers=_ak_headers(),
@@ -274,7 +275,7 @@ async def ak_remove_user_from_group(group_pk: str, user_pk: int) -> None:
 
 async def ak_list_group_members(group_pk: str) -> list[str]:
     """Return usernames of direct group members."""
-    async with httpx.AsyncClient(verify=False, timeout=10) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=10) as c:
         r = await c.get(f"{AUTHENTIK_URL}/api/v3/core/groups/{group_pk}/", headers=_ak_headers())
     if r.status_code != 200:
         return []
@@ -303,7 +304,7 @@ async def mx_list_room_joined_members(room_id: str) -> list[str]:
 async def nc_group_list_members(group_id: str) -> list[str]:
     auth = await _nc_admin_auth()
     h = {"OCS-APIRequest": "true", "Accept": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=10) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=10) as c:
         r = await c.get(f"{NEXTCLOUD_URL}/ocs/v1.php/cloud/groups/{group_id}/users",
                         auth=auth, headers=h)
     if r.status_code != 200:
@@ -550,7 +551,7 @@ async def _nc_admin_auth() -> tuple[str, str]:
 async def nc_list_circles() -> list[dict]:
     auth = await _nc_auth()
     headers = {"OCS-APIRequest": "true", "Accept": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.get(f"{NEXTCLOUD_URL}/ocs/v2.php/apps/circles/circles", auth=auth, headers=headers)
     if r.status_code != 200:
         return []
@@ -560,7 +561,7 @@ async def nc_list_circles() -> list[dict]:
 async def nc_create_circle(name: str) -> str:
     auth = await _nc_auth()
     headers = {"OCS-APIRequest": "true", "Accept": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.post(
             f"{NEXTCLOUD_URL}/ocs/v2.php/apps/circles/circles",
             auth=auth, headers=headers,
@@ -574,7 +575,7 @@ async def nc_create_circle(name: str) -> str:
 async def nc_add_member(circle_id: str, username: str) -> None:
     auth = await _nc_auth()
     headers = {"OCS-APIRequest": "true", "Accept": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.post(
             f"{NEXTCLOUD_URL}/ocs/v2.php/apps/circles/circles/{circle_id}/members",
             auth=auth, headers=headers,
@@ -588,7 +589,7 @@ async def nc_remove_member(circle_id: str, member_id: str) -> None:
     """member_id is the NC-internal id, not username. Caller must resolve first."""
     auth = await _nc_auth()
     headers = {"OCS-APIRequest": "true", "Accept": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.delete(
             f"{NEXTCLOUD_URL}/ocs/v2.php/apps/circles/circles/{circle_id}/members/{member_id}",
             auth=auth, headers=headers,
@@ -600,7 +601,7 @@ async def nc_remove_member(circle_id: str, member_id: str) -> None:
 async def nc_list_members(circle_id: str) -> list[dict]:
     auth = await _nc_auth()
     headers = {"OCS-APIRequest": "true", "Accept": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.get(
             f"{NEXTCLOUD_URL}/ocs/v2.php/apps/circles/circles/{circle_id}/members",
             auth=auth, headers=headers,
@@ -613,7 +614,7 @@ async def nc_list_members(circle_id: str) -> list[dict]:
 async def nc_delete_circle(circle_id: str) -> None:
     auth = await _nc_auth()
     headers = {"OCS-APIRequest": "true", "Accept": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.delete(
             f"{NEXTCLOUD_URL}/ocs/v2.php/apps/circles/circles/{circle_id}",
             auth=auth, headers=headers,
@@ -635,7 +636,7 @@ def nc_group_name(slug: str) -> str:
 async def nc_group_exists(group_id: str) -> bool:
     auth = await _nc_admin_auth()
     headers = {"OCS-APIRequest": "true", "Accept": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=10) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=10) as c:
         r = await c.get(f"{NEXTCLOUD_URL}/ocs/v1.php/cloud/groups?search={group_id}",
                         auth=auth, headers=headers)
     groups = r.json().get("ocs", {}).get("data", {}).get("groups", []) if r.status_code == 200 else []
@@ -645,7 +646,7 @@ async def nc_group_exists(group_id: str) -> bool:
 async def nc_group_create(group_id: str) -> None:
     auth = await _nc_admin_auth()
     headers = {"OCS-APIRequest": "true", "Accept": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=10) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=10) as c:
         r = await c.post(f"{NEXTCLOUD_URL}/ocs/v1.php/cloud/groups",
                          auth=auth, headers=headers,
                          data={"groupid": group_id})
@@ -658,7 +659,7 @@ async def nc_group_create(group_id: str) -> None:
 async def nc_group_add_user(group_id: str, username: str) -> None:
     auth = await _nc_admin_auth()
     headers = {"OCS-APIRequest": "true", "Accept": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=10) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=10) as c:
         r = await c.post(f"{NEXTCLOUD_URL}/ocs/v1.php/cloud/users/{username}/groups",
                          auth=auth, headers=headers,
                          data={"groupid": group_id})
@@ -669,7 +670,7 @@ async def nc_group_add_user(group_id: str, username: str) -> None:
 async def nc_group_remove_user(group_id: str, username: str) -> None:
     auth = await _nc_admin_auth()
     headers = {"OCS-APIRequest": "true", "Accept": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=10) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=10) as c:
         r = await c.request("DELETE",
                             f"{NEXTCLOUD_URL}/ocs/v1.php/cloud/users/{username}/groups",
                             auth=auth, headers=headers,
@@ -681,7 +682,7 @@ async def nc_group_remove_user(group_id: str, username: str) -> None:
 async def nc_group_delete(group_id: str) -> None:
     auth = await _nc_admin_auth()
     headers = {"OCS-APIRequest": "true", "Accept": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=10) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=10) as c:
         r = await c.delete(f"{NEXTCLOUD_URL}/ocs/v1.php/cloud/groups/{group_id}",
                            auth=auth, headers=headers)
     if r.status_code not in (200, 204, 404):
@@ -691,7 +692,7 @@ async def nc_group_delete(group_id: str) -> None:
 async def nc_gf_create(mountpoint: str) -> int:
     auth = await _nc_admin_auth()
     headers = {"OCS-APIRequest": "true", "Accept": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.post(f"{NEXTCLOUD_URL}/apps/groupfolders/folders",
                          auth=auth, headers=headers,
                          data={"mountpoint": mountpoint})
@@ -704,14 +705,14 @@ async def nc_gf_create(mountpoint: str) -> int:
 async def nc_gf_assign_group(folder_id: int, group_id: str) -> None:
     auth = await _nc_admin_auth()
     headers = {"OCS-APIRequest": "true", "Accept": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.post(f"{NEXTCLOUD_URL}/apps/groupfolders/folders/{folder_id}/groups",
                          auth=auth, headers=headers,
                          data={"group": group_id})
     if r.status_code not in (200, 201):
         logger.warning("NC gf assign %s → folder %s: %s", group_id, folder_id, r.status_code)
     # Grant full permissions (read+write+share+delete = 31)
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r2 = await c.post(f"{NEXTCLOUD_URL}/apps/groupfolders/folders/{folder_id}/groups/{group_id}",
                           auth=auth, headers=headers,
                           data={"permissions": 31})
@@ -722,7 +723,7 @@ async def nc_gf_assign_group(folder_id: int, group_id: str) -> None:
 async def nc_gf_delete(folder_id: int) -> None:
     auth = await _nc_admin_auth()
     headers = {"OCS-APIRequest": "true", "Accept": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.delete(f"{NEXTCLOUD_URL}/apps/groupfolders/folders/{folder_id}",
                            auth=auth, headers=headers)
     if r.status_code not in (200, 204, 404):
@@ -736,7 +737,7 @@ async def nc_gf_delete(folder_id: int) -> None:
 async def nc_deck_create(title: str, color: str = "0082c9") -> int | None:
     auth = await _nc_admin_auth()
     h = {"OCS-APIRequest": "true", "Accept": "application/json", "Content-Type": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.post(f"{NEXTCLOUD_URL}/apps/deck/api/v1.0/boards",
                          auth=auth, headers=h, json={"title": title, "color": color})
     if r.status_code not in (200, 201):
@@ -748,7 +749,7 @@ async def nc_deck_create(title: str, color: str = "0082c9") -> int | None:
 async def nc_deck_share_group(board_id: int, group_id: str) -> None:
     auth = await _nc_admin_auth()
     h = {"OCS-APIRequest": "true", "Accept": "application/json", "Content-Type": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.post(f"{NEXTCLOUD_URL}/apps/deck/api/v1.0/boards/{board_id}/acl",
                          auth=auth, headers=h,
                          json={"type": 1, "participant": group_id,
@@ -760,7 +761,7 @@ async def nc_deck_share_group(board_id: int, group_id: str) -> None:
 async def nc_deck_delete(board_id: int) -> None:
     auth = await _nc_admin_auth()
     h = {"OCS-APIRequest": "true", "Accept": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.delete(f"{NEXTCLOUD_URL}/apps/deck/api/v1.0/boards/{board_id}",
                            auth=auth, headers=h)
     if r.status_code not in (200, 204, 404):
@@ -778,7 +779,7 @@ async def nc_collective_create(name: str) -> tuple[int | None, str | None]:
     """
     auth = await _nc_admin_auth()
     h = {"OCS-APIRequest": "true", "Accept": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.post(f"{NEXTCLOUD_URL}/ocs/v2.php/apps/collectives/api/v1.0/collectives",
                          auth=auth, headers=h, data={"name": name})
     if r.status_code != 200:
@@ -801,7 +802,7 @@ async def nc_circle_add_member_by_circle_id(circle_id: str, username: str) -> bo
     """
     auth = await _nc_admin_auth()
     h = {"OCS-APIRequest": "true", "Accept": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=10) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=10) as c:
         r = await c.post(f"{NEXTCLOUD_URL}/ocs/v2.php/apps/circles/circles/{circle_id}/members",
                          auth=auth, headers=h, json={"userId": username, "type": 1})
     if r.status_code not in (200, 201):
@@ -816,7 +817,7 @@ async def nc_circle_remove_member_by_username(circle_id: str, username: str) -> 
     Runs as clara.bot — see nc_circle_add_member_by_circle_id for why."""
     auth = await _nc_admin_auth()
     h = {"OCS-APIRequest": "true", "Accept": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=10) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=10) as c:
         rl = await c.get(f"{NEXTCLOUD_URL}/ocs/v2.php/apps/circles/circles/{circle_id}/members",
                          auth=auth, headers=h)
         if rl.status_code != 200:
@@ -832,7 +833,7 @@ async def nc_collective_delete(cid: int) -> None:
     """Two-step: move to trash, then permanent delete."""
     auth = await _nc_admin_auth()
     h = {"OCS-APIRequest": "true", "Accept": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         await c.delete(f"{NEXTCLOUD_URL}/ocs/v2.php/apps/collectives/api/v1.0/collectives/{cid}",
                        auth=auth, headers=h)  # → trash
         r = await c.delete(f"{NEXTCLOUD_URL}/ocs/v2.php/apps/collectives/api/v1.0/collectives/trash/{cid}",
@@ -866,7 +867,7 @@ async def nc_calendar_create(cal_id: str, display_name: str) -> str | None:
         '</C:mkcalendar>'
     )
     url = NEXTCLOUD_URL + _caldav_uri(cal_id)
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.request("MKCALENDAR", url, auth=auth,
                             headers={"Content-Type": "application/xml; charset=utf-8"},
                             content=xml_body)
@@ -894,7 +895,7 @@ async def nc_calendar_share_group(cal_uri: str, group_id: str, common_name: str)
         '</OC:set>'
         '</OC:share>'
     )
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.post(NEXTCLOUD_URL + cal_uri, auth=auth,
                          content=xml,
                          headers={"Content-Type": "application/xml; charset=utf-8"})
@@ -904,7 +905,7 @@ async def nc_calendar_share_group(cal_uri: str, group_id: str, common_name: str)
 
 async def nc_calendar_delete(cal_uri: str) -> None:
     auth = await _nc_admin_auth()
-    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
         r = await c.delete(NEXTCLOUD_URL + cal_uri, auth=auth)
     if r.status_code not in (200, 204, 404):
         logger.warning("Calendar delete %s: %s", cal_uri, r.status_code)
@@ -1200,7 +1201,7 @@ async def sync_one_team(team: dict) -> dict:
         try:
             auth = await _nc_admin_auth()
             h = {"OCS-APIRequest": "true", "Accept": "application/json"}
-            async with httpx.AsyncClient(verify=False, timeout=15) as c:
+            async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
                 rr = await c.get(f"{NEXTCLOUD_URL}/ocs/v2.php/apps/circles/circles/{coll_cid}/members",
                                  auth=auth, headers=h)
             # Warning: do not write `... if rr.status_code == 200 else []`: an

@@ -30,6 +30,7 @@ from typing import Any
 from services import kontakte_abgleich as abgleich
 from services import kontakte_dienste as dienste_mod
 from sprache import sprache_jetzt
+from tlsverify import TLS_VERIFY  # central switch: CLARAOS_TLS_VERIFY / CLARAOS_TLS_CA
 
 logger = logging.getLogger(__name__)
 
@@ -182,7 +183,7 @@ async def talk_gespraech(caller: str, ziel: str) -> dict[str, Any]:
         ) from exc
 
     kopf = {"OCS-APIRequest": "true", "Accept": "application/json"}
-    async with httpx.AsyncClient(verify=False, timeout=20) as c:
+    async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=20) as c:
         r = await c.post(
             f"{NEXTCLOUD_URL}/ocs/v2.php/apps/spreed/api/v4/room",
             auth=auth, headers=kopf,
@@ -231,7 +232,7 @@ async def talk_gespraeche(caller: str) -> list[dict[str, Any]]:
 
     kopf = {"OCS-APIRequest": "true", "Accept": "application/json"}
     try:
-        async with httpx.AsyncClient(verify=False, timeout=15) as c:
+        async with httpx.AsyncClient(verify=TLS_VERIFY, timeout=15) as c:
             r = await c.get(f"{NEXTCLOUD_URL}/ocs/v2.php/apps/spreed/api/v4/room",
                             auth=auth, headers=kopf)
         if r.status_code != 200:
