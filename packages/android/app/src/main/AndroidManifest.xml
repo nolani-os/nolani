@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Push after a device reboot without starting the app by hand -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Voice input in the WebView -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Since Android 11 an app only sees other apps' intents if they are
+         declared here. Without this block `resolveActivity` returns null for
+         IMAGE_CAPTURE — the camera exists but is invisible, and
+         `<input capture>` would silently fall back to the file picker. -->
+    <queries>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+    </queries>
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- Self-update (download-only distribution) -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- Auto-upload of camera photos → Immich -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <!-- Device settings: writing the brightness is a special permission —
+         the user grants it in the system dialog
+         (ACTION_MANAGE_WRITE_SETTINGS); the manifest only declares it. -->
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <!-- IMPORTANT: BLUETOOTH only applies up to SDK 30; from 31 on the
+         permission is BLUETOOTH_CONNECT, a runtime prompt ("Nearby
+         devices"). We deliberately do NOT request it: the BT state comes from
+         Settings.Global.bluetooth_on (readable without permission), and the
+         tile jumps to the system UI on tap anyway.
+         Only once a device list is added is the prompt justified — then
+         behind requestPermission("bluetooth"), like the brightness.
+         Previously the section silently disappeared on every device from
+         Android 12 on (SecurityException in catch => cap gone => tile gone). -->
+    <uses-permission android:name="android.permission.BLUETOOTH"
+        android:maxSdkVersion="30" />
+
+    <application
+        android:label="${appLabel}"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:usesCleartextTraffic="false"
+        android:theme="@style/Theme.AppCompat.NoActionBar"
+        android:allowBackup="false">
+
+        <activity
+            android:name=".ShellActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Setup by tap: claraos://provision?token=…
+                 The code from the invitation need not be typed or copied.
+                 Custom scheme instead of https → no "Open with" dialog, no
+                 assetlinks.json needed. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="${linkScheme}" android:host="provision" />
+            </intent-filter>
+            <!-- External cell: claraos://connect?server=demo.claraos.de —
+                 direct mode without a tunnel; only servers under the configured
+                 direct domain are accepted (ProvisioningClient.normalizeDirectServer). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="${linkScheme}" android:host="connect" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".push.NtfyPushService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!-- Starts the push service after a device reboot and after a self-update.
+             exported=true is required for system broadcasts; the receiver only accepts
+             the two actions below and does nothing else (see boot/BootReceiver). -->
+        <receiver
+            android:name=".boot.BootReceiver"
+            android:exported="true"
+            android:directBootAware="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- In-app document scanner (CameraX) → Paperless. Started via the JS bridge from the shell. -->
+        <activity
+            android:name=".upload.DocumentScanActivity"
+            android:exported="false"
+            android:label="Dokument scannen"
+            android:screenOrientation="portrait" />
+
+        <!-- Share target "Send to ClaraOS" → Paperless (documents/images/PDFs) -->
+        <activity
+            android:name=".upload.PaperlessShareActivity"
+            android:exported="true"
+            android:label="${shareLabel}"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+        </activity>
+
+        <!-- Self-update (SelfUpdateManager): hand the freshly downloaded APK from
+             cacheDir/updates/ to the system installer as a content:// URI. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <!--
+          Note: tsnet runs in userspace (NO system VpnService, no BIND_VPN_SERVICE,
+          no VPN consent) — only the WebView (+ ntfy/uploads) is routed through the app
+          tunnel via a SOCKS proxy (see README "Architecture" + vpn/CompanionTunnel).
+        -->
+    
+    </application>
+</manifest>

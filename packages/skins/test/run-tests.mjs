@@ -1,8 +1,8 @@
 /**
  * Test runner for the skins unit tests.
  *
- * Transpiles the TS source with esbuild (already in the tree via vite) and
- * loads it as an ES module — so the tests need neither Vitest nor a build.
+ * Transpiles the TS sources with esbuild (already in the tree via vite) and
+ * loads them as ES modules — so the tests need neither Vitest nor a build.
  *
  *   node packages/skins/test/run-tests.mjs
  */
@@ -40,24 +40,57 @@ function loadEsbuild() {
 }
 
 const esbuild = loadEsbuild();
-const src = readFileSync(join(here, "../src/accent.ts"), "utf8");
-const js = esbuild.transformSync(src, { loader: "ts", format: "esm" }).code;
 const dir = mkdtempSync(join(tmpdir(), "claraos-skins-test-"));
-const file = join(dir, "accent.mjs");
-writeFileSync(file, js);
 
-const mod = await import(pathToFileURL(file).href);
-const { runAccentTests } = await import(pathToFileURL(join(here, "accent.test.mjs")).href);
+/** Transpile one dependency-free TS source file and import it. */
+async function loadTs(name) {
+  const src = readFileSync(join(here, `../src/${name}.ts`), "utf8");
+  const js = esbuild.transformSync(src, { loader: "ts", format: "esm" }).code;
+  const file = join(dir, `${name}.mjs`);
+  writeFileSync(file, js);
+  return import(pathToFileURL(file).href);
+}
 
-const results = runAccentTests(mod);
+/** Bundle a TS source with its relative imports (no assets) and import it. */
+async function loadTsBundle(name) {
+  const result = esbuild.buildSync({
+    entryPoints: [join(here, `../src/${name}.ts`)],
+    bundle: true,
+    write: false,
+    format: "esm",
+    platform: "neutral",
+    // Type-only imports of @claraos/core vanish in the transpile; mark it
+    // external so esbuild does not try to resolve the workspace package.
+    external: ["@claraos/core"],
+  });
+  const file = join(dir, `${name.replace(/\//g, "_")}.mjs`);
+  writeFileSync(file, result.outputFiles[0].text);
+  return import(pathToFileURL(file).href);
+}
+
+// [source module, test module, exported runner, loader]
+const SUITES = [
+  ["accent", "accent.test.mjs", "runAccentTests", loadTs],
+  ["sun", "sun.test.mjs", "runSunTests", loadTs],
+  ["corporate/createCorporateSkin", "corporate.test.mjs", "runCorporateTests", loadTsBundle],
+];
+
+let total = 0;
 let failed = 0;
-for (const [status, name] of results) {
-  if (status === "ok") {
-    console.log(`  ✓ ${name}`);
-  } else {
-    failed++;
-    console.log(`  ✗ ${name}`);
+for (const [source, testFile, runner, load] of SUITES) {
+  const mod = await load(source);
+  const tests = await import(pathToFileURL(join(here, testFile)).href);
+  const results = tests[runner](mod);
+  console.log(`\n${source}:`);
+  for (const [status, name] of results) {
+    total++;
+    if (status === "ok") {
+      console.log(`  ✓ ${name}`);
+    } else {
+      failed++;
+      console.log(`  ✗ ${name}`);
+    }
   }
 }
-console.log(`\nskins: ${results.length - failed} ok, ${failed} fehlgeschlagen`);
+console.log(`\nskins: ${total - failed} ok, ${failed} fehlgeschlagen`);
 process.exit(failed ? 1 : 0);

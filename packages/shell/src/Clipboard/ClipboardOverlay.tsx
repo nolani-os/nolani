@@ -69,7 +69,7 @@ export function ClipboardOverlay() {
   return (
     <>
       <div className={styles.backdrop} onClick={() => setOpen(false)} />
-      <div className={`aeroWidget ${styles.panel}`} role="dialog" aria-label={t("clipboard.historyLabel")}>
+      <div className={`aeroWidget ${styles.panel}`} role="dialog" aria-label={t("clipboard.historyLabel")} data-shell-part="clipboard-panel">
         <div className={styles.header}>
           <span className={styles.title}>{t("clipboard.title")}</span>
           <span className={styles.count}>{entries.length}</span>

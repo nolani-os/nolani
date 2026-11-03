@@ -131,16 +131,11 @@
   "personalization": {
     "heading": "Personalisierung",
     "theme": "Design",
-    "claraGlassHint": "Glass — die {{product}}-Designsprache",
     "dark": "Dunkel",
     "light": "Hell",
-    "aeroGlassHint": "Aero Glass — Premium-Skin für Laptops",
     "skin": "Skin",
-    "liveWallpaper": "Live-Wallpaper",
-    "liveWallpaperDesc": "Animierte Mesh-Gradients + Bokeh-Drift",
     "on": "An",
     "off": "Aus",
-    "pausesOn": "Pausiert automatisch bei",
     "avatar": "Profilbild",
     "avatarInitials": "Profilbild aus Initialen",
     "chooseImage": "Bild wählen …",
@@ -149,7 +144,17 @@
     "removeImage": "Bild entfernen",
     "removeNamed": "{{name}} entfernen",
     "ownImage": "Eigenes Bild …",
-    "uploadFailed": "Hochladen fehlgeschlagen ({{status}})"
+    "uploadFailed": "Hochladen fehlgeschlagen ({{status}})",
+    "skinHint": {
+      "clara-glass": "Glass — die {{product}}-Designsprache",
+      "bloom-dark": "Bloom — vertraute Leiste in der Mitte, dunkel",
+      "bloom-light": "Bloom Light — vertraute Leiste in der Mitte, hell",
+      "orchard-dark": "Orchard — Menüleiste oben, Dock unten, dunkel",
+      "orchard-light": "Orchard Light — Menüleiste oben, Dock unten, hell",
+      "corporate-medical": "The Medical Company — Firmen-Vorlage: Logo und Name in der Leiste, ruhige weiße Flächen",
+      "meadow": "Meadow — Wiese im Wind, Himmel nach Sonnenstand",
+      "shore": "Shore — Wellen am Strand, Himmel nach Sonnenstand"
+    }
   },
   "about": {
     "version": "Version {{version}}",

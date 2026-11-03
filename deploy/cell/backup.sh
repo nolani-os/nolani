@@ -25,13 +25,26 @@ laeuft() { [ -n "$(docker compose ps -q "$1" 2>/dev/null)" ]; }
 for eintrag in authentik-postgres:authentik:authentik clara-users-postgres:clara:clara_users \
                nextcloud-db:nextcloud:nextcloud litellm-db:litellm:litellm \
                vikunja-db:vikunja:vikunja synapse-db:synapse:synapse \
-               immich-db:immich:immich paperless-db:paperless:paperless odoo-db:odoo:odoo; do
+               immich-db:immich:immich paperless-db:paperless:paperless odoo-db:odoo:odoo \
+               inventree-db:inventree:inventree superset-db:superset:superset; do
   IFS=: read -r svc user db <<< "$eintrag"
-  case "$svc" in synapse-db|immich-db|paperless-db|odoo-db) laeuft "$svc" || continue ;; esac
+  case "$svc" in synapse-db|immich-db|paperless-db|odoo-db|inventree-db|superset-db) laeuft "$svc" || continue ;; esac
   if docker compose exec -T "$svc" pg_dump -U "$user" -Fc "$db" > "$ZIEL/db-$db.dump" 2>>"$LOG"; then
     log "db $db: $(du -h "$ZIEL/db-$db.dump" | cut -f1)"
   else
     log "✗ db $db"; fehler=1
+  fi
+done
+
+# Mautic and OrangeHRM run on MariaDB (they support nothing else): dump with a
+# consistent snapshot. The password comes from the container's own environment.
+for app in mautic orangehrm; do
+  laeuft "$app-db" || continue
+  if docker compose exec -T "$app-db" sh -c "exec mariadb-dump -u $app -p\"\$MARIADB_PASSWORD\" --single-transaction --routines $app" \
+       2>>"$LOG" | gzip > "$ZIEL/db-$app.sql.gz"; then
+    log "db $app: $(du -h "$ZIEL/db-$app.sql.gz" | cut -f1)"
+  else
+    log "✗ db $app"; fehler=1
   fi
 done
 
@@ -53,6 +66,19 @@ if laeuft paperless-db; then
 fi
 # Odoo: attachments and session files (filestore) next to the database dump.
 laeuft odoo && volume_tar odoo-data odoo-data
+# InvenTree: attachments, images, static files and its config (media + data volume).
+laeuft inventree-server && volume_tar inventree-data inventree-data
+# Mautic: its config/local.php (site URL, SAML, keys) and uploaded files and images.
+if laeuft mautic; then
+  volume_tar mautic-config mautic-config
+  volume_tar mautic-files mautic-files
+  volume_tar mautic-images mautic-images
+fi
+# OrangeHRM: its Conf.php and crypto key (written by the installer) — without them the
+# database dump cannot be brought back. Attachments live in the database.
+laeuft orangehrm && volume_tar orangehrm-conf orangehrm-conf
+# Superset: dashboards, charts and connections live in its database (dump above);
+# superset_home holds only caches.
 # Social cell (only where it runs): databases + Mastodon media + PeerTube config.
 # PeerTube videos (peertube-data) — like Immich photos — only in the server image.
 if [ -n "$(docker compose ps -q mastodon-db 2>/dev/null)" ]; then
@@ -96,10 +122,11 @@ for f in "$ZIEL"/db-*.dump; do
   docker compose exec -T clara-users-postgres pg_restore --list < "$f" >/dev/null 2>&1 \
     || { log "✗ unlesbar: $(basename "$f")"; fehler=1; }
 done
-for f in "$ZIEL"/*.tgz; do
+for f in "$ZIEL"/*.tgz "$ZIEL"/*.sql.gz; do
+  [ -e "$f" ] || continue
   gzip -t "$f" 2>/dev/null || { log "✗ unlesbar: $(basename "$f")"; fehler=1; }
 done
-( cd "$ZIEL" && sha256sum db-*.dump *.tgz > pruefsummen.txt )
+( cd "$ZIEL" && sha256sum db-*.dump *.tgz $(ls db-*.sql.gz 2>/dev/null) > pruefsummen.txt )
 
 # 6. Retention: 7 days
 find /var/backups/claraos -mindepth 1 -maxdepth 1 -type d -mtime +7 -exec rm -rf {} +

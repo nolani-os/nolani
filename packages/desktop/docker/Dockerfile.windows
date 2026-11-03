@@ -1,0 +1,27 @@
+# claraos-desktop-win — ONLY for the Windows part (NSIS installer).
+#
+# Why a separate image: Debian trixie ships NSIS 3.11. Ubuntu 22.04 only has
+# 3.08, and with it Tauri produced an installer that fails its own checksum —
+# Windows reports "Installer integrity check has failed", the silent run ends
+# with exit code 2 (easy to misdiagnose). The AppImage is built in its own
+# image (see Dockerfile.linux).
+FROM debian:trixie
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      curl ca-certificates build-essential pkg-config file git \
+      clang llvm lld nsis \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+      | sh -s -- -y --profile minimal --default-toolchain stable
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+RUN cargo install tauri-cli --version '^2' --locked \
+ && cargo install cargo-xwin --locked \
+ && rustup target add x86_64-pc-windows-msvc
+
+# The Tauri CLI checks for the host's tray icon library when building —
+# even when cross-building for Windows. Without it: abort with
+# "Cant detect any appindicator library".
+RUN apt-get update && apt-get install -y --no-install-recommends libayatana-appindicator3-dev && rm -rf /var/lib/apt/lists/*

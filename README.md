@@ -75,10 +75,15 @@ you see it happen on screen.
 | Passwords | Personal and shared vaults | Vaultwarden |
 | Personal browser | A browser in a window; downloads land in your files | Selkies, Chromium |
 | Social (optional) | Your own Mastodon and PeerTube | Mastodon, PeerTube |
+| Business apps (optional) | ERP/CRM, parts and stock, dashboards, marketing automation, HR — each a tile with single sign-on, Nolani can work in Odoo for you | Odoo, InvenTree, Apache Superset, Mautic, OrangeHRM |
 
 Apps marked NolaniOS are written in this repository. The others run unchanged in their own
 containers; NolaniOS signs you in to them, creates your accounts there and gives Nolani tools
 to use them.
+
+The desktop comes in six looks (`packages/skins`): Glass, Bloom, Orchard, the living photos
+Meadow and Shore, and a corporate template that derives a company's skin from two colours and
+a logo.
 
 ## Nolani Knowledge, without a server
 
@@ -91,6 +96,15 @@ with a key) lets your own scripts and agents use it.
 Download it from the [releases](https://github.com/nolani-os/nolani/releases) (tags
 `knowledge-v*`); the Android package is signed, the Windows installer is not yet. Details,
 the API and the tests are in [`packages/app-knowledge`](packages/app-knowledge/README.md).
+
+## Companion apps for Windows, Linux and Android
+
+`packages/desktop` (Tauri + a Go daemon) and `packages/android` put your Nolani server in its
+own window on the device, with push notifications and an optional tunnel to a server that is
+not publicly reachable. The generic builds connect to any server by address. They are built
+by CI (`.github/workflows/companion-apps.yml`); releases are tagged `companion-v*`. Details in
+[`packages/desktop/README.md`](packages/desktop/README.md) and
+[`packages/android/README.md`](packages/android/README.md).
 
 ## One installation, one server
 
@@ -125,6 +139,11 @@ cd /opt/claraos
 ./setup.sh your-domain.example     # builds, starts, sets up sign-in and every app
 ./run_tests.sh                     # end-to-end checks with a throw-away account
 ```
+
+Pick the optional apps with `--apps` (`photos`, `documents`, `browser`, `office`, `teams`,
+`odoo`, `inventree`, `superset`, `mautic`, `orangehrm`; `none` = only the core). The core needs
+about 4 GB of RAM at idle, so an 8 GB server fits the core plus one or two apps; the 16 GB
+server above runs everything. The choice is remembered, a later run with `--apps` replaces it.
 
 `setup.sh` is idempotent and generates every secret **on the server** (`.env`, mode 0600).
 Put your model key into `.env` as `ANTHROPIC_API_KEY` (other providers via
@@ -185,6 +204,12 @@ The cell pulls these images unchanged; their licences apply to them, not to this
 - **Stalwart, Authentik and LiteLLM** ship optional enterprise features under separate
   licences. A cell uses none of them and sets no licence keys.
 - **Redis-compatible cache:** the cell uses Valkey (BSD-3-Clause).
+- **Optional business apps** (`setup.sh --apps …`): **Odoo Community** (LGPL-3.0) with the
+  OCA module `auth_oidc` (AGPL-3.0) added at build time; **InvenTree** (MIT); **Apache
+  Superset** (Apache-2.0, plus `psycopg2` and `authlib` added at build time); **Mautic**
+  (GPL-3.0); **OrangeHRM** (GPL-3.0 — two files of its OpenID plugin are replaced by modified
+  copies that live in this repository, see `THIRD_PARTY_NOTICES.md`). Each keeps its own
+  licence and, where it has one, its own trademark policy.
 
 ## Security
 

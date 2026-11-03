@@ -102,3 +102,11 @@
   color: var(--text-disabled);
   text-align: center;
 }
+
+/* Two-bar skins: the bubble hangs below the menu bar, at the start button */
+:global([data-menu-bar="1"]) .bubble {
+  bottom: auto;
+  top: calc(var(--menu-bar-height, 28px) + 8px);
+  left: 8px;
+  max-height: calc(100vh - var(--menu-bar-height, 28px) - 32px);
+}

@@ -5,6 +5,37 @@ does not follow semantic versioning yet.
 
 ## Unreleased
 
+- **Optional business apps per cell** (`setup.sh --apps …`): **Odoo** (ERP/CRM, with Nolani's
+  tools for contacts and business records as the signed-in user), **InvenTree** (parts, stock,
+  orders), **Apache Superset** (dashboards), **Mautic** (marketing automation, SAML login,
+  newsletters to outside addresses through the cell's own mail) and **OrangeHRM** (employees,
+  leave). Each runs as its own tile with single sign-on through the cell's Authentik, is
+  provisioned on first login, has a test run (`run_tests.sh <app>`) and a clean account
+  removal. The core (shell, files, mail, planner, passwords, assistant) now idles at about
+  4 GB, so an 8 GB server fits the core plus one or two apps; `setup.sh` also completes the
+  mail server's bootstrap on a fresh cell and no longer dies silently on cells without Mautic.
+- **Companion apps** (`packages/desktop`, `packages/android`): a generic build that connects
+  to any Nolani server by address (no built-in server), push notifications through the
+  cell's ntfy, device control off by default, the tunnel proxy serves only the own app and
+  user, the native bridge is bound to the paired shell. CI builds the Windows installer, the
+  Linux AppImage and the Android APK; a `companion-v*` tag drafts a release.
+- **Workspace overview** (the workspaces button, Win+Tab): the real windows zoom out into an
+  exposé layout, desktops appear as wallpaper miniatures, a window can be dragged onto
+  another desktop or onto "+"; the shape follows the skin (Bloom: windows above, desktops
+  below; Orchard: spaces bar on top; the others: a search field that filters by title).
+  Popovers open where each desktop family expects them (Bloom: start menu and chat centred
+  above the bar; Orchard: everything drops from the menu bar). Bloom shows a search field
+  next to the start button and its wallpaper reaches both screen edges, as does Orchard's.
+- **Five new looks** (`packages/skins`): **Bloom** (centred bar, Mica surfaces, light and
+  dark), **Orchard** (menu bar on top, floating dock with magnification, traffic lights on
+  the left, light and dark), **The Medical Company** (a corporate template:
+  `createCorporateSkin({ companyName, logo, primary, accent })` derives every token from
+  two colours and measures the contrast; the start button shows the company's logo and
+  name), and the living photos **Meadow** and **Shore** (a looping video under a WebGL sky
+  that follows the real sun, moon phase included; the location comes from the weather
+  setting). Theme cards in the settings are generated from the catalog. Classic Light and
+  Crystal are gone; saved ids map to Bloom and Glass. The taskbar is split into shared
+  pieces (`useTaskbarApps`, `TrayCluster`) that the taskbar, the menu bar and the dock use.
 - **Nolani Knowledge as a standalone app** (`packages/app-knowledge`, release tag
   `knowledge-v0.1.1`; the `knowledge-v0.1.0` tag never produced a release because its Android
   build failed in CI): the knowledge views on a device-local SQLite database for Linux,

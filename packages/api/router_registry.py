@@ -65,6 +65,7 @@ ROUTERS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("office", ("router",)),           # documents via Collabora convert-to
     ("paperless_lesen", ("router",)),  # read / newest Paperless documents (module tools)
     ("immich_lesen", ("router",)),  # cell: find photos, albums, people (Clara's Immich tools)
+    ("odoo_lesen", ("router",)),  # cell: find contacts/records, create a contact (Clara's Odoo tools)
     ("peertube_lesen", ("router",)),  # cell: find public videos (Clara's PeerTube tools)
     ("planner_kalender", ("router",)),
     ("post", ("router",)),

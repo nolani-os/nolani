@@ -1,0 +1,300 @@
+/* Workspace overview — see Overview.tsx. Three looks on one markup, chosen
+   by data-style (layout.overviewStyle). The backdrop sits between the
+   desktop and the windows, the hit layer above the windows; the shell bars
+   stay as they are. */
+
+/* No z-index here: the root must not form a stacking context, so backdrop
+   and hit layer are ordered against the windows (siblings, z ≥ 10) */
+.root {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-family: var(--font-system);
+  color: var(--text-primary);
+  user-select: none;
+}
+
+/* above the desktop icons (auto), below the windows (z ≥ 10) */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  animation: fadeIn 0.22s ease-out both;
+}
+
+/* above every window, fullscreen ones included */
+.layer {
+  position: absolute;
+  inset: 0;
+  z-index: 30000;
+  pointer-events: auto;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- a window's slot: label + close, drawn over the zoomed element ---- */
+.slot {
+  position: absolute;
+  border-radius: var(--radius-window, 8px);
+  cursor: pointer;
+  outline: 2px solid transparent;
+  outline-offset: 4px;
+  transition: outline-color 0.12s;
+}
+.slot:hover { outline-color: rgba(255, 255, 255, 0.85); }
+.slotMinimized { opacity: 0.75; }
+.slotDragging { opacity: 0.4; }
+
+.label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  pointer-events: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+.labelIcon { flex-shrink: 0; }
+.labelText {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.close {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s;
+}
+.slot:hover .close { opacity: 1; }
+.close:hover { background: #e81123; }
+
+.empty {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 45%;
+  text-align: center;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.75);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+/* ---- desktops ---- */
+.desktops {
+  position: absolute;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 16px;
+  animation: riseIn 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.desk {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  outline: none;
+}
+
+.mini {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--wallpaper, #223);
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.12);
+  transition: box-shadow 0.12s, transform 0.12s;
+}
+.desk:hover .mini { box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), 0 0 0 2px rgba(255, 255, 255, 0.55); }
+.deskActive .mini { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 0 2px var(--accent); }
+.dropHover .mini, .addDesk.dropHover { box-shadow: 0 0 0 3px var(--accent); transform: scale(1.04); }
+
+.miniWin {
+  position: absolute;
+  border-radius: 2px;
+  background: var(--bg-window-solid, rgba(40, 44, 60, 0.95));
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25), 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.deskFooter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  font-size: 12px;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+.deskName { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.deskDelete {
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.desk:hover .deskDelete { opacity: 1; }
+.deskDelete:hover { background: #e81123; }
+
+.addDesk {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px dashed rgba(255, 255, 255, 0.45);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s, transform 0.12s;
+}
+.addDesk:hover { background: rgba(255, 255, 255, 0.16); border-color: rgba(255, 255, 255, 0.8); }
+.addGlyph { font-size: 26px; font-weight: 300; line-height: 1; }
+.addLabel { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7); }
+
+/* ---- search (overview style) ---- */
+.search {
+  position: absolute;
+  left: 50%;
+  top: 28px;
+  transform: translateX(-50%);
+  width: 420px;
+  max-width: calc(100% - 48px);
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 19px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+  backdrop-filter: var(--blur-menu, blur(18px));
+  animation: riseIn 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.search::placeholder { color: rgba(255, 255, 255, 0.6); }
+.search:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg, rgba(255, 255, 255, 0.15)); }
+
+/* =====================================================================
+   taskview — windows above, desktop strip at the bottom
+   ===================================================================== */
+/* blur via the skin's token: the CSS minifier drops a literal unprefixed
+   backdrop-filter next to its -webkit- twin, and Chromium ignores the
+   prefixed one — a var() survives the build */
+.root[data-style="taskview"] .backdrop {
+  background: rgba(10, 12, 24, 0.55);
+  backdrop-filter: var(--blur-mica, blur(40px) saturate(140%));
+}
+.root[data-style="taskview"] .label { top: -26px; }
+.root[data-style="taskview"] .slot { border-radius: 8px; }
+.root[data-style="taskview"] .slot:hover { outline-color: rgba(255, 255, 255, 0.9); }
+.root[data-style="taskview"] .desktops {
+  left: 0;
+  right: 0;
+  bottom: 20px;
+}
+
+/* =====================================================================
+   mission — spaces bar on top, labels only on hover
+   ===================================================================== */
+.root[data-style="mission"] .backdrop {
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: var(--blur-menu, blur(22px));
+}
+.root[data-style="mission"] .desktops {
+  left: 0;
+  right: 0;
+  top: 0;
+  padding: 10px 24px 12px;
+  gap: 14px;
+  background: linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0));
+}
+.root[data-style="mission"] .desk { flex-direction: column-reverse; }
+.root[data-style="mission"] .mini { border-radius: 6px; }
+.root[data-style="mission"] .deskActive .mini { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 0 2px #fff; }
+.root[data-style="mission"] .addDesk { border-radius: 6px; border-style: solid; border-color: rgba(255, 255, 255, 0.25); }
+.root[data-style="mission"] .addLabel { display: none; }
+.root[data-style="mission"] .slot { border-radius: var(--radius-window, 12px); outline-offset: 0; }
+.root[data-style="mission"] .slot:hover { outline: 3px solid var(--accent); }
+.root[data-style="mission"] .label {
+  bottom: -34px;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.root[data-style="mission"] .label > span,
+.root[data-style="mission"] .label > * {
+  text-shadow: none;
+}
+.root[data-style="mission"] .label {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  max-width: 100%;
+  padding: 4px 10px;
+  border-radius: 7px;
+  background: rgba(30, 30, 34, 0.85);
+  color: #fff;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.root[data-style="mission"] .slot:hover .label { opacity: 1; }
+
+/* =====================================================================
+   overview — search on top, desktop bar under it, captions on the windows
+   ===================================================================== */
+.root[data-style="overview"] .backdrop {
+  background: rgba(0, 0, 0, 0.55);
+}
+.root[data-style="overview"] .desktops {
+  left: 0;
+  right: 0;
+  top: 80px;
+  gap: 12px;
+}
+.root[data-style="overview"] .mini { border-radius: 6px; width: 144px !important; height: 81px !important; }
+.root[data-style="overview"] .addDesk { width: 144px !important; min-height: 81px !important; border-radius: 6px; }
+.root[data-style="overview"] .deskActive .mini { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 0 2px var(--accent); }
+.root[data-style="overview"] .slot:hover { outline: 3px solid var(--accent); outline-offset: 0; }
+.root[data-style="overview"] .label {
+  bottom: -32px;
+  font-size: 13px;
+}
+.root[data-style="overview"] .close { top: -10px; right: -10px; }

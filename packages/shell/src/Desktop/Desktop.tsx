@@ -158,7 +158,7 @@ export function Desktop() {
   const handleToggleTheme = useCallback(() => {
     const newTheme = theme === "dark" ? "light" : "dark";
     setTheme(newTheme);
-    setSkin(newTheme === "light" ? "windows11-light" : "windows11-dark");
+    setSkin(newTheme === "light" ? "bloom-light" : "bloom-dark");
   }, [setTheme, setSkin, theme]);
 
   const handleAddWidget = useCallback(

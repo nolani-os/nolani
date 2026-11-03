@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Companion</title>
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+    body { margin: 0; padding: 28px 32px; background: #141F39; color: #eef1f8; }
+    h1 { font-size: 1.25rem; margin: 0 0 4px; }
+    p.sub { margin: 0 0 24px; opacity: .75; font-size: .9rem; }
+    label { display: block; font-size: .85rem; margin-bottom: 6px; opacity: .85; }
+    input { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 8px;
+            border: 1px solid #3a4a75; background: #1d2a4d; color: inherit; font-size: .95rem; }
+    button { margin-top: 14px; width: 100%; padding: 11px; border: 0; border-radius: 8px;
+             background: #4f7cff; color: white; font-size: .95rem; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: default; }
+    #status { margin-top: 18px; font-size: .85rem; min-height: 3em; white-space: pre-line; }
+    #status.err { color: #ff9d9d; }
+    .step { display: none; }
+    .step.active { display: block; }
+    .spinner { opacity: .8; }
+    .or { margin: 22px 0 10px; font-size: .85rem; opacity: .75; }
+    .check { display: flex; align-items: center; gap: 8px; margin: 12px 0 0; font-size: .85rem; }
+    .check input { width: auto; }
+    #tunnel-fields { display: none; }
+    #tunnel-fields.on { display: block; }
+    #tunnel-fields input { margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h1 id="brand">Companion</h1>
+  <p class="sub">Dein Zuhause, von überall.</p>
+
+  <div id="step-token" class="step">
+    <div id="invite">
+      <label for="token">Einladungs-Code (aus deinem Einladungs-Link)</label>
+      <input id="token" placeholder="Code aus dem Einladungs-Link" autocomplete="off" spellcheck="false" />
+      <button id="go">Verbinden</button>
+      <p class="or">Oder direkt mit deinem Server verbinden:</p>
+    </div>
+    <label for="server">Server-Adresse</label>
+    <input id="server" placeholder="z. B. example.org" autocomplete="off" spellcheck="false" />
+    <label class="check"><input type="checkbox" id="via-tunnel" /> Über einen Tunnel verbinden (Tailscale/Headscale)</label>
+    <div id="tunnel-fields">
+      <input id="control-url" placeholder="Koordinationsserver (leer = Tailscale)" autocomplete="off" spellcheck="false" />
+      <input id="auth-key" type="password" placeholder="Auth-Key" autocomplete="off" spellcheck="false" />
+    </div>
+    <button id="connect">Mit Server verbinden</button>
+  </div>
+
+  <div id="step-connect" class="step">
+    <p class="spinner">Verbinde mit deinem ClaraOS …</p>
+  </div>
+
+  <div id="status"></div>
+
+  <script>
+    const { invoke } = window.__TAURI__.core;
+    const { listen } = window.__TAURI__.event;
+    const $ = (id) => document.getElementById(id);
+    const status = (msg, err = false) => {
+      $("status").textContent = msg;
+      $("status").className = err ? "err" : "";
+    };
+    const show = (id) => {
+      document.querySelectorAll(".step").forEach((el) => el.classList.remove("active"));
+      $(id).classList.add("active");
+    };
+
+    // As soon as the tunnel is up, open_shell opens the actual ClaraOS window
+    // (with SOCKS proxy) and closes this one.
+    //
+    // Note: self-driven instead of event-driven: "daemon-ready" can fire BEFORE
+    // this script has registered its listener (the sidecar starts in setup(),
+    // the WebView loads afterwards) — the UI would then hang at "Starte …" forever.
+    // So we poll on our own and tolerate "not connected yet".
+    // Note: polling ALWAYS continues, even while the code field is visible:
+    // pairing can come from outside (remote pairing via the control API) —
+    // previously the loop stopped at "unprovisioned" and the UI stayed on the
+    // invitation code forever although the tunnel had long been up.
+    let polling = false;
+    let provisionInFlight = false;
+    let brand = "Companion";
+    invoke("app_brand").then((b) => {
+      brand = b;
+      $("brand").textContent = b;
+      document.title = b;
+    }).catch(() => {});
+    // Without a pairing server in this build there are no invitation codes —
+    // then only the server address is offered.
+    const setInvite = (st) => { $("invite").style.display = st.can_invite ? "" : "none"; };
+    const enableForms = () => { $("go").disabled = false; $("connect").disabled = false; };
+    async function pollUntilUp() {
+      if (polling) return;
+      polling = true;
+      for (;;) {
+        try {
+          const st = await invoke("daemon_status");
+          setInvite(st);
+          if (st.state === "up") {
+            status(st.direct ? "Verbunden — öffne " + brand + " …" : "Tunnel steht — öffne " + brand + " …");
+            // Enable autostart once: ClaraOS should simply be there after logging
+            // in. Failure is never fatal (kiosk/policy-managed systems).
+            try {
+              if (!localStorage.getItem("autostart-asked")) {
+                localStorage.setItem("autostart-asked", "1");
+                if (!(await invoke("autostart_enabled"))) {
+                  await invoke("set_autostart", { enabled: true });
+                }
+              }
+            } catch (e) { /* ignore */ }
+            await invoke("open_shell");
+            return;
+          }
+          if (st.state === "error") {
+            status(koppelFehlerText(st.error || "", "Verbindung zum Server fehlgeschlagen. Bitte Internetverbindung pruefen und erneut versuchen."), true);
+            show("step-token");
+            enableForms();
+            provisionInFlight = false;
+          } else if (st.state === "unprovisioned") {
+            // Don't interfere with a pairing in progress — the daemon keeps
+            // reporting "unprovisioned" until it completes.
+            if (!provisionInFlight) {
+              if (!$("step-token").classList.contains("active")) status("");
+              show("step-token");
+              enableForms();
+            }
+          } else {
+            status("Status: " + st.state + " …");
+          }
+        } catch (e) {
+          // "daemon nicht verbunden" = handshake not there yet → keep waiting.
+          const msg = String(e);
+          status(msg.includes("nicht verbunden") ? "Starte Hintergrunddienst …" : msg,
+                 !msg.includes("nicht verbunden"));
+        }
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+    }
+
+    // Make server errors during pairing readable. The daemon passes through the
+    // HTTP status of app-provision (404 = code invalid/expired/already used,
+    // 410 = code limit reached). Previously this only ever said
+    // "pairing/connection failed" — which sounded like a network problem but
+    // was in fact a dead invitation code.
+    function koppelFehlerText(e, fallback) {
+      const s = String(e);
+      if (s.includes("HTTP 404"))
+        return "Dieser Einladungs-Code ist ungueltig, abgelaufen oder wurde schon benutzt.\nBitte bei der Person, die dich eingeladen hat, einen aktuellen Code anfordern und hier einfuegen.";
+      if (s.includes("HTTP 410"))
+        return "Dieser Einladungs-Code hat sein Limit erreicht.\nBitte bei der Person, die dich eingeladen hat, einen neuen Code anfordern.";
+      return fallback + "\n" + s;
+    }
+
+    $("go").addEventListener("click", async () => {
+      const token = $("token").value.trim();
+      if (!token) return;
+      $("go").disabled = true;
+      provisionInFlight = true;
+      show("step-connect");
+      status("Kopple Gerät …");
+      try {
+        await invoke("daemon_provision", { token });
+        pollUntilUp();
+      } catch (e) {
+        // 404 = link invalid/expired, 410 = link limit reached (server text).
+        status(koppelFehlerText(e, "Kopplung fehlgeschlagen — bitte erneut versuchen."), true);
+        show("step-token");
+        enableForms();
+        provisionInFlight = false;
+      }
+    });
+
+    $("via-tunnel").addEventListener("change", () => {
+      $("tunnel-fields").classList.toggle("on", $("via-tunnel").checked);
+    });
+
+    // Connect by address: directly (the server's own login appears in the window)
+    // or through a tunnel with coordination server + auth key. The daemon checks
+    // the address (https host name only).
+    $("connect").addEventListener("click", async () => {
+      const server = $("server").value.trim();
+      if (!server) return;
+      const viaTunnel = $("via-tunnel").checked;
+      const authKey = $("auth-key").value.trim();
+      if (viaTunnel && !authKey) {
+        status("Bitte den Auth-Key eingeben.", true);
+        return;
+      }
+      $("connect").disabled = true;
+      provisionInFlight = true;
+      show("step-connect");
+      status(viaTunnel ? "Baue Tunnel auf …" : "Verbinde …");
+      try {
+        await invoke("daemon_connect", viaTunnel
+          ? { server, controlUrl: $("control-url").value.trim(), authKey }
+          : { server });
+        $("auth-key").value = "";
+        pollUntilUp();
+      } catch (e) {
+        const msg = String(e);
+        status(msg.includes("invalid server")
+          ? "Bitte eine gueltige https-Adresse eingeben (z. B. example.org)."
+          : msg.includes("coordination server")
+            ? "Koordinationsserver: bitte eine https-Adresse eingeben."
+            : "Verbindung fehlgeschlagen: " + msg, true);
+        show("step-token");
+        enableForms();
+        provisionInFlight = false;
+      }
+    });
+
+    listen("daemon-failed", (ev) => status("Daemon-Start fehlgeschlagen: " + ev.payload, true));
+
+    // Link `<scheme>://connect?server=…`: only fills in the address — connecting
+    // to a server named by a link takes a click.
+    listen("connect-server", (ev) => {
+      const s = String(ev.payload || "").trim();
+      if (!s) return;
+      $("server").value = s;
+      show("step-token");
+      status("Adresse aus dem Link übernommen — bitte prüfen und verbinden.");
+    });
+
+    // Deep link `claraos://provision?token=…`: fill in the token and pair directly
+    // (both cold start and second launch deliver this event).
+    listen("provision-token", (ev) => {
+      const t = String(ev.payload || "").trim();
+      if (!t) return;
+      $("token").value = t;
+      if (!$("go").disabled) $("go").click();
+    });
+
+    status("Starte Hintergrunddienst …");
+    show("step-connect");
+    pollUntilUp();
+  </script>
+</body>
+</html>

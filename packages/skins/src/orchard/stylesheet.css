@@ -1,0 +1,139 @@
+/* ===========================================================================
+   Orchard — skin stylesheet (shared by orchard-dark and orchard-light)
+   Two bars: a transparent menu bar on top that fades into the wallpaper, a
+   floating liquid-glass dock below. Windows carry 12 px corners and a
+   unified title bar with the traffic lights on the left. Scoped to
+   [data-chrome="liquid"]; anchored on data-shell-part hooks and stable class
+   fragments — production class names are hashed CSS modules.
+   =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   Wallpaper — reaches both screen edges. The shell keeps the wallpaper inside
+   the desktop area between the two bars (Desktop.module.css); here the bars
+   float over it, so the strip under the dock and the band behind the menu
+   bar are wallpaper, not the body background.
+   --------------------------------------------------------------------------- */
+[data-chrome="liquid"] [data-shell-part="wallpaper"] {
+  position: fixed;
+}
+
+/* ---------------------------------------------------------------------------
+   Menu bar — no surface of its own, a soft gradient keeps the text legible
+   on any wallpaper
+   --------------------------------------------------------------------------- */
+[data-chrome="liquid"] [data-shell-part="menu-bar"] {
+  background: linear-gradient(rgba(0, 0, 0, 0.38), rgba(0, 0, 0, 0.0));
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+}
+
+[data-chrome="liquid"][data-skin-id="orchard-light"] [data-shell-part="menu-bar"] {
+  background: linear-gradient(rgba(255, 255, 255, 0.40), rgba(255, 255, 255, 0.0));
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
+  color: #1d1d1f;
+}
+
+/* The start button carries the mark in the bar's text colour, not the accent */
+[data-chrome="liquid"] [data-shell-part="menu-bar"] > button:first-child {
+  color: inherit;
+}
+
+[data-chrome="liquid"] [data-shell-part="menu-bar"] button:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+[data-chrome="liquid"][data-skin-id="orchard-light"] [data-shell-part="menu-bar"] button:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* Tray icons in the bar are monochrome glyphs, no badges in colour blocks */
+[data-chrome="liquid"] [data-shell-part="menu-bar-tray"] svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* ---------------------------------------------------------------------------
+   Dock — liquid glass: light tint, strong blur, a bright rim on top
+   --------------------------------------------------------------------------- */
+[data-chrome="liquid"] [data-shell-part="dock"] {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.0) 50%),
+    var(--bg-taskbar);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+[data-chrome="liquid"][data-skin-id="orchard-light"] [data-shell-part="dock"] {
+  border-color: rgba(255, 255, 255, 0.7);
+}
+
+/* ---------------------------------------------------------------------------
+   Windows — unified title bar, title centred between the lights and the
+   right-hand tools, no header line
+   --------------------------------------------------------------------------- */
+[data-chrome="liquid"] [class*="titlebar"] {
+  border-bottom: none;
+  padding-left: 10px;
+}
+
+[data-chrome="liquid"] [class*="titlebar"] > [class*="title"] {
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Traffic lights: 12 px, 8 px apart, dim when the window is not focused */
+[data-chrome="liquid"] [class*="BtnMac"] {
+  width: 12px !important;
+  height: 12px !important;
+  margin: 0 4px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+/* ---------------------------------------------------------------------------
+   Start menu and popups — the same glass, 14 px corners
+   --------------------------------------------------------------------------- */
+[data-chrome="liquid"] [data-shell-part="start-menu"] {
+  background: var(--bg-surface) !important;
+  backdrop-filter: var(--blur-menu) !important;
+  -webkit-backdrop-filter: var(--blur-menu) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-menu) !important;
+}
+
+[data-chrome="liquid"] [data-shell-part="start-input"] {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+[data-chrome="liquid"] [data-shell-part="start-input"]:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+[data-chrome="liquid"] [data-shell-part="start-footer"] {
+  border-top: 1px solid var(--border);
+}
+
+[data-chrome="liquid"] .aeroWidget,
+[data-chrome="liquid"] [data-shell-part="snap-popup"] {
+  background: var(--bg-surface);
+  backdrop-filter: var(--blur-menu);
+  -webkit-backdrop-filter: var(--blur-menu);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-menu);
+}
+
+/* ---------------------------------------------------------------------------
+   Desktop icon labels: readable on both wallpapers
+   --------------------------------------------------------------------------- */
+[data-chrome="liquid"][data-skin-id="orchard-dark"] [class*="iconLabel"] {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+[data-chrome="liquid"][data-skin-id="orchard-light"] [class*="iconLabel"] {
+  color: #1d1d1f;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85);
+}

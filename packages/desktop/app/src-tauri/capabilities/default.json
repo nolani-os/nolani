@@ -1,0 +1,22 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Onboarding-/Statusfenster: Core-Events, unsere Commands, Benachrichtigungen",
+  "windows": ["onboarding"],
+  "permissions": [
+    "core:default",
+    "notification:default",
+    "allow-daemon-status",
+    "allow-daemon-provision",
+    "allow-daemon-connect",
+    "allow-app-brand",
+    "allow-open-shell",
+    "allow-set-autostart",
+    "allow-autostart-enabled",
+    "allow-sync-config",
+    "allow-set-sync-config",
+    "allow-answer-consent",
+    "allow-companion-shutdown",
+    "allow-companion-toggle-fullscreen"
+  ]
+}

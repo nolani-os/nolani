@@ -1,0 +1,115 @@
+/* MenuBar — the thin top bar of a two-bar skin. Token-driven; the skin
+   stylesheet (Orchard) adds its transparent gradient and text shadow via the
+   data-shell-part="menu-bar" anchor. */
+
+.bar {
+  height: var(--menu-bar-height, 28px);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--bg-taskbar);
+  z-index: 9000;
+  position: relative;
+  user-select: none;
+}
+
+.claraBtn,
+.iconBtn {
+  height: 22px;
+  min-width: 26px;
+  padding: 0 4px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition-fast, 0.1s);
+}
+
+.claraBtn { color: var(--accent); }
+.claraBtn:hover, .iconBtn:hover { background: var(--bg-hover); }
+.claraBtn.claraActive { background: var(--accent-bg); }
+
+.claraMark {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.micRecording { color: #ff3b30; }
+
+/* Corporate skins: logo + company name on one wide start button */
+.claraBtn.brandBtn {
+  width: auto;
+  padding: 0 8px 0 4px;
+  gap: 6px;
+}
+
+.brandLogo {
+  width: 18px;
+  height: 18px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.brandName {
+  font-weight: 700;
+  white-space: nowrap;
+  color: inherit;
+}
+
+.appName {
+  font-weight: 700;
+  padding: 0 6px 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40vw;
+}
+
+/* The workspace trigger is sized for the 48 px bar — shrink it here */
+.workspaces > button {
+  width: 26px;
+  height: 22px;
+  border-radius: 5px;
+}
+
+.spacer { flex: 1; }
+
+.tray {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* TrayButton carries the taskbar's 36 px class — the bar is 28 px */
+.tray > button {
+  width: 26px;
+  height: 22px;
+  border-radius: 5px;
+  font-size: 0.875rem;
+}
+
+/* More specific than `.tray > button` above — the clock keeps its width */
+.tray > .clock {
+  width: auto;
+  height: 22px;
+  padding: 0 8px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+  border-radius: 5px;
+}
+.clock:hover { background: var(--bg-hover); }

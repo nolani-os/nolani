@@ -23,7 +23,7 @@ export interface PropertiesDialogProps {
   * Generic Properties modal — used for desktop icon properties
  * and Files-app right-click "Properties". Stays modal-on-top via a
  * fixed-position overlay. Aero-Glass receives a richer backdrop via the
- * skin stylesheet (see `[data-skin-id="aero-glass"] .panel`).
+ * skin stylesheet via `[data-skin-id=…]` selectors.
  */
 export function PropertiesDialog({ open, title, rows, onClose }: PropertiesDialogProps) {
   const { t } = useTranslation("components");

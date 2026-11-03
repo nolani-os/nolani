@@ -8,8 +8,9 @@
 .overlay {
   position: fixed;
   top: 10%;
+  /* centred by margin, not transform — the motion slide-in owns transform */
   left: 50%;
-  transform: translateX(-50%);
+  margin-left: -290px;
   width: 580px;
   max-height: 70vh;
   background: var(--bg-surface-solid);

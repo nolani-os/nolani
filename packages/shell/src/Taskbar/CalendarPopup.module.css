@@ -67,3 +67,14 @@
   color: #000 !important;
   font-weight: 600;
 }
+
+/* Two-bar skins (data-menu-bar on :root): the tray sits in the top bar, so
+   the popover opens below it and the backdrop spares the bar instead. */
+:global([data-menu-bar="1"]) .backdrop {
+  inset: var(--menu-bar-height, 28px) 0 0 0;
+}
+:global([data-menu-bar="1"]) .popup {
+  bottom: auto;
+  top: calc(var(--menu-bar-height, 28px) + 6px);
+  max-height: calc(100vh - var(--menu-bar-height, 28px) - 24px);
+}

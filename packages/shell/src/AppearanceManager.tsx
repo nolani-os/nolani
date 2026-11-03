@@ -21,7 +21,7 @@ import {
   useAppRegistryStore,
   applyUiLanguage,
 } from "@claraos/core";
-import { accentTokens } from "@claraos/skins";
+import { accentTokens, canonicalSkinId, DEFAULT_LIGHT_SKIN_ID, DEFAULT_DARK_SKIN_ID } from "@claraos/skins";
 
 const ACCENT_KEYS = [
   "accent",
@@ -208,8 +208,10 @@ export function AppearanceManager() {
     const mode = values.themeMode ?? "skin";
     if (mode === "skin") return;
 
-    const lightSkin = String(values.lightSkinId ?? "windows11-light");
-    const darkSkin = String(values.darkSkinId ?? "clara-glass");
+    // Stored ids may be legacy ones — resolve them so the comparison below
+    // does not flip skins every minute.
+    const lightSkin = canonicalSkinId(String(values.lightSkinId ?? DEFAULT_LIGHT_SKIN_ID));
+    const darkSkin = canonicalSkinId(String(values.darkSkinId ?? DEFAULT_DARK_SKIN_ID));
 
     const applyForNow = () => {
       let wantLight: boolean;
@@ -223,7 +225,7 @@ export function AppearanceManager() {
         );
       }
       const target = wantLight ? lightSkin : darkSkin;
-      if (target && target !== useUIStore.getState().skinId) setSkin(target);
+      if (target && target !== canonicalSkinId(useUIStore.getState().skinId)) setSkin(target);
     };
 
     applyForNow();

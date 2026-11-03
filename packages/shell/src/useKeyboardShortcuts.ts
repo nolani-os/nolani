@@ -5,6 +5,8 @@ import {
 } from "@claraos/core";
 import { getSnapBounds } from "@claraos/core/wm/useSnapToEdge";
 import { openAltTab, cycleAltTab, commitAltTab, closeAltTab } from "./Window/AltTabSwitcher";
+import { resolveSkin } from "@claraos/skins";
+import { toggleOverview } from "./Overview/overviewStore";
 
 /**
  * Global keyboard shortcuts for ClaraOS.
@@ -118,6 +120,15 @@ export function useKeyboardShortcuts() {
         }
 
         const k = e.key.toLowerCase();
+
+        // Win+Tab / Win+W → workspace overview (Task View, Mission Control,
+        // Plasma overview — the look follows the skin)
+        if (e.key === "Tab" || k === "w") {
+          e.preventDefault();
+          const overviewStyle = resolveSkin(useUIStore.getState().skinId)?.layout.overviewStyle;
+          toggleOverview(overviewStyle !== "mission");
+          return;
+        }
 
         // Win+E → Files
         if (k === "e") {

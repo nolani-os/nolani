@@ -141,8 +141,17 @@ home.{$ZELLE_DOMAIN} {
 }
 
 # ── Authentik (login) ───────────────────────────────────────────────────
+# Embeddable in the cell's own shell only. Apps in shell windows sign in through
+# Authentik inside the frame: OIDC apps never notice (with a session Authentik
+# redirects at once), but a SAML login (Mautic) has to render Authentik's flow page,
+# which Authentik itself sends with X-Frame-Options: DENY — the window stayed white.
+# Replaced by frame-ancestors: other sites still cannot frame the login (clickjacking).
+# Authentik sends no CSP of its own, so nothing else is overwritten.
 auth.{$ZELLE_DOMAIN} {
-	reverse_proxy authentik:9000
+	reverse_proxy authentik:9000 {
+		header_down -X-Frame-Options
+		header_down Content-Security-Policy "frame-ancestors 'self' https://home.{$ZELLE_DOMAIN}"
+	}
 }
 
 # ── Nextcloud (admin UI, public share links) ────────────────────────────
@@ -174,6 +183,17 @@ jmap.{$ZELLE_DOMAIN} {
 		reverse_proxy stalwart:8080
 	}
 	respond 404
+}
+
+# ── Push (ntfy) for the companion apps ──────────────────────────────────
+# Own login (per-device bearer tokens, deny-all by default) — no forward_auth:
+# the apps hold a token, not a browser session. Only the subscribe/publish API is
+# reachable; ntfy's web app is switched off in compose.yml.
+push.{$ZELLE_DOMAIN} {
+	reverse_proxy ntfy:80 {
+		# long-lived subscriptions (JSON stream, SSE, WebSocket)
+		flush_interval -1
+	}
 }
 
 # ── Optional apps and sites ─────────────────────────────────────────────

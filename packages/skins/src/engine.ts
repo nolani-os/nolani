@@ -27,6 +27,10 @@ export function applySkin(skin: SkinManifest): void {
   root.dataset.taskbarPosition = skin.layout.taskbarPosition;
   root.dataset.windowButtons = skin.layout.windowButtonsPosition;
   root.dataset.startMenuStyle = skin.layout.startMenuStyle;
+  if (skin.layout.menuBar) root.dataset.menuBar = "1";
+  else delete root.dataset.menuBar;
+  if (skin.chrome) root.dataset.chrome = skin.chrome;
+  else delete root.dataset.chrome;
   root.dataset.skinId = skin.id;
 
   // Color scheme for browser controls (scrollbars, inputs).

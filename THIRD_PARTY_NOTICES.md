@@ -14,6 +14,7 @@ their own terms).
 | livekit-client 2.20.1 (LiveKit, Inc.) | `packages/shell/public/vendor/livekit-client.umd.min.js` | Apache-2.0 | unmodified build from npm; licence text: [LICENSES/Apache-2.0.txt](LICENSES/Apache-2.0.txt) |
 | Draco 3D decoder (Google LLC) | `packages/shell/public/vendor/draco/` | Apache-2.0 | unmodified; licence text: [LICENSES/Apache-2.0.txt](LICENSES/Apache-2.0.txt) |
 | daedalOS (Dustin Brett) | patterns adapted in `packages/core/src/wm/rndDefaults.ts`, `packages/core/src/wm/iframeCapture.ts` | MIT | see [LICENSES/MIT-daedalOS.txt](LICENSES/MIT-daedalOS.txt) |
+| OrangeHRM 5.9 (OrangeHRM Inc.) | `deploy/cell/orangehrm/OpenIdConnectRedirectController.php`, `SocialMediaAuthenticationService.php` | GPL-3.0-or-later | two files of the OpenID plugin, copied and modified (account creation on first login, `profile` scope); the original headers stay in place; licence text: [LICENSES/GPL-3.0.txt](LICENSES/GPL-3.0.txt). The Dockerfile patches three more files at build time. |
 
 ## Logos of other products
 
@@ -37,9 +38,17 @@ or replace them if your use is not covered by the respective trademark policy.
 
 The wallpapers in `packages/skins/src/clara-glass/` and the weather pictures in
 `packages/shell/src/widgets/weather-photo/` were generated for this project with Stable
-Diffusion XL (CreativeML Open RAIL++-M licence for the model); the mobile wallpaper
-`packages/shell/src/Mobile/wallpaper-fluid.jpg` is rendered from a project-made SVG. They are
-provided under this repository's licence to the extent any rights exist in them.
+Diffusion XL (CreativeML Open RAIL++-M licence for the model); the wallpapers of Bloom,
+Orchard, The Medical Company, Meadow and Shore (`packages/skins/src/*/wallpaper*.jpg`,
+`poster.jpg`) with OpenAI's image model, in part with Krea, from the project's own prompts
+and designs (no motif of another desktop); the living-photo clips
+`packages/shell/public/scenes/{meadow,shore}.{mp4,webm}` were generated from those stills
+through the Higgsfield API (MiniMax image-to-video), whose terms leave the output to the
+account holder. The logo of the demo tenant "The Medical Company" (`packages/skins/src/
+corporate/medical/logo.svg`) is a project-made drawing for a fictitious company; the mobile
+wallpaper `packages/shell/src/Mobile/wallpaper-fluid.jpg` is rendered from a project-made
+SVG. All of them are provided under this repository's licence to the extent any rights exist
+in them.
 
 ## Data
 

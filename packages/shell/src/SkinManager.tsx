@@ -1,24 +1,6 @@
 import { useEffect } from "react";
 import { useUIStore } from "@claraos/core";
-import {
-  applySkin,
-  windows11DarkSkin,
-  windows11LightSkin,
-  aeroGlassSkin,
-  claraGlassSkin,
-  extraSkinIds,
-} from "@claraos/skins";
-
-const skinMap: Record<string, typeof windows11DarkSkin> = {
-  "windows11-dark": windows11DarkSkin,
-  "windows11-light": windows11LightSkin,
-  "aero-glass": aeroGlassSkin,
-  "clara-glass": claraGlassSkin,
-  // Legacy ID mapping
-  "windows11": windows11DarkSkin,
-  // Skins of this installation
-  ...extraSkinIds,
-};
+import { applySkin, resolveSkin, bloomDarkSkin, bloomLightSkin } from "@claraos/skins";
 
 /** Sets `color-scheme` from the skin's ACTUAL brightness.
  *
@@ -89,7 +71,7 @@ function setzeAkzentSchrift(wurzel: HTMLElement, kanal: (c: number) => number): 
  *
  * Important: NO WIDGETS ARE SEEDED HERE ANY MORE. Previously this effect
  * placed three widgets (clock+weather, system stats, Clara) at fixed spots in
- * the top left for `aero-glass`/`clara-glass` when the active workspace was
+ * the top left for the glass skins when the active workspace was
  * empty. That is why users got the same three widgets back in the top left
  * after EVERY reload and lost their own arrangement:
  *
@@ -119,9 +101,11 @@ export function SkinManager() {
   const userWallpaper = useUIStore((s) => s.wallpaper);
 
   useEffect(() => {
+    // Legacy and installation-specific ids resolve through the catalog; an
+    // unknown id falls back to the Bloom pair so the theme toggle still works.
     const skin =
-      skinMap[skinId] ??
-      (theme === "light" ? windows11LightSkin : windows11DarkSkin);
+      resolveSkin(skinId) ??
+      (theme === "light" ? bloomLightSkin : bloomDarkSkin);
     applySkin(skin);
     setzeFarbschema();
 

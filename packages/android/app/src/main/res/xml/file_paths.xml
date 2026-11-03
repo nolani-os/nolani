@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FileProvider paths for the self-update installer (SelfUpdateManager):
+     the freshly downloaded APK lives in cacheDir/updates/ and is handed to
+     the system installer as a content:// URI. -->
+<paths>
+    <cache-path name="updates" path="updates/" />
+    <!-- Target for `<input capture>` shots. The camera app writes there
+         via a content:// URI; without this entry FileProvider.getUriForFile
+         throws and the capture fails. -->
+    <cache-path name="aufnahmen" path="aufnahmen/" />
+</paths>

@@ -1,0 +1,148 @@
+/* ===========================================================================
+   Corporate — skin stylesheet (shared by every skin from createCorporateSkin)
+   Light and quiet: opaque white surfaces without glass, a two-colour brand
+   rule over the bar, the logo and the company name in the start button, the
+   second brand colour as the running indicator. Scoped to
+   [data-chrome="corporate"]; anchored on data-shell-part hooks and stable
+   class fragments — production class names are hashed CSS modules. The
+   brand colours come from the manifest tokens (--brand-primary, --brand-accent,
+   --brand-rule), so this file serves every tenant unchanged.
+   =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   Taskbar — opaque, a thin brand rule along its top edge
+   --------------------------------------------------------------------------- */
+[data-chrome="corporate"] [data-shell-part="taskbar"] {
+  position: relative;
+  background: var(--bg-taskbar);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-top: 1px solid var(--border);
+  box-shadow: var(--shadow-taskbar);
+  padding: 0 10px;
+}
+
+[data-chrome="corporate"] [data-shell-part="taskbar"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1px;
+  height: 3px;
+  background: var(--brand-rule);
+  pointer-events: none;
+}
+
+/* Start button with the brand: logo + company name on one pill */
+[data-chrome="corporate"] [data-shell-part="taskbar"] [class*="brandBtn"] {
+  color: var(--brand-primary);
+  border-radius: var(--radius-md);
+}
+
+[data-chrome="corporate"] [data-shell-part="taskbar"] [class*="brandName"] {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* Buttons: 6 px corners, quiet hover plate, no translucency */
+[data-chrome="corporate"] [data-shell-part="taskbar"] [class*="pinnedBtn"],
+[data-chrome="corporate"] [data-shell-part="taskbar"] [class*="appBtn"],
+[data-chrome="corporate"] [data-shell-part="taskbar"] [class*="claraBtn"],
+[data-chrome="corporate"] [data-shell-part="taskbar"] [class*="iconBtn"],
+[data-chrome="corporate"] [data-shell-part="taskbar"] [class*="trayBtn"] {
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast);
+}
+
+[data-chrome="corporate"] [data-shell-part="taskbar"] [class*="pinnedBtn"]:hover,
+[data-chrome="corporate"] [data-shell-part="taskbar"] [class*="appBtn"]:hover,
+[data-chrome="corporate"] [data-shell-part="taskbar"] [class*="claraBtn"]:hover,
+[data-chrome="corporate"] [data-shell-part="taskbar"] [class*="iconBtn"]:hover,
+[data-chrome="corporate"] [data-shell-part="taskbar"] [class*="trayBtn"]:hover {
+  background: var(--bg-hover);
+}
+
+/* The open window gets a flat tinted plate, not a glow */
+[data-chrome="corporate"] [data-shell-part="taskbar"] [class*="appActive"],
+[data-chrome="corporate"] [data-shell-part="taskbar"] [class*="pinnedActive"] {
+  background: var(--accent-bg);
+  box-shadow: none;
+}
+
+/* Running indicator: a short bar in the second brand colour */
+[data-chrome="corporate"] [class*="dotActive"] {
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--brand-accent);
+  box-shadow: none;
+}
+
+[data-chrome="corporate"] [data-shell-part="taskbar"] [class*="separator"] {
+  width: 1px;
+  height: 24px;
+  margin: 0 6px;
+  background: var(--border);
+}
+
+[data-chrome="corporate"] [data-shell-part="taskbar-tray"] [class*="clock"] {
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--text-primary);
+}
+
+/* ---------------------------------------------------------------------------
+   Start menu and popups — white cards with a hairline, no blur
+   --------------------------------------------------------------------------- */
+[data-chrome="corporate"] [data-shell-part="start-menu"] {
+  background: var(--bg-surface) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid var(--border-window) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-menu) !important;
+}
+
+[data-chrome="corporate"] [data-shell-part="start-input"] {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+[data-chrome="corporate"] [data-shell-part="start-input"]:focus-within {
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 2px var(--accent-bg);
+}
+
+[data-chrome="corporate"] [data-shell-part="start-footer"] {
+  border-top: 1px solid var(--border);
+  background: var(--bg-subtle);
+}
+
+[data-chrome="corporate"] .aeroWidget,
+[data-chrome="corporate"] [data-shell-part="snap-popup"],
+[data-chrome="corporate"] [data-shell-part="context-menu"],
+[data-chrome="corporate"] [data-shell-part="toolbar-menu"] {
+  background: var(--bg-surface);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--border-window);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-menu);
+}
+
+/* Switches and progress carry the second brand colour */
+[data-chrome="corporate"] input[type="checkbox"],
+[data-chrome="corporate"] input[type="radio"],
+[data-chrome="corporate"] input[type="range"],
+[data-chrome="corporate"] progress {
+  accent-color: var(--brand-accent);
+}
+
+/* ---------------------------------------------------------------------------
+   Desktop icon labels: dark on the light wallpaper, with a white halo
+   --------------------------------------------------------------------------- */
+[data-chrome="corporate"] [class*="iconLabel"] {
+  color: var(--text-primary);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9), 0 0 6px rgba(255, 255, 255, 0.7);
+}

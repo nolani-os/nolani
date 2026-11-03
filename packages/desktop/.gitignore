@@ -1,0 +1,8 @@
+# Build artifacts (built on the build host, never committed)
+daemon/clarad-linux
+daemon/clarad-windows.exe
+daemon/go.sum.tmp
+app/src-tauri/binaries/
+app/src-tauri/target/
+app/node_modules/
+app/dist/

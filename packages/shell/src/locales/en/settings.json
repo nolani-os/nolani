@@ -404,16 +404,11 @@
   "personalization": {
     "heading": "Personalization",
     "theme": "Theme",
-    "claraGlassHint": "Glass — the {{product}} design language",
     "dark": "Dark",
     "light": "Light",
-    "aeroGlassHint": "Aero Glass — premium laptop skin",
     "skin": "Skin",
-    "liveWallpaper": "Live wallpaper",
-    "liveWallpaperDesc": "Animated mesh gradients + bokeh drift",
     "on": "On",
     "off": "Off",
-    "pausesOn": "Pauses automatically with",
     "avatar": "Profile picture",
     "avatarInitials": "Profile picture from initials",
     "chooseImage": "Choose image …",
@@ -422,7 +417,17 @@
     "removeImage": "Remove image",
     "removeNamed": "Remove {{name}}",
     "ownImage": "Custom image …",
-    "uploadFailed": "Upload failed ({{status}})"
+    "uploadFailed": "Upload failed ({{status}})",
+    "skinHint": {
+      "clara-glass": "Glass — the {{product}} design language",
+      "bloom-dark": "Bloom — the familiar centred bar, dark",
+      "bloom-light": "Bloom Light — the familiar centred bar, light",
+      "orchard-dark": "Orchard — menu bar on top, dock below, dark",
+      "orchard-light": "Orchard Light — menu bar on top, dock below, light",
+      "corporate-medical": "The Medical Company — corporate template: logo and name in the bar, calm white surfaces",
+      "meadow": "Meadow — grass in the wind, sky after the real sun",
+      "shore": "Shore — waves on the beach, sky after the real sun"
+    }
   },
   "about": {
     "version": "Version {{version}}",

@@ -27,6 +27,7 @@ export function VoiceBubble() {
       {active && (
         <motion.div
           className={styles.bubble}
+          data-shell-part="voice-bubble"
           style={{ "--mic-level": micLevel } as CSSProperties}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

@@ -159,53 +159,56 @@ with sync_playwright() as p:
     bericht["editor"] = editor
 
     # ── Office: embedded as in the office viewer ─────────────────────────
-    probleme.clear()
-    page.goto(SHELL + "/", wait_until="domcontentloaded")
-    page.wait_for_timeout(5000)
-    doc = page.evaluate("""async () => {
-        const r = await fetch('/api/claraos/office/create-document', {method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({filename:'Sichtprüfung.docx', folder:'Dokumente',
-            content_markdown:'# Sichtprüfung\\n\\nCollabora in der Shell der Zelle.'})});
-        return {status: r.status, body: await r.json().catch(() => ({}))};
-    }""")
-    pfad = doc["body"].get("path")
-    ergebnis = page.evaluate("""async (pfad) => {
-        const t = await (await fetch('/api/claraos/wopi/token', {method:'POST',
-          headers:{'Content-Type':'application/json'}, body: JSON.stringify({source:'nextcloud', path: pfad})})).json();
-        window.__docLoaded = false;
-        const origin = new URL(t.editor_url).origin;
-        window.addEventListener('message', (ev) => {
-          if (ev.origin !== origin) return;
-          try { const m = typeof ev.data === 'string' ? JSON.parse(ev.data) : ev.data;
-                if (m.MessageId === 'App_LoadingStatus' && m.Values && m.Values.Status === 'Document_loaded') window.__docLoaded = true;
-          } catch (e) {}
-        });
-        const f = document.createElement('iframe');
-        f.name = 'sicht-office'; f.style = 'position:fixed;left:40px;top:40px;width:1360px;height:820px;z-index:99999;border:2px solid #888;background:#fff';
-        document.body.appendChild(f);
-        const form = document.createElement('form');
-        form.method = 'POST'; form.target = 'sicht-office';
-        form.action = t.editor_url + (t.editor_url.includes('?') ? '' : '?') + 'WOPISrc=' + encodeURIComponent(t.wopi_src);
-        for (const [k, v] of [['access_token', t.access_token], ['access_token_ttl', String(t.access_token_ttl)]]) {
-          const i = document.createElement('input'); i.type = 'hidden'; i.name = k; i.value = v; form.appendChild(i);
-        }
-        document.body.appendChild(form); form.submit(); form.remove();
-        return {editor: origin};
-    }""", pfad)
-    geladen = False
-    for s in range(40):
-        page.wait_for_timeout(1000)
-        if page.evaluate("window.__docLoaded === true"):
-            geladen = True
-            break
-    page.wait_for_timeout(3000)
-    foto(page, "office")
-    bericht["office"] = {"dokument": pfad, "editor": ergebnis.get("editor"),
-                         "Document_loaded": geladen, "sekunden": s + 1,
-                         "probleme": list(dict.fromkeys(probleme))[:12]}
-    page.evaluate("""async (pfad) => { await fetch('/api/claraos/files/v2/delete?source=nextcloud&path='
-        + encodeURIComponent(pfad), {method:'DELETE'}); }""", pfad)
+    if "office" not in AN:
+        bericht["office"] = {"uebersprungen": "App office aus"}
+    else:
+        probleme.clear()
+        page.goto(SHELL + "/", wait_until="domcontentloaded")
+        page.wait_for_timeout(5000)
+        doc = page.evaluate("""async () => {
+            const r = await fetch('/api/claraos/office/create-document', {method:'POST',
+              headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({filename:'Sichtprüfung.docx', folder:'Dokumente',
+                content_markdown:'# Sichtprüfung\\n\\nCollabora in der Shell der Zelle.'})});
+            return {status: r.status, body: await r.json().catch(() => ({}))};
+        }""")
+        pfad = doc["body"].get("path")
+        ergebnis = page.evaluate("""async (pfad) => {
+            const t = await (await fetch('/api/claraos/wopi/token', {method:'POST',
+              headers:{'Content-Type':'application/json'}, body: JSON.stringify({source:'nextcloud', path: pfad})})).json();
+            window.__docLoaded = false;
+            const origin = new URL(t.editor_url).origin;
+            window.addEventListener('message', (ev) => {
+              if (ev.origin !== origin) return;
+              try { const m = typeof ev.data === 'string' ? JSON.parse(ev.data) : ev.data;
+                    if (m.MessageId === 'App_LoadingStatus' && m.Values && m.Values.Status === 'Document_loaded') window.__docLoaded = true;
+              } catch (e) {}
+            });
+            const f = document.createElement('iframe');
+            f.name = 'sicht-office'; f.style = 'position:fixed;left:40px;top:40px;width:1360px;height:820px;z-index:99999;border:2px solid #888;background:#fff';
+            document.body.appendChild(f);
+            const form = document.createElement('form');
+            form.method = 'POST'; form.target = 'sicht-office';
+            form.action = t.editor_url + (t.editor_url.includes('?') ? '' : '?') + 'WOPISrc=' + encodeURIComponent(t.wopi_src);
+            for (const [k, v] of [['access_token', t.access_token], ['access_token_ttl', String(t.access_token_ttl)]]) {
+              const i = document.createElement('input'); i.type = 'hidden'; i.name = k; i.value = v; form.appendChild(i);
+            }
+            document.body.appendChild(form); form.submit(); form.remove();
+            return {editor: origin};
+        }""", pfad)
+        geladen = False
+        for s in range(40):
+            page.wait_for_timeout(1000)
+            if page.evaluate("window.__docLoaded === true"):
+                geladen = True
+                break
+        page.wait_for_timeout(3000)
+        foto(page, "office")
+        bericht["office"] = {"dokument": pfad, "editor": ergebnis.get("editor"),
+                             "Document_loaded": geladen, "sekunden": s + 1,
+                             "probleme": list(dict.fromkeys(probleme))[:12]}
+        page.evaluate("""async (pfad) => { await fetch('/api/claraos/files/v2/delete?source=nextcloud&path='
+            + encodeURIComponent(pfad), {method:'DELETE'}); }""", pfad)
 
     # ── Clara chat: ask; the answer must become visible ──────────────────
     probleme.clear()

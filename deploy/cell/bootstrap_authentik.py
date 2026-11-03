@@ -147,6 +147,24 @@ def main():
     oidc_app("odoo", "Odoo", os.environ.get("ODOO_OIDC_SECRET"),
              [f"https://odoo.{DOM}/auth_oauth/signin"],
              {"openid", "email", "profile"})
+    # InvenTree (django-allauth, provider_id `authentik`) — only with `--apps inventree`
+    oidc_app("inventree", "InvenTree", os.environ.get("INVENTREE_OIDC_SECRET"),
+             [f"https://inventree.{DOM}/accounts/authentik/login/callback/"],  # allauth 65: no /oidc/ prefix
+             {"openid", "email", "profile"})
+    # Superset (Flask-AppBuilder, provider `authentik`) — only with `--apps superset`.
+    # `profile` carries the groups: clara-admins become Superset admins.
+    oidc_app("superset", "Superset", os.environ.get("SUPERSET_OIDC_SECRET"),
+             [f"https://superset.{DOM}/oauth-authorized/authentik"],
+             {"openid", "email", "profile"})
+    # OrangeHRM (its OpenID plugin, patched: the first login creates the account) — only
+    # with `--apps orangehrm`. Users are matched by e-mail, which nobody can change here.
+    oidc_app("orangehrm", "OrangeHRM", os.environ.get("ORANGEHRM_OIDC_SECRET"),
+             [f"https://orangehrm.{DOM}/web/index.php/openidauth/openIdCredentials"],
+             {"openid", "email", "profile"})
+    # Mautic (SAML — Mautic speaks no OIDC) — only with `--apps mautic`. Entity id =
+    # scheme + host of Mautic's site_url, assertion consumer = /s/saml/login_check.
+    if os.environ.get("MAUTIC_AN") == "1":
+        saml_app("mautic", "Mautic", f"https://mautic.{DOM}/s/saml/login_check", f"https://mautic.{DOM}")
     # Shared social cell (compose layer 8) — own host names, not below the cell domain
     social, video = os.environ.get("SOCIAL_DOMAIN"), os.environ.get("VIDEO_DOMAIN")
     if social:
@@ -276,6 +294,67 @@ def oidc_app(slug, title, secret, redirects, want, email_verified=False):
     else:
         pk = req("POST", "/providers/oauth2/", felder)["pk"]
         print(f"provider '{slug}' angelegt ({len(mappings)} Scopes)")
+    if not app_exists(slug):
+        req("POST", "/core/applications/", {"name": title, "slug": slug, "provider": pk})
+        print(f"application '{slug}' angelegt")
+    else:
+        print(f"application '{slug}' vorhanden")
+
+
+SAML_FELDER = {
+    # attribute name → expression. Mautic needs all four (UserCreator refuses an account
+    # without a last name); Authentik only knows one full name — split it, and fall back
+    # to the username where a part is missing.
+    "username": "return request.user.username",
+    "email": "return request.user.email",
+    "firstname": "return (request.user.name or request.user.username).split(' ', 1)[0]",
+    "lastname": ("teile = (request.user.name or '').split(' ', 1)\n"
+                 "return teile[1] if len(teile) > 1 and teile[1].strip() else request.user.username"),
+}
+
+
+def saml_mappings():
+    """The cell's own SAML property mappings (SAML_FELDER); returns their pks."""
+    alle = req("GET", "/propertymappings/provider/saml/?page_size=500")["results"]
+    pks = []
+    for feld, ausdruck in SAML_FELDER.items():
+        name = f"claraos-cell: saml {feld}"
+        body = {"name": name, "saml_name": feld, "expression": ausdruck}
+        hit = [m for m in alle if m.get("name") == name]
+        if hit:
+            if hit[0].get("expression") != ausdruck or hit[0].get("saml_name") != feld:
+                req("PATCH", f"/propertymappings/provider/saml/{hit[0]['pk']}/", body)
+            pks.append(hit[0]["pk"])
+        else:
+            pks.append(req("POST", "/propertymappings/provider/saml/", body)["pk"])
+    return pks
+
+
+def saml_app(slug, title, acs_url, audience):
+    """Create or update a SAML provider + application `slug` (POST binding, assertion
+    and response signed with the cell's key)."""
+    keys = req("GET", "/crypto/certificatekeypairs/?has_key=true")["results"]
+    felder = {
+        "name": slug,
+        "authorization_flow": flow_pk("default-provider-authorization-implicit-consent"),
+        "invalidation_flow": flow_pk("default-provider-invalidation-flow"),
+        "acs_url": acs_url, "audience": audience,
+        # = the entity id Authentik puts into the metadata — the SP compares the two
+        "issuer": f"https://auth.{DOM}/application/saml/{slug}/metadata/",
+        "sp_binding": "post",
+        "signing_kp": keys[0]["pk"] if keys else None,
+        "sign_assertion": True, "sign_response": True,
+        "property_mappings": saml_mappings(),
+    }
+    hit = [p for p in req("GET", f"/providers/saml/?name={slug}&page_size=500")["results"]
+           if p.get("name") == slug]
+    if hit:
+        pk = hit[0]["pk"]
+        req("PATCH", f"/providers/saml/{pk}/", felder)
+        print(f"provider '{slug}' (SAML) aktualisiert")
+    else:
+        pk = req("POST", "/providers/saml/", felder)["pk"]
+        print(f"provider '{slug}' (SAML) angelegt")
     if not app_exists(slug):
         req("POST", "/core/applications/", {"name": title, "slug": slug, "provider": pk})
         print(f"application '{slug}' angelegt")

@@ -47,6 +47,8 @@ CELL_ROUTERS: frozenset[str] = frozenset({
     # Clara's Paperless reading tools (read one document, newest documents)
     "paperless_lesen",
     "immich_lesen",
+    # Clara's Odoo tools (only with the optional app `odoo`, OPTIONAL_APPS)
+    "odoo_lesen",
     "peertube_lesen",
     # Planner / calendar
     "planner", "planner_kalender", "planner_business", "nc_pim",
@@ -71,6 +73,9 @@ CELL_ROUTERS: frozenset[str] = frozenset({
     # Teams: /auth-proxy/element provides the Matrix token (admin mint via clara.bot).
     # The other login handlers go nowhere — their apps do not exist in a cell.
     "auth_proxy",
+    # Push for the companion apps (ntfy in compose.yml): signed-in devices fetch their
+    # own per-device token here (/device-token). Without NTFY_ADMIN_TOKEN it stays inert.
+    "ntfy_proxy",
 })
 
 # Optional apps of a cell. Each one is a compose profile of the same name
@@ -99,9 +104,14 @@ OPTIONAL_APPS: dict[str, dict[str, frozenset[str]]] = {
     "teams": {"apps": frozenset({"teams-workspace", "element"}), "routers": frozenset(),
               "tools": frozenset()},
     # Business apps: off unless chosen explicitly (`OPT_IN_APPS`).
-    "odoo": {"apps": frozenset({"odoo"}), "routers": frozenset(), "tools": frozenset()},
+    "odoo": {"apps": frozenset({"odoo"}), "routers": frozenset({"odoo_lesen"}),
+             "tools": frozenset({"odoo"})},
+    "inventree": {"apps": frozenset({"inventree"}), "routers": frozenset(), "tools": frozenset()},
+    "superset": {"apps": frozenset({"superset"}), "routers": frozenset(), "tools": frozenset()},
+    "mautic": {"apps": frozenset({"mautic"}), "routers": frozenset(), "tools": frozenset()},
+    "orangehrm": {"apps": frozenset({"orangehrm"}), "routers": frozenset(), "tools": frozenset()},
 }
-OPT_IN_APPS: frozenset[str] = frozenset({"odoo"})
+OPT_IN_APPS: frozenset[str] = frozenset({"odoo", "inventree", "superset", "mautic", "orangehrm"})
 
 
 def _enabled_optional_apps(raw: str | None) -> frozenset[str]:
@@ -297,18 +307,38 @@ CELL_EXTRA_APPS: tuple[dict, ...] = (
 )
 
 
-def odoo_tile(base_domain: str) -> dict:
-    """Odoo (ERP/CRM) as a tile: its own UI, login via OIDC against the cell's Authentik."""
+# Business apps: each its own UI as a tile, login via OIDC against the cell's Authentik.
+# (id, name, icon, description, host, start path, logout path)
+BUSINESS_TILES: tuple[tuple[str, str, str, str, str, str, str], ...] = (
+    ("odoo", "Odoo", "\U0001f4bc", "Kunden, Angebote, Rechnungen und mehr (ERP/CRM)",
+     "odoo", "/web", "/web/session/logout"),
+    ("inventree", "InvenTree", "\U0001f4e6", "Teile, Lagerbestand, Bestellungen",
+     "inventree", "/web/", "/web/logout"),
+    ("superset", "Superset", "\U0001f4ca", "Dashboards und Auswertungen",
+     "superset", "/superset/welcome/", "/logout/"),
+    ("mautic", "Mautic", "\U0001f4e3", "Kontakte, Kampagnen, Newsletter (Marketing)",
+     "mautic", "/s/dashboard", "/s/logout"),
+    ("orangehrm", "OrangeHRM", "\U0001f465", "Mitarbeitende, Urlaub, Zeiterfassung (HR)",
+     "orangehrm", "/web/index.php/dashboard/index", "/web/index.php/auth/logout"),
+)
+
+
+def business_tile(app_id: str, base_domain: str) -> dict:
+    """The tile of a business app (BUSINESS_TILES)."""
+    _id, name, icon, beschreibung, host, start, logout = next(t for t in BUSINESS_TILES if t[0] == app_id)
     return {
-        "id": "odoo", "name": "Odoo", "icon": "\U0001f4bc",
-        "description": "Kunden, Angebote, Rechnungen und mehr (ERP/CRM)",
+        "id": _id, "name": name, "icon": icon, "description": beschreibung,
         "type": "iframe", "category": "business", "source": "builtin",
         "activated": True, "showInStartMenu": True, "pinned": False,
-        "config": {"url": f"https://odoo.{base_domain}/web", "authMethod": "sso",
-                   "forceFreshAuth": False, "logoutPath": "/web/session/logout"},
+        "config": {"url": f"https://{host}.{base_domain}{start}", "authMethod": "sso",
+                   "forceFreshAuth": False, "logoutPath": logout},
         "window": {"defaultWidth": 1200, "defaultHeight": 780, "minWidth": 600, "minHeight": 400},
         "permissions": [],
     }
+
+
+def odoo_tile(base_domain: str) -> dict:
+    return business_tile("odoo", base_domain)
 
 
 def zellen_apps(apps: list[dict], base_domain: str, home_domain: str = "example.com") -> list[dict]:
@@ -349,8 +379,7 @@ def zellen_apps(apps: list[dict], base_domain: str, home_domain: str = "example.
                 lambda m: m.group(1) + base_domain, url)
         out.append(app)
     out.extend(copy.deepcopy(list(CELL_EXTRA_APPS)))
-    if "odoo" in ENABLED_APPS:
-        out.append(odoo_tile(base_domain))
+    out.extend(business_tile(t[0], base_domain) for t in BUSINESS_TILES if t[0] in ENABLED_APPS)
     # Shared social cell: its tiles appear only when this cell knows where it lives.
     for app in apps:
         ziel = _SOZIAL.get(app.get("id"))

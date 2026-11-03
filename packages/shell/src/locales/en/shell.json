@@ -15,6 +15,7 @@
       "minimize": "Minimize"
     },
     "showDesktop": "Show desktop",
+    "search": "Search",
     "calendar": {
       "weekday": {
         "mon": "Mon",
@@ -33,6 +34,11 @@
       "defaultName": "Desktop {{n}}",
       "new": "New workspace"
     }
+  },
+  "overview": {
+    "filter": "Filter windows …",
+    "noWindows": "No open windows on this workspace",
+    "close": "Close window"
   },
   "quickSettings": {
     "title": "Quick Settings",

@@ -1,0 +1,67 @@
+/* Fills the desktop (and the mobile home background) behind icons and
+   widgets. Layers, bottom to top: ground (poster as CSS background + the video),
+   night overlay, warm dusk overlay, sky canvas. Plain opacity only — no filter
+   and no blend mode, both force software compositing in WebKitGTK. */
+.scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: #0b0f17;
+}
+
+.ground {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.night {
+  position: absolute;
+  inset: 0;
+  background: #0a1430;
+  opacity: 0;
+}
+
+.warm {
+  position: absolute;
+  inset: 0;
+  background: #ff9a3c;
+  opacity: 0;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Diagnostics (?lpdebug=1): player state in one line, readable on any ground. */
+.hud {
+  position: absolute;
+  left: 12px;
+  bottom: 64px;
+  max-width: calc(100% - 24px);
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font: 12px/1.4 ui-monospace, monospace;
+  pointer-events: none;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

@@ -317,6 +317,17 @@ export interface SkinManifest {
   colorScheme?: "light" | "dark";   // explicit; falls back to id-based heuristic in engine
   /** "brand" = AppIcon renders the real brand-logo set (dashboard-icons) instead of skin/emoji icons. */
   iconStyle?: "brand";
+  /** CSS background for the theme card in the settings. Skins without it
+   *  appear in the plain list only — the cards are generated from the catalog,
+   *  not maintained by hand. */
+  preview?: string;
+  /** Shared chrome family for the stylesheet (`[data-chrome="glass"]`), so the
+   *  animated skins reuse the glass surfaces without a copy of the CSS. */
+  chrome?: "glass" | "mica" | "liquid" | "corporate";
+  /** Corporate branding: the start button shows the logo (an image URL)
+   *  instead of the product mark and the company name sits next to it in
+   *  the bar; the tagline appears under the name in the start menu. */
+  brand?: { name: string; logo: string; tagline?: string };
   tokens: {
     colors: Record<string, string>;
     fonts: Record<string, string>;
@@ -331,6 +342,18 @@ export interface SkinManifest {
     windowButtonsPosition: "right" | "left";
     windowHeaderHeight: number;
     desktopIconGrid: { columns: number; rows: number };
+    /** Second bar at the top (app name, tray, clock) while the dock sits at the
+     *  bottom. Only meaningful with `startMenuStyle: "dock"`. Default false. */
+    menuBar?: boolean;
+    /** A wide search field next to the start button (the centred-bar look);
+     *  it opens the search overlay. Default false: search stays on Win+Q. */
+    searchField?: boolean;
+    /** Look of the workspace overview (Win+Tab, the workspaces button):
+     *  `taskview` — windows above, desktop strip at the bottom;
+     *  `mission` — spaces bar on top, windows spread below, labels on hover;
+     *  `overview` — search field and desktop bar on top, windows below
+     *  (default). */
+    overviewStyle?: "taskview" | "mission" | "overview";
   };
   icons: {
     system: string;

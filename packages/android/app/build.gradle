@@ -1,0 +1,127 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Signing: a fixed project keystore instead of the ephemeral container debug key —
+// that one produced a NEW signature on every build, so in-place updates were impossible.
+// signing/keystore.properties + .keystore live only on the build host (gitignored, 600);
+// keep the password in a password manager.
+def ksPropsFile = rootProject.file('signing/keystore.properties')
+def ksProps = new Properties()
+if (ksPropsFile.exists()) { ksPropsFile.withInputStream { ksProps.load(it) } }
+
+// Build variants. "generic" = the open-source app without any built-in server.
+// "heim" = this household's ClaraOS, values from variant.heim.properties — the
+// flavor exists only while that file does (it is not part of the export).
+def heimFile = file('variant.heim.properties')
+def heimValues = new Properties()
+if (heimFile.exists()) { heimFile.withInputStream { heimValues.load(it) } }
+
+def quoted = { String v -> '"' + (v ?: '') + '"' }
+def quotedList = { String csv ->
+    '{' + (csv ?: '').split(',').findAll { it.trim() }.collect { '"' + it.trim() + '"' }.join(', ') + '}'
+}
+
+android {
+    namespace 'de.claraos.companion'
+
+    buildFeatures { buildConfig true }
+
+    flavorDimensions 'variant'
+    productFlavors {
+        generic {
+            dimension 'variant'
+            applicationId 'de.nolanios.companion'
+            manifestPlaceholders = [appLabel: 'Nolani', shareLabel: 'To Nolani (Paperless)', linkScheme: 'nolani']
+            buildConfigField 'String', 'BRAND', quoted('Nolani')
+            buildConfigField 'String', 'LINK_SCHEME', quoted('nolani')
+            // Device control from the shell: off until the user allows it.
+            buildConfigField 'boolean', 'DEVICE_CONTROL_DEFAULT', 'false'
+            buildConfigField 'String', 'DEFAULT_BACKEND', quoted('')
+            buildConfigField 'String', 'DIRECT_DOMAIN', quoted('')
+            buildConfigField 'String[]', 'TRUSTED_HOST_SUFFIXES', '{}'
+            buildConfigField 'String', 'TAILNET_RESOLVER', quoted('')
+        }
+        if (heimFile.exists()) {
+            heim {
+                dimension 'variant'
+                applicationId heimValues['applicationId']
+                manifestPlaceholders = [appLabel: heimValues['brand'], shareLabel: heimValues['shareLabel'],
+                                        linkScheme: heimValues['linkScheme'] ?: 'claraos']
+                buildConfigField 'String', 'BRAND', quoted(heimValues['brand'])
+                buildConfigField 'String', 'LINK_SCHEME', quoted(heimValues['linkScheme'] ?: 'claraos')
+                buildConfigField 'boolean', 'DEVICE_CONTROL_DEFAULT', 'true'
+                buildConfigField 'String', 'DEFAULT_BACKEND', quoted(heimValues['defaultBackend'])
+                buildConfigField 'String', 'DIRECT_DOMAIN', quoted(heimValues['directDomain'])
+                buildConfigField 'String[]', 'TRUSTED_HOST_SUFFIXES', quotedList(heimValues['trustedHostSuffixes'])
+                buildConfigField 'String', 'TAILNET_RESOLVER', quoted(heimValues['tailnetResolver'])
+            }
+        }
+    }
+    compileSdk 34
+
+    defaultConfig {
+        minSdk 26
+        // Keep targetSdk current (foreground-service/WorkManager policies) — no store forces
+        // it, but raise it yearly.
+        targetSdk 34
+        // A release build (CI, tag companion-vX.Y.Z) passes its version in:
+        //   -PcompanionVersionCode=… -PcompanionVersionName=…
+        versionCode((project.findProperty('companionVersionCode') ?: '15') as int)
+        // 0.5.5 was skipped: desktop and Android share the version number for
+        // the same work (device control), and a desktop "Companion 0.5.5"
+        // already existed with different content.
+        versionName(project.findProperty('companionVersionName') ?: '0.5.17')  // direct mode for external cells
+    }
+
+    signingConfigs {
+        companion {
+            if (ksPropsFile.exists()) {
+                storeFile rootProject.file(ksProps['storeFile'])
+                storePassword ksProps['storePassword']
+                keyAlias ksProps['storeAlias']
+                keyPassword ksProps['keyPassword']
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+        }
+        release {
+            minifyEnabled false
+            // Release signature = signing/ keystore (see above); without that file
+            // assembleRelease fails on purpose instead of silently signing wrong.
+            signingConfig ksPropsFile.exists() ? signingConfigs.companion : null
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.work:work-runtime:2.9.1'
+    // WebView proxy override (WebView traffic through the app tunnel):
+    implementation 'androidx.webkit:webkit:1.11.0'
+    // Native HTTP/WebSocket (ntfy push, uploads) through the app tunnel (SOCKS proxy):
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    // CameraX for the document scan (no Play Services, works on de-Googled Android):
+    implementation 'androidx.camera:camera-core:1.3.4'
+    implementation 'androidx.camera:camera-camera2:1.3.4'
+    implementation 'androidx.camera:camera-lifecycle:1.3.4'
+    implementation 'androidx.camera:camera-view:1.3.4'
+    // Query vendor extensions (portrait/bokeh). Some devices ship
+    // com.android.cameraextensions and vendor camera services even on hardened
+    // Android builds — whether they offer portrait to a third-party app is only
+    // answered by ExtensionsManager.
+    implementation 'androidx.camera:camera-extensions:1.3.4'
+    // claratsnet.aar = gomobile bind of our tsnet wrapper (tsnet/claratsnet.go),
+    // built in the tailscale-android build image, placed under app/libs/.
+    implementation(name: 'claratsnet', ext: 'aar')
+    testImplementation 'junit:junit:4.13.2'
+}

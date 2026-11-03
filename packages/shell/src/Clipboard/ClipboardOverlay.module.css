@@ -132,3 +132,12 @@
   background: rgba(196, 43, 28, 0.20);
   color: #ff6b6b;
 }
+
+/* Two-bar skins: the panel drops from the menu bar, the backdrop spares the bar */
+:global([data-menu-bar="1"]) .backdrop {
+  inset: var(--menu-bar-height, 28px) 0 0 0;
+}
+:global([data-menu-bar="1"]) .panel {
+  bottom: auto;
+  top: calc(var(--menu-bar-height, 28px) + 8px);
+}

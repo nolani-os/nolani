@@ -1,25 +1,25 @@
 import { useEffect, useState } from "react";
-import { useUIStore, useTranslation } from "@claraos/core";
+import { useUIStore, useTranslation, getBrand } from "@claraos/core";
 import {
   availableSkins,
-  aeroGlassStaticWallpaper,
-  aeroGlassAnimatedWallpaper,
+  canonicalSkinId,
   claraGlassWallpaper,
   claraGlassWallpaperAlt,
 } from "@claraos/skins";
 import styles from "./PersonalizationTab.module.css";
 
-const LIVE_WALLPAPER_KEY = "claraos-live-wallpaper";
-
 export function PersonalizationTab() {
-  const skinId = useUIStore((s) => s.skinId);
+  const storedSkinId = useUIStore((s) => s.skinId);
+  // Stored ids may be legacy ones (e.g. from before a rename) — compare canonically.
+  const activeSkinId = canonicalSkinId(storedSkinId);
+  const skinId = activeSkinId;
   const setSkin = useUIStore((s) => s.setSkin);
-  const theme = useUIStore((s) => s.theme);
   const setTheme = useUIStore((s) => s.setTheme);
   const wallpaper = useUIStore((s) => s.wallpaper);
   const setWallpaper = useUIStore((s) => s.setWallpaper);
 
   const { t } = useTranslation("settings");
+  const product = getBrand().product;
   // ── Avatar and custom wallpapers ────────────────────────────────────
   // Both are stored in Nextcloud so they persist across devices. The cache
   // buster on the image is needed, otherwise the browser shows the old one
@@ -115,84 +115,34 @@ export function PersonalizationTab() {
     setTheme(newSkinId.includes("light") ? "light" : "dark");
   };
 
-  // Live wallpaper toggle (Aero-Glass-only signature feature)
-  const [liveWallpaper, setLiveWallpaper] = useState<boolean>(() => {
-    return localStorage.getItem(LIVE_WALLPAPER_KEY) === "1";
-  });
-
-  useEffect(() => {
-    localStorage.setItem(LIVE_WALLPAPER_KEY, liveWallpaper ? "1" : "0");
-    if (skinId !== "aero-glass") return;
-    if (wallpaper) return; // user wallpaper override takes precedence
-    const url = liveWallpaper ? aeroGlassAnimatedWallpaper : aeroGlassStaticWallpaper;
-    const value = `url("${url}") center/cover no-repeat, radial-gradient(at 30% 20%, #1B1F40 0%, #0A0A14 60%)`;
-    document.documentElement.style.setProperty("--wallpaper", value);
-  }, [liveWallpaper, skinId, wallpaper]);
-
   return (
     <div className={styles.tab}>
       <h2 className={styles.heading}>{t("personalization.heading")}</h2>
 
-      {/* Theme Selection */}
+      {/* Theme cards — generated from the catalog: every skin with a preview
+          gets a card, so a new skin never needs a hand-written card here. */}
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>{t("personalization.theme")}</h3>
         <div className={styles.themeRow}>
-          <button
-            className={`${styles.themeCard} ${skinId === "clara-glass" ? styles.themeActive : ""}`}
-            onClick={() => handleSkinChange("clara-glass")}
-            title={t("personalization.claraGlassHint")}
-          >
-            <div
-              className={styles.themePreview}
-              style={{
-                background:
-                  "radial-gradient(at 70% 20%, #38BDF8 0%, transparent 50%)," +
-                  "radial-gradient(at 25% 70%, #1F8FE0 0%, transparent 55%)," +
-                  "radial-gradient(at 90% 90%, #22D3EE 0%, transparent 40%)," +
-                  "linear-gradient(165deg, #131A2E 0%, #070A13 100%)",
-              }}
+          {availableSkins.filter((s) => s.preview).map((skin) => (
+            <button
+              key={skin.id}
+              className={`${styles.themeCard} ${activeSkinId === skin.id ? styles.themeActive : ""}`}
+              onClick={() => handleSkinChange(skin.id)}
+              title={t(`personalization.skinHint.${skin.id}`, { defaultValue: skin.name, product })}
             >
-              <div className={styles.previewBar} style={{ background: "rgba(12, 18, 34, 0.75)", backdropFilter: "blur(8px)" }} />
-            </div>
-            <span className={styles.themeLabel}>Glass</span>
-          </button>
-          <button
-            className={`${styles.themeCard} ${skinId === "windows11-dark" ? styles.themeActive : ""}`}
-            onClick={() => handleSkinChange("windows11-dark")}
-          >
-            <div className={styles.themePreview} style={{ background: "linear-gradient(135deg, #000428, #004e92)" }}>
-              <div className={styles.previewBar} style={{ background: "rgba(32,32,32,0.8)" }} />
-            </div>
-            <span className={styles.themeLabel}>{t("personalization.dark")}</span>
-          </button>
-          <button
-            className={`${styles.themeCard} ${skinId === "windows11-light" ? styles.themeActive : ""}`}
-            onClick={() => handleSkinChange("windows11-light")}
-          >
-            <div className={styles.themePreview} style={{ background: "linear-gradient(135deg, #667eea, #764ba2)" }}>
-              <div className={styles.previewBar} style={{ background: "rgba(243,243,243,0.8)" }} />
-            </div>
-            <span className={styles.themeLabel}>{t("personalization.light")}</span>
-          </button>
-          <button
-            className={`${styles.themeCard} ${skinId === "aero-glass" ? styles.themeActive : ""}`}
-            onClick={() => handleSkinChange("aero-glass")}
-            title={t("personalization.aeroGlassHint")}
-          >
-            <div
-              className={styles.themePreview}
-              style={{
-                background:
-                  "radial-gradient(at 25% 25%, #7B9FFF 0%, transparent 55%)," +
-                  "radial-gradient(at 80% 60%, #A78BFA 0%, transparent 55%)," +
-                  "radial-gradient(at 55% 95%, #5EEAD4 0%, transparent 50%)," +
-                  "linear-gradient(180deg, #0A0A14 0%, #1B1F40 100%)",
-              }}
-            >
-              <div className={styles.previewBar} style={{ background: "rgba(20, 22, 38, 0.55)", backdropFilter: "blur(8px)" }} />
-            </div>
-            <span className={styles.themeLabel}>Crystal</span>
-          </button>
+              <div className={styles.themePreview} style={{ background: skin.preview }}>
+                <div
+                  className={styles.previewBar}
+                  style={{
+                    background: skin.tokens.colors["bg-taskbar"] ?? "rgba(32,32,32,0.8)",
+                    backdropFilter: "blur(8px)",
+                  }}
+                />
+              </div>
+              <span className={styles.themeLabel}>{skin.name}</span>
+            </button>
+          ))}
         </div>
       </section>
 
@@ -222,27 +172,6 @@ export function PersonalizationTab() {
           ))}
         </div>
       </section>
-
-      {/* Live wallpaper — Aero-Glass-only signature */}
-      {skinId === "aero-glass" && (
-        <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>{t("personalization.liveWallpaper")}</h3>
-          <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-            <input
-              type="checkbox"
-              checked={liveWallpaper}
-              onChange={(e) => setLiveWallpaper(e.target.checked)}
-            />
-            <span>{t("personalization.liveWallpaperDesc")}</span>
-            <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-secondary)" }}>
-              {liveWallpaper ? t("personalization.on") : t("personalization.off")}
-            </span>
-          </label>
-          <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>
-            {t("personalization.pausesOn")} <code>prefers-reduced-motion</code>.
-          </span>
-        </section>
-      )}
 
       {/* Avatar: custom image, otherwise initials — the model from KDE's
           kcm_users. The initials case needs no file and is the normal

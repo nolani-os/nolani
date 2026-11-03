@@ -529,3 +529,9 @@
   font-size: var(--font-size-sm);
   padding: var(--gap-xl);
 }
+
+/* Two-bar skins: the start button sits in the menu bar, the panel opens below it. */
+:global([data-menu-bar="1"]) .panel {
+  bottom: auto;
+  top: calc(var(--menu-bar-height, 28px) + 6px);
+}

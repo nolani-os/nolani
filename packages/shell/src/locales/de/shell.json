@@ -15,6 +15,7 @@
       "minimize": "Minimieren"
     },
     "showDesktop": "Desktop anzeigen",
+    "search": "Suchen",
     "calendar": {
       "weekday": {
         "mon": "Mo",
@@ -33,6 +34,11 @@
       "defaultName": "Desktop {{n}}",
       "new": "Neue Arbeitsfläche"
     }
+  },
+  "overview": {
+    "filter": "Fenster filtern …",
+    "noWindows": "Keine offenen Fenster auf dieser Arbeitsfläche",
+    "close": "Fenster schließen"
   },
   "quickSettings": {
     "title": "Schnelleinstellungen",

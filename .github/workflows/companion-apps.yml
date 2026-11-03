@@ -1,0 +1,177 @@
+name: Companion apps
+
+# Builds the companion apps (packages/desktop: Windows + Linux, packages/android)
+# in their generic variant — no built-in server; users connect by address. Same
+# build images and scripts as a local build, so CI and a workstation produce the
+# same thing. Runs on every change to the apps on main; a tag `companion-vX.Y.Z`
+# additionally sets that version everywhere and creates a DRAFT release with the
+# packages attached. Publishing the release stays a manual step.
+#
+# Android release signing reuses the Knowledge app's repository secrets
+# (one key for the project's Android apps):
+#   ANDROID_KEYSTORE_B64       base64 of the PKCS12 key store
+#   ANDROID_KEYSTORE_PASSWORD  its password (store and key)
+# Without them (forks, pull requests) the APK is built unsigned.
+#
+# No in-app auto-update yet: new versions are new releases (watch the repository's
+# releases to be told).
+
+on:
+  push:
+    tags: ["companion-v*"]
+    branches: [main]
+    paths:
+      - "packages/desktop/**"
+      - "packages/android/**"
+      - ".github/workflows/companion-apps.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # tailscale-android revision whose toolchain builds our tsnet wrapper (the
+  # tailscale.com version in packages/desktop/daemon/go.mod is pinned to match).
+  TAILSCALE_ANDROID_REF: 0f542bd8cd40668cf751402e0ea8b1936cc34699
+
+jobs:
+  version:
+    name: Version
+    runs-on: ubuntu-latest
+    outputs:
+      name: ${{ steps.v.outputs.name }}
+      code: ${{ steps.v.outputs.code }}
+    steps:
+      - id: v
+        env:
+          REF: ${{ github.ref_name }}
+        run: |
+          case "$REF" in
+            companion-v*) name="${REF#companion-v}" ;;
+            *) name="0.0.0" ;;   # build check without release
+          esac
+          echo "$name" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "tag must be companion-vX.Y.Z"; exit 1; }
+          IFS=. read -r a b c <<EOF
+          $name
+          EOF
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "code=$((a * 10000 + b * 100 + c))" >> "$GITHUB_OUTPUT"
+
+  desktop:
+    name: Desktop (Linux AppImage, Windows installer)
+    needs: version
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version.outputs.name }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Free disk space (two build images)
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+      - name: Set the version
+        working-directory: packages/desktop/app/src-tauri
+        run: |
+          python3 - "$VERSION" <<'PY'
+          import json, pathlib, re, sys
+          v = sys.argv[1]
+          p = pathlib.Path("tauri.conf.json"); c = json.loads(p.read_text()); c["version"] = v
+          p.write_text(json.dumps(c, indent=2, ensure_ascii=False) + "\n")
+          t = pathlib.Path("Cargo.toml"); s, n = re.subn(r'(?m)^version = "[^"]+"', f'version = "{v}"', t.read_text(), count=1)
+          assert n == 1; t.write_text(s)
+          PY
+      - name: Build images
+        working-directory: packages/desktop/docker
+        run: |
+          docker build -f Dockerfile.linux -t companion-build-linux .
+          docker build -f Dockerfile.windows -t companion-build-windows .
+      - name: Build
+        working-directory: packages/desktop
+        env:
+          VARIANT: generic
+          TAURI_IMAGE: companion-build-linux
+          WIN_IMAGE: companion-build-windows
+        run: APP_DIR="$PWD/app" ./build.sh
+      - name: Collect
+        working-directory: packages/desktop/app/src-tauri/target
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          sudo cp release/bundle/appimage/*.AppImage "$GITHUB_WORKSPACE/out/"
+          sudo cp x86_64-pc-windows-msvc/release/bundle/nsis/*.exe "$GITHUB_WORKSPACE/out/"
+          sudo chown -R "$(id -u)" "$GITHUB_WORKSPACE/out"
+          ls -l "$GITHUB_WORKSPACE/out"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: desktop
+          path: out/*
+          if-no-files-found: error
+
+  android:
+    name: Android (APK)
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          repository: tailscale/tailscale-android
+          ref: ${{ env.TAILSCALE_ANDROID_REF }}
+          path: ts-android
+      - name: Free disk space (the Android build image is large)
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+      - name: Build image (tailscale-android toolchain)
+        run: make -C ts-android docker-build-image
+      - name: Signing key (only when the secrets exist)
+        working-directory: packages/android
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then echo "No signing secrets: building an unsigned APK"; exit 0; fi
+          mkdir -p signing; chmod 700 signing
+          echo "$KEYSTORE_B64" | base64 -d > signing/release.jks
+          printf 'storeFile=signing/release.jks\nstorePassword=%s\nstoreAlias=nolani-knowledge\nkeyPassword=%s\n' \
+            "$KEYSTORE_PASSWORD" "$KEYSTORE_PASSWORD" > signing/keystore.properties
+          chmod 600 signing/*
+      - name: Build
+        env:
+          FLAVOR: Generic
+          BUILD_TYPE: Release
+          VERSION_NAME: ${{ needs.version.outputs.name }}
+          VERSION_CODE: ${{ needs.version.outputs.code }}
+        run: |
+          IMG=$(sed -n 's/^DOCKER_IMAGE := //p' ts-android/Makefile)
+          COMPANION_BUILD_IMAGE="$IMG" ./packages/android/build.sh "$PWD/ts-android"
+      - name: Remove the key from the work tree
+        if: always()
+        run: rm -rf packages/android/signing
+      - uses: actions/upload-artifact@v7
+        with:
+          name: android
+          path: packages/android/app/build/outputs/apk/generic/release/*.apk
+          if-no-files-found: error
+
+  release:
+    name: Draft release
+    if: startsWith(github.ref, 'refs/tags/companion-v')
+    needs: [version, desktop, android]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: out
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          V: ${{ needs.version.outputs.name }}
+        run: |
+          mkdir -p files
+          pick() { f=$(find "out/$1" -type f -name "$2" | head -n 1); [ -n "$f" ] || { echo "missing $1/$2"; exit 1; }; echo "$f"; }
+          cp "$(pick desktop '*.AppImage')" "files/nolani-companion-${V}-linux-x86_64.AppImage"
+          cp "$(pick desktop '*.exe')" "files/nolani-companion-${V}-windows-setup.exe"
+          cp "$(pick android '*.apk')" "files/nolani-companion-${V}-android.apk"
+          (cd files && sha256sum * > SHA256SUMS)
+          gh release create "$TAG" files/* --repo "$GITHUB_REPOSITORY" --draft \
+            --title "Nolani Companion ${V}" \
+            --notes "Companion apps for Windows, Linux and Android: your Nolani server in its own window, with push notifications and an optional tunnel. See packages/desktop/README.md and packages/android/README.md."

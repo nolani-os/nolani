@@ -1,0 +1,20 @@
+# Optional app `inventree` — setup.sh copies this into caddy/aktiv/ only when the app is on
+# (`--apps`, betriebsprofil.OPTIONAL_APPS). Imported by the main Caddyfile.
+
+# ── InvenTree (parts, stock, orders) ────────────────────────────────────
+# Own login via OIDC against Authentik (django-allauth) — no forward_auth. Embedding
+# only in the cell's own shell. Django sends X-Frame-Options; any frame-ancestors
+# policy is REPLACED, not added (a second policy would keep the first in force).
+# Password sign-up and reset are switched off in InvenTree (INVENTREE_GLOBAL_SETTINGS);
+# Django's own admin login is not exposed either.
+inventree.{$ZELLE_DOMAIN} {
+	request_body {
+		max_size 100MB
+	}
+	@gesperrt path /admin /admin/* /accounts/signup /accounts/signup/* /accounts/password/reset*
+	respond @gesperrt 404
+	reverse_proxy inventree-server:8000 {
+		header_down -X-Frame-Options
+		header_down Content-Security-Policy "frame-ancestors 'self' https://home.{$ZELLE_DOMAIN}"
+	}
+}

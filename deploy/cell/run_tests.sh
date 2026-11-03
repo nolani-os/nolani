@@ -26,6 +26,14 @@ braucht() {
     browser)     an browser ;;
     medien)      an photos || an documents ;;
     odoo)        an odoo ;;
+    inventree)   an inventree ;;
+    superset)    an superset ;;
+    mautic)      an mautic ;;
+    orangehrm)   an orangehrm ;;
+    # Only the cell that hosts the shared social cell (setup.sh --social). Elsewhere
+    # the test derived social.<parent domain> — on a sslip.io cell a name that does not
+    # exist, so it failed instead of skipping.
+    social)      case ",${COMPOSE_PROFILES:-}," in *,social,*) return 0 ;; esac; return 1 ;;
     *)           return 0 ;;
   esac
 }
@@ -42,6 +50,11 @@ aufraeumen() {
   an photos && docker compose exec -T -e IMMICH_API_KEY claraos-api python3 - zelle-test < medien_konto_weg.py 2>/dev/null | grep ^IMMICH_
   an documents && docker compose exec -T -u paperless -e KONTO=zelle-test paperless python3 manage.py shell \
     < paperless_konto_weg.py 2>/dev/null | grep ^PAPERLESS_
+  an inventree && docker compose exec -T -w /home/inventree/src/backend/InvenTree inventree-server \
+    python3 manage.py shell < inventree_konto_weg.py 2>/dev/null | grep ^INVENTREE_
+  an superset && docker compose exec -T superset python - < superset_konto_weg.py 2>/dev/null | grep ^SUPERSET_
+  an mautic && docker compose exec -T -u www-data mautic php < mautic_konto_weg.php 2>/dev/null | grep ^MAUTIC_
+  an orangehrm && docker compose exec -T orangehrm-db sh < orangehrm_konto_weg.sh 2>/dev/null | grep ^ORANGEHRM_
   # Odoo: likewise created on first login (odoo_test.py)
   an odoo && docker compose exec -T odoo odoo shell -c /etc/odoo/odoo.conf -d odoo --no-http \
     < odoo_konto_weg.py 2>/dev/null | grep ^ODOO_
@@ -97,7 +110,7 @@ im_browser() {   # im_browser <script> <output dir> [-e VAR …]
 
 rc=0
 echo "Apps dieser Zelle: Kern$(for a in $APPS; do printf ' + %s' "$a"; done)"
-for t in ${1:-login files planner post teams chat medien browser routinen social clara_apps odoo}; do
+for t in ${1:-login files planner post teams chat medien browser routinen social clara_apps odoo inventree superset mautic orangehrm}; do
   echo; echo "── ${t}_test ──"
   if ! braucht "$t"; then
     echo "  übersprungen — die App läuft in dieser Zelle nicht (setup.sh --apps)"
@@ -120,6 +133,25 @@ for t in ${1:-login files planner post teams chat medien browser routinen social
     # Odoo tile → login via the cell → backend as internal user — screenshots to ./odoo-test/
     # (NOT ./odoo: that is the image build context, im_browser empties its output dir)
     im_browser odoo_test.py odoo-test || rc=1
+    # Clara's Odoo tools through the gateway, as the brain calls them (needs the Odoo
+    # account the browser test just created)
+    docker compose exec -T claraos-api python3 - zelle-test < odoo_clara_test.py || rc=1
+  elif [ "$t" = inventree ]; then
+    # InvenTree tile → login via the cell → normal account of group nutzer → create a part
+    im_browser inventree_test.py inventree-test -e CLARAOS_PRODUCT_NAME || rc=1
+  elif [ "$t" = superset ]; then
+    # Superset tile → login via the cell → account with role Alpha, not Admin → create a
+    # dashboard. Output NOT into ./superset: that is the image build context.
+    im_browser superset_test.py superset-test || rc=1
+  elif [ "$t" = mautic ]; then
+    # Mautic tile → SAML login via the cell → no user administration → create a contact
+    im_browser mautic_test.py mautic-test || rc=1
+    # …and it can send to outside addresses (own mailbox with login)
+    docker compose exec -T -u www-data mautic php < mautic_mail_test.php || rc=1
+  elif [ "$t" = orangehrm ]; then
+    # OrangeHRM tile → OIDC via the cell → new employee, role ESS → self-service works.
+    # Output NOT into ./orangehrm: that is the image build context.
+    im_browser orangehrm_test.py orangehrm-test || rc=1
   else
     ZELLE_TEST_PW=$ZELLE_PW python3 "${t}_test.py" "$DOM" zelle-test || rc=1
   fi

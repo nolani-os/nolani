@@ -167,3 +167,12 @@
   background: var(--accent-hover, #9BB6FF);
   border-color: var(--accent-hover, #9BB6FF);
 }
+
+/* Two-bar skins: the panel hangs below the menu bar down to the dock. */
+:global([data-menu-bar="1"]) .backdrop {
+  inset: var(--menu-bar-height, 28px) 0 0 0;
+}
+:global([data-menu-bar="1"]) .panel {
+  top: var(--menu-bar-height, 28px);
+  bottom: 0;
+}

@@ -8,9 +8,12 @@ import { useMeldungen } from "./useMeldungen";
 import { openClaraChat, useBootDeepLink } from "./useBootDeepLink";
 import { useSkinLayout } from "./useSkinLayout";
 import { Taskbar } from "./Taskbar/Taskbar";
+import { MenuBar } from "./MenuBar/MenuBar";
+import { Dock } from "./Dock/Dock";
 import { Desktop } from "./Desktop/Desktop";
 import { WindowsView } from "./Window/WindowsView";
 import { AltTabSwitcher } from "./Window/AltTabSwitcher";
+import { Overview } from "./Overview/Overview";
 import { StartMenu } from "./StartMenu/StartMenu";
 import { ToastContainer } from "./Notifications/ToastContainer";
 import { COMPANION_NOTIFICATION_CLICK_EVENT, oeffneShellZiel } from "./Notifications/notificationActions";
@@ -123,9 +126,15 @@ export function Shell() {
       onDragEnd={handleDragEnd}
       onDrop={handleDragEnd}
     >
+      {/* Two-bar skins (Orchard): menu bar on top, dock at the bottom — the
+          flex column reserves both, so windows maximise between them. */}
+      {layout.menuBar && <MenuBar />}
       <div className={styles.desktopArea}>
         <Desktop />
         <WindowsView />
+        {/* Workspace overview — inside the desktop area so its slots share
+            the windows' coordinates */}
+        <Overview />
       </div>
       <StartMenu />
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
@@ -139,7 +148,9 @@ export function Shell() {
       <NudgeHost />
       <OpenExternalDialog />
       <GlobalContextMenu />
-      <Taskbar layout={layout} onSearchClick={() => setSearchOpen(true)} />
+      {layout.menuBar
+        ? <Dock />
+        : <Taskbar layout={layout} onSearchClick={() => setSearchOpen(true)} />}
     </div>
     </KnopfUmgebung.Provider>
   );

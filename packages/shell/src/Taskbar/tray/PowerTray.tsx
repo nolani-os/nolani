@@ -25,7 +25,7 @@ export function PowerTray({ onClose }: { onClose: () => void }) {
   return (
     <>
       <div className={styles.backdrop} onClick={onClose} />
-      <div className={`aeroWidget ${styles.panel}`} role="dialog" aria-label={t("tray.power.title")}
+      <div className={`aeroWidget ${styles.panel}`} data-shell-part="tray-popover" role="dialog" aria-label={t("tray.power.title")}
         data-tray-popover="power">
         <div className={styles.header}>
           <span className={styles.title}>{t("tray.power.title")}</span>

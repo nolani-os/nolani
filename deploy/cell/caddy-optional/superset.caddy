@@ -1,0 +1,28 @@
+# Optional app `superset` — setup.sh copies this into caddy/aktiv/ only when the app is on
+# (`--apps`, betriebsprofil.OPTIONAL_APPS). Imported by the main Caddyfile.
+
+# ── Superset (dashboards, analyses) ─────────────────────────────────────
+# Own login via OIDC against Authentik (Flask-AppBuilder) — no forward_auth, no local
+# password login (AUTH_OAUTH). Superset sends its own CSP including frame-ancestors for
+# the cell's shell (superset/superset_config.py) — left untouched here.
+superset.{$ZELLE_DOMAIN} {
+	request_body {
+		max_size 50MB
+	}
+	# The frontend's event beacon (POST /superset/log/) is still in flight from the login
+	# page when the OIDC login completes; answered unauthenticated, its redirect wrote a
+	# fresh anonymous session cookie over the new one — now and then the user landed
+	# on the login page again right after signing in. A log call never needs to set a
+	# cookie.
+	@ereignis path /superset/log /superset/log/*
+	handle @ereignis {
+		reverse_proxy superset:8088 {
+			header_down -Set-Cookie
+		}
+	}
+	handle {
+		reverse_proxy superset:8088 {
+			header_down -X-Frame-Options
+		}
+	}
+}

@@ -12,8 +12,10 @@ cd "$(dirname "$0")"
 STALWART_PASSWORD=$(sed -n 's/^STALWART_ADMIN_PASSWORD=//p' .env)
 export STALWART_PASSWORD
 case " $* " in *" destroy "*|*'"destroy"'*) echo "destroy ist hier gesperrt (Footgun 0.16.11)"; exit 2;; esac
+# Pinned version (tested with server 0.16.11): which fields a call echoes back is what
+# the redaction above relies on — `latest` could change it unnoticed.
 docker run --rm -i --network claraos_zelle \
   -e STALWART_URL=http://stalwart:8080 -e STALWART_USER=admin -e STALWART_PASSWORD \
-  ghcr.io/stalwartlabs/cli:latest --no-color "$@" 2>&1 \
+  ghcr.io/stalwartlabs/cli:1.0.14 --no-color "$@" 2>&1 \
   | sed -E 's/((secret|password|token|apikey|api_key)"?[[:space:]]*[:=][[:space:]]*"?)[^",[:space:]]+/\1***/Ig'
 exit "${PIPESTATUS[0]}"

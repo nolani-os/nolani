@@ -1,0 +1,214 @@
+/* ===========================================================================
+   Bloom — skin stylesheet (shared by bloom-dark and bloom-light)
+   The familiar centred-bar desktop, done with care: the app strip sits in the
+   middle of the bar, surfaces are Mica (a strongly blurred, tinted wallpaper
+   shows through bar and menus), corners are 8 px, hover states are quiet.
+   All rules are scoped to [data-chrome="mica"] and anchored on
+   data-shell-part hooks or stable class fragments — production class names
+   are hashed CSS modules.
+   =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   Taskbar — everything in the middle: start button, search field, mic and
+   workspaces, then the pinned and running apps. The bar is a flex row: left
+   cluster, pinned, separator, running, spacer, tray. Only the tray is pinned
+   to the right edge, the spacer is dropped, the rest is centred. The bar
+   keeps the tray's width free on both sides so the centred group never
+   runs under it. The wallpaper reaches the bottom edge, the Mica bar blurs
+   it (Desktop.module.css keeps it in the desktop area otherwise).
+   --------------------------------------------------------------------------- */
+[data-chrome="mica"] [data-shell-part="wallpaper"] {
+  position: fixed;
+}
+
+[data-chrome="mica"] [data-shell-part="taskbar"] {
+  position: relative;
+  justify-content: center;
+  padding: 0 280px;
+  background: var(--bg-taskbar);
+  backdrop-filter: var(--blur-mica);
+  -webkit-backdrop-filter: var(--blur-mica);
+  border-top: 1px solid var(--border);
+  box-shadow: var(--shadow-taskbar);
+}
+
+[data-chrome="mica"] [data-shell-part="taskbar"] > [class*="left"] {
+  gap: 4px;
+}
+
+[data-chrome="mica"] [data-shell-part="taskbar"] > [class*="spacer"] {
+  display: none;
+}
+
+[data-chrome="mica"] [data-shell-part="taskbar-tray"] {
+  position: absolute;
+  right: 8px;
+  top: 0;
+  bottom: 0;
+}
+
+/* Search field: a flat rounded box, the window surface on the Mica bar */
+[data-chrome="mica"] [data-shell-part="taskbar-search"] {
+  height: 32px;
+  width: 232px;
+  border-radius: 16px;
+  background: var(--bg-window);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+}
+
+[data-chrome="mica"] [data-shell-part="taskbar-search"]:hover {
+  background: var(--bg-window-solid);
+  border-color: var(--text-secondary);
+}
+
+/* Narrow screens: the padding would leave no room — drop to a plain gutter
+   and let the search field shrink */
+@media (max-width: 1100px) {
+  [data-chrome="mica"] [data-shell-part="taskbar"] {
+    padding: 0 270px 0 12px;
+    justify-content: flex-start;
+  }
+  [data-chrome="mica"] [data-shell-part="taskbar-search"] {
+    width: 140px;
+  }
+}
+
+/* Pinned and running apps: 44 px squares, 6 px corners, a quiet hover plate */
+[data-chrome="mica"] [data-shell-part="taskbar"] [class*="pinnedBtn"],
+[data-chrome="mica"] [data-shell-part="taskbar"] [class*="appBtn"],
+[data-chrome="mica"] [data-shell-part="taskbar"] [class*="claraBtn"],
+[data-chrome="mica"] [data-shell-part="taskbar"] [class*="iconBtn"],
+[data-chrome="mica"] [data-shell-part="taskbar"] [class*="trayBtn"] {
+  border-radius: 6px;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+[data-chrome="mica"] [data-shell-part="taskbar"] [class*="pinnedBtn"]:hover,
+[data-chrome="mica"] [data-shell-part="taskbar"] [class*="appBtn"]:hover,
+[data-chrome="mica"] [data-shell-part="taskbar"] [class*="claraBtn"]:hover,
+[data-chrome="mica"] [data-shell-part="taskbar"] [class*="iconBtn"]:hover,
+[data-chrome="mica"] [data-shell-part="taskbar"] [class*="trayBtn"]:hover {
+  background: var(--bg-hover);
+}
+
+[data-chrome="mica"] [data-shell-part="taskbar"] [class*="pinnedBtn"]:active,
+[data-chrome="mica"] [data-shell-part="taskbar"] [class*="appBtn"]:active {
+  transform: scale(0.94);
+}
+
+/* Running indicator: a short accent pill under the icon */
+[data-chrome="mica"] [class*="dotActive"] {
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: none;
+}
+
+/* Separator between pinned and running apps */
+[data-chrome="mica"] [data-shell-part="taskbar"] [class*="separator"] {
+  width: 1px;
+  height: 24px;
+  margin: 0 6px;
+  background: var(--border);
+}
+
+/* Clock block: two quiet lines, right-aligned */
+[data-chrome="mica"] [data-shell-part="taskbar-tray"] [class*="clock"] {
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Start menu and popups — Mica cards with 8 px corners
+   --------------------------------------------------------------------------- */
+[data-chrome="mica"] [data-shell-part="start-menu"] {
+  background: var(--bg-surface) !important;
+  backdrop-filter: var(--blur-mica) !important;
+  -webkit-backdrop-filter: var(--blur-mica) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-menu) !important;
+}
+
+[data-chrome="mica"] [data-shell-part="start-input"] {
+  background: var(--bg-window);
+  border: 1px solid var(--border);
+  border-bottom: 1px solid var(--text-secondary);
+  border-radius: var(--radius-sm);
+}
+
+[data-chrome="mica"] [data-shell-part="start-input"]:focus-within {
+  border-bottom: 2px solid var(--accent);
+}
+
+[data-chrome="mica"] [data-shell-part="start-footer"] {
+  border-top: 1px solid var(--border);
+  background: var(--bg-subtle);
+}
+
+[data-chrome="mica"] .aeroWidget,
+[data-chrome="mica"] [data-shell-part="snap-popup"] {
+  background: var(--bg-surface);
+  backdrop-filter: var(--blur-menu);
+  -webkit-backdrop-filter: var(--blur-menu);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-menu);
+}
+
+/* ---------------------------------------------------------------------------
+   Desktop icon labels: readable on both wallpapers
+   --------------------------------------------------------------------------- */
+[data-chrome="mica"][data-skin-id="bloom-dark"] [class*="iconLabel"] {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+[data-chrome="mica"][data-skin-id="bloom-light"] [class*="iconLabel"] {
+  color: #1b1b1f;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85);
+}
+
+/* ---------------------------------------------------------------------------
+   Where things open — the centred-bar desktop: start menu and chat in the
+   middle above the bar, voice in the middle, clipboard and notifications at
+   the tray, the search flyout above the bar. Centring by margin: the panels
+   animate with transforms.
+   --------------------------------------------------------------------------- */
+[data-chrome="mica"] [data-shell-part="start-menu"] {
+  left: 50%;
+  margin-left: calc(min(92vw, 680px) / -2);
+  bottom: calc(var(--taskbar-height, 48px) + 12px);
+}
+
+[data-chrome="mica"] [data-shell-part="start-menu"][data-mode="chat"] {
+  margin-left: calc(min(75vw, 1100px) / -2);
+}
+
+[data-chrome="mica"] [data-shell-part="voice-bubble"] {
+  left: 50%;
+  margin-left: -180px;
+}
+
+[data-chrome="mica"] [data-shell-part="clipboard-panel"] {
+  left: auto;
+  right: 12px;
+  transform: none;
+}
+
+[data-chrome="mica"] [data-shell-part="notification-panel"] {
+  top: auto;
+  bottom: calc(var(--taskbar-height, 48px) + 12px);
+  right: 12px;
+  max-height: min(70vh, 640px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-menu);
+}
+
+[data-chrome="mica"] [data-shell-part="search-overlay"] {
+  top: auto;
+  bottom: calc(var(--taskbar-height, 48px) + 12px);
+}

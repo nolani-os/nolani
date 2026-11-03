@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Rnd } from "react-rnd";
 import { motion, AnimatePresence } from "motion/react";
 import type { DraggableEventHandler } from "react-draggable";
@@ -14,9 +14,28 @@ import { computeMagneticSnap } from "@claraos/core/wm/magneticSnap";
 import { WindowContextMenu, type ContextMenuItem } from "../components/WindowContextMenu";
 import { AppErrorBoundary } from "../components/AppErrorBoundary";
 import { SnapLayoutPicker } from "./SnapLayoutPicker";
+import { useSkinLayout } from "../useSkinLayout";
 import { ClaraChatPanel, SparklesIcon } from "../Chat";
 import { parseObjectUri, useIframeAppStore } from "@claraos/core";
+import { useOverviewStore } from "../Overview/overviewStore";
 import styles from "./Window.module.css";
+
+/** true for a moment after the overview closed, so the return flight keeps
+ *  the overview's transform origin */
+function useOverviewLeaving(open: boolean): boolean {
+  const [leaving, setLeaving] = useState(false);
+  const wasOpen = useRef(open);
+  useEffect(() => {
+    const was = wasOpen.current;
+    wasOpen.current = open;
+    if (was && !open) {
+      setLeaving(true);
+      const t = setTimeout(() => setLeaving(false), 320);
+      return () => clearTimeout(t);
+    }
+  }, [open]);
+  return leaving;
+}
 import type { AppAccount } from "@claraos/core";
 
 const heimConfig = import.meta.glob<{ NATIVE_CLARA_APPS?: string[] }>("../heim.config.ts", { eager: true });
@@ -200,6 +219,13 @@ export function Window({ window: win, zIndex, isFocused, children }: WindowProps
   const effectiveZ = win.fullscreen ? zIndex + 20000 : win.alwaysOnTop ? zIndex + 10000 : zIndex;
   const peekOpacity = peekActive && !win.alwaysOnTop ? 0.08 : 1;
 
+  // Workspace overview: the slot this window zooms to while it is open
+  const overviewOpen = useOverviewStore((s) => s.open);
+  const overviewShowMinimized = useOverviewStore((s) => s.showMinimized);
+  const overviewSlot = useOverviewStore((s) => (s.open ? s.slots[win.id] : undefined));
+  // keep the top-left origin while the window flies back after closing
+  const overviewLeaving = useOverviewLeaving(overviewOpen);
+
   // Titlebar context-menu items
   const ctxItems: ContextMenuItem[] = [
     {
@@ -270,20 +296,27 @@ export function Window({ window: win, zIndex, isFocused, children }: WindowProps
         onResizeStop={handleResizeStop}
         style={{
           zIndex: effectiveZ,
-          display: win.minimized ? "none" : undefined,
+          // In the overview a minimized window takes part (Task View, Plasma)
+          display: win.minimized && !(overviewOpen && overviewShowMinimized) ? "none" : undefined,
           opacity: peekOpacity,
           transition: "width 0.2s ease, height 0.2s ease, opacity 0.2s ease",
         }}
         {...RND_DEFAULTS}
       >
+        {/* The overview zooms the real window: translate + scale to its slot
+            (overviewStore), origin top-left so dx/dy are plain offsets. */}
         <motion.div
           className={`${styles.window} ${isFocused ? styles.focused : ""} ${win.maximized ? styles.maximized : ""}`}
           data-window-id={win.id}
           onMouseDown={handleMouseDown}
           initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.15, ease: "easeOut" }}
-          style={{ width: "100%", height: "100%", position: "relative", zIndex: 1 }}
+          animate={overviewSlot
+            ? { opacity: 1, scale: overviewSlot.scale, x: overviewSlot.dx, y: overviewSlot.dy }
+            : { opacity: 1, scale: 1, x: 0, y: 0 }}
+          transition={overviewOpen || overviewLeaving
+            ? { duration: 0.28, ease: [0.2, 0.8, 0.2, 1] }
+            : { duration: 0.15, ease: "easeOut" }}
+          style={{ width: "100%", height: "100%", position: "relative", zIndex: 1, transformOrigin: overviewSlot || overviewLeaving ? "0 0" : undefined }}
         >
           {!win.fullscreen && (
           <Titlebar
@@ -378,7 +411,6 @@ function Titlebar({
   inlineClaraSupported,
   inlineClaraOpen,
   onToggleClara,
-  buttonsLeft = false,
 }: {
   title: string;
   appId: string;
@@ -392,9 +424,11 @@ function Titlebar({
   inlineClaraSupported?: boolean;
   inlineClaraOpen?: boolean;
   onToggleClara?: () => void;
-  buttonsLeft?: boolean;
 }) {
   const { t } = useTranslation("shell");
+  // The skin decides where the window buttons sit (traffic lights left, or
+  // minimize/maximize/close right) — read from the layout, not a per-window prop.
+  const buttonsLeft = useSkinLayout().windowButtonsPosition === "left";
   const accountsRaw = useCredentialsStore((s) => s.accounts[appId]);
   const accounts = accountsRaw || EMPTY_ACCOUNTS;
   const activateAccount = useCredentialsStore((s) => s.activateAccount);

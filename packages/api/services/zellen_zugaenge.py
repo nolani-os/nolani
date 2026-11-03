@@ -104,7 +104,95 @@ async def _immich(username: str) -> dict:
     return {"api_key": await _ueber_ctl("immich", "Immich", username)}
 
 
-_ERZEUGER = {"paperless": _paperless, "mastodon": _mastodon, "immich": _immich}
+# ── Odoo ──────────────────────────────────────────────────────────────────────
+ODOO_URL = os.environ.get("ODOO_INTERNAL_URL", "http://odoo:8069").rstrip("/")
+ODOO_DB = os.environ.get("ODOO_DB", "odoo")
+
+
+class OdooFehler(RuntimeError):
+    """An error Odoo reported: `name` is the exception class (e.g.
+    odoo.exceptions.AccessError) — classify by it, the message is translated."""
+
+    def __init__(self, name: str, message: str):
+        super().__init__(f"Odoo: {message}"[:300])
+        self.name = name
+        self.message = message
+
+
+async def odoo_rpc(service: str, method: str, *args):
+    """One JSON-RPC call to Odoo (`/jsonrpc`). Raises PermissionError on a rejected
+    login, OdooFehler on any other Odoo error (message without the traceback)."""
+    async with httpx.AsyncClient(timeout=30) as c:
+        r = await c.post(f"{ODOO_URL}/jsonrpc", json={
+            "jsonrpc": "2.0", "method": "call", "id": 1,
+            "params": {"service": service, "method": method, "args": list(args)}})
+    r.raise_for_status()
+    d = r.json()
+    if "error" in d:
+        data = d["error"].get("data") or {}
+        name = data.get("name", "")
+        if "AccessDenied" in name:
+            raise PermissionError("Odoo lehnt die Anmeldung ab")
+        raise OdooFehler(name, str(data.get("message") or d["error"].get("message") or ""))
+    return d.get("result")
+
+
+async def _email(username: str) -> str:
+    """The cell account's email address — Odoo accounts created through the cell's
+    login use it as their login."""
+    from routers.teams_admin import AUTHENTIK_URL, _ak_headers
+    async with httpx.AsyncClient(verify=False, timeout=15) as c:
+        r = await c.get(f"{AUTHENTIK_URL}/api/v3/core/users/", headers=_ak_headers(),
+                        params={"username": username})
+    r.raise_for_status()
+    treffer = [u for u in r.json().get("results", []) if u.get("username") == username]
+    mail = (treffer[0].get("email") or "").strip() if treffer else ""
+    if not mail:
+        raise ZugangFehlt(f"Dein Konto hat keine E-Mail-Adresse — ohne sie findet {ASSISTANT_NAME} "
+                          "dein Odoo-Konto nicht.")
+    return mail
+
+
+async def _odoo(username: str) -> dict:
+    """Odoo: the user's own account, with exactly the rights it has in Odoo.
+
+    Odoo issues API keys only to the signed-in user themselves (behind an identity
+    check), not through an admin. The user signs in via OIDC and has no password, so —
+    as for Paperless — the admin sets a random password for that (internal, non-admin)
+    account and the cell stores `uid:password` as the user's access. JSON-RPC calls
+    with it run as that user: record rules and access rights apply as in the UI."""
+    admin_pw = os.environ.get("ODOO_ADMIN_PASSWORD", "")
+    if not admin_pw:
+        raise ZugangFehlt(f"Odoo ist in dieser Zelle nicht für {ASSISTANT_NAME} eingerichtet.")
+    mail = await _email(username)
+    admin_uid = await odoo_rpc("common", "authenticate", ODOO_DB, "admin", admin_pw, {})
+    if not admin_uid:
+        raise RuntimeError("Odoo: Verwaltungszugang abgelehnt")
+
+    async def als_admin(model, method, *args, **kw):
+        return await odoo_rpc("object", "execute_kw", ODOO_DB, admin_uid, admin_pw,
+                              model, method, list(args), kw)
+
+    konten = await als_admin("res.users", "search_read", [["login", "=ilike", mail]],
+                             fields=["id", "share", "groups_id"], limit=2)
+    if not konten:
+        raise ZugangFehlt(f"Öffne Odoo einmal über die Kachel und melde dich an — danach kann "
+                          f"{ASSISTANT_NAME} dort für dich arbeiten.")
+    konto = konten[0]
+    if konto.get("share"):
+        raise ZugangFehlt("Dein Odoo-Konto ist ein Portal-Konto ohne Zugriff auf die Firmendaten.")
+    gruppen = await als_admin("ir.model.data", "search_read",
+                              [["model", "=", "res.groups"], ["module", "=", "base"],
+                               ["name", "in", ["group_system", "group_erp_manager"]]],
+                              fields=["res_id"])
+    if {g["res_id"] for g in gruppen} & set(konto.get("groups_id") or []):
+        raise ZugangFehlt(f"Für Odoo-Administratoren legt {ASSISTANT_NAME} keinen Zugang an.")
+    pw = secrets.token_urlsafe(32)
+    await als_admin("res.users", "write", [konto["id"]], {"password": pw})
+    return {"zugang": f"{konto['id']}:{pw}"}
+
+
+_ERZEUGER = {"paperless": _paperless, "mastodon": _mastodon, "immich": _immich, "odoo": _odoo}
 
 
 def kann(app_id: str) -> bool:

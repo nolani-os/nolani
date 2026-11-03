@@ -9,6 +9,8 @@ import wallpaperAltUrl from "./wallpaper-alt.jpg";
 // grid (same pattern as the aero-glass static/animated exports).
 export const claraGlassWallpaper = wallpaperUrl;
 export const claraGlassWallpaperAlt = wallpaperAltUrl;
+// The glass chrome (surfaces, blur, rims) is shared with the animated skins.
+export const glassChromeStylesheet = stylesheetUrl;
 
 // === Clara Glass — the ClaraOS mobile design language on the desktop ===
 // Layout matches aero-glass (taskbar bottom, pins+start left, tray right).
@@ -129,7 +131,13 @@ export const claraGlassSkin: SkinManifest = {
   id: "clara-glass",
   name: "Glass",
   colorScheme: "dark",
+  chrome: "glass",
   iconStyle: "brand",
+  preview:
+    "radial-gradient(at 70% 20%, #38BDF8 0%, transparent 50%)," +
+    "radial-gradient(at 25% 70%, #1F8FE0 0%, transparent 55%)," +
+    "radial-gradient(at 90% 90%, #22D3EE 0%, transparent 40%)," +
+    "linear-gradient(165deg, #131A2E 0%, #070A13 100%)",
   tokens: { colors, fonts, spacing, shadows, effects },
   layout: {
     taskbarPosition: "bottom",

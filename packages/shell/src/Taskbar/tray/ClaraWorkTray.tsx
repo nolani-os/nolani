@@ -24,7 +24,7 @@ export function ClaraWorkTray({ onClose }: { onClose: () => void }) {
   return (
     <>
       <div className={styles.backdrop} onClick={onClose} />
-      <div className={`aeroWidget ${styles.panel}`} role="dialog" aria-label={t("tray.claraWork.title")}
+      <div className={`aeroWidget ${styles.panel}`} data-shell-part="tray-popover" role="dialog" aria-label={t("tray.claraWork.title")}
         data-tray-popover="clara-work">
         <div className={styles.header}>
           <span className={styles.title}>{t("tray.claraWork.title")}</span>

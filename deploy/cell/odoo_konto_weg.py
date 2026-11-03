@@ -17,5 +17,14 @@ for u in konten:
     except Exception:
         u.write({"active": False})
         archiviert += 1
+# Contacts Clara created during odoo_clara_test.py
+Partner = env["res.partner"].sudo().with_context(active_test=False)  # noqa: F821
+kontakte = Partner.search([("name", "=like", "Nolani-Test %")])
+k_weg = len(kontakte)
+try:
+    with env.cr.savepoint():  # noqa: F821
+        kontakte.unlink()
+except Exception:
+    kontakte.write({"active": False})
 env.cr.commit()  # noqa: F821
-print(f"ODOO_TEST_GELOESCHT {weg} (archiviert {archiviert})")
+print(f"ODOO_TEST_GELOESCHT {weg} (archiviert {archiviert}), Testkontakte {k_weg}")

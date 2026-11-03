@@ -1,101 +1,49 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as ContextMenu from "@radix-ui/react-context-menu";
-import { useWindowsStore, useUIStore, useAppCenterStore, useVoiceStore, useWorkspaceStore, useAppRegistryStore, useDeviceStore, type AppManifest } from "@claraos/core";
+import { useWindowsStore, useUIStore, useVoiceStore, useAppRegistryStore } from "@claraos/core";
 import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 import { AppIcon } from "../components/AppIcon";
-import { WindowContextMenu, type ContextMenuItem } from "../components/WindowContextMenu";
+import { WindowContextMenu } from "../components/WindowContextMenu";
 import { TaskbarHoverThumb } from "./TaskbarHoverThumb";
-import { TRAY_ITEMS } from "./tray/registry";
-import { TrayButton } from "./tray/TrayButton";
 import { TrayPopoverHost } from "./tray/TrayPopoverHost";
+import { TrayCluster } from "./TrayCluster";
+import { useTaskbarApps } from "./useTaskbarApps";
+import { useSkinBrand, type SkinLayout } from "../useSkinLayout";
 import ClaraMark from "../Mobile/clara-c.svg?react";
 import styles from "./Taskbar.module.css";
 import { regionLocale, useTranslation } from "@claraos/core";
 
 interface TaskbarProps {
-  layout?: { taskbarPosition: string; taskbarHeight: number };
+  layout?: Pick<SkinLayout, "taskbarPosition" | "taskbarHeight"> & Partial<SkinLayout>;
   onSearchClick?: () => void;
 }
 
+/**
+ * The one-bar surface (Glass, Bloom, Meadow, Shore): start button, pinned and
+ * running apps, tray and clock in a single strip. The app logic lives in
+ * useTaskbarApps and the tray buttons in TrayCluster, both shared with the
+ * Orchard menu bar + dock pair — the behaviour here is unchanged by that split.
+ */
 export function Taskbar({ layout, onSearchClick }: TaskbarProps) {
   const windows = useWindowsStore((s) => s.windows);
-  const windowOrder = useWindowsStore((s) => s.windowOrder);
-  const focusedWindowId = useWindowsStore((s) => s.focusedWindowId);
-  const focusWindow = useWindowsStore((s) => s.focusWindow);
-  const minimizeWindow = useWindowsStore((s) => s.minimizeWindow);
-  const closeWindow = useWindowsStore((s) => s.closeWindow);
-  const openWindow = useWindowsStore((s) => s.openWindow);
   const toggleStartMenu = useUIStore((s) => s.toggleStartMenu);
   const startMenuOpen = useUIStore((s) => s.startMenuOpen);
-  const pinnedAppIds = useAppCenterStore((s) => s.pinnedAppIds);
   const { t } = useTranslation("shell");
+  const brand = useSkinBrand();
+  const {
+    focusedWindowId, openAppIds, pinnedApps, runningWindows,
+    handleWindowClick, handlePinnedClick, pinContextItems, closeWindow, minimizeWindow,
+  } = useTaskbarApps();
 
   const [time, setTime] = useState(new Date());
-  const unpinApp = useAppCenterStore((s) => s.unpinApp);
   const setTrayPopover = useUIStore((s) => s.setTrayPopover);
   // Win+A lives in the shortcut registry (useKeyboardShortcuts).
-
-  // Tray visibility depends on device state (caps/web battery) — the store
-  // is the only subscription source, visibleWhen receives the snapshot.
-  const deviceState = useDeviceStore();
-  const visibleTrayItems = useMemo(
-    () =>
-      TRAY_ITEMS.filter((i) => !i.visibleWhen || i.visibleWhen(deviceState)).sort(
-        (a, b) => a.order - b.order,
-      ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [deviceState.caps, deviceState.battery, deviceState.bridgeAvailable],
-  );
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 10000);
     setTime(new Date());
     return () => clearInterval(timer);
   }, []);
-
-  // Pinned apps – ALWAYS shown, highlighted if open
-  const openAppIds = useMemo(() => new Set(Object.values(windows).map((w) => w.appId)), [windows]);
-  const pinnedApps = useMemo(
-    () => pinnedAppIds.map((id) => useAppRegistryStore.getState().getApp(id)).filter(Boolean) as AppManifest[],
-    [pinnedAppIds],
-  );
-
-  const activeWs = useWorkspaceStore((s) => s.activeId);
-
-  // Running windows NOT in pinned, filtered by workspace
-  const runningWindows = useMemo(
-    () => windowOrder
-      .map((id) => windows[id])
-      .filter((w) => w && !pinnedAppIds.includes(w.appId) &&
-        (w.workspaceId === activeWs || (!w.workspaceId && activeWs === "ws-default"))),
-    [windows, windowOrder, pinnedAppIds, activeWs],
-  );
-
-  const handleWindowClick = useCallback(
-    (windowId: string) => {
-      const win = windows[windowId];
-      if (!win) return;
-      if (win.minimized) focusWindow(windowId);
-      else if (focusedWindowId === windowId) minimizeWindow(windowId);
-      else focusWindow(windowId);
-    },
-    [windows, focusedWindowId, focusWindow, minimizeWindow],
-  );
-
-  const handlePinnedClick = useCallback(
-    (appId: string) => {
-      const app = useAppRegistryStore.getState().getApp(appId);
-      if (!app) return;
-      // Check if already open
-      const existing = Object.values(windows).find((w) => w.appId === appId);
-      if (existing) {
-        focusWindow(existing.id);
-      } else {
-        openWindow(appId, { title: app.name, width: app.window.defaultWidth, height: app.window.defaultHeight, maximized: app.window.startMaximized, fullscreen: app.window.startFullscreen });
-      }
-    },
-    [windows, openWindow, focusWindow],
-  );
 
   const toggleShowDesktop = useWindowsStore((s) => s.toggleShowDesktop);
   const setPeek = useWindowsStore((s) => s.setPeek);
@@ -135,15 +83,42 @@ export function Taskbar({ layout, onSearchClick }: TaskbarProps) {
       <div className={styles.taskbar} data-shell-part="taskbar">
         {/* === Left: Clara + Mic + Workspace === */}
         <div className={styles.left}>
-          {/* Clara C Button */}
+          {/* Start button: the product mark — or, on a corporate skin, the
+              company's logo and name (SkinManifest.brand) */}
           <button
-            className={`${styles.claraBtn} ${startMenuOpen ? styles.claraActive : ""}`}
+            className={`${styles.claraBtn} ${brand ? styles.brandBtn : ""} ${startMenuOpen ? styles.claraActive : ""}`}
             onClick={() => toggleStartMenu()}
-            title={t("taskbar.clara")}
+            title={brand ? (brand.tagline ? `${brand.name} — ${brand.tagline}` : brand.name) : t("taskbar.clara")}
             data-tour="taskbar-clara"
+            data-shell-part="start-button"
           >
-            <ClaraMark className={styles.claraMark} />
+            {brand ? (
+              <>
+                <img src={brand.logo} alt="" className={styles.brandLogo} draggable={false} />
+                <span className={styles.brandName}>{brand.name}</span>
+              </>
+            ) : (
+              <ClaraMark className={styles.claraMark} />
+            )}
           </button>
+
+          {/* Search field (layout.searchField): a wide pill that opens the
+              search overlay — the centred-bar skins show it, the others keep
+              search on the keyboard shortcut */}
+          {layout?.searchField && (
+            <button
+              className={styles.searchField}
+              onClick={onSearchClick}
+              title={t("taskbar.search")}
+              data-shell-part="taskbar-search"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                <circle cx="7" cy="7" r="4.5" />
+                <line x1="10.5" y1="10.5" x2="14" y2="14" />
+              </svg>
+              <span className={styles.searchLabel}>{t("taskbar.search")}</span>
+            </button>
+          )}
 
           {/* Microphone */}
           <button
@@ -172,38 +147,8 @@ export function Taskbar({ layout, onSearchClick }: TaskbarProps) {
         <div className={styles.pinned} data-tour="taskbar-pinned">
           {pinnedApps.map((app) => {
             const isOpen = openAppIds.has(app.id);
-            const pinItems: ContextMenuItem[] = [
-              {
-                id: "open",
-                label: isOpen ? t("taskbar.pinned.focus", { app: app.name }) : t("taskbar.pinned.open", { app: app.name }),
-                onSelect: () => handlePinnedClick(app.id),
-              },
-              {
-                id: "new-instance",
-                label: t("taskbar.pinned.newInstance"),
-                onSelect: () => openWindow(app.id, {
-                  title: app.name,
-                  width: app.window.defaultWidth,
-                  height: app.window.defaultHeight,
-                  maximized: app.window.startMaximized,
-                  fullscreen: app.window.startFullscreen,
-                }),
-              },
-              { id: "sep1", label: "---" },
-              {
-                id: "unpin",
-                label: t("taskbar.pinned.unpin"),
-                onSelect: () => unpinApp(app.id),
-                variant: "destructive",
-              },
-              {
-                id: "app-center",
-                label: t("taskbar.pinned.openAppCenter"),
-                onSelect: () => openWindow("app-center", { title: t("taskbar.pinned.appCenterTitle"), width: 800, height: 600 }),
-              },
-            ];
             return (
-              <WindowContextMenu key={app.id} items={pinItems}>
+              <WindowContextMenu key={app.id} items={pinContextItems(app, isOpen)}>
                 <button
                   className={`${styles.pinnedBtn} ${isOpen ? styles.pinnedActive : ""}`}
                   onClick={() => handlePinnedClick(app.id)}
@@ -273,9 +218,7 @@ export function Taskbar({ layout, onSearchClick }: TaskbarProps) {
             hover-peek special behavior. data-shell-part="taskbar-tray" =
             stable skin hook for this area. */}
         <div className={styles.right} data-shell-part="taskbar-tray" data-tour="taskbar-tray">
-          {visibleTrayItems.map((item) => (
-            <TrayButton key={item.id} item={item} />
-          ))}
+          <TrayCluster />
 
           <div className={styles.tray} onClick={() => setTrayPopover("calendar")} data-ctx="tray-clock">
             <span className={styles.clock}>

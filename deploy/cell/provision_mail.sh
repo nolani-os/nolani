@@ -9,6 +9,9 @@
 # username = full address), as routers/post.py and mail.py read them.
 # Warning: the CLI output of write calls is discarded (it may echo server-set fields).
 # Warning: no `destroy` (footgun in 0.16.11) — existing accounts get a new password via update.
+# Service mailbox (an app that sends with its own login, e.g. Mautic): the password comes
+# from ZELLE_MAIL_PW (the caller's .env) and nothing goes into claraos_app_credentials —
+#   ZELLE_MAIL_DIENST=1 ZELLE_MAIL_PW=… ./provision_mail.sh mautic
 set -euo pipefail
 cd "$(dirname "$0")"
 DOM=$(sed -n 's/^ZELLE_DOMAIN=//p' .env)
@@ -16,7 +19,7 @@ DOMAIN_ID=$(./stalwart_cli.sh query Domain 2>/dev/null | awk -v d="$DOM" '$2==d 
 [ -n "$DOMAIN_ID" ] || { echo "  ✗ Stalwart-Domain $DOM nicht gefunden"; exit 1; }
 
 for U in "$@"; do
-  PW=$(openssl rand -base64 30 | tr -d '/+=\n')
+  PW=${ZELLE_MAIL_PW:-$(openssl rand -base64 30 | tr -d '/+=\n')}
   PLAN=$(python3 - "$U" "$DOMAIN_ID" "$PW" <<'PY'
 import json, sys
 u, dom_id, pw = sys.argv[1:]
@@ -37,6 +40,11 @@ PY
   else
     printf '%s\n' "$PLAN" | ./stalwart_cli.sh apply --stdin --quiet >/dev/null 2>&1 \
       || { echo "  ✗ $U: Postfach nicht angelegt"; continue; }
+  fi
+  if [ -n "${ZELLE_MAIL_DIENST:-}" ]; then
+    unset PW PLAN
+    echo "  $U: Dienst-Postfach $U@$DOM eingerichtet"
+    continue
   fi
   MAIL_ADDR="$U@$DOM" MAIL_PW="$PW" docker compose exec -T -e MAIL_ADDR -e MAIL_PW -e MAIL_USER="$U" \
     claraos-api python3 - <<'PY'

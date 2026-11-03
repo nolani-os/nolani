@@ -64,7 +64,12 @@ def _env() -> dict[str, str]:
     e["BW_CLIENTID"] = BW_CLIENTID
     e["BW_CLIENTSECRET"] = BW_CLIENTSECRET
     e["BW_PASSWORD"] = BW_PASSWORD
-    e["NODE_TLS_REJECT_UNAUTHORIZED"] = "0"
+    # TLS is verified. The vault used to sit behind an internal CA, so this was set to
+    # "0" — every bw call then accepted ANY certificate, i.e. a man in the middle got
+    # the vault's master password. The vault now has a public certificate, and an
+    # internal CA belongs in NODE_EXTRA_CA_CERTS (additive), never in switching
+    # verification off. Removed even if the surrounding environment sets it.
+    e.pop("NODE_TLS_REJECT_UNAUTHORIZED", None)
     return e
 
 
@@ -88,9 +93,8 @@ def _bw(args: list[str], session: Optional[str] = None, input_text: Optional[str
 def _tail_error(text: str, limit: int = 200) -> str:
     """Last meaningful line of a bw error output.
 
-    With NODE_TLS_REJECT_UNAUTHORIZED=0, `bw` writes a multi-line Node warning to
-    stderr — a blunt err[:200] only shows that warning and swallows the real
-    reason.
+    `bw` may write multi-line Node warnings to stderr (e.g. deprecation notices) — a
+    blunt err[:200] would only show the warning and swallow the real reason.
     """
     lines = [l.strip() for l in (text or "").splitlines() if l.strip()]
     noise = ("warning:", "(use `", "(node:")

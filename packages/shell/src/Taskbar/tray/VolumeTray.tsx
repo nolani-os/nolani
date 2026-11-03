@@ -67,7 +67,7 @@ export function VolumeTray({ onClose }: { onClose: () => void }) {
   return (
     <>
       <div className={styles.backdrop} onClick={onClose} />
-      <div className={`aeroWidget ${styles.panel}`} role="dialog" aria-label={t("tray.volume.title")}
+      <div className={`aeroWidget ${styles.panel}`} data-shell-part="tray-popover" role="dialog" aria-label={t("tray.volume.title")}
         data-tray-popover="volume">
         <div className={styles.header}>
           <span className={styles.title}>{t("tray.volume.title")}</span>

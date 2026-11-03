@@ -1,0 +1,37 @@
+[package]
+name = "claraos-companion"
+# Must be kept in sync with tauri.conf.json — the user agent is built from
+# CARGO_PKG_VERSION (up to 0.4.9 it therefore wrongly reported 0.1.0).
+version = "0.5.15"
+description = "Desktop companion: the web shell in a native window, with an optional embedded tsnet tunnel"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri-plugin-shell = "2"
+tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
+tauri-plugin-deep-link = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-global-shortcut = "2"
+futures-util = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["time", "fs", "macros"] }
+# Local control API (http://127.0.0.1) + SSE stream from the daemon.
+# No TLS backend needed (loopback http only) — matters for the msvc cross build.
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream"] }
+
+# Direct access to the shell window's WebKitGTK instance (Linux only):
+# needed to switch off tracking prevention — otherwise it blocks the
+# SSO session in the embedded apps.
+[target.'cfg(target_os = "linux")'.dependencies]
+webkit2gtk = "=2.0.2"
+
+[profile.release]
+strip = true
+lto = true

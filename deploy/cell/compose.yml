@@ -19,8 +19,8 @@ services:
     ports: ["80:80", "443:443", "443:443/udp"]
     environment:
       ZELLE_DOMAIN: ${ZELLE_DOMAIN}
-      SOCIAL_DOMAIN: ${SOCIAL_DOMAIN}
-      VIDEO_DOMAIN: ${VIDEO_DOMAIN}
+      SOCIAL_DOMAIN: ${SOCIAL_DOMAIN-}
+      VIDEO_DOMAIN: ${VIDEO_DOMAIN-}
       CLARAOS_PROXY_SECRET: ${CLARAOS_PROXY_SECRET}
     volumes:
       # Warning: mount the directory, not the single file: tar replaces the file with a
@@ -44,8 +44,8 @@ services:
           - call.${ZELLE_DOMAIN}
           - immich.${ZELLE_DOMAIN}
           - paperless.${ZELLE_DOMAIN}
-          - ${SOCIAL_DOMAIN}
-          - ${VIDEO_DOMAIN}
+          - ${SOCIAL_DOMAIN-}
+          - ${VIDEO_DOMAIN-}
           # lk-jwt-service queries /.well-known/matrix/server on the apex
           - ${ZELLE_DOMAIN}
     mem_limit: 256m
@@ -130,6 +130,9 @@ services:
       # Optional apps that run here (setup.sh --apps; betriebsprofil.OPTIONAL_APPS).
       # `all` = a cell set up before the switch existed: everything it had.
       CLARAOS_OPTIONAL_APPS: ${CLARAOS_OPTIONAL_APPS-all}
+      # Clara's Odoo tools: the cell creates each user's own Odoo access with it
+      # (services/zellen_zugaenge.py). Empty where Odoo does not run.
+      ODOO_ADMIN_PASSWORD: ${ODOO_ADMIN_PASSWORD-}
       # MCP endpoint for users' own AI agents (setup.sh --mcp). Off unless "on".
       CLARAOS_MCP: ${CLARAOS_MCP:-off}
       CLARAOS_BASE_DOMAIN: ${ZELLE_DOMAIN}
@@ -179,6 +182,13 @@ services:
       # Shared social cell: tiles appear only when these are set (betriebsprofil._SOZIAL)
       SOCIAL_DOMAIN: ${SOCIAL_DOMAIN:-}
       VIDEO_DOMAIN: ${VIDEO_DOMAIN:-}
+      # Push for the companion apps (ntfy below). The admin token is created once by
+      # setup.sh; without it publishing is simply off. Devices get their own
+      # per-device tokens via /api/claraos/ntfy/device-token (signed-in session).
+      NTFY_INTERNAL_URL: http://ntfy:80
+      NTFY_ADMIN_TOKEN: ${NTFY_ADMIN_TOKEN:-}
+      NTFY_APP_HOST: push.${ZELLE_DOMAIN}
+      NTFY_EXTRA_TOPICS: ""
       # Visible names (setup.sh / .env). Empty = API defaults (NolaniOS / Nolani).
       CLARAOS_PRODUCT_NAME: ${CLARAOS_PRODUCT_NAME:-}
       CLARAOS_ASSISTANT_NAME: ${CLARAOS_ASSISTANT_NAME:-}
@@ -193,6 +203,29 @@ services:
       - "${CLARAOS_BRAIN_LISTEN:-127.0.0.1}:8090:8090"
     networks: [zelle]
     mem_limit: 768m
+
+  # Push service for the companion apps (Android, Windows, Linux). Small and always
+  # on: no web app, no self sign-up, nothing readable without a token.
+  ntfy:
+    <<: *restart
+    image: binwiederhier/ntfy:v2.31.1
+    command: serve
+    environment:
+      NTFY_BASE_URL: https://push.${ZELLE_DOMAIN}
+      NTFY_BEHIND_PROXY: "true"
+      NTFY_LISTEN_HTTP: ":80"
+      NTFY_CACHE_FILE: /var/lib/ntfy/cache.db
+      NTFY_CACHE_DURATION: 24h
+      NTFY_AUTH_FILE: /var/lib/ntfy/user.db
+      NTFY_AUTH_DEFAULT_ACCESS: deny-all
+      NTFY_ENABLE_SIGNUP: "false"
+      NTFY_ENABLE_LOGIN: "false"
+      NTFY_WEB_ROOT: disable
+      # every request comes through Caddy — rate limits per real client IP
+      NTFY_VISITOR_REQUEST_LIMIT_EXEMPT_HOSTS: claraos-api
+    volumes: [ntfy-data:/var/lib/ntfy]
+    networks: [zelle]
+    mem_limit: 64m
 
   claraos-frontend:
     <<: *restart
@@ -694,7 +727,7 @@ services:
     environment:
       POSTGRES_DB: mastodon
       POSTGRES_USER: mastodon
-      POSTGRES_PASSWORD: ${MASTODON_DB_PASSWORD}
+      POSTGRES_PASSWORD: ${MASTODON_DB_PASSWORD-}
     volumes: [mastodon-db:/var/lib/postgresql/data]
     shm_size: 128mb
     healthcheck:
@@ -719,24 +752,24 @@ services:
     environment: &mastodon-env
       RAILS_ENV: production
       NODE_ENV: production
-      LOCAL_DOMAIN: ${SOCIAL_DOMAIN}
-      WEB_DOMAIN: ${SOCIAL_DOMAIN}
-      STREAMING_API_BASE_URL: wss://${SOCIAL_DOMAIN}
+      LOCAL_DOMAIN: ${SOCIAL_DOMAIN-}
+      WEB_DOMAIN: ${SOCIAL_DOMAIN-}
+      STREAMING_API_BASE_URL: wss://${SOCIAL_DOMAIN-}
       RAILS_SERVE_STATIC_FILES: "true"
       DB_HOST: mastodon-db
       DB_PORT: "5432"
       DB_NAME: mastodon
       DB_USER: mastodon
-      DB_PASS: ${MASTODON_DB_PASSWORD}
+      DB_PASS: ${MASTODON_DB_PASSWORD-}
       REDIS_HOST: mastodon-redis
       REDIS_PORT: "6379"
-      SECRET_KEY_BASE: ${MASTODON_SECRET_KEY_BASE}
-      OTP_SECRET: ${MASTODON_OTP_SECRET}
-      VAPID_PRIVATE_KEY: ${MASTODON_VAPID_PRIVATE_KEY}
-      VAPID_PUBLIC_KEY: ${MASTODON_VAPID_PUBLIC_KEY}
-      ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY: ${MASTODON_AR_DETERMINISTIC_KEY}
-      ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT: ${MASTODON_AR_KEY_DERIVATION_SALT}
-      ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY: ${MASTODON_AR_PRIMARY_KEY}
+      SECRET_KEY_BASE: ${MASTODON_SECRET_KEY_BASE-}
+      OTP_SECRET: ${MASTODON_OTP_SECRET-}
+      VAPID_PRIVATE_KEY: ${MASTODON_VAPID_PRIVATE_KEY-}
+      VAPID_PUBLIC_KEY: ${MASTODON_VAPID_PUBLIC_KEY-}
+      ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY: ${MASTODON_AR_DETERMINISTIC_KEY-}
+      ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT: ${MASTODON_AR_KEY_DERIVATION_SALT-}
+      ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY: ${MASTODON_AR_PRIMARY_KEY-}
       LIMITED_FEDERATION_MODE: "true"
       SMTP_DELIVERY_METHOD: test          # no outgoing mail from the cell
       OMNIAUTH_ONLY: "true"
@@ -748,8 +781,8 @@ services:
       OIDC_SCOPE: openid,profile,email
       OIDC_UID_FIELD: preferred_username
       OIDC_CLIENT_ID: mastodon
-      OIDC_CLIENT_SECRET: ${MASTODON_OIDC_SECRET}
-      OIDC_REDIRECT_URI: https://${SOCIAL_DOMAIN}/auth/auth/openid_connect/callback
+      OIDC_CLIENT_SECRET: ${MASTODON_OIDC_SECRET-}
+      OIDC_REDIRECT_URI: https://${SOCIAL_DOMAIN-}/auth/auth/openid_connect/callback
       OIDC_SECURITY_ASSUME_EMAIL_IS_VERIFIED: "true"
     volumes: [mastodon-system:/opt/mastodon/public/system]
     depends_on:
@@ -788,7 +821,7 @@ services:
     environment:
       POSTGRES_DB: peertube
       POSTGRES_USER: peertube
-      POSTGRES_PASSWORD: ${PEERTUBE_DB_PASSWORD}
+      POSTGRES_PASSWORD: ${PEERTUBE_DB_PASSWORD-}
     volumes: [peertube-db:/var/lib/postgresql/data]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U peertube -d peertube"]
@@ -809,20 +842,20 @@ services:
     profiles: [social]           # only on the cell that hosts the social cell
     image: chocobozzz/peertube@sha256:a23e3fa8b58a721ad7555da649cbf513d816d150db21cfa5747315bb8e82262d  # v8.2.4
     environment:
-      PEERTUBE_WEBSERVER_HOSTNAME: ${VIDEO_DOMAIN}
+      PEERTUBE_WEBSERVER_HOSTNAME: ${VIDEO_DOMAIN-}
       PEERTUBE_WEBSERVER_PORT: "443"
       PEERTUBE_WEBSERVER_HTTPS: "true"
       PEERTUBE_TRUST_PROXY: '["loopback", "172.16.0.0/12"]'
       PEERTUBE_DB_HOSTNAME: peertube-db
       PEERTUBE_DB_PORT: "5432"
       PEERTUBE_DB_USERNAME: peertube
-      PEERTUBE_DB_PASSWORD: ${PEERTUBE_DB_PASSWORD}
+      PEERTUBE_DB_PASSWORD: ${PEERTUBE_DB_PASSWORD-}
       PEERTUBE_DB_NAME: peertube
       PEERTUBE_DB_SUFFIX: ""
       PEERTUBE_REDIS_HOSTNAME: peertube-redis
-      PEERTUBE_SECRET: ${PEERTUBE_SECRET}
+      PEERTUBE_SECRET: ${PEERTUBE_SECRET-}
       PEERTUBE_ADMIN_EMAIL: admin@${ZELLE_DOMAIN}
-      PT_INITIAL_ROOT_PASSWORD: ${PEERTUBE_ROOT_PASSWORD}
+      PT_INITIAL_ROOT_PASSWORD: ${PEERTUBE_ROOT_PASSWORD-}
       PEERTUBE_TRANSCODING_THREADS: "1"
       TZ: Europe/Berlin
     volumes:
@@ -875,6 +908,256 @@ services:
     mem_limit: 1g
     cpus: 2
 
+  # ── Optional: InvenTree (parts, stock, orders) ───────────────────────────
+  # Off unless chosen (`setup.sh … --apps inventree`). Login via Authentik (OIDC);
+  # accounts are created on first login in group `nutzer`. Static files are served
+  # by InvenTree itself; setup.sh runs `invoke update` (migrations + static files).
+  inventree-db:
+    <<: *restart
+    profiles: [inventree]
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: inventree
+      POSTGRES_USER: inventree
+      POSTGRES_PASSWORD: ${INVENTREE_DB_PASSWORD-}
+    volumes: [inventree-db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inventree -d inventree"]
+      interval: 10s
+      retries: 10
+    networks: [zelle]
+    mem_limit: 384m
+
+  inventree-cache:
+    <<: *restart
+    profiles: [inventree]
+    image: valkey/valkey:8.1-alpine
+    networks: [zelle]
+    mem_limit: 128m
+
+  inventree-server:
+    hostname: inventree.${ZELLE_DOMAIN}   # EHLO name: Stalwart refuses the container id
+    <<: *restart
+    profiles: [inventree]
+    image: inventree/inventree@sha256:288269c607544bed8c44d9cdde573cd9f12d27533e6ec2e2dd25a3f399cdc270  # 1.3.2
+    environment: &inventree-env
+      INVENTREE_DB_ENGINE: postgresql
+      INVENTREE_DB_HOST: inventree-db
+      INVENTREE_DB_PORT: "5432"
+      INVENTREE_DB_NAME: inventree
+      INVENTREE_DB_USER: inventree
+      INVENTREE_DB_PASSWORD: ${INVENTREE_DB_PASSWORD-}
+      INVENTREE_CACHE_ENABLED: "true"
+      INVENTREE_CACHE_HOST: inventree-cache
+      INVENTREE_CACHE_PORT: "6379"
+      INVENTREE_SECRET_KEY: ${INVENTREE_SECRET_KEY-}
+      INVENTREE_SITE_URL: https://inventree.${ZELLE_DOMAIN}
+      INVENTREE_USE_X_FORWARDED_HOST: "true"
+      INVENTREE_USE_X_FORWARDED_PROTO: "true"
+      INVENTREE_LOGIN_DEFAULT_HTTP_PROTOCOL: https
+      INVENTREE_COOKIE_SECURE: "true"
+      INVENTREE_DEBUG: "false"
+      INVENTREE_LOG_LEVEL: WARNING
+      INVENTREE_PLUGINS_ENABLED: "false"
+      # Created at startup; the cell's administrator (password only in .env)
+      INVENTREE_ADMIN_USER: admin
+      INVENTREE_ADMIN_EMAIL: admin@${ZELLE_DOMAIN}
+      INVENTREE_ADMIN_PASSWORD: ${INVENTREE_ADMIN_PASSWORD-}
+      # Login ONLY via the cell's Authentik (django-allauth OIDC, provider id `authentik`).
+      INVENTREE_SOCIAL_BACKENDS: allauth.socialaccount.providers.openid_connect
+      INVENTREE_SOCIAL_PROVIDERS: >-
+        {"openid_connect":{"SCOPE":["openid","profile","email"],"OAUTH_PKCE_ENABLED":true,
+        "APPS":[{"provider_id":"authentik","name":"${CLARAOS_PRODUCT_NAME:-NolaniOS}","client_id":"inventree",
+        "secret":"${INVENTREE_OIDC_SECRET-}","settings":{"server_url":
+        "https://auth.${ZELLE_DOMAIN}/application/o/inventree/.well-known/openid-configuration"}}]}}
+      # Sign-up ONLY through SSO (first login creates the account in group `nutzer`,
+      # provision_inventree.py); no password sign-up, no "forgot password".
+      INVENTREE_GLOBAL_SETTINGS: >-
+        {"LOGIN_ENABLE_SSO":true,"LOGIN_ENABLE_SSO_REG":true,"LOGIN_SIGNUP_SSO_AUTO":true,
+        "LOGIN_ENABLE_REG":false,"LOGIN_ENABLE_PWD_FORGOT":false}
+      # InvenTree refuses SSO sign-up without a mail server — the cell's own Stalwart.
+      INVENTREE_EMAIL_HOST: stalwart
+      INVENTREE_EMAIL_PORT: "25"
+      INVENTREE_EMAIL_SENDER: inventree@${ZELLE_DOMAIN}
+      # Small footprint: one background worker (default: one per CPU, ~1.6 GB at home)
+      INVENTREE_BACKGROUND_WORKERS: "1"
+      INVENTREE_GUNICORN_WORKERS: "2"
+      TZ: Europe/Berlin
+    volumes: [inventree-data:/home/inventree/data]
+    depends_on:
+      inventree-db: {condition: service_healthy}
+      inventree-cache: {condition: service_started}
+    networks: [zelle]
+    mem_limit: 1g
+    cpus: 2
+
+  inventree-worker:
+    hostname: inventree.${ZELLE_DOMAIN}   # EHLO name: Stalwart refuses the container id
+    <<: *restart
+    profiles: [inventree]
+    image: inventree/inventree@sha256:288269c607544bed8c44d9cdde573cd9f12d27533e6ec2e2dd25a3f399cdc270  # 1.3.2
+    command: ["invoke", "worker"]
+    environment: *inventree-env
+    volumes: [inventree-data:/home/inventree/data]
+    depends_on:
+      inventree-server: {condition: service_started}
+    networks: [zelle]
+    mem_limit: 768m
+    cpus: 1
+
+
+  # ── Superset (optional: --apps superset) — dashboards and analyses ───────
+  # One web process, no Celery worker/beat (no alerts, reports or async queries).
+  # Login only via the cell's Authentik (superset/superset_config.py).
+  superset-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    profiles: [superset]
+    environment:
+      POSTGRES_DB: superset
+      POSTGRES_USER: superset
+      POSTGRES_PASSWORD: ${SUPERSET_DB_PASSWORD-}
+    volumes:
+      - superset-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U superset -d superset"]
+      interval: 10s
+      retries: 10
+    networks: [zelle]
+    mem_limit: 384m
+
+  superset:
+    build: ./superset
+    image: claraos-superset:zelle
+    restart: unless-stopped
+    profiles: [superset]
+    environment:
+      ZELLE_DOMAIN: ${ZELLE_DOMAIN}
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY-}
+      SUPERSET_DB_PASSWORD: ${SUPERSET_DB_PASSWORD-}
+      SUPERSET_OIDC_SECRET: ${SUPERSET_OIDC_SECRET-}
+      SUPERSET_ENV: production          # switches Superset's rate limiting on
+      SUPERSET_LOAD_EXAMPLES: "no"
+      SERVER_WORKER_AMOUNT: 2
+      TZ: Europe/Berlin
+    volumes:
+      - superset-home:/app/superset_home
+    depends_on:
+      superset-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8088/health"]
+      interval: 30s
+      retries: 5
+      start_period: 90s
+    networks: [zelle]
+    mem_limit: 1g
+    cpus: 2
+
+
+  # ── Mautic (optional: --apps mautic) — marketing automation ───────────────
+  # Web + cron from the same image, MariaDB (Mautic does not run on Postgres). No
+  # messenger worker: e-mails go out synchronously. Login via the cell's Authentik
+  # (SAML) — setup.sh writes the identity provider into Mautic's config/local.php.
+  mautic-db:
+    image: mariadb:11.8.8@sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c
+    restart: unless-stopped
+    profiles: [mautic]
+    environment:
+      MARIADB_DATABASE: mautic
+      MARIADB_USER: mautic
+      MARIADB_PASSWORD: ${MAUTIC_DB_PASSWORD-}
+      MARIADB_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      - mautic-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      retries: 10
+    networks: [zelle]
+    mem_limit: 384m
+
+  mautic:
+    image: &mautic-image mautic/mautic:7.2.0-apache@sha256:dea3bb71a5c5bf4c0c7d1764e58a32109898e7b2e6a710f14f50e2a913c03a0f
+    hostname: mautic.${ZELLE_DOMAIN}   # EHLO name towards Stalwart
+    restart: unless-stopped
+    profiles: [mautic]
+    environment: &mautic-env
+      DOCKER_MAUTIC_ROLE: mautic_web
+      MAUTIC_DB_HOST: mautic-db
+      MAUTIC_DB_PORT: 3306
+      MAUTIC_DB_DATABASE: mautic
+      MAUTIC_DB_USER: mautic
+      MAUTIC_DB_PASSWORD: ${MAUTIC_DB_PASSWORD-}
+      PHP_INI_VALUE_MEMORY_LIMIT: 512M
+      TZ: Europe/Berlin
+    volumes: &mautic-volumes
+      - mautic-config:/var/www/html/config
+      # Exactly the image's declared volumes: a volume over all of docroot/media froze
+      # Mautic's shipped assets at the first install, and the image's own anonymous
+      # volumes for files/ and images/ sat inside it — uploads missed the backup.
+      - mautic-files:/var/www/html/docroot/media/files
+      - mautic-images:/var/www/html/docroot/media/images
+      - mautic-logs:/var/www/html/var/logs
+    depends_on:
+      mautic-db:
+        condition: service_healthy
+    networks: [zelle]
+    mem_limit: 768m
+    cpus: 2
+
+  mautic-cron:
+    image: *mautic-image
+    hostname: mautic.${ZELLE_DOMAIN}
+    restart: unless-stopped
+    profiles: [mautic]
+    environment:
+      <<: *mautic-env
+      DOCKER_MAUTIC_ROLE: mautic_cron
+    volumes: *mautic-volumes
+    depends_on:
+      mautic:
+        condition: service_started
+    networks: [zelle]
+    mem_limit: 512m
+
+
+  # ── OrangeHRM (optional: --apps orangehrm) — employees, leave, time ──────
+  # Own image with the cell's OIDC patches (orangehrm/Dockerfile), MariaDB. Login via the
+  # cell's Authentik; the first login creates employee + user (role ESS).
+  orangehrm-db:
+    image: mariadb:11.8.8@sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c
+    restart: unless-stopped
+    profiles: [orangehrm]
+    environment:
+      MARIADB_DATABASE: orangehrm
+      MARIADB_USER: orangehrm
+      MARIADB_PASSWORD: ${ORANGEHRM_DB_PASSWORD-}
+      MARIADB_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      - orangehrm-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      retries: 10
+    networks: [zelle]
+    mem_limit: 384m
+
+  orangehrm:
+    build: ./orangehrm
+    image: claraos-orangehrm:zelle
+    restart: unless-stopped
+    profiles: [orangehrm]
+    environment:
+      TZ: Europe/Berlin
+    volumes:
+      - orangehrm-conf:/var/www/html/lib/confs   # Conf.php + crypto key from the installer
+    depends_on:
+      orangehrm-db:
+        condition: service_healthy
+    networks: [zelle]
+    mem_limit: 512m
+
 networks:
   zelle: {}
 
@@ -907,3 +1190,15 @@ volumes:
   peertube-config: {}
   odoo-db: {}
   odoo-data: {}
+  ntfy-data: {}
+  inventree-db: {}
+  inventree-data: {}
+  superset-db:
+  superset-home:
+  mautic-db:
+  mautic-config:
+  mautic-files:
+  mautic-images:
+  mautic-logs:
+  orangehrm-db:
+  orangehrm-conf:

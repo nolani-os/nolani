@@ -47,6 +47,9 @@ export interface WindowsActions {
   minimizeWindow: (windowId: string) => void;
   maximizeWindow: (windowId: string) => void;
   restoreWindow: (windowId: string) => void;
+  /** Move a window to another workspace (the overview's drag onto a desktop
+   *  thumbnail). It keeps its position and size; focus moves on if it had it. */
+  moveWindowToWorkspace: (windowId: string, workspaceId: string) => void;
   toggleMaximize: (windowId: string) => void;
   toggleWindowFullscreen: (windowId: string) => void;
   updatePosition: (windowId: string, x: number, y: number) => void;
@@ -201,6 +204,24 @@ export const useWindowsStore = create<WindowsStore>()(
                   preMaximize: { x: win.x, y: win.y, width: win.width, height: win.height },
                 },
               },
+            };
+          });
+        },
+
+        moveWindowToWorkspace: (windowId, workspaceId) => {
+          set((state) => {
+            const win = state.windows[windowId];
+            if (!win || win.workspaceId === workspaceId) return state;
+            const otherTop = state.windowOrder
+              .filter((id) => id !== windowId && !state.windows[id]?.minimized)
+              .pop();
+            return {
+              windows: {
+                ...state.windows,
+                [windowId]: { ...win, workspaceId, focused: false },
+              },
+              focusedWindowId:
+                state.focusedWindowId === windowId ? (otherTop ?? null) : state.focusedWindowId,
             };
           });
         },

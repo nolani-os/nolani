@@ -1,0 +1,18 @@
+# Optional app `orangehrm` — setup.sh copies this into caddy/aktiv/ only when the app is on
+# (`--apps`, betriebsprofil.OPTIONAL_APPS). Imported by the main Caddyfile.
+
+# ── OrangeHRM (employees, leave, time) ──────────────────────────────────
+# Own login via OIDC against Authentik (patched image, orangehrm/Dockerfile) — no
+# forward_auth. Embedding only in the cell's own shell; any frame-ancestors policy is
+# REPLACED, not added. The web installer is not reachable once the cell is set up.
+orangehrm.{$ZELLE_DOMAIN} {
+	request_body {
+		max_size 50MB
+	}
+	@installer path /installer /installer/*
+	respond @installer 404
+	reverse_proxy orangehrm:80 {
+		header_down -X-Frame-Options
+		header_down Content-Security-Policy "frame-ancestors 'self' https://home.{$ZELLE_DOMAIN}"
+	}
+}

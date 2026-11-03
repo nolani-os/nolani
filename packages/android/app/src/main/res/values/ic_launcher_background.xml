@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Edge color of icon-512-maskable.png (rgb 20,31,57) -->
+    <color name="ic_launcher_background">#141F39</color>
+</resources>

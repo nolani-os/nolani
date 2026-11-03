@@ -4,8 +4,13 @@ import { regionLocale } from "@claraos/core";
 
 const SKIN_LABELS: Record<string, string> = {
   "clara-glass": "Glass",
-  "aero-glass": "Crystal",
-  windows11: "Classic",
+  "bloom-dark": "Bloom",
+  "bloom-light": "Bloom Light",
+  "orchard-dark": "Orchard",
+  "orchard-light": "Orchard Light",
+  "corporate-medical": "The Medical Company",
+  meadow: "Meadow",
+  shore: "Shore",
 };
 // Labels of this installation's own skins (heim.config.ts, optional).
 const heimConfig = import.meta.glob<{ SKIN_LABELS?: Record<string, string> }>("../../heim.config.ts", { eager: true });

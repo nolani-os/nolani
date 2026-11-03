@@ -1,0 +1,27 @@
+# Optional app `mautic` — setup.sh copies this into caddy/aktiv/ only when the app is on
+# (`--apps`, betriebsprofil.OPTIONAL_APPS). Imported by the main Caddyfile.
+
+# ── Mautic (marketing automation) ───────────────────────────────────────
+# Own login via SAML against Authentik — no forward_auth. Two kinds of paths:
+#   /s/…  the administration UI: embedding only in the cell's shell (frame-ancestors
+#         REPLACED, not added — a second policy would keep the first in force)
+#   rest  public on purpose: forms, landing pages, tracking pixel and the SAML endpoints
+#         — forms and pages are meant to be embedded in other websites.
+# Mautic's REST API is not exposed (it is switched off in Mautic as well).
+mautic.{$ZELLE_DOMAIN} {
+	request_body {
+		max_size 50MB
+	}
+	@api path /api /api/*
+	respond @api 404
+	@verwaltung path /s /s/*
+	handle @verwaltung {
+		reverse_proxy mautic:80 {
+			header_down -X-Frame-Options
+			header_down Content-Security-Policy "frame-ancestors 'self' https://home.{$ZELLE_DOMAIN}"
+		}
+	}
+	handle {
+		reverse_proxy mautic:80
+	}
+}

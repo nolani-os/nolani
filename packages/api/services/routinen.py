@@ -61,6 +61,7 @@ LESEN: dict[str, frozenset[str]] = {
                             "read_document", "recent_documents"}),
     "routinen": frozenset({"list_routines"}),
     "peertube": frozenset({"search_videos", "recent_videos", "get_video"}),
+    "odoo": frozenset({"search_contacts", "search_records"}),
     "dienste": frozenset({"list_services"}),
     "immich": frozenset({"search_photos", "list_albums", "list_people", "photo_statistics"}),
     "mastodon": frozenset({"get_timeline", "get_local_timeline", "get_notifications",
@@ -129,13 +130,18 @@ async def chat_vorschlag(username: str, modul: str, werkzeug: str, argumente: di
 
 
 async def melden(username: str, titel: str, text: str, app: str | None = "clara-routinen") -> None:
-    """A notification in the user's bell (routers/meldungen.py)."""
+    """A notification in the user's bell (routers/meldungen.py) and, where a push
+    service runs, on the user's devices (companion apps via ntfy)."""
     from database import get_pool
     pool = await get_pool()
     async with pool.acquire() as conn:
         await conn.execute(
             "INSERT INTO claraos_meldungen (username, titel, text, app) VALUES ($1, $2, $3, $4)",
             username, titel[:200], text[:4000], app)
+    # Push is a bonus on top of the bell: without ntfy (no admin token) notify_users
+    # does nothing, and it never raises — a failed push must not lose the notification.
+    from services import ntfy_publish
+    await ntfy_publish.notify_users([username], titel[:200], text[:600], app_id=app)
 
 
 # ── One run ───────────────────────────────────────────────────────────────────

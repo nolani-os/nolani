@@ -35,6 +35,7 @@ export function CalendarPopup({ open, onClose }: CalendarPopupProps) {
         {open && (
           <motion.div
             className={styles.popup}
+            data-shell-part="calendar-popup"
             initial={{ opacity: 0, y: 10, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.96 }}

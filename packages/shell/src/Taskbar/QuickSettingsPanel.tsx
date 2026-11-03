@@ -104,7 +104,7 @@ export function QuickSettingsPanel({ open, onClose }: QuickSettingsPanelProps) {
   return (
     <>
       <div className={styles.backdrop} onClick={onClose} />
-      <div className={`aeroWidget ${styles.panel}`} role="dialog" aria-label={t("quickSettings.title")}>
+      <div className={`aeroWidget ${styles.panel}`} role="dialog" aria-label={t("quickSettings.title")} data-shell-part="quick-settings">
         <div className={styles.header}>
           <span className={styles.title}>{t("quickSettings.title")}</span>
           <button className={styles.closeBtn} onClick={onClose} aria-label={t("quickSettings.close")}>×</button>

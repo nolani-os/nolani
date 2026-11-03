@@ -314,6 +314,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
         {open && (
           <motion.div
             className={styles.overlay}
+            data-shell-part="search-overlay"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}

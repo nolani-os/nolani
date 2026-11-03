@@ -1,0 +1,42 @@
+# claraos-desktop-build — Tauri 2 Linux builds.
+#
+# IMPORTANT: MUST MATCH THE TARGET SYSTEM (learned the hard way): with
+# ubuntu:22.04 as the base, the AppImage bundled WebKitGTK 2.50.4 together with
+# glib/GTK/Pango/ICU but picked up HarfBuzz from the host (Ubuntu 26.04, 6.x).
+# This ABI mix breaks on EVERY new text layout — the app died when opening the
+# start menu, was stable while idle, and `coredumpctl` showed only `??` despite
+# dbgsym (the symbols belonged to the host version, the bundled one was loaded).
+# Therefore: base = the target system (Kubuntu/Ubuntu 26.04 LTS).
+# Price: the AppImage no longer runs on older distributions.
+FROM ubuntu:26.04
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl ca-certificates build-essential pkg-config file wget \
+    libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev patchelf \
+    libayatana-appindicator3-dev libssl-dev xdg-utils \
+  && rm -rf /var/lib/apt/lists/*
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable
+ENV PATH=/root/.cargo/bin:$PATH
+# Headless GUI test: xvfb + screenshot tool
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    xvfb x11-utils imagemagick dbus-x11 fonts-dejavu-core \
+  && rm -rf /var/lib/apt/lists/*
+# Build tools baked into the image (otherwise gone after every --rm run): Tauri CLI,
+# Windows cross (cargo-xwin + MSVC target), NSIS, AppImage dependencies.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    clang llvm lld nsis libfuse2 desktop-file-utils \
+  && rm -rf /var/lib/apt/lists/*
+# IMPORTANT: media/WebRTC elements: without them Selkies hangs at
+# "Waiting for stream" — it streams the screen via WebRTC. The web engine only
+# pulls in 103 base elements; webrtc/dtls/srtp/nice (ICE) and the video
+# decoders are missing entirely. The AppImage can only bundle what is
+# installed here (linuxdeploy-plugin-gstreamer copies from the image).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav \
+    gstreamer1.0-nice gstreamer1.0-pulseaudio gstreamer1.0-alsa \
+    libnice10 libsrtp2-1 \
+  && rm -rf /var/lib/apt/lists/*
+RUN cargo install tauri-cli --version '^2' --locked \
+ && cargo install cargo-xwin --locked \
+ && rustup target add x86_64-pc-windows-msvc

@@ -26,6 +26,7 @@ export function NotificationPanel({ open, onClose }: NotificationPanelProps) {
         {open && (
           <motion.div
             className={styles.panel}
+            data-shell-part="notification-panel"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}

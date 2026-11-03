@@ -7,7 +7,7 @@
  * The hook is idempotent: only one SSE connection is maintained at a time.
  */
 import { useEffect, useRef } from "react";
-import { useUIStore, useSettingsStore } from "@claraos/core";
+import { useUIStore, useSettingsStore, useAuthStore } from "@claraos/core";
 import { parseChatDeepLink, parseShellDeepLink } from "./useBootDeepLink";
 
 // Fetch messages from the last 24 h when subscribing (catches today's notifications)
@@ -90,8 +90,15 @@ export function useNtfySubscription() {
   // rate limiting (429→500), since every retry consumed exactly the bucket
   // refill rate.
   const backoffRef = useRef(RECONNECT_DELAY_MS);
+  // A cell's bell comes from /api/claraos/meldungen (useMeldungen). Its ntfy only
+  // pushes to the companion apps — subscribing here as well would show every
+  // notification twice. Wait until the user is known: before that a cell looks like
+  // home for a moment, and the subscription would open once anyway.
+  const angemeldet = useAuthStore((s) => s.user !== null && s.user !== undefined);
+  const istZelle = useAuthStore((s) => s.user?.profil === "cell");
 
   useEffect(() => {
+    if (!angemeldet || istZelle) return;
     mountedRef.current = true;
     requestBrowserPermission();
 
@@ -231,5 +238,5 @@ export function useNtfySubscription() {
       if (reconnectRef.current) clearTimeout(reconnectRef.current);
       if (esRef.current) { esRef.current.close(); esRef.current = null; }
     };
-  }, [addNotification]);
+  }, [addNotification, angemeldet, istZelle]);
 }

@@ -1,0 +1,107 @@
+/* Dock — the floating app strip of a two-bar skin. The outer area reserves
+   the strip's height in the shell column (windows maximise above it); the
+   strip itself is a glass pill. Icons grow with --mag (set per item by the
+   pointer, transform only). Tokens drive the colours, the skin stylesheet
+   (Orchard) refines tint and rim via data-shell-part="dock". */
+
+.area {
+  height: var(--taskbar-height, 72px);
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding-bottom: 8px;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 9000;
+  position: relative;
+}
+
+.dock {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 20px;
+  background: var(--bg-taskbar);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-taskbar);
+  backdrop-filter: var(--blur-acrylic);
+  -webkit-backdrop-filter: var(--blur-acrylic);
+  max-width: calc(100vw - 32px);
+}
+
+.item {
+  --mag: 1;
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: scale(var(--mag)) translateY(calc((1 - var(--mag)) * 10px));
+  transform-origin: bottom center;
+  transition: transform 0.08s ease-out;
+}
+
+.item:active { filter: brightness(0.85); }
+
+.icon {
+  pointer-events: none;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+}
+
+/* Running dot — the Taskbar's dotActive, in dock form */
+.running::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+}
+.focused::after { background: var(--text-primary); }
+.minimized .icon { opacity: 0.55; }
+
+/* Label — a small tooltip above the icon, only on hover */
+.label {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) scale(calc(1 / var(--mag)));
+  transform-origin: bottom center;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: var(--bg-surface-solid);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-tooltip);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+}
+.item:hover .label { opacity: 1; }
+
+.separator {
+  width: 1px;
+  height: 40px;
+  margin: 0 4px 4px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .item { transition: none; }
+}

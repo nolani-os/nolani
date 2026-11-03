@@ -34,17 +34,23 @@ if ADMIN_PW:
 admin.sudo().partner_id.write({"email": f"admin@{DOM}"})
 print("ODOO admin: Passwort gesetzt" if ADMIN_PW else "ODOO admin: ✗ kein ODOO_ADMIN_PASSWORD")
 
-# 3. Template for accounts created on first login: internal user, no extra rights
+# 3. Template for accounts created on first login: internal user who may create
+# contacts — "internal user" alone may not (Odoo's group "Contact Creation"); without it
+# neither the user in Odoo nor Clara for them could add a customer. No admin rights.
+GRUPPEN = [env.ref("base.group_user").id, env.ref("base.group_partner_manager").id]  # noqa: F821
 vorlage = Users.search([("login", "=", "vorlage-neue-konten")], limit=1)
 if not vorlage:
     # Created active, archived afterwards: Odoo 18 refuses to create an archived user
     # (it would archive the contact first, which is still linked to an active user).
     vorlage = Users.create({
         "name": "Vorlage für neue Konten", "login": "vorlage-neue-konten",
-        "groups_id": [(6, 0, [env.ref("base.group_user").id])],  # noqa: F821
+        "groups_id": [(6, 0, GRUPPEN)],
     })
     vorlage.write({"active": False})
     print("ODOO Vorlage für neue Konten angelegt")
+elif not set(GRUPPEN) <= set(vorlage.groups_id.ids):
+    vorlage.write({"groups_id": [(4, g) for g in GRUPPEN]})
+    print("ODOO Vorlage: darf jetzt Kontakte anlegen")
 # No stored picture on the template: Odoo copies it into every new account, so all of
 # them showed the template's initial ("V") instead of their own.
 if vorlage.partner_id.image_1920:

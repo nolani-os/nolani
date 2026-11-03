@@ -167,7 +167,10 @@ def test_optional_apps():
     assert ids == ["files", "immich", "paperless", "selkies-browser", "services-hub",
                    "office-viewer", "teams-workspace", "element", "clara-routinen"]
     assert {"immich_lesen", "wopi", "hub"} <= bp.ACTIVE_CELL_ROUTERS
-    assert bp.DISABLED_TOOL_FILES == {"mastodon", "peertube"}
+    # Odoo is opt-in: without it, its router and tools are gone as well
+    assert bp.DISABLED_TOOL_FILES == {"mastodon", "peertube", "odoo"}
+    assert not {"inventree", "superset", "mautic", "orangehrm"} & bp.ENABLED_APPS    # opt-in like Odoo
+    assert "odoo_lesen" not in bp.ACTIVE_CELL_ROUTERS
     assert _lade_mit("all").ENABLED_APPS == bp.ENABLED_APPS
     # Empty: the minimal cell
     bp = _lade_mit("")
@@ -175,13 +178,21 @@ def test_optional_apps():
     assert ids == ["files", "clara-routinen"]
     assert not {"immich_lesen", "paperless_lesen", "wopi", "office", "hub", "browser_ablage"} & bp.ACTIVE_CELL_ROUTERS
     assert {"teams_personen", "praesenz", "auth_proxy", "files_v2"} <= bp.ACTIVE_CELL_ROUTERS
+    # push for the companion apps is core, not an optional app
+    assert "ntfy_proxy" in bp.ACTIVE_CELL_ROUTERS
     assert {"immich", "paperless", "browser", "dienste", "office"} <= bp.DISABLED_TOOL_FILES
     # Picked by hand, opt-in Odoo included
+    tiles = [a["id"] for a in _lade_mit("inventree").zellen_apps(kacheln, "demo.example.com", home_domain="example.com")]
+    assert tiles[-1] == "inventree"
+    out = _lade_mit("superset").zellen_apps(kacheln, "demo.example.com", home_domain="example.com")
+    assert out[-1]["id"] == "superset"
+    assert out[-1]["config"]["url"] == "https://superset.demo.example.com/superset/welcome/"
     bp = _lade_mit("photos, odoo")
     out = bp.zellen_apps(kacheln, "demo.example.com", home_domain="example.com")
     assert [a["id"] for a in out] == ["files", "immich", "clara-routinen", "odoo"]
     assert out[-1]["config"]["url"] == "https://odoo.demo.example.com/web"
     assert bp.optional_app_enabled("odoo") and not bp.optional_app_enabled("office")
+    assert "odoo_lesen" in bp.ACTIVE_CELL_ROUTERS and "odoo" not in bp.DISABLED_TOOL_FILES
     # Typos must not silently produce a cell without the app
     try:
         _lade_mit("fotos")

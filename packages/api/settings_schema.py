@@ -18,7 +18,7 @@ Persistence rules (KDE model):
 
 from __future__ import annotations
 
-from betriebsprofil import ASSISTANT_NAME, PRODUCT_NAME
+from betriebsprofil import ASSISTANT_NAME, PRODUCT_NAME, heim_default
 import re
 from dataclasses import dataclass, field
 from typing import Any
@@ -171,7 +171,7 @@ MODULES: tuple[SettingsModule, ...] = (
                 description="'Skin' folgt dem gewählten Design, 'Automatisch' wechselt nach Tageszeit.",
             ),
             SettingDef(
-                key="lightSkinId", type="string", default="windows11-light", max=64,
+                key="lightSkinId", type="string", default="bloom-light", max=64,
                 label="Design für hell:",
                 depends_on="",  # only relevant for themeMode=auto/light, but always writable
             ),
@@ -187,6 +187,20 @@ MODULES: tuple[SettingsModule, ...] = (
             SettingDef(
                 key="sunsetHour", type="int", default=20, min=0, max=23,
                 label="Dunkel ab (Stunde):",
+            ),
+            # Location for the animated skins (sun and moon follow the real sky).
+            # Default = location of the installation, the same value the weather
+            # widget uses — so a cell is right without any input.
+            SettingDef(
+                key="latitude", type="float", default=float(heim_default("WEATHER_LAT") or "51.16"),
+                min=-90, max=90,
+                label="Breitengrad:",
+                description="Für Sonnen- und Mondstand der animierten Designs.",
+            ),
+            SettingDef(
+                key="longitude", type="float", default=float(heim_default("WEATHER_LON") or "10.45"),
+                min=-180, max=180,
+                label="Längengrad:",
             ),
             SettingDef(
                 key="accentSource", type="enum", default="skin",

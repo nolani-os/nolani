@@ -1,0 +1,77 @@
+# CELL ONLY — endpoints are the cell's internal names; never copy into the home tools directory.
+# Odoo (ERP/CRM) tools for Clara in a cell — only where the optional app `odoo` runs
+# (betriebsprofil.OPTIONAL_APPS drops this file otherwise).
+# Identity: always the CALLER's own Odoo account (`per_user`). The cell creates that
+# access on first use (services/zellen_zugaenge.py); calls run with exactly the rights
+# the user has in Odoo — there is no shared account.
+# Reading tools are on the routine read list (services/routinen.LESEN); creating a
+# contact becomes a proposal in routines.
+tools:
+  - name: search_contacts
+    description: |
+      Find contacts (people and companies) in the user's Odoo by name, email or company.
+      Empty `suche`: newest contacts. Returns per contact: display_name, email, phone,
+      city, is_company and a `link` — give the user the link to open the contact.
+    endpoint: "http://localhost:8090/api/claraos/odoo/kontakte/suche"
+    method: POST
+    auth: api_key
+    per_user: true
+    credential_app_id: odoo
+    credential_key: zugang
+    auth_scheme: "header:x-odoo-zugang"
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        suche: { type: string, maxLength: 200, description: "name, email or company" }
+        anzahl: { type: integer, minimum: 1, maximum: 50, default: 10 }
+
+  - name: search_records
+    description: |
+      Find business records in the user's Odoo. `bereich`: kontakte | leads (CRM) |
+      angebote (quotations/sales orders) | rechnungen (invoices) | aufgaben (project
+      tasks) | produkte. `suche` matches the name/number; empty = newest first.
+      If the Odoo app for an area is not installed, the answer says so (`hinweis`) —
+      tell the user, do not guess. Every hit has a `link`.
+    endpoint: "http://localhost:8090/api/claraos/odoo/suche"
+    method: POST
+    auth: api_key
+    per_user: true
+    credential_app_id: odoo
+    credential_key: zugang
+    auth_scheme: "header:x-odoo-zugang"
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        bereich: { type: string, enum: [kontakte, leads, angebote, rechnungen, aufgaben, produkte], default: kontakte }
+        suche: { type: string, maxLength: 200 }
+        anzahl: { type: integer, minimum: 1, maximum: 50, default: 10 }
+
+  - name: create_contact
+    description: |
+      Create a contact in the user's Odoo — a person or (firma: true) a company. For a
+      person at a company, give the company in `zugehoerig_zu` (it must already exist;
+      otherwise create the company first). Check with search_contacts first that the
+      contact does not exist yet. Returns the new contact's `link`.
+    endpoint: "http://localhost:8090/api/claraos/odoo/kontakte"
+    method: POST
+    auth: api_key
+    per_user: true
+    credential_app_id: odoo
+    credential_key: zugang
+    auth_scheme: "header:x-odoo-zugang"
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        email: { type: string, maxLength: 200 }
+        telefon: { type: string, maxLength: 60 }
+        firma: { type: boolean, default: false }
+        zugehoerig_zu: { type: string, maxLength: 200, description: "existing company of the person" }
+        strasse: { type: string, maxLength: 200 }
+        plz: { type: string, maxLength: 20 }
+        ort: { type: string, maxLength: 100 }
+        notiz: { type: string, maxLength: 2000 }
+      required: [name]
