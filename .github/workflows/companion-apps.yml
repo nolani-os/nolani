@@ -54,8 +54,11 @@ jobs:
           IFS=. read -r a b c <<EOF
           $name
           EOF
+          code=$((a * 10000 + b * 100 + c))
+          # a build check without release has version 0.0.0 — Gradle refuses versionCode 0
+          [ "$code" -gt 0 ] || code=1
           echo "name=$name" >> "$GITHUB_OUTPUT"
-          echo "code=$((a * 10000 + b * 100 + c))" >> "$GITHUB_OUTPUT"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
 
   desktop:
     name: Desktop (Linux AppImage, Windows installer)
