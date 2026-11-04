@@ -150,7 +150,7 @@ def main():
     # InvenTree (django-allauth, provider_id `authentik`) — only with `--apps inventree`
     oidc_app("inventree", "InvenTree", os.environ.get("INVENTREE_OIDC_SECRET"),
              [f"https://inventree.{DOM}/accounts/authentik/login/callback/"],  # allauth 65: no /oidc/ prefix
-             {"openid", "email", "profile"})
+             {"openid", "email", "profile"}, split_name=True)
     # Superset (Flask-AppBuilder, provider `authentik`) — only with `--apps superset`.
     # `profile` carries the groups: clara-admins become Superset admins.
     oidc_app("superset", "Superset", os.environ.get("SUPERSET_OIDC_SECRET"),
@@ -212,6 +212,7 @@ def proxy_app(name, slug, title, ext_host):
 
 
 VERIFIED_EMAIL_MAPPING = "claraos-cell: email (verified)"
+SPLIT_PROFILE_MAPPING = "claraos-cell: profile (given and family name)"
 
 
 def email_fest():
@@ -254,10 +255,38 @@ def verified_email_mapping():
     return req("POST", "/propertymappings/provider/scope/", feld)["pk"]
 
 
-def oidc_app(slug, title, secret, redirects, want, email_verified=False):
+def split_profile_mapping():
+    """Own `profile` scope mapping that splits the display name into given and family name;
+    returns its pk. Authentik's default sends the WHOLE name as given_name when the account
+    has no given_name/family_name attributes (cell accounts only have a name). django-allauth
+    (InvenTree) then fills the empty last name from the name a second time:
+    "Alex Morgan" became "Alex Morgan Morgan"."""
+    feld = {
+        "name": SPLIT_PROFILE_MAPPING, "scope_name": "profile",
+        "description": "Profile with the display name split into given and family name",
+        "expression": (
+            'name = request.user.name or ""\n'
+            'vor, _, nach = name.strip().partition(" ")\n'
+            'return {"name": name,\n'
+            '        "given_name": ak_obj_attr(request.user, "given_name") or vor,\n'
+            '        "family_name": ak_obj_attr(request.user, "family_name") or nach,\n'
+            '        "preferred_username": request.user.username, "nickname": request.user.username,\n'
+            '        "groups": [g.name for g in request.user.groups.all()]}'),
+    }
+    hit = [m for m in req("GET", "/propertymappings/provider/scope/?page_size=500")["results"]
+           if m.get("name") == SPLIT_PROFILE_MAPPING]
+    if hit:
+        if hit[0].get("expression") != feld["expression"]:
+            req("PATCH", f"/propertymappings/provider/scope/{hit[0]['pk']}/", feld)
+        return hit[0]["pk"]
+    return req("POST", "/propertymappings/provider/scope/", feld)["pk"]
+
+
+def oidc_app(slug, title, secret, redirects, want, email_verified=False, split_name=False):
     """Create or update a confidential OAuth2 provider + application `slug`.
     Skipped without a secret (the cell then simply has no such app).
-    email_verified: use the cell's own email mapping instead of Authentik's default."""
+    email_verified: use the cell's own email mapping instead of Authentik's default.
+    split_name: use the cell's own profile mapping (given/family name split)."""
     if not secret:
         print(f"provider '{slug}': kein Secret — übersprungen")
         return
@@ -266,9 +295,12 @@ def oidc_app(slug, title, secret, redirects, want, email_verified=False):
     # `or ""`: should the managed filter ever be ignored too, our own mapping has none.
     mappings = [m["pk"] for m in scopes if (m.get("managed") or "").startswith("goauthentik.io/providers/oauth2/scope-")
                 and m["managed"].rsplit("scope-", 1)[-1] in want
-                and not (email_verified and m["managed"].endswith("scope-email"))]
+                and not (email_verified and m["managed"].endswith("scope-email"))
+                and not (split_name and m["managed"].endswith("scope-profile"))]
     if email_verified and "email" in want:
         mappings.append(verified_email_mapping())
+    if split_name and "profile" in want:
+        mappings.append(split_profile_mapping())
     keys = req("GET", "/crypto/certificatekeypairs/?has_key=true")["results"]
     felder = {
         "name": slug,

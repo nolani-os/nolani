@@ -41,7 +41,7 @@ def ich(frame) -> dict:
         if (!r.ok) return {status: r.status};
         const j = await r.json();
         return {status: r.status, username: j.username, email: j.email,
-                staff: j.is_staff, superuser: j.is_superuser,
+                staff: j.is_staff, superuser: j.is_superuser, vor: j.first_name, nach: j.last_name,
                 gruppen: (j.groups || []).map(g => g.name || g)};
     }""")
 
@@ -127,6 +127,11 @@ with sync_playwright() as p:
     schritt("normales_konto_gruppe_nutzer",
             not wer.get("staff") and not wer.get("superuser") and "nutzer" in (wer.get("gruppen") or []),
             **{k: wer.get(k) for k in ("email", "staff", "superuser", "gruppen")})
+
+    # 5b. The name arrives split once: testkonto.py names the account "Zelle Test"
+    # (allauth filled an empty family_name from the name again: "Zelle Test Test")
+    schritt("name_einmal", (wer.get("vor"), wer.get("nach")) == ("Zelle", "Test"),
+            vorname=wer.get("vor"), nachname=wer.get("nach"))
 
     # 6. The rights work: create a part through InvenTree's API, as the user
     marke = f"Nolani-Test {int(time.time())}"

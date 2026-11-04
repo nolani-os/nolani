@@ -18,7 +18,8 @@
 </p>
 
 <p align="center">
-  <img src="docs/assets/hero.gif" alt="Nolani opens next week in the calendar, adds a task and writes a Next steps section into an open document" width="900">
+  <a href="docs/assets/agent.mp4"><img src="docs/assets/agent.webp" alt="Nolani opens next week in the calendar, adds a task, opens the project brief and writes a Next steps section into it" width="900"></a>
+  <br><sub>Nolani at work, in the Meadow look (sped up; click for the video in real time)</sub>
 </p>
 
 NolaniOS gives you files, office documents, mail, calendar, tasks, team chat and video calls,
@@ -46,16 +47,16 @@ you see it happen on screen.
 
 <table>
   <tr>
-    <td><img src="docs/assets/planner.png" alt="Planner with tasks, calendar and Gantt"><br><b>Planner</b>: tasks, calendar, Gantt</td>
-    <td><img src="docs/assets/files.png" alt="Files"><br><b>Files and office</b>: Nextcloud and Collabora</td>
+    <td><img src="docs/assets/planner.webp" alt="Planner with tasks and projects, Orchard Light look"><br><b>Planner</b>: tasks, calendar, Gantt</td>
+    <td><img src="docs/assets/files.webp" alt="Files app, Bloom Light look"><br><b>Files and office</b>: Nextcloud and Collabora</td>
   </tr>
   <tr>
-    <td><img src="docs/assets/agent.png" alt="Nolani at work"><br><b>Nolani</b> operates the apps for you</td>
-    <td><img src="docs/assets/mobile.png" alt="Mobile shell" width="260"><br><b>Mobile</b>: the same workspace on the phone</td>
+    <td><img src="docs/assets/knowledge.webp" alt="A recipe collection as a table with number, select, rating and checkbox columns"><br><b>Knowledge</b>: collections as tables, boards and calendars</td>
+    <td><img src="docs/assets/teams.webp" alt="A team with channels and a conversation in the General channel, Orchard look"><br><b>Teams</b>: chat, channels and calls</td>
   </tr>
   <tr>
-    <td><img src="docs/assets/knowledge.png" alt="A recipe collection as a table with number, select, rating and checkbox columns"><br><b>Knowledge</b>: collections as tables, boards and calendars</td>
-    <td><img src="docs/assets/teams.png" alt="A team with channels and a conversation in the General channel"><br><b>Teams</b>: chat, channels and calls</td>
+    <td><img src="docs/assets/agent-task.webp" alt="Nolani added a task to the Website relaunch project and shows it in the planner, Meadow look"><br><b>Nolani</b> adds a task and shows it to you</td>
+    <td align="center"><img src="docs/assets/mobile-home.webp" alt="Mobile shell" width="200"> <img src="docs/assets/mobile-planner.webp" alt="Planner on the phone" width="200"><br><b>Mobile</b>: the same workspace on the phone</td>
   </tr>
 </table>
 
@@ -81,9 +82,62 @@ Apps marked NolaniOS are written in this repository. The others run unchanged in
 containers; NolaniOS signs you in to them, creates your accounts there and gives Nolani tools
 to use them.
 
-The desktop comes in six looks (`packages/skins`): Glass, Bloom, Orchard, the living photos
-Meadow and Shore, and a corporate template that derives a company's skin from two colours and
-a logo.
+## Looks
+
+<p align="center">
+  <a href="docs/assets/looks.mp4"><img src="docs/assets/looks.webp" alt="The look changes in the quick settings: Bloom Light, Orchard Light, The Medical Company, Meadow, Shore, Orchard" width="900"></a>
+</p>
+
+The desktop comes in six looks (`packages/skins`), each switched in the quick settings:
+Glass, Bloom, Orchard (light and dark), the living photos Meadow and Shore (a looping video
+with a sky that follows the real sun), and a corporate template that derives a company's
+skin from two colours and a logo. The look follows the account to every device.
+
+<table>
+  <tr>
+    <td><img src="docs/assets/look-clara-glass.webp" alt="Glass"><br>Glass</td>
+    <td><img src="docs/assets/look-bloom-light.webp" alt="Bloom Light"><br>Bloom Light</td>
+    <td><img src="docs/assets/look-orchard-light.webp" alt="Orchard Light"><br>Orchard Light</td>
+    <td><img src="docs/assets/look-corporate-medical.webp" alt="Corporate template"><br>Corporate template</td>
+  </tr>
+  <tr>
+    <td><img src="docs/assets/look-meadow.webp" alt="Meadow"><br>Meadow</td>
+    <td><img src="docs/assets/look-shore.webp" alt="Shore"><br>Shore</td>
+    <td><img src="docs/assets/look-orchard-dark.webp" alt="Orchard"><br>Orchard</td>
+    <td><img src="docs/assets/look-bloom-dark.webp" alt="Bloom"><br>Bloom</td>
+  </tr>
+</table>
+
+## Business apps
+
+<p align="center">
+  <a href="docs/assets/business.mp4"><img src="docs/assets/business.webp" alt="Odoo, InvenTree, Superset, Mautic and OrangeHRM opened one after the other from the start menu, without a second login" width="900"></a>
+</p>
+
+Five optional apps for a company, each a tile on the desktop: **Odoo** (contacts, ERP/CRM),
+**InvenTree** (parts and stock), **Apache Superset** (dashboards), **Mautic** (contacts,
+campaigns, newsletters) and **OrangeHRM** (employees, leave, time). Switch them on with
+`./setup.sh <domain> --apps odoo,inventree,superset,mautic,orangehrm`. Every user signs in
+once at the desktop; an account in the app is created on the first visit, with ordinary
+user rights (in Superset, the cell's administrators get its admin role). Nolani can search and
+add contacts in Odoo for you.
+
+<table>
+  <tr>
+    <td><img src="docs/assets/business-odoo.webp" alt="Odoo contacts"><br><b>Odoo</b>: contacts and companies</td>
+    <td><img src="docs/assets/business-inventree.webp" alt="InvenTree parts list with stock"><br><b>InvenTree</b>: parts and stock</td>
+  </tr>
+  <tr>
+    <td><img src="docs/assets/business-superset.webp" alt="Superset dashboard World Bank's Data"><br><b>Superset</b>: dashboards (example data)</td>
+    <td><img src="docs/assets/business-mautic.webp" alt="Mautic contacts with points"><br><b>Mautic</b>: contacts and campaigns</td>
+  </tr>
+  <tr>
+    <td><img src="docs/assets/business-orangehrm.webp" alt="OrangeHRM employee directory"><br><b>OrangeHRM</b>: employee directory, self-service</td>
+    <td></td>
+  </tr>
+</table>
+
+The data in these pictures is invented (`deploy/cell/seed_business.sh`).
 
 ## Nolani Knowledge, without a server
 
@@ -142,8 +196,8 @@ cd /opt/claraos
 
 Pick the optional apps with `--apps` (`photos`, `documents`, `browser`, `office`, `teams`,
 `odoo`, `inventree`, `superset`, `mautic`, `orangehrm`; `none` = only the core). The core needs
-about 4 GB of RAM at idle, so an 8 GB server fits the core plus one or two apps; the 16 GB
-server above runs everything. The choice is remembered, a later run with `--apps` replaces it.
+about 4 GB of RAM at idle; on an 8 GB test server the core plus all five business apps used
+5.7 GB. The 16 GB server above runs everything. The choice is remembered, a later run with `--apps` replaces it.
 
 `setup.sh` is idempotent and generates every secret **on the server** (`.env`, mode 0600).
 Put your model key into `.env` as `ANTHROPIC_API_KEY` (other providers via

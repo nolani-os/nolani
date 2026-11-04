@@ -5,6 +5,14 @@ does not follow semantic versioning yet.
 
 ## Unreleased
 
+- **README with the new looks**: screenshots and short videos recorded in the real shell —
+  Nolani at work in Meadow, the look changed in the quick settings, one desktop per look and
+  the five business apps opened from the start menu with demo data
+  (`deploy/cell/browser_schaufenster.py`, `seed_business.sh`, `schaufenster_schnitt.sh`).
+- **InvenTree shows names once**: accounts with only a display name became
+  "Alex Morgan Morgan" (Authentik sends the whole name as given name, django-allauth filled
+  the empty family name from it again). InvenTree now gets the cell's own profile mapping,
+  which splits the name once.
 - **TLS verification on by default** for the API's outgoing calls: the 69 `verify=False`
   call sites now take one switch (`CLARAOS_TLS_VERIFY`, default on; `CLARAOS_TLS_CA` for an
   internal CA bundle). The mail connection follows it unless `MAIL_TLS_VERIFY` says otherwise
