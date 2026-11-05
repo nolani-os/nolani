@@ -31,7 +31,7 @@
     "html-to-image": "^1.11.13",
     "jspdf": "^4.2.1",
     "markerjs2": "^2.32.7",
-    "matrix-js-sdk": "^42.4.0",
+    "matrix-js-sdk": "^45.0.0",
     "matrix-widget-api": "^1.19.0",
     "motion": "^12.0.0",
     "plotly.js-gl3d-dist-min": "^2.35.2",
