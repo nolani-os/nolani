@@ -13,7 +13,7 @@ websockets>=17.1
 # rejects non-ASCII handshake headers, and Authentik sends X-Authentik-Name with
 # non-ASCII characters (e.g. umlauts) -> every WS connect dies as 502/EOF.
 # Pinning <14 is impossible (dbos 2.x needs >=14); the wsproto parser tolerates them.
-wsproto>=1.2
+wsproto>=1.3.2
 # Agent orchestration foundation:
 # DBOS Transact for durable workflows (Postgres-backed, atomic-claim,
 # parent/child trees, exactly-once). MIT-licensed Python library that
