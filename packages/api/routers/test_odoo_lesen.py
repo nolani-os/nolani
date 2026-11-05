@@ -17,7 +17,7 @@ ZUGANG = {"x-odoo-zugang": "7:geheim"}
 class FakeOdoo:
     """Answers execute_kw like Odoo would for one user; records every call."""
 
-    def __init__(self, installiert=("res.partner",), abgelehnt=False):
+    def __init__(self, installiert=("res.partner", "crm.lead"), abgelehnt=False):
         self.installiert = set(installiert)
         self.abgelehnt = abgelehnt
         self.aufrufe: list[tuple] = []
@@ -31,14 +31,23 @@ class FakeOdoo:
             raise zz.OdooFehler("odoo.exceptions.UserError", f"Object {model} doesn't exist")
         if getattr(self, "verboten", None) == meth:
             raise zz.OdooFehler("odoo.exceptions.AccessError", "Sie sind nicht berechtigt …")
-        if meth == "search_read" and model == "res.partner" and kw.get("fields") == ["id", "display_name"]:
-            return [{"id": 3, "display_name": "Bau GmbH"}]
+        if meth == "search_read" and model == "res.partner" and "name" in kw.get("fields", []):
+            # name lookup (_eindeutig): "Bau" matches two, "Bau GmbH" exactly one
+            alle = [{"id": 3, "display_name": "Bau GmbH", "name": "Bau GmbH"},
+                    {"id": 4, "display_name": "Bau GmbH, Max Maier", "name": "Max Maier"}]
+            gesucht = pos[0][0][2].lower()
+            treffer = [a for a in alle if gesucht in a["name"].lower()]
+            if ["is_company", "=", True] in pos[0]:
+                treffer = [t for t in treffer if t["id"] == 3]
+            return treffer
         if meth == "search_read":
             return [{"id": 42, "display_name": "Erika Muster", "email": "erika@example.com",
                      "phone": False, "is_company": False, "city": "Köln",
                      "parent_id": [3, "Bau GmbH"]}]
         if meth == "create":
             return 99
+        if meth == "message_post":
+            return 555
         raise AssertionError(f"unerwartet: {model}.{meth}")
 
 
@@ -122,8 +131,10 @@ class FakeAdmin:
         if model == "ir.model.data":
             return [{"res_id": 4}, {"res_id": 5}]           # group_system, group_erp_manager
         if model == "res.users" and meth == "write":
+            raise AssertionError("no password write: it ends the user's open Odoo sessions")
+        if model == "res.users" and meth == "claraos_assistent_schluessel":
             self.geschrieben = pos
-            return True
+            return "k" * 40
         raise AssertionError(f"unerwartet: {model}.{meth}")
 
 
@@ -145,9 +156,10 @@ def admin(monkeypatch):
 def test_zugang_fuer_internes_konto(admin):
     fake = admin({"id": 9, "share": False, "groups_id": [1, 2]})
     werte = asyncio.run(zz._odoo("erika"))
-    uid, _, pw = werte["zugang"].partition(":")
-    assert uid == "9" and len(pw) >= 32
-    assert fake.geschrieben == [[9], {"password": pw}]
+    uid, _, schluessel = werte["zugang"].partition(":")
+    # an API key issued by the admin (module claraos_zugang), never a new password
+    assert uid == "9" and schluessel == "k" * 40
+    assert fake.geschrieben == [9, zz.ASSISTANT_NAME]
 
 
 @pytest.mark.parametrize("konto,grund", [
@@ -160,3 +172,46 @@ def test_kein_zugang_fuer_fehlende_portal_und_admin_konten(admin, konto, grund):
     with pytest.raises(zz.ZugangFehlt, match=grund):
         asyncio.run(zz._odoo("erika"))
     assert fake.geschrieben is None                          # no password was set
+
+
+def test_kontakt_mit_funktion(client, odoo):
+    r = client.post("/api/claraos/odoo/kontakte", headers=ZUGANG,
+                    json={"name": "Anna Berg", "funktion": "CEO", "zugehoerig_zu": "Bau GmbH"})
+    assert r.json()["angelegt"] is True
+    werte = [a for a in odoo.aufrufe if a[3] == "create"][0][4][0]
+    assert werte["function"] == "CEO" and werte["parent_id"] == 3
+
+
+def test_notiz_als_interne_notiz(client, odoo):
+    r = client.post("/api/claraos/odoo/notiz", headers=ZUGANG,
+                    json={"kontakt": "Bau GmbH", "text": "Auf der Messe getroffen"})
+    assert r.status_code == 200 and r.json()["angelegt"] is True
+    assert r.json()["link"].endswith("/odoo/res.partner/3")
+    post = [a for a in odoo.aufrufe if a[3] == "message_post"][0]
+    assert post[0] == 7 and post[4] == [[3]]
+    # internal note: never an email to followers
+    assert post[5]["subtype_xmlid"] == "mail.mt_note" and post[5]["message_type"] == "comment"
+
+
+def test_notiz_bei_mehrdeutigem_namen_nennt_kandidaten(client, odoo):
+    r = client.post("/api/claraos/odoo/notiz", headers=ZUGANG, json={"kontakt": "a", "text": "x"})
+    assert r.json()["angelegt"] is False and len(r.json()["kandidaten"]) == 2
+    assert not [a for a in odoo.aufrufe if a[3] == "message_post"]
+
+
+def test_verkaufschance_fuer_den_nutzer(client, odoo):
+    r = client.post("/api/claraos/odoo/verkaufschance", headers=ZUGANG,
+                    json={"titel": "50 Sensoren", "kontakt": "Bau GmbH", "erwarteter_umsatz": 12000,
+                          "abschluss_bis": "2026-12-15"})
+    assert r.status_code == 200 and r.json()["angelegt"] is True
+    assert r.json()["link"].endswith("/odoo/crm.lead/99")
+    werte = [a for a in odoo.aufrufe if a[2] == "crm.lead" and a[3] == "create"][0][4][0]
+    assert werte == {"name": "50 Sensoren", "type": "opportunity", "partner_id": 3, "user_id": 7,
+                     "expected_revenue": 12000, "date_deadline": "2026-12-15"}
+
+
+def test_verkaufschance_ohne_crm_sagt_es(client, odoo):
+    odoo.installiert.discard("crm.lead")
+    r = client.post("/api/claraos/odoo/verkaufschance", headers=ZUGANG,
+                    json={"titel": "x", "kontakt": "Bau GmbH"})
+    assert r.json()["angelegt"] is False and "CRM" in r.json()["hinweis"]

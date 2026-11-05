@@ -3,6 +3,7 @@
 
     ./run_tests.sh schaufenster                              # Kern-Apps + Nolani (Zelle mit Gehirn)
     SCHAUFENSTER_TEIL=business ./run_tests.sh schaufenster   # Business-Apps (Wegwerf-Zelle)
+    SCHAUFENSTER_TEIL=nolani-business ./run_tests.sh schaufenster   # Nolani in den Business-Apps
 
 Benennt das Testkonto für die Bilder um, legt Demo-Daten an und nimmt im Playwright-Container
 auf. Ergebnis in ./schaufenster-MMDD-HHMM/ (Rohmaterial für docs/assets, schaufenster_schnitt.sh).
@@ -21,9 +22,9 @@ umbenennen = ("from authentik.core.models import User\n"
 subprocess.run(["docker", "compose", "exec", "-T", "authentik", "ak", "shell"],
                input=umbenennen, text=True, check=False)
 TEIL = os.environ.get("SCHAUFENSTER_TEIL", "kern")
-if TEIL == "business":
+if TEIL in ("business", "nolani-business"):
     # Invented companies, parts, contacts and employees — throwaway cells only.
-    subprocess.run(["./seed_business.sh"], check=False)
+    subprocess.run(["bash", "seed_business.sh"], check=False)
 else:
     with open("seed_demo.py") as f:
         subprocess.run(["docker", "compose", "exec", "-T", "claraos-api", "python3", "-", USER],

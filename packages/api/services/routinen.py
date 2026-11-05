@@ -62,6 +62,8 @@ LESEN: dict[str, frozenset[str]] = {
     "routinen": frozenset({"list_routines"}),
     "peertube": frozenset({"search_videos", "recent_videos", "get_video"}),
     "odoo": frozenset({"search_contacts", "search_records"}),
+    "inventree": frozenset({"search_parts"}),
+    "mautic": frozenset({"search_mautic_contacts"}),
     "dienste": frozenset({"list_services"}),
     "immich": frozenset({"search_photos", "list_albums", "list_people", "photo_statistics"}),
     "mastodon": frozenset({"get_timeline", "get_local_timeline", "get_notifications",

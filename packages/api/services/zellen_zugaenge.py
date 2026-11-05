@@ -158,10 +158,11 @@ async def _odoo(username: str) -> dict:
     """Odoo: the user's own account, with exactly the rights it has in Odoo.
 
     Odoo issues API keys only to the signed-in user themselves (behind an identity
-    check), not through an admin. The user signs in via OIDC and has no password, so —
-    as for Paperless — the admin sets a random password for that (internal, non-admin)
-    account and the cell stores `uid:password` as the user's access. JSON-RPC calls
-    with it run as that user: record rules and access rights apply as in the UI."""
+    check), and the user signs in via OIDC without a password. The cell's Odoo module
+    claraos_zugang lets the admin issue an API key for that (internal, non-admin) account;
+    the cell stores `uid:key` as the user's access. JSON-RPC calls with it run as that
+    user: record rules and access rights apply as in the UI. (Until 05.11. the admin set a
+    random password — that ended the user's open Odoo sessions.)"""
     admin_pw = os.environ.get("ODOO_ADMIN_PASSWORD", "")
     if not admin_pw:
         raise ZugangFehlt(f"Odoo ist in dieser Zelle nicht für {ASSISTANT_NAME} eingerichtet.")
@@ -188,12 +189,112 @@ async def _odoo(username: str) -> dict:
                               fields=["res_id"])
     if {g["res_id"] for g in gruppen} & set(konto.get("groups_id") or []):
         raise ZugangFehlt(f"Für Odoo-Administratoren legt {ASSISTANT_NAME} keinen Zugang an.")
-    pw = secrets.token_urlsafe(32)
-    await als_admin("res.users", "write", [konto["id"]], {"password": pw})
-    return {"zugang": f"{konto['id']}:{pw}"}
+    # An API key of the user's own account, issued by the admin through the cell's module
+    # claraos_zugang (deploy/cell/odoo). Not a new password: the password is part of Odoo's
+    # session token, and changing it ended the user's open Odoo sessions.
+    try:
+        schluessel = await als_admin("res.users", "claraos_assistent_schluessel", konto["id"], ASSISTANT_NAME)
+    except OdooFehler as e:
+        if "claraos_assistent_schluessel" in e.message or "AttributeError" in e.name:
+            raise ZugangFehlt(f"Odoo in dieser Zelle ist noch nicht für {ASSISTANT_NAME} vorbereitet "
+                              "(Modul claraos_zugang) — der Betreiber führt setup.sh erneut aus.") from e
+        raise
+    return {"zugang": f"{konto['id']}:{schluessel}"}
 
 
-_ERZEUGER = {"paperless": _paperless, "mastodon": _mastodon, "immich": _immich, "odoo": _odoo}
+# ── InvenTree ─────────────────────────────────────────────────────────────────
+INVENTREE_URL = os.environ.get("INVENTREE_INTERNAL_URL", "http://inventree-server:8000").rstrip("/")
+
+
+async def _inventree(username: str) -> dict:
+    """InvenTree: an API token of the user's own account (roles of their group apply).
+
+    A superuser may issue a token for another user (POST /api/user/tokens/ with `user`),
+    so the cell's admin login does exactly that for the (non-staff) account, named after
+    the assistant; earlier tokens of that name are revoked. Only the token is stored.
+    (Until 05.11. the admin set a random password and the account fetched its own token —
+    Django then ended the user's open InvenTree sessions.)"""
+    admin_pw = os.environ.get("INVENTREE_ADMIN_PASSWORD", "")
+    if not admin_pw:
+        raise ZugangFehlt(f"InvenTree ist in dieser Zelle nicht für {ASSISTANT_NAME} eingerichtet.")
+    admin = httpx.BasicAuth(os.environ.get("INVENTREE_ADMIN_USER", "admin"), admin_pw)
+    async with httpx.AsyncClient(timeout=20) as c:  # cell-internal, plain HTTP
+        r = await c.get(f"{INVENTREE_URL}/api/user/", auth=admin, params={"search": username, "limit": 20})
+        r.raise_for_status()
+        daten = r.json()
+        konten = [k for k in (daten.get("results", []) if isinstance(daten, dict) else daten)
+                  if k.get("username") == username]
+        if not konten:
+            raise ZugangFehlt(f"Öffne InvenTree einmal über die Kachel und melde dich an — danach kann "
+                              f"{ASSISTANT_NAME} dort für dich arbeiten.")
+        konto = konten[0]
+        if konto.get("is_staff") or konto.get("is_superuser"):
+            raise ZugangFehlt(f"Für InvenTree-Administratoren legt {ASSISTANT_NAME} keinen Zugang an.")
+        r = await c.get(f"{INVENTREE_URL}/api/user/tokens/", auth=admin,
+                        params={"all_users": "true", "user": konto["pk"], "limit": 50})
+        r.raise_for_status()
+        daten = r.json()
+        for alt in (daten.get("results", []) if isinstance(daten, dict) else daten):
+            if alt.get("name") == ASSISTANT_NAME and alt.get("user") == konto["pk"] and not alt.get("revoked"):
+                await c.delete(f"{INVENTREE_URL}/api/user/tokens/{alt['id']}/", auth=admin,
+                               params={"all_users": "true"})
+        r = await c.post(f"{INVENTREE_URL}/api/user/tokens/", auth=admin,
+                         json={"name": ASSISTANT_NAME, "user": konto["pk"]})
+        r.raise_for_status()
+        token = r.json().get("token")
+    if not token:
+        raise RuntimeError("InvenTree: kein Token erhalten")
+    return {"token": token}
+
+
+# ── Mautic ────────────────────────────────────────────────────────────────────
+MAUTIC_URL = os.environ.get("MAUTIC_INTERNAL_URL", "http://mautic").rstrip("/")
+# The cell's door that sets an account's password (service mautic-zugang, deploy/cell)
+MAUTIC_ZUGANG_URL = os.environ.get("MAUTIC_ZUGANG_URL", "http://mautic-zugang:8099").rstrip("/")
+
+
+async def _mautic(username: str) -> dict:
+    """Mautic: Basic auth of the user's own account (role "Nutzer", provision_mautic.php).
+
+    Mautic accounts of a cell come through SAML and have a random password nobody knows.
+    The admin login only looks the account up (and refuses administrators); the new
+    random password is set through the cell's own door (service mautic-zugang,
+    key-protected, internal network only), because Mautic's user API refuses it. The cell stores
+    `username:password`; the API (internal only) then runs with that role's rights."""
+    admin_pw = os.environ.get("MAUTIC_ADMIN_PASSWORD", "")
+    if not admin_pw:
+        raise ZugangFehlt(f"Mautic ist in dieser Zelle nicht für {ASSISTANT_NAME} eingerichtet.")
+    from routers.mautic_werkzeuge import proxy_kopf  # Mautic redirects plain HTTP otherwise
+    admin = httpx.BasicAuth("admin", admin_pw)
+    async with httpx.AsyncClient(timeout=20, headers=proxy_kopf()) as c:  # cell-internal, plain HTTP
+        r = await c.get(f"{MAUTIC_URL}/api/users", auth=admin, params={"search": username, "limit": 20})
+        r.raise_for_status()
+        alle = r.json().get("users") or {}  # Mautic lists as {id: user} (or a plain list)
+        konten = [k for k in (alle.values() if isinstance(alle, dict) else alle)
+                  if k.get("username") == username]
+        if not konten:
+            raise ZugangFehlt(f"Öffne Mautic einmal über die Kachel und melde dich an — danach kann "
+                              f"{ASSISTANT_NAME} dort für dich arbeiten.")
+        konto = konten[0]
+        if (konto.get("role") or {}).get("isAdmin"):
+            raise ZugangFehlt(f"Für Mautic-Administratoren legt {ASSISTANT_NAME} keinen Zugang an.")
+        # Mautic's user API refuses password changes of existing accounts (drops the field,
+        # still answers 200) — the cell's own door does it (deploy/cell/mautic_zugang.php).
+        schluessel = os.environ.get("MAUTIC_ZUGANG_KEY", "")
+        if not schluessel:
+            raise ZugangFehlt(f"Mautic ist in dieser Zelle nicht für {ASSISTANT_NAME} eingerichtet.")
+        pw = secrets.token_urlsafe(32)
+        r = await c.post(f"{MAUTIC_ZUGANG_URL}/", headers={"X-Zelle-Schluessel": schluessel},
+                         json={"username": username, "password": pw})
+        r.raise_for_status()
+        # The new password works for the account itself — otherwise nothing is stored.
+        r = await c.get(f"{MAUTIC_URL}/api/users/self", auth=httpx.BasicAuth(username, pw))
+        r.raise_for_status()
+    return {"zugang": f"{username}:{pw}"}
+
+
+_ERZEUGER = {"paperless": _paperless, "mastodon": _mastodon, "immich": _immich, "odoo": _odoo,
+             "inventree": _inventree, "mautic": _mautic}
 
 
 def kann(app_id: str) -> bool:

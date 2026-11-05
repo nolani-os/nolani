@@ -67,5 +67,25 @@ pruefe(4, "Bereich ohne installierte App: Hinweis statt Fehler",
 s, d = werkzeug("search_records", {"bereich": "res.users"})
 pruefe(5, "fremdes Modell abgelehnt (422)", s == 422, f"HTTP {s}")
 
+# A customer with a contact person, a note and an opportunity — the demo story
+FIRMA = f"{MARKE} GmbH"
+s, d = werkzeug("create_contact", {"name": FIRMA, "firma": True, "ort": "Köln"})
+pruefe(6, "Firma angelegt", s == 200 and antwort(d).get("angelegt"), f"HTTP {s} {str(d)[:200]}")
+s, d = werkzeug("create_contact", {"name": f"{MARKE} Anna", "funktion": "CEO", "zugehoerig_zu": FIRMA})
+pruefe(7, "Ansprechpartnerin mit Funktion an der Firma", s == 200 and antwort(d).get("angelegt"),
+       f"HTTP {s} {str(d)[:200]}")
+s, d = werkzeug("add_note", {"kontakt": FIRMA, "text": "Auf der Messe getroffen (Nolani-Test)."})
+pruefe(8, "interne Notiz im Verlauf der Firma", s == 200 and antwort(d).get("angelegt"),
+       f"HTTP {s} {str(d)[:200]}")
+s, d = werkzeug("create_opportunity", {"titel": f"{MARKE} 50 Sensoren", "kontakt": FIRMA,
+                                       "erwarteter_umsatz": 12000})
+chance = antwort(d)
+pruefe(9, "Verkaufschance in der Pipeline (CRM, als der Nutzer)",
+       s == 200 and chance.get("angelegt") and "/odoo/crm.lead/" in chance.get("link", ""),
+       f"HTTP {s} {str(d)[:200]}")
+s, d = werkzeug("search_records", {"bereich": "leads", "suche": MARKE})
+pruefe(10, "Verkaufschance wiederfindbar", s == 200 and antwort(d).get("anzahl") == 1,
+       f"HTTP {s} {str(d)[:200]}")
+
 print("\nODOO-CLARA-TEST " + ("GRÜN" if ok else "ROT"))
 sys.exit(0 if ok else 1)

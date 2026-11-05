@@ -478,9 +478,87 @@ def business(b) -> None:
     video_ablegen(vctx, v, "business")
 
 
+def nolani_business(b) -> None:
+    """Video: Nolani works in the business apps — a new customer in Odoo, a small campaign
+    in Mautic, stock check and purchase order in InvenTree. Needs a cell with a brain."""
+    ctx = b.new_context(viewport=GROESSE, locale="en-US", timezone_id="Europe/Berlin")
+    page = ctx.new_page()
+    anmelden(page)
+    page.wait_for_timeout(6000)
+    begruessung_zu(page)
+    # The assistant works with the user's own app accounts — they come with the first visit.
+    for app in ("odoo", "inventree", "mautic"):
+        print(f"  {app} signed in: {app_anmelden(page, app)}", flush=True)
+    # Warm-up, not recorded: the first tool call per app creates the user's access, and that
+    # sets a new password — Odoo, InvenTree and Mautic then end the user's open sessions. So
+    # let Nolani touch each app once, then sign in to each again.
+    menue(page, True)
+    frage(page, "Look up the newest contact in Odoo, the parts below minimum stock in InvenTree "
+                "and the newest contact in Mautic. Just list them, do not change anything.")
+    ruhig(page, mindest=10, still=8, max_s=240)
+    menue(page, False)
+    # The brain may set the accesses only after its answer looked finished — wait, then sign
+    # in until each app really is signed in (a password set later would end it again).
+    page.wait_for_timeout(45000)
+    for app in ("odoo", "inventree", "mautic"):
+        for versuch in range(3):
+            if app_anmelden(page, app):
+                break
+            page.wait_for_timeout(15000)
+        print(f"  {app} signed in again after {versuch + 1} attempt(s)", flush=True)
+    alle_zu(page)
+    look(page, "orchard-dark", neu_laden=False)
+    staat = ctx.storage_state()
+    ctx.close()
+
+    vctx = b.new_context(viewport=GROESSE, locale="en-US", timezone_id="Europe/Berlin",
+                         storage_state=staat, record_video_dir=f"{OUT}/video/roh",
+                         record_video_size=GROESSE)
+    v = vctx.new_page()
+    v_start = time.time()  # the recording starts with the page
+    v.goto(SHELL + "/", wait_until="domcontentloaded")
+    v.wait_for_timeout(3000)
+    # A dark look: in Bloom Light and Orchard Light the chat bubbles are hard to read
+    # (grey text on grey) — to be fixed in the skins.
+    look(v, "orchard-dark")
+    alle_zu(v)
+    begruessung_zu(v)
+    t0 = time.time()
+    szenen = [
+        ("odoo-kunde", "In Odoo, create the company Miller Sensors Ltd in Hamburg with two contacts: "
+                       "Anna Becker, CEO, anna.becker@millersensors.example, and Tom Weiss, purchasing, "
+                       "tom.weiss@millersensors.example. Add a note that we met them at the trade fair, "
+                       "then show me the company."),
+        ("odoo-chance", "Create an opportunity '50 temperature sensors' for Miller Sensors worth 12,000 euros "
+                        "and show me the pipeline."),
+        ("mautic", "Add Anna and Tom to Mautic, put them into a new segment 'Trade fair 2026', draft a "
+                   "short welcome email and a follow-up, and build a campaign that sends the follow-up "
+                   "three days later. Show me the campaign."),
+        ("inventree", "Miller Sensors wants 50 TMP117 temperature sensors. Check our stock in InvenTree "
+                      "and if it is too low, create a purchase order for 100 at Sensor Supply Ltd. "
+                      "Show me the order."),
+    ]
+    for name, text in szenen:
+        beginn = round(time.time() - t0, 1)
+        menue(v, True)
+        frage(v, text)
+        ruhig(v, mindest=10, still=8, max_s=240)
+        v.wait_for_timeout(2000)
+        begruessung_zu(v)
+        v.screenshot(path=f"{OUT}/screenshots/nolani-{name}-chat.png")
+        menue(v, False)  # reveal what Nolani did
+        v.wait_for_timeout(6000)
+        v.screenshot(path=f"{OUT}/screenshots/nolani-{name}.png")
+        bericht["szenen"].append({"video": "nolani-business", "name": name, "text": text, "beginn_s": beginn,
+                                  "ende_s": round(time.time() - t0, 1), "fenster": fenster(v)})
+        print(f"  {name}: {fenster(v)}", flush=True)
+    bericht["vorlauf_s_nolani-business"] = round(t0 - v_start, 1)  # cut this off the front
+    video_ablegen(vctx, v, "nolani-business")
+
+
 with sync_playwright() as p:
     browser = p.chromium.launch(channel="chrome")
-    (business if TEIL == "business" else kern)(browser)
+    {"business": business, "nolani-business": nolani_business}.get(TEIL, kern)(browser)
     browser.close()
 shutil.rmtree(f"{OUT}/video/roh", ignore_errors=True)
 json.dump(bericht, open(f"{OUT}/szenen.json", "w"), ensure_ascii=False, indent=1)

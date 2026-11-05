@@ -20,4 +20,6 @@ RUN set -eu; \
     tar -xzf /tmp/sa.tgz -C /mnt/oca-addons --strip-components=1 "server-auth-${OCA_ADDONS_COMMIT}/auth_oidc"; \
     rm /tmp/sa.tgz; \
     chown -R odoo:odoo /mnt/oca-addons
+# The cell's own module: an API key for one user, issued by the admin (claraos_zugang/)
+COPY --chown=odoo:odoo claraos_zugang /mnt/oca-addons/claraos_zugang
 USER odoo

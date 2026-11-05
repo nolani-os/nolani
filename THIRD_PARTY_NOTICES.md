@@ -14,6 +14,7 @@ their own terms).
 | livekit-client 2.20.1 (LiveKit, Inc.) | `packages/shell/public/vendor/livekit-client.umd.min.js` | Apache-2.0 | unmodified build from npm; licence text: [LICENSES/Apache-2.0.txt](LICENSES/Apache-2.0.txt) |
 | Draco 3D decoder (Google LLC) | `packages/shell/public/vendor/draco/` | Apache-2.0 | unmodified; licence text: [LICENSES/Apache-2.0.txt](LICENSES/Apache-2.0.txt) |
 | daedalOS (Dustin Brett) | patterns adapted in `packages/core/src/wm/rndDefaults.ts`, `packages/core/src/wm/iframeCapture.ts` | MIT | see [LICENSES/MIT-daedalOS.txt](LICENSES/MIT-daedalOS.txt) |
+| symfony/dom-crawler 7.4.22, symfony/css-selector 7.4.22 (Symfony SAS), masterminds/html5 2.12.0 | added to the cell's Mautic image at build time (`deploy/cell/mautic/Dockerfile`); not stored in this repository | MIT | unmodified release archives with pinned checksums; Mautic 7.2's email editor needs them but its image lacks them |
 | OrangeHRM 5.9 (OrangeHRM Inc.) | `deploy/cell/orangehrm/OpenIdConnectRedirectController.php`, `SocialMediaAuthenticationService.php` | GPL-3.0-or-later | two files of the OpenID plugin, copied and modified (account creation on first login, `profile` scope); the original headers stay in place; licence text: [LICENSES/GPL-3.0.txt](LICENSES/GPL-3.0.txt). The Dockerfile patches three more files at build time. |
 
 ## Logos of other products

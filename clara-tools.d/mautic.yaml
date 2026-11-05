@@ -1,0 +1,119 @@
+# CELL ONLY — endpoints are the cell's internal names; never copy into the home tools directory.
+# Mautic (marketing automation) tools for Clara in a cell — only where the optional app
+# `mautic` runs (betriebsprofil.OPTIONAL_APPS drops this file otherwise).
+# Identity: always the CALLER's own Mautic account (`per_user`, role "Nutzer"). The cell
+# creates that access on first use (services/zellen_zugaenge.py).
+# Nothing here sends mail: emails are drafts and campaigns unpublished — sending and
+# publishing stay the user's click in Mautic.
+tools:
+  - name: search_mautic_contacts
+    description: |
+      Find marketing contacts in the user's Mautic by name, email or company (empty =
+      newest). Returns name, email, company, points and a `link`; to show one use
+      navigate_to mautic/contact {id}.
+    endpoint: "http://localhost:8090/api/claraos/mautic/kontakte/suche"
+    method: POST
+    auth: api_key
+    per_user: true
+    credential_app_id: mautic
+    credential_key: zugang
+    auth_scheme: "header:x-mautic-zugang"
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        suche: { type: string, maxLength: 200 }
+        anzahl: { type: integer, minimum: 1, maximum: 50, default: 10 }
+
+  - name: create_mautic_contact
+    description: |
+      Add a marketing contact to the user's Mautic (email required). If a contact with
+      that email exists, it is returned instead (`vorhanden: true`). Use it to bring
+      customers from Odoo into Mautic before putting them into a segment.
+    endpoint: "http://localhost:8090/api/claraos/mautic/kontakte"
+    method: POST
+    auth: api_key
+    per_user: true
+    credential_app_id: mautic
+    credential_key: zugang
+    auth_scheme: "header:x-mautic-zugang"
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        email: { type: string, minLength: 3, maxLength: 200 }
+        vorname: { type: string, maxLength: 100 }
+        nachname: { type: string, maxLength: 100 }
+        firma: { type: string, maxLength: 200 }
+        tags: { type: array, items: { type: string, maxLength: 50 }, maxItems: 10 }
+      required: [email]
+
+  - name: create_segment
+    description: |
+      Create a segment (contact list) in the user's Mautic and add existing contacts by
+      email address. Addresses that are no contacts yet are listed in `nicht_gefunden` —
+      create them with create_mautic_contact and add them again. Returns the segment's
+      `link`; navigate_to mautic/segment {id} shows it.
+    endpoint: "http://localhost:8090/api/claraos/mautic/segmente"
+    method: POST
+    auth: api_key
+    per_user: true
+    credential_app_id: mautic
+    credential_key: zugang
+    auth_scheme: "header:x-mautic-zugang"
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 150 }
+        beschreibung: { type: string, maxLength: 500 }
+        kontakte: { type: array, items: { type: string, maxLength: 200 }, maxItems: 200 }
+      required: [name]
+
+  - name: draft_segment_email
+    description: |
+      Draft an email to a segment in the user's Mautic: internal name, subject and plain
+      text (paragraphs separated by blank lines; an unsubscribe link is added). It is
+      saved as a DRAFT — nothing is sent; sending is the user's click in Mautic. Write
+      the text yourself from what the user wants to say. Returns the email's `link`.
+    endpoint: "http://localhost:8090/api/claraos/mautic/emails"
+    method: POST
+    auth: api_key
+    per_user: true
+    credential_app_id: mautic
+    credential_key: zugang
+    auth_scheme: "header:x-mautic-zugang"
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 150 }
+        betreff: { type: string, minLength: 1, maxLength: 200 }
+        text: { type: string, minLength: 1, maxLength: 10000 }
+        segment: { type: string, minLength: 1, maxLength: 150 }
+      required: [name, betreff, text, segment]
+
+  - name: create_campaign
+    description: |
+      Build a simple campaign in the user's Mautic: for the contacts of a segment, send
+      the given emails (names of existing emails, in order) with `tage_dazwischen` days
+      between them. Created UNPUBLISHED — it starts only when the user publishes it in
+      Mautic; say so. Only this linear shape (no decisions/conditions). Returns the
+      campaign's `link`; navigate_to mautic/campaign {id} shows its canvas.
+    endpoint: "http://localhost:8090/api/claraos/mautic/kampagnen"
+    method: POST
+    auth: api_key
+    per_user: true
+    credential_app_id: mautic
+    credential_key: zugang
+    auth_scheme: "header:x-mautic-zugang"
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 150 }
+        beschreibung: { type: string, maxLength: 500 }
+        segment: { type: string, minLength: 1, maxLength: 150 }
+        emails: { type: array, items: { type: string, maxLength: 150 }, minItems: 1, maxItems: 5 }
+        tage_dazwischen: { type: integer, minimum: 0, maximum: 90, default: 3 }
+      required: [name, segment, emails]

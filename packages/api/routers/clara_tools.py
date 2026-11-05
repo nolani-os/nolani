@@ -60,6 +60,9 @@ def _validate_payload(payload: dict, tool: dict) -> None:
     try:
         jsonschema.validate(instance=payload, schema=schema)
     except jsonschema.ValidationError as e:
+        # Which field and rule — never the value (it can be the user's text)
+        logger.warning("tool payload invalid: %s, path %s, rule %s %s", tool.get("name"),
+                       list(e.absolute_path), e.validator, str(e.validator_value)[:80])
         raise HTTPException(
             status_code=422,
             detail={

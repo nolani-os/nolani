@@ -139,6 +139,8 @@ for t in ${1:-login files planner post teams chat medien browser routinen social
   elif [ "$t" = inventree ]; then
     # InvenTree tile → login via the cell → normal account of group nutzer → create a part
     im_browser inventree_test.py inventree-test -e CLARAOS_PRODUCT_NAME || rc=1
+    # Clara's InvenTree tools through the gateway (needs the account the browser test created)
+    docker compose exec -T claraos-api python3 - zelle-test < inventree_clara_test.py || rc=1
   elif [ "$t" = superset ]; then
     # Superset tile → login via the cell → account with role Alpha, not Admin → create a
     # dashboard. Output NOT into ./superset: that is the image build context.
@@ -148,6 +150,8 @@ for t in ${1:-login files planner post teams chat medien browser routinen social
     im_browser mautic_test.py mautic-test || rc=1
     # …and it can send to outside addresses (own mailbox with login)
     docker compose exec -T -u www-data mautic php < mautic_mail_test.php || rc=1
+    # Clara's Mautic tools through the gateway (contacts, segment, drafts, unpublished campaign)
+    docker compose exec -T claraos-api python3 - zelle-test < mautic_clara_test.py || rc=1
   elif [ "$t" = orangehrm ]; then
     # OrangeHRM tile → OIDC via the cell → new employee, role ESS → self-service works.
     # Output NOT into ./orangehrm: that is the image build context.

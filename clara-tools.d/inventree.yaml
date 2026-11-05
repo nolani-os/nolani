@@ -1,0 +1,98 @@
+# CELL ONLY — endpoints are the cell's internal names; never copy into the home tools directory.
+# InvenTree (parts, stock, purchasing) tools for Clara in a cell — only where the optional
+# app `inventree` runs (betriebsprofil.OPTIONAL_APPS drops this file otherwise).
+# Identity: always the CALLER's own InvenTree account (`per_user`). The cell creates that
+# access on first use (services/zellen_zugaenge.py); calls run with exactly the roles the
+# user's group has in InvenTree — there is no shared account.
+tools:
+  - name: search_parts
+    description: |
+      Find parts in the user's InvenTree by name, IPN or description, with their stock
+      and minimum stock. `nur_knapp: true` = only parts below their minimum stock (to
+      answer "what runs low?"). Every hit has a `link`; to show a part use navigate_to
+      inventree/part {id}.
+    endpoint: "http://localhost:8090/api/claraos/inventree/teile/suche"
+    method: POST
+    auth: api_key
+    per_user: true
+    credential_app_id: inventree
+    credential_key: token
+    auth_scheme: "header:x-inventree-token"
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        suche: { type: string, maxLength: 200 }
+        nur_knapp: { type: boolean, default: false }
+        anzahl: { type: integer, minimum: 1, maximum: 50, default: 10 }
+
+  - name: create_part
+    description: |
+      Create a purchasable part in the user's InvenTree, optionally in an existing
+      category, with a minimum stock and an initial stock at an existing location
+      (`anfangsbestand` needs `lagerort`). Check with search_parts first that it does
+      not exist yet. If a category or location is not found, the answer lists
+      candidates — ask the user. Returns the part's `link`.
+    endpoint: "http://localhost:8090/api/claraos/inventree/teile"
+    method: POST
+    auth: api_key
+    per_user: true
+    credential_app_id: inventree
+    credential_key: token
+    auth_scheme: "header:x-inventree-token"
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        beschreibung: { type: string, maxLength: 250 }
+        kategorie: { type: string, maxLength: 100 }
+        anfangsbestand: { type: number, minimum: 0 }
+        lagerort: { type: string, maxLength: 100 }
+        mindestbestand: { type: number, minimum: 0 }
+      required: [name]
+
+  - name: book_stock
+    description: |
+      Book stock of a part in (positive `menge`) or out (negative), e.g. goods received
+      or taken for an order, with a short note. Books on the part's largest stock item.
+      Returns the new total stock.
+    endpoint: "http://localhost:8090/api/claraos/inventree/bestand"
+    method: POST
+    auth: api_key
+    per_user: true
+    credential_app_id: inventree
+    credential_key: token
+    auth_scheme: "header:x-inventree-token"
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        teil: { type: string, minLength: 1, maxLength: 100 }
+        menge: { type: number }
+        notiz: { type: string, maxLength: 250 }
+      required: [teil, menge]
+
+  - name: create_purchase_order
+    description: |
+      Create a purchase order in the user's InvenTree at an existing supplier, with one
+      line for the part and quantity (optional unit price). The order stays a DRAFT —
+      nothing is sent to the supplier. Returns the order number and `link`; to show it
+      use navigate_to inventree/purchase_order {id}.
+    endpoint: "http://localhost:8090/api/claraos/inventree/bestellung"
+    method: POST
+    auth: api_key
+    per_user: true
+    credential_app_id: inventree
+    credential_key: token
+    auth_scheme: "header:x-inventree-token"
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        lieferant: { type: string, minLength: 1, maxLength: 100 }
+        teil: { type: string, minLength: 1, maxLength: 100 }
+        menge: { type: number, exclusiveMinimum: 0 }
+        preis: { type: number, minimum: 0 }
+        notiz: { type: string, maxLength: 250 }
+      required: [lieferant, teil, menge]

@@ -75,6 +75,29 @@ URL_PATTERNS: dict[str, dict[str, str]] = {
         "calendar": "/calendar",
         "calendar_date": "/calendar/{date}",       # calendar on the week/day of YYYY-MM-DD
     },
+    # Business apps of a cell (betriebsprofil.BUSINESS_TILES) — the tile signs the user in.
+    "odoo": {  # Odoo 18 routing (/odoo/<model>/<id>, /odoo/action-<xmlid>)
+        "contact": "/odoo/res.partner/{id}",
+        "contacts": "/odoo/action-contacts.action_contacts",
+        "opportunity": "/odoo/crm.lead/{id}",
+        "pipeline": "/odoo/action-crm.crm_lead_action_pipeline",
+    },
+    "inventree": {  # InvenTree 1.3 web UI (React, /web/…)
+        "part": "/web/part/{id}/details",
+        "parts": "/web/part/category/index/parts",
+        "stock_item": "/web/stock/item/{id}/details",
+        "purchase_order": "/web/purchasing/purchase-order/{id}/detail",
+        "purchase_orders": "/web/purchasing/index/purchaseorders",
+    },
+    "mautic": {  # Mautic 7 (/s/…)
+        "contact": "/s/contacts/view/{id}",
+        "contacts": "/s/contacts",
+        "segment": "/s/segments/view/{id}",
+        "segments": "/s/segments",
+        "email": "/s/emails/view/{id}",
+        "campaign": "/s/campaigns/view/{id}",
+        "campaigns": "/s/campaigns",
+    },
 }
 
 try:

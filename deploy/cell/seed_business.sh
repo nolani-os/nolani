@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Demo data for the business apps, for the README showcase (./run_tests.sh schaufenster with
 # SCHAUFENSTER_TEIL=business). Only on a throwaway cell: it writes invented companies, parts,
-# contacts and employees into the apps that are on. Idempotent — a second run adds nothing.
+# contacts and employees into the apps that are on. Idempotent — a second run adds nothing,
+# and it removes what an earlier take of the Nolani video created ("Miller Sensors"), so
+# every take starts from the same state.
 #
 #   ./seed_business.sh
 set -uo pipefail
@@ -18,6 +20,11 @@ env["res.users"].sudo().with_context(active_test=False).search(
     [("login", "=", "vorlage-neue-konten")]).write(
         {"lang": "en_US", "action_id": env.ref("contacts.action_contacts").id})  # opens on Contacts
 Partner = env["res.partner"].sudo()
+# The previous take of the Nolani video (browser_schaufenster.py nolani_business)
+if "crm.lead" in env:
+    env["crm.lead"].sudo().with_context(active_test=False).search([("partner_id.name", "=like", "Miller Sensors%")]).unlink()
+Partner.with_context(active_test=False).search(["|", ("name", "=like", "Miller Sensors%"),
+                                                ("email", "=like", "%@millersensors.example")]).unlink()
 firmen = [
     ("Brightwater Studio", "Hamburg", "hello@brightwater.example", [("Mia Lorenz", "Creative Director"), ("Jonas Weber", "Project Lead")]),
     ("Northfield Bakery", "Leipzig", "orders@northfield.example", [("Clara Böhm", "Owner")]),
@@ -46,6 +53,8 @@ if an inventree; then
   docker compose exec -T -w /home/inventree/src/backend/InvenTree inventree-server \
     python3 manage.py shell 2>/dev/null <<'PY' | grep ^SEED_
 from part.models import Part, PartCategory
+from order.models import PurchaseOrder
+PurchaseOrder.objects.filter(supplier__name="Sensor Supply Ltd").delete()  # previous take
 from stock.models import StockItem, StockLocation
 kat = {}
 for k in ("Electronics", "Fasteners", "Packaging"):
@@ -65,6 +74,17 @@ for name, k, menge in teile:
                                    component=True, purchaseable=True)
         StockItem.objects.create(part=teil, location=lager, quantity=menge)
         neu += 1
+# For the demo story: a sensor that runs low, and a supplier to order it from
+from company.models import Company
+sensor = Part.objects.filter(name="Temperature sensor TMP117").first()
+if not sensor:
+    sensor = Part.objects.create(name="Temperature sensor TMP117", category=kat["Electronics"],
+                                 description="I2C temperature sensor, ±0.1 °C — demo part",
+                                 component=True, purchaseable=True, minimum_stock=100)
+    StockItem.objects.create(part=sensor, location=lager, quantity=12)
+    neu += 1
+Company.objects.get_or_create(name="Sensor Supply Ltd", defaults={"is_supplier": True,
+                              "description": "Sensors and modules — demo supplier"})
 print("SEED_INVENTREE neu", neu)
 PY
 fi
@@ -82,6 +102,20 @@ $leute = [["Emma", "Fischer", "Brightwater Studio"], ["Lukas", "Wagner", "Northf
           ["Hannah", "Becker", "Kestrel Engineering"], ["Felix", "Schaefer", "Alder & Finch"],
           ["Sophie", "Koch", "Lumen Clinic"], ["Leon", "Bauer", "Harbour Coffee"],
           ["Marie", "Neumann", "Brightwater Studio"], ["Elias", "Wolf", "Kestrel Engineering"]];  // ASCII: Mautic strips umlauts from addresses, the duplicate check would miss
+// The previous take of the Nolani video: its contacts, segment, emails and campaign
+$em = $c->get('doctrine.orm.entity_manager');
+foreach ([Mautic\CampaignBundle\Entity\Campaign::class, Mautic\EmailBundle\Entity\Email::class,
+          Mautic\LeadBundle\Entity\LeadList::class] as $klasse) {
+    foreach ($em->createQueryBuilder()->select('x')->from($klasse, 'x')->where('x.name LIKE :n')
+        ->setParameter('n', '%Trade fair 2026%')->getQuery()->getResult() as $x) {
+        $em->remove($x);
+    }
+    $em->flush();
+}
+foreach ($repo->createQueryBuilder('l')->where('l.email LIKE :m')->setParameter('m', '%@millersensors.example')
+    ->getQuery()->getResult() as $l) {
+    $model->deleteEntity($l);
+}
 $neu = 0;
 foreach ($leute as [$vor, $nach, $firma]) {
     $mail = strtolower($vor.'.'.$nach).'@demo.invalid';

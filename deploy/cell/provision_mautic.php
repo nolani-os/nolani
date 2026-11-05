@@ -36,6 +36,10 @@ foreach ($c->get('mautic.security')->getPermissionObjects() as $bundle => $obj) 
     }
 }
 $rechte['user:profile'] = ['editname', 'editposition'];  // not username or e-mail
+// API access for the assistant's tools (services/zellen_zugaenge._mautic): the API runs
+// with exactly this role's rights. Not 'api:clients' (OAuth apps = administration). The
+// cell's Caddy keeps /api closed from outside; only claraos-api reaches it internally.
+$rechte['api:access'] = ['full'];
 $rolle = $em->getRepository(Role::class)->findOneBy(['name' => 'Nutzer']) ?? new Role();
 $neu = !$rolle->getId();
 $rolle->setName('Nutzer');
@@ -69,6 +73,10 @@ $parameters = array_merge($parameters, [
     // comes through Caddy — without this its SAML routes, which require https, redirect
     // to themselves forever. (Mautic reads this only from local.php, not from the env.)
     'trusted_proxies'              => ['0.0.0.0/0'],
+    // REST API with Basic auth for the assistant's per-user access (see role above) —
+    // reachable only inside the cell (caddy-optional/mautic.caddy answers /api with 404).
+    'api_enabled'                  => true,
+    'api_enable_basic_auth'        => true,
     // Own mailbox mautic@<domain> with login (provision_mail.sh) — without login Stalwart
     // only delivers to the cell's own mailboxes, a newsletter needs to go out. Implicit TLS
     // on 465; Stalwart's internal certificate is self-signed for "localhost", so no peer
@@ -81,5 +89,7 @@ $parameters = array_merge($parameters, [
 ]);
 file_put_contents($datei, "<?php\n\$parameters = ".var_export($parameters, true).";\n");
 
-echo 'MAUTIC Rolle Nutzer '.($neu ? 'angelegt' : 'aktuell').' ('.count($rechte)." Bereiche, ohne Verwaltung)\n";
+$api = !empty(($rolle->getRawPermissions() ?? [])['api'] ?? null);
+echo 'MAUTIC Rolle Nutzer '.($neu ? 'angelegt' : 'aktuell').' ('.count($rechte).' Bereiche, ohne Verwaltung, API '
+    .($api ? 'an' : 'noch aus — greift im zweiten Durchlauf').")\n";
 echo "MAUTIC Anmeldung über die Zelle (SAML) eingerichtet\n";

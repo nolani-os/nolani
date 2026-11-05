@@ -132,7 +132,7 @@ tools:
       after a lookup tool returned its id. The app tile signs the user in; never open
       such an app address in the browser. Views: planner calendar/calendar_date {date:
       YYYY-MM-DD, e.g. Monday of "next week"}/myday/tasks/task {id}/project {id}/gantt {id}; knowledge collections/collection {id}/object {id}/search;
-      ideas board/list/object {id}; paperless document {id}/search; immich album/photo/
+      ideas board/list/object {id}; paperless document {id}/search; odoo contact {id}/contacts/opportunity {id}/pipeline; inventree part {id}/parts/stock_item {id}/purchase_order {id}/purchase_orders; mautic contact {id}/contacts/segment {id}/segments/email {id}/campaign {id}/campaigns; immich album/photo/
       person {id}, people; peertube video/channel/search; mastodon profile/status/search.
       On an unknown view the answer lists the valid ones.
     endpoint: "http://localhost:8090/api/claraos/actions/clara/navigate_to"
@@ -143,8 +143,8 @@ tools:
       properties:
         app_id: { type: string }
         pattern_key: { type: string }
-        id: { type: string, description: "Shortcut for params {id}" }
-        params: { type: object }
+        id: { type: [string, integer], description: "Shortcut for params {id} (record ids of Odoo, InvenTree, Mautic are numbers)" }
+        params: { type: [object, string, "null"], description: "pattern placeholders; a JSON text is read as well" }
       required: [app_id, pattern_key]
 
   - name: dispatch

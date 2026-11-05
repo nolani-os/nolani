@@ -49,6 +49,8 @@ CELL_ROUTERS: frozenset[str] = frozenset({
     "immich_lesen",
     # Clara's Odoo tools (only with the optional app `odoo`, OPTIONAL_APPS)
     "odoo_lesen",
+    # Clara's InvenTree and Mautic tools (only with those optional apps)
+    "inventree_werkzeuge", "mautic_werkzeuge",
     "peertube_lesen",
     # Planner / calendar
     "planner", "planner_kalender", "planner_business", "nc_pim",
@@ -106,9 +108,11 @@ OPTIONAL_APPS: dict[str, dict[str, frozenset[str]]] = {
     # Business apps: off unless chosen explicitly (`OPT_IN_APPS`).
     "odoo": {"apps": frozenset({"odoo"}), "routers": frozenset({"odoo_lesen"}),
              "tools": frozenset({"odoo"})},
-    "inventree": {"apps": frozenset({"inventree"}), "routers": frozenset(), "tools": frozenset()},
+    "inventree": {"apps": frozenset({"inventree"}), "routers": frozenset({"inventree_werkzeuge"}),
+                  "tools": frozenset({"inventree"})},
     "superset": {"apps": frozenset({"superset"}), "routers": frozenset(), "tools": frozenset()},
-    "mautic": {"apps": frozenset({"mautic"}), "routers": frozenset(), "tools": frozenset()},
+    "mautic": {"apps": frozenset({"mautic"}), "routers": frozenset({"mautic_werkzeuge"}),
+               "tools": frozenset({"mautic"})},
     "orangehrm": {"apps": frozenset({"orangehrm"}), "routers": frozenset(), "tools": frozenset()},
 }
 OPT_IN_APPS: frozenset[str] = frozenset({"odoo", "inventree", "superset", "mautic", "orangehrm"})

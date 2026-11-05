@@ -167,10 +167,10 @@ def test_optional_apps():
     assert ids == ["files", "immich", "paperless", "selkies-browser", "services-hub",
                    "office-viewer", "teams-workspace", "element", "clara-routinen"]
     assert {"immich_lesen", "wopi", "hub"} <= bp.ACTIVE_CELL_ROUTERS
-    # Odoo is opt-in: without it, its router and tools are gone as well
-    assert bp.DISABLED_TOOL_FILES == {"mastodon", "peertube", "odoo"}
+    # Business apps are opt-in: without them, their routers and tools are gone as well
+    assert bp.DISABLED_TOOL_FILES == {"mastodon", "peertube", "odoo", "inventree", "mautic"}
     assert not {"inventree", "superset", "mautic", "orangehrm"} & bp.ENABLED_APPS    # opt-in like Odoo
-    assert "odoo_lesen" not in bp.ACTIVE_CELL_ROUTERS
+    assert not {"odoo_lesen", "inventree_werkzeuge", "mautic_werkzeuge"} & bp.ACTIVE_CELL_ROUTERS
     assert _lade_mit("all").ENABLED_APPS == bp.ENABLED_APPS
     # Empty: the minimal cell
     bp = _lade_mit("")
@@ -240,3 +240,10 @@ if __name__ == "__main__":
             print("✅", name)
     _lade(None)
     print("Alle Tests grün.")
+
+
+def test_business_werkzeuge_nur_mit_ihrer_app():
+    bp = _lade_mit("inventree,mautic")
+    assert {"inventree_werkzeuge", "mautic_werkzeuge"} <= bp.ACTIVE_CELL_ROUTERS
+    assert not {"inventree", "mautic"} & bp.DISABLED_TOOL_FILES
+    assert "odoo_lesen" not in bp.ACTIVE_CELL_ROUTERS and "odoo" in bp.DISABLED_TOOL_FILES

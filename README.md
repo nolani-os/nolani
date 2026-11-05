@@ -56,7 +56,7 @@ you see it happen on screen.
   </tr>
   <tr>
     <td><img src="docs/assets/agent-task.webp" alt="Nolani added a task to the Website relaunch project and shows it in the planner, Meadow look"><br><b>Nolani</b> adds a task and shows it to you</td>
-    <td align="center"><img src="docs/assets/mobile-home.webp" alt="Mobile shell" width="200"> <img src="docs/assets/mobile-planner.webp" alt="Planner on the phone" width="200"><br><b>Mobile</b>: the same workspace on the phone</td>
+    <td align="center"><img src="docs/assets/mobile-home.webp" alt="Mobile shell" width="160"> <img src="docs/assets/mobile-planner.webp" alt="Planner on the phone" width="160"><br><b>Mobile</b>: the same workspace on the phone</td>
   </tr>
 </table>
 
@@ -111,7 +111,8 @@ skin from two colours and a logo. The look follows the account to every device.
 ## Business apps
 
 <p align="center">
-  <a href="docs/assets/business.mp4"><img src="docs/assets/business.webp" alt="Odoo, InvenTree, Superset, Mautic and OrangeHRM opened one after the other from the start menu, without a second login" width="900"></a>
+  <a href="docs/assets/nolani-business.mp4"><img src="docs/assets/nolani-business.webp" alt="Nolani creates a customer with two contacts, a note and an opportunity in Odoo, a segment, two email drafts and a campaign in Mautic, checks stock in InvenTree and drafts a purchase order, and shows each result in its window" width="900"></a>
+  <br><sub>Nolani at work in Odoo, Mautic and InvenTree (sped up; click for the video in real time)</sub>
 </p>
 
 Five optional apps for a company, each a tile on the desktop: **Odoo** (contacts, ERP/CRM),
@@ -119,8 +120,16 @@ Five optional apps for a company, each a tile on the desktop: **Odoo** (contacts
 campaigns, newsletters) and **OrangeHRM** (employees, leave, time). Switch them on with
 `./setup.sh <domain> --apps odoo,inventree,superset,mautic,orangehrm`. Every user signs in
 once at the desktop; an account in the app is created on the first visit, with ordinary
-user rights (in Superset, the cell's administrators get its admin role). Nolani can search and
-add contacts in Odoo for you.
+user rights (in Superset, the cell's administrators get its admin role).
+
+Nolani works in three of them for you, always with your own account and rights:
+
+- **Odoo**: find contacts and records, create companies and their contacts, write a note into
+  a contact's history, create an opportunity in the CRM pipeline.
+- **Mautic**: find and add contacts, build a segment, draft emails to it, build a simple
+  campaign. Nothing is sent or published — that stays your click in Mautic.
+- **InvenTree**: find parts and what runs low, create a part with stock, book stock in and
+  out, draft a purchase order at a supplier.
 
 <table>
   <tr>

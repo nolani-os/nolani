@@ -5,6 +5,19 @@ does not follow semantic versioning yet.
 
 ## Unreleased
 
+- **Nolani works in the business apps**, always with the user's own account: in Odoo it
+  creates companies with contacts, notes and opportunities (CRM is now installed), in Mautic
+  contacts, segments, email drafts and simple unpublished campaigns, in InvenTree parts,
+  stock bookings and draft purchase orders — and shows the result in the app's window. The
+  README has a video of it.
+- **The assistant's access no longer signs you out**: Odoo (own module `claraos_zugang`)
+  and InvenTree now issue an API key/token for the user instead of the cell setting a new
+  password, which ended the user's open sessions in that app.
+- **Mautic can save emails again**: Mautic 7.2's email validation needs symfony/dom-crawler
+  and css-selector, which its image lacks — saving any email ended in an error. The cell
+  builds its own Mautic image with them.
+- **Mautic's API is closed from outside**: the Caddy rule that should answer `/api` with 404
+  never ran (Caddy orders `handle` before `respond`).
 - **README with the new looks**: screenshots and short videos recorded in the real shell —
   Nolani at work in Meadow, the look changed in the quick settings, one desktop per look and
   the five business apps opened from the start menu with demo data

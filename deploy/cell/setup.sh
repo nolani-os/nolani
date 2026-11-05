@@ -149,6 +149,7 @@ setv STALWART_ADMIN_PASSWORD "$(openssl rand -base64 24 | tr -d '/+=\n')"
   setv MAUTIC_DB_PASSWORD "$(rnd)"
   setv MAUTIC_ADMIN_PASSWORD "$(openssl rand -base64 24 | tr -d '/+=\n')"
   setv MAUTIC_MAIL_PASSWORD "$(rnd)"     # its mailbox mautic@<domain> (sends newsletters)
+  setv MAUTIC_ZUGANG_KEY "$(rnd)$(rnd)"  # claraos-api ↔ mautic_zugang.php (assistant's per-user access)
 }
 { # orangehrm — its password policy wants upper, lower, digit AND a special character
   setv ORANGEHRM_DB_PASSWORD "$(rnd)"
@@ -536,14 +537,37 @@ if an odoo; then
     echo "  Datenbank anlegen (einige Minuten) …"
     docker compose stop odoo >/dev/null 2>&1
     if docker compose run --rm -T odoo odoo -c /etc/odoo/odoo.conf -d odoo \
-         -i base,auth_oidc,contacts --load-language=de_DE --stop-after-init --no-http \
+         -i base,auth_oidc,contacts,crm,claraos_zugang --load-language=de_DE --stop-after-init --no-http \
          >/dev/null 2>/tmp/zelle-odoo.err; then
-      echo "  Odoo: Datenbank angelegt (Kontakte + Anmeldung über ${CLARAOS_PRODUCT_NAME:-NolaniOS})"
+      echo "  Odoo: Datenbank angelegt (Kontakte, CRM + Anmeldung über ${CLARAOS_PRODUCT_NAME:-NolaniOS})"
     else
       echo "  ✗ Odoo-Datenbank: $(tail -c 300 /tmp/zelle-odoo.err | tr '\n' ' ')"
     fi
     rm -f /tmp/zelle-odoo.err
     docker compose up -d odoo >/dev/null 2>&1
+  else
+    # Modules that came after the first set, also on cells whose database is older:
+    # CRM (pipeline, Nolani's create_opportunity) and claraos_zugang (the assistant's API key
+    # per user — without it the cell would have to change the user's password, which ends
+    # their open Odoo sessions).
+    fehlen=""
+    for modul in crm claraos_zugang; do
+      st=$(docker compose exec -T odoo-db psql -U odoo -d odoo -tAc \
+           "SELECT state FROM ir_module_module WHERE name='$modul'" 2>/dev/null || true)
+      [ "$st" = installed ] || fehlen="$fehlen${fehlen:+,}$modul"
+    done
+    if [ -n "$fehlen" ]; then
+      echo "  Module installieren: $fehlen …"
+      docker compose stop odoo >/dev/null 2>&1
+      if docker compose run --rm -T odoo odoo -c /etc/odoo/odoo.conf -d odoo -i "$fehlen" \
+           --stop-after-init --no-http >/dev/null 2>/tmp/zelle-odoo.err; then
+        echo "  Odoo: installiert ($fehlen)"
+      else
+        echo "  ✗ Odoo-Module: $(tail -c 300 /tmp/zelle-odoo.err | tr '\n' ' ')"
+      fi
+      rm -f /tmp/zelle-odoo.err
+      docker compose up -d odoo >/dev/null 2>&1
+    fi
   fi
   docker compose exec -T -e ZELLE_DOMAIN -e ODOO_OIDC_SECRET -e ODOO_ADMIN_PASSWORD -e CLARAOS_PRODUCT_NAME \
     odoo odoo shell -c /etc/odoo/odoo.conf -d odoo --no-http < provision_odoo.py 2>/dev/null \
@@ -640,12 +664,19 @@ def get(p):
 pk = [p for p in get("/providers/saml/?name=mautic")["results"] if p["name"] == "mautic"][0]["pk"]
 print(base64.b64encode(get(f"/providers/saml/{pk}/metadata/")["metadata"].encode()).decode())
 ' 2>/dev/null); export MAUTIC_IDP_METADATA_B64
-  docker compose exec -T -u www-data -e ZELLE_DOMAIN -e CLARAOS_PRODUCT_NAME -e MAUTIC_IDP_METADATA_B64 \
-    -e MAUTIC_MAIL_PASSWORD mautic php < provision_mautic.php 2>/tmp/zelle-mautic.err | sed -n 's/^MAUTIC /  /p' | grep . \
-    || echo "  ✗ Mautic nicht eingerichtet: $(grep -o 'MAUTIC FEHLER.*' /tmp/zelle-mautic.err | head -1)"
-  rm -f /tmp/zelle-mautic.err
+  # Twice, with the cache cleared in between: Mautic only stores a role's API right
+  # while the API is enabled — and it reads `api_enabled` (written by this very script
+  # into local.php) from its config cache. The first pass writes the config, the second
+  # stores the right (the role "Nutzer" with api:access, for the assistant's tools).
+  for durchlauf in 1 2; do
+    docker compose exec -T -u www-data -e ZELLE_DOMAIN -e CLARAOS_PRODUCT_NAME -e MAUTIC_IDP_METADATA_B64 \
+      -e MAUTIC_MAIL_PASSWORD mautic php < provision_mautic.php 2>/tmp/zelle-mautic.err \
+      | sed -n 's/^MAUTIC /  /p' | { [ "$durchlauf" = 2 ] && grep . || cat >/dev/null; } \
+      || echo "  ✗ Mautic nicht eingerichtet: $(grep -o 'MAUTIC FEHLER.*' /tmp/zelle-mautic.err | head -1)"
+    rm -f /tmp/zelle-mautic.err
+    docker compose exec -T -u www-data mautic php /var/www/html/bin/console cache:clear >/dev/null 2>&1
+  done
   unset MAUTIC_IDP_METADATA_B64
-  docker compose exec -T -u www-data mautic php /var/www/html/bin/console cache:clear >/dev/null 2>&1
   docker compose restart mautic mautic-cron >/dev/null 2>&1
 fi
 

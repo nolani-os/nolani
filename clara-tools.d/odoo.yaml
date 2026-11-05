@@ -69,9 +69,56 @@ tools:
         email: { type: string, maxLength: 200 }
         telefon: { type: string, maxLength: 60 }
         firma: { type: boolean, default: false }
+        funktion: { type: string, maxLength: 120, description: "job title of a person, e.g. CEO" }
         zugehoerig_zu: { type: string, maxLength: 200, description: "existing company of the person" }
         strasse: { type: string, maxLength: 200 }
         plz: { type: string, maxLength: 20 }
         ort: { type: string, maxLength: 100 }
         notiz: { type: string, maxLength: 2000 }
       required: [name]
+
+  - name: add_note
+    description: |
+      Write an internal note into the history (chatter) of a contact or company in the
+      user's Odoo — e.g. "met at the trade fair, interested in sensors". Nobody gets an
+      email. `kontakt` is the name; if it is not unique, the answer lists candidates —
+      ask the user. Returns the contact's `link`.
+    endpoint: "http://localhost:8090/api/claraos/odoo/notiz"
+    method: POST
+    auth: api_key
+    per_user: true
+    credential_app_id: odoo
+    credential_key: zugang
+    auth_scheme: "header:x-odoo-zugang"
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        kontakt: { type: string, minLength: 1, maxLength: 200 }
+        text: { type: string, minLength: 1, maxLength: 4000 }
+      required: [kontakt, text]
+
+  - name: create_opportunity
+    description: |
+      Create an opportunity in the user's Odoo CRM pipeline for an existing contact or
+      company (create it first with create_contact), assigned to the user. Amounts in the
+      company currency; `abschluss_bis` = expected closing date YYYY-MM-DD. Returns the
+      opportunity's `link`; to show the pipeline use navigate_to odoo/pipeline.
+    endpoint: "http://localhost:8090/api/claraos/odoo/verkaufschance"
+    method: POST
+    auth: api_key
+    per_user: true
+    credential_app_id: odoo
+    credential_key: zugang
+    auth_scheme: "header:x-odoo-zugang"
+    schema:
+      type: object
+      additionalProperties: false
+      properties:
+        titel: { type: string, minLength: 1, maxLength: 200 }
+        kontakt: { type: string, minLength: 1, maxLength: 200, description: "customer name" }
+        erwarteter_umsatz: { type: number, minimum: 0 }
+        wahrscheinlichkeit: { type: number, minimum: 0, maximum: 100, description: "percent" }
+        abschluss_bis: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+        notiz: { type: string, maxLength: 2000 }
+      required: [titel, kontakt]

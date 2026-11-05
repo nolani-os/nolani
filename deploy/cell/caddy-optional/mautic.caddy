@@ -7,13 +7,19 @@
 #         REPLACED, not added — a second policy would keep the first in force)
 #   rest  public on purpose: forms, landing pages, tracking pixel and the SAML endpoints
 #         — forms and pages are meant to be embedded in other websites.
-# Mautic's REST API is not exposed (it is switched off in Mautic as well).
+# Mautic's REST API is not exposed (on in Mautic, but only for claraos-api inside the cell).
 mautic.{$ZELLE_DOMAIN} {
 	request_body {
 		max_size 50MB
 	}
+	# The REST API only from inside the cell: claraos-api reaches mautic:80 directly, for
+	# the assistant's per-user tools.
+	# In its own `handle`: Caddy orders `handle` before `respond`, so a bare
+	# `respond @api 404` next to the handles below never ran — /api reached Mautic.
 	@api path /api /api/*
-	respond @api 404
+	handle @api {
+		respond 404
+	}
 	@verwaltung path /s /s/*
 	handle @verwaltung {
 		reverse_proxy mautic:80 {

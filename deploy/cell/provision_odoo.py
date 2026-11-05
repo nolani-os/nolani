@@ -38,6 +38,11 @@ print("ODOO admin: Passwort gesetzt" if ADMIN_PW else "ODOO admin: ✗ kein ODOO
 # contacts — "internal user" alone may not (Odoo's group "Contact Creation"); without it
 # neither the user in Odoo nor Clara for them could add a customer. No admin rights.
 GRUPPEN = [env.ref("base.group_user").id, env.ref("base.group_partner_manager").id]  # noqa: F821
+# With CRM: "Sales / User: Own Documents Only" — own leads and opportunities, nobody
+# else's; without it the pipeline (and Nolani's create_opportunity) is closed.
+VERTRIEB = env.ref("sales_team.group_sale_salesman", raise_if_not_found=False)  # noqa: F821
+if VERTRIEB:
+    GRUPPEN.append(VERTRIEB.id)
 vorlage = Users.search([("login", "=", "vorlage-neue-konten")], limit=1)
 if not vorlage:
     # Created active, archived afterwards: Odoo 18 refuses to create an archived user
@@ -50,7 +55,15 @@ if not vorlage:
     print("ODOO Vorlage für neue Konten angelegt")
 elif not set(GRUPPEN) <= set(vorlage.groups_id.ids):
     vorlage.write({"groups_id": [(4, g) for g in GRUPPEN]})
-    print("ODOO Vorlage: darf jetzt Kontakte anlegen")
+    print("ODOO Vorlage: Rechte ergänzt (Kontakte anlegen" + (", Vertrieb)" if VERTRIEB else ")"))
+if VERTRIEB:
+    # Accounts created from the template before CRM came: give them the same right.
+    # Only accounts of the cell's login (oauth_uid) — never the admin or service users.
+    alte = Users.search([("oauth_uid", "!=", False), ("share", "=", False),
+                         ("groups_id", "not in", [VERTRIEB.id])])
+    if alte:
+        alte.write({"groups_id": [(4, VERTRIEB.id)]})
+        print(f"ODOO Vertrieb für {len(alte)} bestehende Konten")
 # No stored picture on the template: Odoo copies it into every new account, so all of
 # them showed the template's initial ("V") instead of their own.
 if vorlage.partner_id.image_1920:

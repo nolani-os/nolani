@@ -16,7 +16,15 @@ for u in konten:
         weg += 1
     except Exception:
         u.write({"active": False})
+        # …and its contact card: otherwise every run leaves one more "Zelle Test" in the
+        # contact list (the showcase pictures showed three).
+        u.partner_id.write({"active": False})
         archiviert += 1
+# Opportunities Clara created during odoo_clara_test.py (before their contacts)
+if "crm.lead" in env:  # noqa: F821
+    chancen = env["crm.lead"].sudo().with_context(active_test=False).search(  # noqa: F821
+        [("name", "=like", "Nolani-Test %")])
+    chancen.unlink()
 # Contacts Clara created during odoo_clara_test.py
 Partner = env["res.partner"].sudo().with_context(active_test=False)  # noqa: F821
 kontakte = Partner.search([("name", "=like", "Nolani-Test %")])

@@ -7,7 +7,10 @@ chdir('/var/www/html/docroot');
 $_SERVER['MAUTIC_TABLE_PREFIX'] ??= '';
 require '/var/www/html/vendor/autoload.php';
 
+use Mautic\CampaignBundle\Entity\Campaign;
+use Mautic\EmailBundle\Entity\Email;
 use Mautic\LeadBundle\Entity\Lead;
+use Mautic\LeadBundle\Entity\LeadList;
 use Mautic\UserBundle\Entity\User;
 
 $kernel = new AppKernel('prod', false);
@@ -32,5 +35,15 @@ $kontakte = $em->createQueryBuilder()->select('l')->from(Lead::class, 'l')
 foreach ($kontakte as $l) {
     $em->remove($l);
 }
+// What mautic_clara_test.py built: campaign (events go with it), emails, segments
+$weiteres = 0;
+foreach ([Campaign::class, Email::class, LeadList::class] as $klasse) {
+    foreach ($em->createQueryBuilder()->select('x')->from($klasse, 'x')->where('x.name LIKE :n')
+        ->setParameter('n', 'Nolani-Test %')->getQuery()->getResult() as $x) {
+        $em->remove($x);
+        ++$weiteres;
+    }
+    $em->flush();
+}
 $em->flush();
-echo 'MAUTIC_TEST_GELOESCHT Konten '.$k.' (Rolle '.(implode(',', $rollen) ?: '-').'), Kontakte '.count($kontakte)."\n";
+echo 'MAUTIC_TEST_GELOESCHT Konten '.$k.' (Rolle '.(implode(',', $rollen) ?: '-').'), Kontakte '.count($kontakte).', Kampagnen/Mails/Segmente '.$weiteres."\n";

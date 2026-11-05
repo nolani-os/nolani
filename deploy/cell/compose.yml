@@ -119,6 +119,7 @@ services:
       dockerfile: docker/Dockerfile.api
     image: claraos-api:zelle
     environment:
+      MAUTIC_ZUGANG_KEY: ${MAUTIC_ZUGANG_KEY:-}
       # External brain (services/brain_turns.py): token the brain uses to call this
       # cell's tool API. Empty = no brain; Clara chats without tools.
       CLARAOS_BRAIN_TOKEN: ${CLARAOS_BRAIN_TOKEN:-}
@@ -133,6 +134,8 @@ services:
       # Clara's Odoo tools: the cell creates each user's own Odoo access with it
       # (services/zellen_zugaenge.py). Empty where Odoo does not run.
       ODOO_ADMIN_PASSWORD: ${ODOO_ADMIN_PASSWORD-}
+      MAUTIC_ADMIN_PASSWORD: ${MAUTIC_ADMIN_PASSWORD:-}
+      INVENTREE_ADMIN_PASSWORD: ${INVENTREE_ADMIN_PASSWORD:-}
       # MCP endpoint for users' own AI agents (setup.sh --mcp). Off unless "on".
       CLARAOS_MCP: ${CLARAOS_MCP:-off}
       CLARAOS_BASE_DOMAIN: ${ZELLE_DOMAIN}
@@ -1078,11 +1081,13 @@ services:
     mem_limit: 384m
 
   mautic:
-    image: &mautic-image mautic/mautic:7.2.0-apache@sha256:dea3bb71a5c5bf4c0c7d1764e58a32109898e7b2e6a710f14f50e2a913c03a0f
+    build: ./mautic  # + symfony/dom-crawler (mautic/Dockerfile)
+    image: &mautic-image claraos-mautic:zelle
     hostname: mautic.${ZELLE_DOMAIN}   # EHLO name towards Stalwart
     restart: unless-stopped
     profiles: [mautic]
     environment: &mautic-env
+      MAUTIC_ZUGANG_KEY: ${MAUTIC_ZUGANG_KEY:-}
       DOCKER_MAUTIC_ROLE: mautic_web
       MAUTIC_DB_HOST: mautic-db
       MAUTIC_DB_PORT: 3306
@@ -1107,6 +1112,7 @@ services:
     cpus: 2
 
   mautic-cron:
+    build: ./mautic  # + symfony/dom-crawler (mautic/Dockerfile)
     image: *mautic-image
     hostname: mautic.${ZELLE_DOMAIN}
     restart: unless-stopped
@@ -1125,6 +1131,28 @@ services:
   # ── OrangeHRM (optional: --apps orangehrm) — employees, leave, time ──────
   # Own image with the cell's OIDC patches (orangehrm/Dockerfile), MariaDB. Login via the
   # cell's Authentik; the first login creates employee + user (role ESS).
+
+  # Cell-internal door: sets the password of ONE ordinary Mautic account for the
+  # assistant's per-user tools (mautic_zugang.php — Mautic's user API refuses it). PHP's
+  # built-in server on the internal network only; no Caddy route, no published port.
+  mautic-zugang:
+    build: ./mautic  # + symfony/dom-crawler (mautic/Dockerfile)
+    image: *mautic-image
+    restart: unless-stopped
+    profiles: [mautic]
+    environment:
+      <<: *mautic-env
+      DOCKER_MAUTIC_ROLE: mautic_cron
+    depends_on:
+      mautic:
+        condition: service_started
+    networks: [zelle]
+    user: www-data
+    entrypoint: ["php", "-S", "0.0.0.0:8099", "/opt/zelle/mautic_zugang.php"]
+    volumes:
+      - mautic-config:/var/www/html/config
+      - ./mautic_zugang.php:/opt/zelle/mautic_zugang.php:ro
+    mem_limit: 128m
   orangehrm-db:
     image: mariadb:11.8.8@sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c
     restart: unless-stopped
