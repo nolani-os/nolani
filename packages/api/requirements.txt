@@ -20,7 +20,7 @@ wsproto>=1.2
 # lives inside claraos-api process — no extra container needed.
 # Warning: <3 — DBOS 3.0 removed `database_url`; an unpinned rebuild pulled 3.0.0
 # and the orchestrator no longer started (503). 2.26.0 works.
-dbos>=2.26,<3
+dbos>=3.4.0,<4
 psycopg[binary]>=3.3.6
 
 # Tool-call proxy validates module payloads against clara-tools.yaml schema
