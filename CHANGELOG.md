@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. The project is in early preview and
 does not follow semantic versioning yet.
 
-## Unreleased
+## 0.2.0 (2026-11-05): business apps, five new looks, companion apps
 
 - **Nolani works in the business apps**, always with the user's own account: in Odoo it
   creates companies with contacts, notes and opportunities (CRM is now installed), in Mautic

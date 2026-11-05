@@ -72,6 +72,31 @@ def flow_pk(slug, max_wait=600):
     sys.exit(f"\nFEHLER: Flow '{slug}' fehlt auch nach {max_wait}s")
 
 
+# The managed scope mappings Authentik's blueprints create. On a FRESH install they appear
+# minutes after the API answers — later than the flows flow_pk() waits for. Providers
+# created before them got NO mappings: OIDC apps lacked email/profile (Odoo "0 Scopes"),
+# and the shell's proxy provider sent no X-Authentik-* headers, so every API call of a
+# signed-in user ended in 401 (throwaway cell, 05.11.).
+NOETIGE_SCOPES = {f"goauthentik.io/providers/oauth2/scope-{s}" for s in ("openid", "email", "profile")} \
+    | {"goauthentik.io/providers/proxy/scope-proxy"}
+
+
+def warte_auf_scopes(max_wait=600):
+    """{managed name: pk} of the managed scope mappings, once all NOETIGE_SCOPES exist."""
+    for i in range(max_wait // 10):
+        da = {m["managed"]: m["pk"] for m in req("GET", "/propertymappings/provider/scope/?page_size=500")["results"]
+              if m.get("managed")}
+        if NOETIGE_SCOPES <= set(da):
+            if i:
+                print(" ok")
+            return da
+        if i == 0:
+            print("warte auf die Scope-Zuordnungen (Blueprints)", end="", flush=True)
+        print(".", end="", flush=True)
+        time.sleep(10)
+    sys.exit(f"\nFEHLER: Scope-Zuordnungen fehlen auch nach {max_wait}s: {sorted(NOETIGE_SCOPES - set(da))}")
+
+
 def app_exists(slug):
     """Warning: the `/core/applications/?slug=…` filter is ignored (Authentik 2026.8)
     and returns ALL applications — it reported "exists" where nothing was. So compare
@@ -82,6 +107,7 @@ def app_exists(slug):
 
 def main():
     wait_ready()
+    warte_auf_scopes()
 
     # 1+2. Proxy providers (forward auth) + applications: the shell and the two
     # host names of the personal browsers (browser/ctl.py, Caddyfile `user_browser`).
@@ -198,6 +224,13 @@ def proxy_app(name, slug, title, ext_host):
             "external_host": ext_host,
         })["pk"]
         print(f"provider '{name}' angelegt (pk={pk})")
+    # The proxy mapping carries the X-Authentik-* headers the API trusts — also on cells
+    # whose provider was created before the mapping existed (see warte_auf_scopes).
+    proxy_pk = warte_auf_scopes()["goauthentik.io/providers/proxy/scope-proxy"]
+    jetzt = req("GET", f"/providers/proxy/{pk}/").get("property_mappings") or []
+    if proxy_pk not in jetzt:
+        req("PATCH", f"/providers/proxy/{pk}/", {"property_mappings": [*jetzt, proxy_pk]})
+        print(f"provider '{name}': Proxy-Zuordnung nachgetragen")
     if app_exists(slug):
         # Keep the visible title in step with the configured name (renamed product).
         app = req("GET", f"/core/applications/{slug}/")

@@ -338,7 +338,18 @@ AUTHENTIK_API_URL=http://127.0.0.1:9000/api/v3 \
   docker compose exec -T -e AUTHENTIK_API_TOKEN -e ZELLE_DOMAIN -e AUTHENTIK_API_URL -e VW_SSO_CLIENT_SECRET \
   -e IMMICH_OIDC_SECRET -e PAPERLESS_OIDC_SECRET -e ODOO_OIDC_SECRET -e INVENTREE_OIDC_SECRET -e SUPERSET_OIDC_SECRET -e ORANGEHRM_OIDC_SECRET -e MAUTIC_AN -e CLARAOS_PRODUCT_NAME \
   -e SOCIAL_DOMAIN -e VIDEO_DOMAIN -e MASTODON_OIDC_SECRET -e PEERTUBE_OIDC_SECRET \
-  authentik python3 - < bootstrap_authentik.py
+  authentik python3 - < bootstrap_authentik.py | tee /tmp/zelle-authentik.out
+# Fresh install: Authentik's embedded outpost did not take over the proxy providers
+# created during its first start — the shell signed in, but every API call came without
+# X-Authentik-Username (401) until Authentik was restarted (throwaway cell, 05.11.).
+if grep -q "provider 'claraos-shell' angelegt" /tmp/zelle-authentik.out; then
+  echo "  Authentik neu starten (Outpost übernimmt die neuen Provider) …"
+  docker compose restart authentik >/dev/null 2>&1
+  for _ in $(seq 1 60); do
+    docker compose exec -T authentik ak healthcheck >/dev/null 2>&1 && break; sleep 3
+  done
+fi
+rm -f /tmp/zelle-authentik.out
 
 # ── 4. Database schema ───────────────────────────────────────────────────
 # schema.sql and the migrations are not applied automatically by the API.

@@ -19,7 +19,7 @@
 
 <p align="center">
   <a href="docs/assets/agent.mp4"><img src="docs/assets/agent.webp" alt="Nolani opens next week in the calendar, adds a task, opens the project brief and writes a Next steps section into it" width="900"></a>
-  <br><sub>Nolani at work, in the Meadow look (sped up; click for the video in real time)</sub>
+  <br><sub>Nolani at work, in the Shore look (sped up; click for the video in real time)</sub>
 </p>
 
 NolaniOS gives you files, office documents, mail, calendar, tasks, team chat and video calls,
@@ -47,15 +47,15 @@ you see it happen on screen.
 
 <table>
   <tr>
-    <td><img src="docs/assets/planner.webp" alt="Planner with tasks and projects, Orchard Light look"><br><b>Planner</b>: tasks, calendar, Gantt</td>
-    <td><img src="docs/assets/files.webp" alt="Files app, Bloom Light look"><br><b>Files and office</b>: Nextcloud and Collabora</td>
+    <td><img src="docs/assets/planner.webp" alt="Planner with tasks and projects, Orchard look"><br><b>Planner</b>: tasks, calendar, Gantt</td>
+    <td><img src="docs/assets/files.webp" alt="Files app, Bloom look"><br><b>Files and office</b>: Nextcloud and Collabora</td>
   </tr>
   <tr>
     <td><img src="docs/assets/knowledge.webp" alt="A recipe collection as a table with number, select, rating and checkbox columns"><br><b>Knowledge</b>: collections as tables, boards and calendars</td>
     <td><img src="docs/assets/teams.webp" alt="A team with channels and a conversation in the General channel, Orchard look"><br><b>Teams</b>: chat, channels and calls</td>
   </tr>
   <tr>
-    <td><img src="docs/assets/agent-task.webp" alt="Nolani added a task to the Website relaunch project and shows it in the planner, Meadow look"><br><b>Nolani</b> adds a task and shows it to you</td>
+    <td><img src="docs/assets/agent-task.webp" alt="Nolani added a task to the Website relaunch project and shows it in the planner, Shore look"><br><b>Nolani</b> adds a task and shows it to you</td>
     <td align="center"><img src="docs/assets/mobile-home.webp" alt="Mobile shell" width="160"> <img src="docs/assets/mobile-planner.webp" alt="Planner on the phone" width="160"><br><b>Mobile</b>: the same workspace on the phone</td>
   </tr>
 </table>
@@ -85,7 +85,7 @@ to use them.
 ## Looks
 
 <p align="center">
-  <a href="docs/assets/looks.mp4"><img src="docs/assets/looks.webp" alt="The look changes in the quick settings: Bloom Light, Orchard Light, The Medical Company, Meadow, Shore, Orchard" width="900"></a>
+  <a href="docs/assets/looks.mp4"><img src="docs/assets/looks.webp" alt="The look changes in the quick settings: Bloom, Shore, Orchard" width="900"></a>
 </p>
 
 The desktop comes in six looks (`packages/skins`), each switched in the quick settings:
@@ -95,16 +95,9 @@ skin from two colours and a logo. The look follows the account to every device.
 
 <table>
   <tr>
-    <td><img src="docs/assets/look-clara-glass.webp" alt="Glass"><br>Glass</td>
-    <td><img src="docs/assets/look-bloom-light.webp" alt="Bloom Light"><br>Bloom Light</td>
-    <td><img src="docs/assets/look-orchard-light.webp" alt="Orchard Light"><br>Orchard Light</td>
-    <td><img src="docs/assets/look-corporate-medical.webp" alt="Corporate template"><br>Corporate template</td>
-  </tr>
-  <tr>
-    <td><img src="docs/assets/look-meadow.webp" alt="Meadow"><br>Meadow</td>
-    <td><img src="docs/assets/look-shore.webp" alt="Shore"><br>Shore</td>
-    <td><img src="docs/assets/look-orchard-dark.webp" alt="Orchard"><br>Orchard</td>
     <td><img src="docs/assets/look-bloom-dark.webp" alt="Bloom"><br>Bloom</td>
+    <td><img src="docs/assets/look-orchard-dark.webp" alt="Orchard"><br>Orchard</td>
+    <td><img src="docs/assets/look-shore.webp" alt="Shore, a living photo"><br>Shore (living photo)</td>
   </tr>
 </table>
 

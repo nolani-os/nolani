@@ -31,6 +31,8 @@ LOOKS = [("clara-glass", "Glass", "dark"), ("bloom-light", "Bloom Light", "light
          ("meadow", "Meadow", "dark"), ("shore", "Shore", "dark"), ("orchard-dark", "Orchard", "dark"),
          ("bloom-dark", "Bloom", "dark")]
 THEMA = {s: t for s, _, t in LOOKS}
+# The looks the README pictures show (the dark ones)
+BILD_LOOKS = ["bloom-dark", "orchard-dark", "shore"]
 NAME = {s: n for s, n, _ in LOOKS}
 
 
@@ -238,7 +240,7 @@ def kern(b) -> None:
                          data={"latitude": breite, "longitude": laenge})
     print(f"  location {ort}: {r.status}", flush=True)
     # One desktop per look, with the planner open in a window (not maximized).
-    for skin, _, _ in LOOKS:
+    for skin in BILD_LOOKS:
         look(page, skin)
         begruessung_zu(page)
         alle_zu(page)
@@ -246,15 +248,14 @@ def kern(b) -> None:
         page.wait_for_timeout(9000)
         nur(page, ("planner",), maximiert=False)
         foto(page, f"look-{skin}")
-    for name, app, skin in [("planner", "planner", "orchard-light"), ("files", "files", "bloom-light"),
-                            ("mail", "post", "corporate-medical"), ("settings", "settings", "clara-glass")]:
+    for name, app, skin in [("planner", "planner", "orchard-dark"), ("files", "files", "bloom-dark")]:
         look(page, skin)
         page.goto(f"{SHELL}/?app={app}", wait_until="domcontentloaded")
         page.wait_for_timeout(11000)
         nur(page, (app,))
         foto(page, name)
     # The "Recipes" table collection (seed_demo.py) in the knowledge app.
-    look(page, "bloom-light")
+    look(page, "bloom-dark")
     page.goto(f"{SHELL}/?app=knowledge", wait_until="domcontentloaded")
     page.wait_for_timeout(10000)
     nur(page, ("knowledge",))
@@ -306,14 +307,14 @@ def kern(b) -> None:
     v_start = time.time()  # the recording starts with the page
     v.goto(SHELL + "/", wait_until="domcontentloaded")
     v.wait_for_timeout(3000)
-    look(v, "clara-glass")
+    look(v, "orchard-dark")
     begruessung_zu(v)
     alle_zu(v)
     v.goto(f"{SHELL}/?app=planner", wait_until="domcontentloaded")
     v.wait_for_timeout(9000)
     nur(v, ("planner",), maximiert=False)
     t0 = time.time()
-    for skin in ("bloom-light", "orchard-light", "corporate-medical", "meadow", "shore", "orchard-dark"):
+    for skin in ("bloom-dark", "shore", "orchard-dark"):
         panel = v.locator('[data-shell-part="quick-settings"]')
         try:
             v.locator('[data-tour="tray-quick-settings"]:visible').first.click(timeout=8000)
@@ -334,7 +335,7 @@ def kern(b) -> None:
     bericht["vorlauf_s_looks"] = round(t0 - v_start, 1)  # cut this off the front
     video_ablegen(vctx, v, "looks")
 
-    # ── 4. Video: Nolani at work (Meadow) ──────────────────────────────────────
+    # ── 4. Video: Nolani at work (Shore) ──────────────────────────────────────
     vctx = b.new_context(viewport=GROESSE, locale="en-US", timezone_id="Europe/Berlin",
                          storage_state=staat, record_video_dir=f"{OUT}/video/roh",
                          record_video_size=GROESSE)
@@ -342,7 +343,7 @@ def kern(b) -> None:
     v_start = time.time()  # the recording starts with the page
     v.goto(SHELL + "/", wait_until="domcontentloaded")
     v.wait_for_timeout(3000)
-    look(v, "meadow")
+    look(v, "shore")
     alle_zu(v)
     begruessung_zu(v)
     t0 = time.time()
@@ -375,9 +376,9 @@ def kern(b) -> None:
     video_ablegen(vctx, v, "agent")
 
 
-BUSINESS = [("odoo", "Odoo", "orchard-light"), ("inventree", "InvenTree", "bloom-light"),
-            ("superset", "Superset", "orchard-light"), ("mautic", "Mautic", "bloom-light"),
-            ("orangehrm", "OrangeHRM", "corporate-medical")]
+BUSINESS = [("odoo", "Odoo", "orchard-dark"), ("inventree", "InvenTree", "bloom-dark"),
+            ("superset", "Superset", "shore"), ("mautic", "Mautic", "bloom-dark"),
+            ("orangehrm", "OrangeHRM", "orchard-dark")]
 # The login button of apps that show their own login page first (one click, no password).
 ANMELDEKNOPF = {"odoo": "a[href*='/application/o/authorize/']",
                 "inventree": "button:has-text('{0}'), a:has-text('{0}')".format(
@@ -451,7 +452,7 @@ def business(b) -> None:
                            timeout=30000)
         page.wait_for_timeout(6000)
         foto(page, f"business-{app}")
-    look(page, "orchard-light", neu_laden=False)
+    look(page, "orchard-dark", neu_laden=False)
     staat = ctx.storage_state()
     ctx.close()
 
