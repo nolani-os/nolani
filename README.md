@@ -158,7 +158,9 @@ the API and the tests are in [`packages/app-knowledge`](packages/app-knowledge/R
 `packages/desktop` (Tauri + a Go daemon) and `packages/android` put your Nolani server in its
 own window on the device, with push notifications and an optional tunnel to a server that is
 not publicly reachable. The generic builds connect to any server by address. They are built
-by CI (`.github/workflows/companion-apps.yml`); releases are tagged `companion-v*`. Details in
+by CI (`.github/workflows/companion-apps.yml`). Download them from the
+[releases](https://github.com/nolani-os/nolani/releases) (tags `companion-v*`: Windows
+installer, Linux AppImage, signed Android APK, with `SHA256SUMS`). Details in
 [`packages/desktop/README.md`](packages/desktop/README.md) and
 [`packages/android/README.md`](packages/android/README.md).
 
